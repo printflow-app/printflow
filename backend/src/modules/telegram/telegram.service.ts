@@ -1,105 +1,201 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Cron } from '@nestjs/schedule';
-
-// =============================================
-// TELEGRAM SERVICE (NestJS side)
-// 
-// Bu servis bot logikasini boshqarmaydi —
-// Bu FAQAT Telegram HTTP API orqali xabar yuborish uchun.
-// Bot logikasi endi alohida bot/ papkasida (Telegraf.js).
-//
-// Xabar yuborish: Telegram Bot Token bilan HTTP POST.
-// =============================================
+import { Telegraf } from 'telegraf';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
-export class TelegramService {
-  constructor(private prisma: PrismaService) {}
+export class TelegramService implements OnModuleInit, OnModuleDestroy {
+  private bot: Telegraf;
 
-  private async sendMessage(telegramId: string, text: string): Promise<void> {
+  constructor(private prisma: PrismaService) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
-    if (!token || !telegramId) return;
+    if (token && token !== 'your_bot_token_here') {
+      this.bot = new Telegraf(token);
+      this.initializeBot();
+    } else {
+      console.warn('TELEGRAM_BOT_TOKEN not found. Bot is disabled.');
+    }
+  }
 
-    try {
-      const url = `https://api.telegram.org/bot${token}/sendMessage`;
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: telegramId,
-          text,
-          parse_mode: 'Markdown',
-        }),
+  async onModuleInit() {
+    if (this.bot) {
+      this.bot.launch().then(() => console.log('🚀 Telegram Bot ishga tushdi')).catch(err => console.error('Bot failed to launch', err));
+    }
+  }
+
+  onModuleDestroy() {
+    if (this.bot) this.bot.stop();
+  }
+
+  private initializeBot() {
+    this.bot.use(async (ctx: any, next) => {
+      const chatId = ctx.chat?.id?.toString();
+      if (!chatId) return next();
+      const session = await this.prisma.botSession.findUnique({
+        where: { chatId },
+        include: { tenant: true }
       });
-    } catch (err) {
-      console.error(`Telegram xabar yuborishda xato (${telegramId}):`, err);
+      if (session && session.tenant) {
+        ctx.tenantId = session.tenantId;
+        ctx.tenant = session.tenant;
+        ctx.botSession = session;
+        ctx.employeeId = session.employeeId || null;
+      }
+      return next();
+    });
+
+    this.bot.start(async (ctx: any) => {
+      const chatId = ctx.chat.id.toString();
+      const payload = ctx.startPayload;
+      if (payload && payload.startsWith('workspace_')) {
+        const slug = payload.replace('workspace_', '');
+        const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
+        if (!tenant || !tenant.isActive) return ctx.reply('❌ Workspace topilmadi yoki faol emas.');
+        
+        const existing = await this.prisma.botSession.findUnique({ where: { chatId } });
+        if (existing && existing.tenantId === tenant.id) return ctx.reply(`✅ Siz allaqachon *${tenant.name}* workspacega ulangansiz.`, { parse_mode: 'Markdown' });
+        
+        await this.prisma.botSession.upsert({
+          where: { chatId },
+          update: { tenantId: tenant.id, step: 'LOGIN', employeeId: null, loginAttempt: null },
+          create: { chatId, tenantId: tenant.id, step: 'LOGIN' }
+        });
+        return ctx.reply(`🖨️ *PrintFlow — ${tenant.name}*\n\nTizimga kirish uchun loginingizni kiriting:`, { parse_mode: 'Markdown' });
+      }
+      if (ctx.tenantId) return ctx.reply(`✅ *${ctx.tenant.name}* ga ulangansiz.\n/report — Hisobot\n/check — Vazifalar`, { parse_mode: 'Markdown' });
+      return ctx.reply('👋 Botga xush kelibsiz! Admin yuborgan havolani bosing.');
+    });
+
+    this.bot.command('report', async (ctx: any) => {
+      if (!ctx.tenantId || !ctx.employeeId) return ctx.reply('❌ Avval ulaning va tizimga kiring.');
+      const emp = await this.prisma.employee.findFirst({
+        where: { id: ctx.employeeId, tenantId: ctx.tenantId },
+        include: { role: true }
+      });
+      if (!emp || !emp.role?.canViewFinance) return ctx.reply("❌ Huquq yo'q.");
+      const report = await this.generateReportForTenant(ctx.tenantId);
+      return ctx.reply(report, { parse_mode: 'Markdown' });
+    });
+
+    this.bot.command('check', async (ctx: any) => {
+      if (!ctx.tenantId || !ctx.employeeId) return ctx.reply('❌ Avval ulaning va tizimga kiring.');
+      const emp = await this.prisma.employee.findFirst({
+        where: { id: ctx.employeeId, tenantId: ctx.tenantId },
+        include: { role: true }
+      });
+      if (!emp || !emp.role?.canViewTasks) return ctx.reply("❌ Huquq yo'q.");
+      await ctx.reply('🔄 Tekshirilmoqda...');
+      await this.checkInactiveTasks(ctx.tenantId);
+      return ctx.reply('✅ Tekshirish yakunlandi.');
+    });
+
+    this.bot.on('text', async (ctx: any) => {
+      const chatId = ctx.chat.id.toString();
+      const text = ctx.message.text;
+      if (!ctx.botSession || !ctx.tenantId) return;
+      const { step } = ctx.botSession;
+      
+      if (step === 'LOGIN') {
+        await this.prisma.botSession.update({
+          where: { chatId },
+          data: { loginAttempt: text, step: 'PASSWORD' }
+        });
+        return ctx.reply('🔐 Parolingizni kiriting:');
+      }
+      
+      if (step === 'PASSWORD') {
+        const emp = await this.prisma.employee.findFirst({
+          where: { login: ctx.botSession.loginAttempt, tenantId: ctx.tenantId }
+        });
+        if (emp && await bcrypt.compare(text, emp.passwordHash)) {
+          await this.prisma.botSession.update({
+            where: { chatId },
+            data: { employeeId: emp.id, step: 'IDLE', loginAttempt: null }
+          });
+          await this.prisma.employee.update({
+            where: { id: emp.id },
+            data: { telegramId: chatId }
+          });
+          return ctx.reply(`✅ Xush kelibsiz, *${emp.fullName}*!`, { parse_mode: 'Markdown' });
+        }
+        await this.prisma.botSession.update({
+          where: { chatId },
+          data: { step: 'LOGIN', loginAttempt: null }
+        });
+        return ctx.reply('❌ Xato. Qaytadan login kiriting:');
+      }
+    });
+  }
+
+  async sendMessage(telegramId: string, text: string) {
+    if (this.bot) {
+      try {
+        await this.bot.telegram.sendMessage(telegramId, text, { parse_mode: 'Markdown' });
+      } catch (err) {}
     }
   }
 
   async sendNotification(employeeId: string, message: string) {
-    const employee = await this.prisma.employee.findFirst({
-      where: { id: employeeId },
-    });
-
-    if (employee?.telegramId) {
-      await this.sendMessage(
-        employee.telegramId,
-        `🔔 *Yangi xabarnoma:*\n\n${message}`,
-      );
-    }
+    const emp = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+    if (emp?.telegramId) await this.sendMessage(emp.telegramId, `🔔 *Yangi xabarnoma:*\n\n${message}`);
   }
 
   async notifyAdmins(message: string) {
-    const admins = await this.prisma.employee.findMany({
-      where: { role: { name: 'Admin' } },
-    });
-
+    const admins = await this.prisma.employee.findMany({ where: { role: { name: 'Admin' } } });
     for (const admin of admins) {
-      if (admin.telegramId) {
-        await this.sendMessage(admin.telegramId, `📢 *Admin xabarnomasi:*\n\n${message}`);
+      if (admin.telegramId) await this.sendMessage(admin.telegramId, `📢 *Admin xabarnomasi:*\n\n${message}`);
+    }
+  }
+
+  private async generateReportForTenant(tenantId: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const txs = await this.prisma.transaction.findMany({ where: { tenantId, date: { gte: today } } });
+    const kirim = txs.filter(t => t.type === 'kirim').reduce((s, t) => s + t.amount, 0);
+    const chiqim = txs.filter(t => t.type === 'chiqim').reduce((s, t) => s + t.amount, 0);
+    return `📊 *Kunlik Hisobot*\n💰 Kirim: ${kirim.toLocaleString()} UZS\n💸 Chiqim: ${chiqim.toLocaleString()} UZS\n📈 Foyda: ${(kirim - chiqim).toLocaleString()} UZS`;
+  }
+
+  private async checkInactiveTasks(tenantId: string) {
+    const cols = await this.prisma.kanbanColumn.findMany({ where: { tenantId }, orderBy: { orderIdx: 'asc' } });
+    if (cols.length === 0) return;
+    const lastCol = cols[cols.length - 1].id;
+    const old = new Date(Date.now() - 24 * 3600000);
+    const tasks = await this.prisma.task.findMany({
+      where: { tenantId, updatedAt: { lt: old }, columnId: { not: lastCol } },
+      include: { column: true }
+    });
+    for (const t of tasks) {
+      const assignees = JSON.parse(t.assignees || '[]');
+      for (const empId of assignees) {
+        const emp = await this.prisma.employee.findFirst({ where: { id: empId, tenantId } });
+        if (emp?.telegramId) {
+          await this.sendMessage(emp.telegramId, `⚠️ *Vazifa qolib ketdi*\n📌 ${t.title}\n⏳ ${t.column.title} da 24 soatdan beri turibdi.`);
+        }
       }
     }
   }
 
-  async generateReport(): Promise<string> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const transactions = await this.prisma.transaction.findMany({
-      where: { date: { gte: today } },
-    });
-
-    const totalKirim = transactions
-      .filter((t) => t.type === 'kirim')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const totalChiqim = transactions
-      .filter((t) => t.type === 'chiqim')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const newTasks = await this.prisma.task.count({
-      where: { createdAt: { gte: today } },
-    });
-
-    return (
-      `✨ *Kunlik Hisobot*\n\n` +
-      `💰 *Jami Kirim:* ${totalKirim.toLocaleString()} UZS\n` +
-      `💸 *Jami Chiqim:* ${totalChiqim.toLocaleString()} UZS\n` +
-      `📈 *Foyda:* ${(totalKirim - totalChiqim).toLocaleString()} UZS\n\n` +
-      `📝 *Yangi topshiriqlar:* ${newTasks} ta\n\n` +
-      `_PrintFlow avtomatik tizimi_`
-    );
+  @Cron('0 21 * * *')
+  async handleDailyReport() {
+    const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
+    for (const t of tenants) {
+      const report = await this.generateReportForTenant(t.id);
+      const admins = await this.prisma.employee.findMany({
+        where: { tenantId: t.id, role: { canViewFinance: true } }
+      });
+      for (const admin of admins) {
+        if (admin.telegramId) await this.sendMessage(admin.telegramId, report);
+      }
+    }
   }
 
-  @Cron('0 21 * * *') // Har kuni 21:00 da kunlik hisobot
-  async handleDailyReport() {
-    const report = await this.generateReport();
-    const admins = await this.prisma.employee.findMany({
-      where: { role: { name: 'Admin' } },
-    });
-
-    for (const admin of admins) {
-      if (admin.telegramId) {
-        await this.sendMessage(admin.telegramId, `🌙 ${report}`);
-      }
+  @Cron('0 * * * *')
+  async handleHourlyTaskCheck() {
+    const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
+    for (const t of tenants) {
+      await this.checkInactiveTasks(t.id);
     }
   }
 }
