@@ -4,6 +4,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ScanAttendance from './pages/ScanAttendance';
+import Landing from './pages/Landing';
 import { authApi, employeesApi } from './api';
 
 // =============================================
@@ -77,6 +78,7 @@ function clearSession() {
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showLanding, setShowLanding] = useState(true);
 
   // =============================================
   // STARTUP — Verify cookie session with server
@@ -227,6 +229,8 @@ const App: React.FC = () => {
           onLogout={handleLogout}
           onUpdateUser={handleUpdateUser}
         />
+      ) : showLanding ? (
+        <Landing onLoginClick={() => setShowLanding(false)} />
       ) : (
         <Login onLogin={handleLogin} />
       )}
