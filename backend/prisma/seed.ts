@@ -27,11 +27,8 @@ async function main() {
   const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
 
   if (!superAdminPassword) {
-    throw new Error(
-      '❌ SUPER_ADMIN_PASSWORD env variable must be set before seeding!\n' +
-      'Example: SUPER_ADMIN_PASSWORD=your_secure_password npx ts-node prisma/seed.ts'
-    );
-  }
+    console.log('ℹ️ SUPER_ADMIN_PASSWORD kiritilmagan. SuperAdmin yaratish o\'tkazib yuborildi.');
+  } else {
 
   const existingSuperAdmin = await prisma.superAdmin.findUnique({
     where: { login: superAdminLogin },
@@ -46,6 +43,7 @@ async function main() {
   } else {
     console.log(`ℹ️  SuperAdmin mavjud: ${superAdminLogin}`);
   }
+  }
 
   // =============================================
   // 2. DEMO TENANT WORKSPACE
@@ -55,9 +53,8 @@ async function main() {
   const demoAdminPassword = process.env.DEMO_ADMIN_PASSWORD;
 
   if (!demoAdminPassword) {
-    throw new Error(
-      '❌ DEMO_ADMIN_PASSWORD env variable must be set before seeding!'
-    );
+    console.log('ℹ️ DEMO_ADMIN_PASSWORD kiritilmagan. Demo tenant yaratish o\'tkazib yuborildi.');
+    return;
   }
 
   let tenant = await prisma.tenant.findUnique({ where: { slug: demoSlug } });
