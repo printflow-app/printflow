@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, ArrowRight, Layers, Users, Zap, ShieldCheck, Check, Phone, Mail, Send, PlayCircle, BarChart3, Clock, Lock } from 'lucide-react';
+import { Printer, ArrowRight, Layers, Users, Zap, ShieldCheck, Check, Send, PlayCircle } from 'lucide-react';
 
 function Landing({ onLoginClick }: { onLoginClick: () => void }) {
   const [scrolled, setScrolled] = useState(false);
