@@ -1,0 +1,162 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Role {
+  id                   String     @id @default(uuid())
+  name                 String     @unique
+  
+  // Moliya ruxsatlari
+  canViewFinance       Boolean    @default(false)
+  canAddIncome         Boolean    @default(false)
+  canAddExpense        Boolean    @default(false)
+  canViewTotalBalance  Boolean    @default(false)
+  canManagePaymentTypes Boolean   @default(false)
+
+  // Topshiriqlar (Xizmatlar) ruxsatlari
+  canViewTasks         Boolean    @default(false)
+  canCreateTask        Boolean    @default(false)
+  canEditTask          Boolean    @default(false)
+  canDeleteTask        Boolean    @default(false)
+  canMoveTask          Boolean    @default(false)
+  canManageColumns     Boolean    @default(false)
+
+  // Mijozlar ruxsatlari
+  canViewCustomers     Boolean    @default(false)
+  canManageCustomers   Boolean    @default(false)
+
+  // Xodimlar ruxsatlari
+  canViewEmployees     Boolean    @default(false)
+  canManageEmployees   Boolean    @default(false)
+  canManageRoles       Boolean    @default(false)
+
+  employees            Employee[]
+}
+
+model Employee {
+  id          String   @id @default(uuid())
+  fullName    String
+  phone       String?
+  login       String   @unique
+  password    String
+  telegramId  String?
+  
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id])
+  
+  baseSalary  Float    @default(0)
+  givenAmount Float    @default(0)
+  workDebt    Float    @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  taskHistories TaskHistory[]
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String?
+  totalDebt   Float    @default(0) // Umumiy buyurtmalar summasi
+  totalPaid   Float    @default(0) // Umumiy to'langan summa
+  
+  transactions Transaction[]
+  tasks        Task[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PaymentType {
+  id          String   @id @default(uuid())
+  name        String   @unique // 'Naqd', 'Karta' va h.k.
+  transactions Transaction[]
+  tasks        Task[]
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  type          String   // 'kirim' | 'chiqim'
+  date          DateTime @default(now())
+  amount        Float
+
+  // To'lov turi
+  paymentTypeId String?
+  paymentType   PaymentType? @relation(fields: [paymentTypeId], references: [id])
+
+  // Kirim uchun
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  serviceType   String?
+  taskId        String?   // Agar taskdan zakolat bo'lsa
+
+  // Chiqim uchun
+  expenseReason String?
+  employeeId    String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model KanbanColumn {
+  id        String   @id @default(uuid())
+  title     String
+  orderIdx  Int      @default(0)
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id             String        @id @default(uuid())
+  title          String
+  description    String?
+  
+  // Mijoz ma'lumotlari
+  customerId     String?
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  customerName   String?       // Yangi mijoz bo'lsa yoki backup
+  customerPhone  String?
+  
+  // Moliyaviy qism
+  totalAmount    Float         @default(0) // Berilishi kerak bo'lgan summa
+  depositAmount  Float         @default(0) // Olingan summa (zakolat)
+  remainingAmount Float        @default(0) // Qoldiq summa
+  
+  paymentTypeId  String?
+  paymentType    PaymentType?  @relation(fields: [paymentTypeId], references: [id])
+
+  columnId       String
+  column         KanbanColumn  @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  assignees      String        @default("[]") // JSON: string array
+  attachments    String        @default("[]") // JSON: image array
+  
+  histories      TaskHistory[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model TaskHistory {
+  id          String   @id @default(uuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  employeeId  String?
+  employee    Employee? @relation(fields: [employeeId], references: [id])
+  
+  action      String   // 'yaratildi', 'o'zgartirildi', 'ko'chirildi', 'ko'rildi'
+  details     String?  // JSON yoki text: "Buyurtma olindi -> Dizayn"
+  note        String?  // Izoh
+  
+  createdAt   DateTime @default(now())
+}

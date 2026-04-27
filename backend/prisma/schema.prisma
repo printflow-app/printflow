@@ -1,0 +1,488 @@
+// PrintFlow Multi-Tenant SaaS — Database Schema
+// Migration from: Sharq Admin (single-tenant) → PrintFlow (multi-tenant)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// PLATFORM LEVEL — Super-Admin scope
+// =============================================
+
+model Tenant {
+  id          String    @id @default(uuid())
+  name        String                          // "Toshkent Bosmaxonasi"
+  slug        String    @unique               // "toshkent-bosma" → printflow.uz/t/toshkent-bosma
+  plan        String    @default("starter")   // starter | pro | enterprise
+  isActive    Boolean   @default(true)
+  trialEndsAt DateTime?
+
+  // Relations to all tenant-scoped data
+  roles              Role[]
+  employees          Employee[]
+  customers          Customer[]
+  paymentTypes       PaymentType[]
+  transactions       Transaction[]
+  expenseTypes       ExpenseType[]
+  kanbanColumns      KanbanColumn[]
+  tasks              Task[]
+  taskHistories      TaskHistory[]
+  services           Service[]
+  serviceOptions     ServiceOption[]
+  serviceMaterials   ServiceMaterial[]
+  materials          Material[]
+  stockMovements     StockMovement[]
+  attendanceRecords  AttendanceRecord[]
+  systemSettings     SystemSetting[]
+  botSessions        BotSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SuperAdmin {
+  id           String   @id @default(uuid())
+  login        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+// Leads from Landing Page
+model DemoRequest {
+  id             String   @id @default(uuid())
+  firstName      String
+  lastName       String
+  companyName    String
+  role           String
+  phone          String
+  telegramUser   String?
+  status         String   @default("new")
+  createdAt      DateTime @default(now())
+}
+
+// =============================================
+// BOT SESSION — Telegram chat_id → Tenant mapping
+// =============================================
+
+model BotSession {
+  id         String    @id @default(uuid())
+  chatId     String    @unique               // Telegram chat ID
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeeId String?                         // NULL until authenticated
+  step       String    @default("IDLE")      // LOGIN | PASSWORD | IDLE
+  loginAttempt String?                       // Temporary login storage during auth flow
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+// =============================================
+// XIZMATLAR KATALOGI (Pricing Engine)
+// =============================================
+
+model Service {
+  id          String          @id @default(uuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  basePrice   Float           @default(0)
+  unit        String          @default("dona") // dona, metr, m2, kg...
+  isActive    Boolean         @default(true)
+
+  options     ServiceOption[]
+  materials   ServiceMaterial[]
+  tasks       Task[]
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([tenantId])
+}
+
+model ServiceOption {
+  id               String   @id @default(uuid())
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  serviceId        String
+  service          Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  name             String   // Qog'oz turi, Rang, Kesish...
+  value            String   // A4, To'q ko'k, Ha...
+  percentageMarkup Float    @default(0) // Bazaviy narxga nisbatan foiz
+  priceAdd         Float    @default(0) // Asosiy narxga qo'shimcha (hisoblangan)
+
+  createdAt        DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+// =============================================
+// OMBOR VA MATERIALLAR (Inventory / BOM)
+// =============================================
+
+model Material {
+  id            String          @id @default(uuid())
+  tenantId      String
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name          String
+  unit          String          @default("dona") // dona, kg, litr, metr, m2...
+  currentStock  Float           @default(0)
+  reservedStock Float           @default(0)      // Band qilingan (ajratilgan) miqdor
+  minStock      Float           @default(0)      // Minimum qoldiq (ogohlantirish uchun)
+
+  movements     StockMovement[]
+  bom           ServiceMaterial[]
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([tenantId])
+}
+
+model StockMovement {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  materialId String
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  type       String   // 'kirim' | 'chiqim' | 'brak'
+  quantity   Float
+  note       String?
+  taskId     String?  // Qaysi buyurtma bilan bog'liq (optional)
+  task       Task?    @relation(fields: [taskId], references: [id])
+
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model ServiceMaterial {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  materialId  String
+  material    Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  normPerUnit Float    @default(1) // 1 ta mahsulot uchun necha birlik material
+
+  @@unique([serviceId, materialId])
+  @@index([tenantId])
+}
+
+// =============================================
+// DAVOMAT (Attendance)
+// =============================================
+
+// AttendanceToken is platform-level — not tenant-scoped (QR code generation)
+model AttendanceToken {
+  id        String   @id @default(uuid())
+  token     String   @unique @default(uuid())
+  tenantId  String   // Which tenant's attendance scan
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model AttendanceRecord {
+  id         String    @id @default(uuid())
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  date       String    // YYYY-MM-DD format
+  checkIn    DateTime?
+  checkOut   DateTime?
+
+  // Kechikish (minutlarda, 09:00 boshlanish vaqtidan)
+  lateMinutes Int      @default(0)
+
+  deviceId   String?
+  note       String?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([tenantId])
+}
+
+// =============================================
+// ROLES & EMPLOYEES
+// =============================================
+
+model Role {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name     String
+
+  // Moliya ruxsatlari
+  canViewFinance        Boolean @default(false)
+  canAddIncome          Boolean @default(false)
+  canAddExpense         Boolean @default(false)
+  canViewTotalBalance   Boolean @default(false)
+  canManagePaymentTypes Boolean @default(false)
+
+  // Topshiriqlar (Xizmatlar) ruxsatlari
+  canViewTasks     Boolean @default(false)
+  canCreateTask    Boolean @default(false)
+  canEditTask      Boolean @default(false)
+  canDeleteTask    Boolean @default(false)
+  canMoveTask      Boolean @default(false)
+  canManageColumns Boolean @default(false)
+
+  // Mijozlar ruxsatlari
+  canViewCustomers    Boolean @default(false)
+  canManageCustomers  Boolean @default(false)
+
+  // Ombor ruxsatlari
+  canViewInventory    Boolean @default(false)
+  canManageInventory  Boolean @default(false)
+
+  // Davomat ruxsatlari
+  canViewAttendance   Boolean @default(false)
+  canManageAttendance Boolean @default(false)
+
+  // Xizmatlar Katalogi ruxsatlari
+  canViewServices    Boolean @default(false)
+  canManageServices  Boolean @default(false)
+
+  // Xodimlar ruxsatlari
+  canViewEmployees   Boolean @default(false)
+  canManageEmployees Boolean @default(false)
+  canManageRoles     Boolean @default(false)
+  canViewSalary      Boolean @default(false)
+
+  employees Employee[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model Employee {
+  id          String  @id @default(uuid())
+  tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  fullName        String
+  phone           String?
+  login           String
+  passwordHash    String                  // bcrypt hash — plaintext parol saqlanmaydi
+  telegramId      String?
+  deviceId        String?                 // Davomat anti-cheat uchun qurilma ID
+  passwordVersion Int     @default(1)    // Har safar parol o'zgarganda +1 (forced logout uchun)
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  baseSalary  Float @default(0)
+  givenAmount Float @default(0)
+  workDebt    Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  taskHistories     TaskHistory[]
+  attendanceRecords AttendanceRecord[]
+
+  @@unique([tenantId, login])
+  @@index([tenantId])
+}
+
+// =============================================
+// MIJOZLAR (Customers)
+// =============================================
+
+model Customer {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String
+  phone     String?
+  totalDebt Float   @default(0) // Umumiy buyurtmalar summasi
+  totalPaid Float   @default(0) // Umumiy to'langan summa
+
+  transactions Transaction[]
+  tasks        Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// =============================================
+// MOLIYA (Finance)
+// =============================================
+
+model PaymentType {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name         String        // 'Naqd', 'Karta' va h.k.
+  transactions Transaction[]
+  tasks        Task[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model Transaction {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  type   String   // 'kirim' | 'chiqim'
+  date   DateTime @default(now())
+  amount Float
+
+  // To'lov turi
+  paymentTypeId String?
+  paymentType   PaymentType? @relation(fields: [paymentTypeId], references: [id])
+
+  // Kirim uchun
+  customerId   String?
+  customer     Customer?   @relation(fields: [customerId], references: [id])
+  customerName String?     // Ro'yxatdan o'tmagan (noma'lum) mijoz ismi
+  serviceType  String?
+  taskId       String?     // Agar taskdan zakolat bo'lsa
+
+  // Chiqim uchun
+  expenseReason String?
+  expenseTypeId String?
+  expenseType   ExpenseType? @relation(fields: [expenseTypeId], references: [id])
+  employeeId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model ExpenseType {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name         String
+  transactions Transaction[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+// =============================================
+// KANBAN & TASKS
+// =============================================
+
+model KanbanColumn {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  title    String
+  orderIdx Int      @default(0)
+  tasks    Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model Task {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  orderName   String? // Buyurtma nomi (Masalan: Mega Meva)
+  title       String
+  description String?
+
+  // Mijoz ma'lumotlari
+  customerId    String?
+  customer      Customer?    @relation(fields: [customerId], references: [id])
+  customerName  String?      // Yangi mijoz bo'lsa yoki backup
+  customerPhone String?
+
+  // Xizmat (Pricing Engine)
+  serviceId      String?  // Qaysi xizmat asosida
+  service        Service? @relation(fields: [serviceId], references: [id])
+  serviceOptions String   @default("[]") // JSON: tanlangan option ID lar
+  quantity       Int      @default(1)
+  coefficient    Float    @default(1.0)
+
+  // Moliyaviy qism
+  totalAmount     Float @default(0) // Berilishi kerak bo'lgan summa
+  depositAmount   Float @default(0) // Olingan summa (zakolat)
+  remainingAmount Float @default(0) // Qoldiq summa
+
+  paymentTypeId String?
+  paymentType   PaymentType? @relation(fields: [paymentTypeId], references: [id])
+
+  columnId String
+  column   KanbanColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  assignees         String   @default("[]") // JSON: string array
+  attachments       String   @default("[]") // JSON: image array
+  materialOverrides String   @default("[]") // JSON: {materialId, quantity}[]
+  deadlineAt        DateTime?               // Topshiriq muddati (ixtiyoriy)
+
+  histories      TaskHistory[]
+  stockMovements StockMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model SystemSetting {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  key   String // JSON string
+  value String
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+}
+
+model TaskHistory {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  employeeId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+
+  action  String  // 'yaratildi', 'o'zgartirildi', 'ko'chirildi', 'ko'rildi'
+  details String? // JSON yoki text: "Buyurtma olindi -> Dizayn"
+  note    String? // Izoh
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
