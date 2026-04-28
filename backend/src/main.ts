@@ -31,9 +31,14 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: true, // Allow all for dev
+    origin: [
+      'https://printflow-admin.vercel.app',
+      'https://printflow-v1.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true, // Required for cookies
+    credentials: true,
   });
 
   const port = process.env.PORT || 4000;

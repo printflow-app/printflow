@@ -7,7 +7,7 @@ import axios from 'axios';
 // =============================================
 
 // @ts-ignore
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000') + '/api';
+const API_URL = (import.meta.env.VITE_API_URL || 'https://printflow-production-bb78.up.railway.app') + '/api';
 
 const api = axios.create({
   baseURL: API_URL,
