@@ -46,6 +46,106 @@ async function main() {
   }
 
   // =============================================
+  // 1b. DEFAULT PLANS (Pricing Tiers)
+  // =============================================
+  const defaultPlans = [
+    {
+      name: 'STARTER',
+      displayName: 'Starter (Kichik)',
+      price3m: 1500000,
+      price6m: 2700000,
+      price12m: 4500000,
+      maxEmployees: 8,
+      sortOrder: 1,
+      isPopular: false,
+      description: 'Kichik bosmaxonalar uchun asosiy boshqaruv tizimi',
+      features: JSON.stringify({
+        kanban: true,
+        finance: true,
+        crm: true,
+        inventory: 'view_only',
+        telegram_bot: true,
+        telegram_webapp: 'view_only',
+        services: true,
+        attendance: false,
+        finance_analytics: false,
+        task_management: 'basic',
+        kpi_analytics: false,
+        auto_debt_notify: false,
+        multi_branch: false,
+        archive: false,
+        excel_export: false,
+      }),
+    },
+    {
+      name: 'STANDARD',
+      displayName: 'Standard (🔥 Eng ommabop)',
+      price3m: 3000000,
+      price6m: 5400000,
+      price12m: 9000000,
+      maxEmployees: 20,
+      sortOrder: 2,
+      isPopular: true,
+      description: 'O\'rta va katta bosmaxonalar uchun to\'liq boshqaruv',
+      features: JSON.stringify({
+        kanban: true,
+        finance: true,
+        crm: true,
+        inventory: true,
+        telegram_bot: true,
+        telegram_webapp: true,
+        services: true,
+        attendance: true,
+        finance_analytics: true,
+        task_management: true,
+        kpi_analytics: false,
+        auto_debt_notify: false,
+        multi_branch: false,
+        archive: false,
+        excel_export: false,
+      }),
+    },
+    {
+      name: 'INDUSTRIAL',
+      displayName: 'Industrial (Yirik)',
+      price3m: 5000000,
+      price6m: 9000000,
+      price12m: 15000000,
+      maxEmployees: 0, // 0 = Cheksiz
+      sortOrder: 3,
+      isPopular: false,
+      description: 'Yirik bosmaxonalar uchun barcha imkoniyatlar',
+      features: JSON.stringify({
+        kanban: true,
+        finance: true,
+        crm: true,
+        inventory: true,
+        telegram_bot: true,
+        telegram_webapp: true,
+        services: true,
+        attendance: true,
+        finance_analytics: true,
+        task_management: true,
+        kpi_analytics: true,
+        auto_debt_notify: true,
+        multi_branch: true,
+        archive: true,
+        excel_export: true,
+      }),
+    },
+  ];
+
+  for (const plan of defaultPlans) {
+    const existing = await prisma.plan.findUnique({ where: { name: plan.name } });
+    if (!existing) {
+      await prisma.plan.create({ data: plan });
+      console.log(`✅ Plan yaratildi: ${plan.name}`);
+    } else {
+      console.log(`ℹ️  Plan mavjud: ${plan.name}`);
+    }
+  }
+
+  // =============================================
   // 2. DEMO TENANT WORKSPACE
   // =============================================
   const demoSlug = process.env.DEMO_TENANT_SLUG || 'demo';
@@ -64,7 +164,7 @@ async function main() {
       data: {
         name: 'Demo Bosmaxona',
         slug: demoSlug,
-        plan: 'pro',
+        status: 'ACTIVE',
         isActive: true,
       },
     });

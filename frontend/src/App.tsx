@@ -5,25 +5,26 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ScanAttendance from './pages/ScanAttendance';
 import Landing from './pages/Landing';
+import Billing from './pages/Billing';
 import { authApi, employeesApi } from './api';
+import logo from './assets/logo.png';
 
 // =============================================
 // PrintFlow — Session Management
-//
-// Eski tizim: localStorage + plaintext parol (xavfli)
-// Yangi tizim: httpOnly cookie (JWT) + server-side session
-//
-// Brauzer cookie'ni avtomatik yuboradi har bir API so'rovda.
-// Frontend faqat user info'ni sessionStorage'da saqlaydi (token emas).
 // =============================================
 
 export interface User {
   id: string;
   fullName: string;
   role: any;
-  login?: string;
+  login: string;
+  phone?: string;
+  isFirstLogin?: boolean;
   passwordVersion?: number;
-  workspaceSlug?: string;
+  tenantId?: string;
+  tenantName?: string;
+  workspaceSlug: string;
+  tenantFeatures?: Record<string, boolean>;
   permissions: {
     canViewFinance: boolean;
     canAddIncome: boolean;
@@ -51,10 +52,6 @@ export interface User {
   };
 }
 
-// =============================================
-// SESSION STORAGE (token emas — faqat UI state)
-// Hardcoded defaultAdmin va localStorage o'chirildi
-// =============================================
 const SESSION_KEY = 'pf_user_info';
 
 function saveSession(user: User) {
@@ -79,30 +76,61 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showLanding, setShowLanding] = useState(true);
+  const [subscriptionExpired, setSubscriptionExpired] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingForm, setOnboardingForm] = useState({
+    tenantName: '',
+    tenantSlug: '',
+    fullName: '',
+    phone: '',
+    login: '',
+    password: ''
+  });
 
-  // =============================================
-  // STARTUP — Verify cookie session with server
-  // =============================================
+  useEffect(() => {
+    const handleExpired = () => setSubscriptionExpired(true);
+    const handleSessionExpired = () => {
+      sessionStorage.setItem('pf_session_expired', 'true');
+      clearSession();
+      setCurrentUser(null);
+    };
+    
+    window.addEventListener('subscription_expired', handleExpired);
+    window.addEventListener('session_expired', handleSessionExpired);
+    
+    return () => {
+      window.removeEventListener('subscription_expired', handleExpired);
+      window.removeEventListener('session_expired', handleSessionExpired);
+    };
+  }, []);
+
   useEffect(() => {
     const init = async () => {
-      // Try to restore from sessionStorage first (fast)
-      const cached = loadSession();
-
       try {
-        // Verify with server: GET /api/auth/me (uses httpOnly cookie)
         const res = await authApi.me();
-        const payload = res.data; // { id, tenantId, workspaceSlug, role, passwordVersion }
+        const user = res.data;
 
-        if (cached && cached.id === payload.id) {
-          // Cached user info is still valid — use it
-          setCurrentUser(cached);
+        if (user) {
+          setCurrentUser(user);
+          saveSession(user);
+          setShowLanding(false);
+          
+          if (user.isFirstLogin) {
+            setOnboardingForm({
+              tenantName: user.tenantName || '',
+              tenantSlug: user.workspaceSlug || '',
+              fullName: user.fullName || '',
+              phone: user.phone || '',
+              login: user.login || '',
+              password: ''
+            });
+            setShowOnboarding(true);
+          }
         } else {
-          // Session valid but no cached info (e.g. new tab) — set minimal user
-          // Full user info comes after login
-          setCurrentUser(cached);
+          clearSession();
+          setCurrentUser(null);
         }
       } catch {
-        // Cookie invalid or expired — clear everything
         clearSession();
         setCurrentUser(null);
       } finally {
@@ -113,54 +141,31 @@ const App: React.FC = () => {
     init();
   }, []);
 
-  // =============================================
-  // TELEGRAM WEB APP AUTO LOGIN
-  // =============================================
-  useEffect(() => {
-    if (loading || currentUser) return;
-
-    const checkTelegramLogin = async () => {
-      // @ts-ignore
-      const tg = window.Telegram?.WebApp;
-      const tgUser = tg?.initDataUnsafe?.user;
-      const isLoggedOut = sessionStorage.getItem('pf_tg_logout');
-
-      if (tgUser?.id && !isLoggedOut) {
-        try {
-          const res = await employeesApi.telegramLogin(tgUser.id.toString());
-          const emp = res.data;
-          if (emp) {
-            const user = buildUser(emp);
-            setCurrentUser(user);
-            saveSession(user);
-            tg.expand();
-          }
-        } catch {
-          // Telegram login failed — show normal login page
-        }
+  const handleOnboardingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await authApi.onboarding(onboardingForm);
+      const res = await authApi.me();
+      if (res.data) {
+        setCurrentUser(res.data);
+        saveSession(res.data);
+        setShowOnboarding(false);
       }
-    };
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Xatolik yuz berdi');
+    }
+  };
 
-    checkTelegramLogin();
-  }, [loading, currentUser]);
-
-  // =============================================
-  // SESSION VALIDATION — har 30 soniyada
-  // =============================================
   const validateSession = useCallback(async () => {
     if (!currentUser) return;
-
     try {
       const res = await authApi.checkSession();
       if (!res.data.valid) {
-        // Parol o'zgardi — majburiy logout
         clearSession();
         sessionStorage.setItem('pf_session_expired', 'true');
         setCurrentUser(null);
       }
-    } catch {
-      // Network xato — e'tiborsiz qoldiramiz
-    }
+    } catch { }
   }, [currentUser]);
 
   useEffect(() => {
@@ -170,12 +175,21 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [currentUser, validateSession]);
 
-  // =============================================
-  // HANDLERS
-  // =============================================
   const handleLogin = (user: User) => {
     saveSession(user);
     setCurrentUser(user);
+    setShowLanding(false);
+    if (user.isFirstLogin) {
+      setOnboardingForm({
+        tenantName: user.tenantName || '',
+        tenantSlug: user.workspaceSlug || '',
+        fullName: user.fullName || '',
+        phone: user.phone || '',
+        login: user.login || '',
+        password: ''
+      });
+      setShowOnboarding(true);
+    }
   };
 
   const handleUpdateUser = (updatedFields: Partial<User>) => {
@@ -188,26 +202,22 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    try {
-      await authApi.logout(); // Cookie'ni server tomondan o'chiradi
-    } catch {
-      // Ignore network errors during logout
-    }
-    sessionStorage.setItem('pf_tg_logout', 'true');
+    try { await authApi.logout(); } catch { }
     clearSession();
     setCurrentUser(null);
+    setShowLanding(true);
   };
 
   const isScanPage = window.location.pathname.startsWith('/attendance/scan');
 
-  // =============================================
-  // LOADING SCREEN
-  // =============================================
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans">
-        <div className="w-20 h-20 bg-[#FF6B00] flex items-center justify-center mb-8 shadow-2xl animate-pulse">
-          <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+        <div className="relative mb-8">
+          <img src={logo} alt="PrintFlow" className="w-24 h-24 object-contain animate-pulse" />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-16 h-16 border-2 border-[#FF6B00]/20 border-t-[#FF6B00] rounded-full animate-spin"></div>
+          </div>
         </div>
         <h1 className="text-2xl font-black tracking-tight uppercase mb-2">
           Print<span className="text-[#FF6B00]">Flow</span>
@@ -221,7 +231,63 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-orange-100">
-      {isScanPage ? (
+      {showOnboarding && (
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
+            <div className="bg-black p-6 text-white">
+              <h2 className="text-xl font-black uppercase tracking-tight">Ma'lumotlarni <span className="text-[#FF6B00]">Tahrirlang</span></h2>
+              <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mt-1">Xavfsizlik va sozlash uchun barcha maydonlarni to'ldiring</p>
+            </div>
+            <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-500">Tashkilot / Workspace Nomi</label>
+                <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+                  value={onboardingForm.tenantName} onChange={e => setOnboardingForm({...onboardingForm, tenantName: e.target.value})} placeholder="Ideal Print MCHJ" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-500">Ism Familiyangiz</label>
+                  <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+                    value={onboardingForm.fullName} onChange={e => setOnboardingForm({...onboardingForm, fullName: e.target.value})} placeholder="Sardor Karimov" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-500">Telefon Raqamingiz</label>
+                  <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+                    value={onboardingForm.phone} onChange={e => setOnboardingForm({...onboardingForm, phone: e.target.value})} placeholder="+998 90 123 45 67" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-500">Yangi Login</label>
+                  <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+                    value={onboardingForm.login} onChange={e => setOnboardingForm({...onboardingForm, login: e.target.value})} placeholder="admin_new" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-500">Yangi Parol (ixtiyoriy)</label>
+                  <input className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+                    type="password" value={onboardingForm.password} onChange={e => setOnboardingForm({...onboardingForm, password: e.target.value})} placeholder="********" />
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase">
+                  <span className="text-[#FF6B00]">Diqqat:</span> Ushbu ma'lumotlar tizimga kirish va xavfsizlik uchun ishlatiladi. Saqlagandan so'ng siz dashboardga yo'naltirilasiz.
+                </p>
+              </div>
+
+              <button type="submit" className="w-full bg-[#FF6B00] hover:bg-[#e66000] text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]">
+                Saqlash va Boshlash
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {subscriptionExpired ? (
+        <Billing />
+      ) : isScanPage ? (
         <ScanAttendance currentUser={currentUser} />
       ) : currentUser ? (
         <Dashboard
@@ -250,9 +316,6 @@ const App: React.FC = () => {
   );
 };
 
-// =============================================
-// HELPER — API response'dan User object yasash
-// =============================================
 export function buildUser(emp: any): User {
   const role = emp.role || {};
   return {
@@ -262,6 +325,7 @@ export function buildUser(emp: any): User {
     passwordVersion: emp.passwordVersion || 1,
     workspaceSlug: emp.workspaceSlug,
     role,
+    tenantFeatures: emp.tenantFeatures || {},
     permissions: {
       canViewFinance: role.canViewFinance ?? false,
       canAddIncome: role.canAddIncome ?? false,

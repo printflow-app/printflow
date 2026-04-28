@@ -11,6 +11,10 @@ import {
 import { AttendanceService } from './attendance.service';
 import { Public } from '../../common/decorators/public.decorator';
 
+import { RequireFeature } from '../../common/decorators/feature.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common';
+
 // =============================================
 // ATTENDANCE CONTROLLER
 // checkIn / checkOut = @Public() — QR skanerlash uchun
@@ -18,6 +22,8 @@ import { Public } from '../../common/decorators/public.decorator';
 // Qolgan barcha endpoint'lar JWT himoyasida
 // =============================================
 
+@UseGuards(JwtAuthGuard)
+@RequireFeature('attendance')
 @Controller('attendance')
 export class AttendanceController {
   constructor(private attendanceService: AttendanceService) {}

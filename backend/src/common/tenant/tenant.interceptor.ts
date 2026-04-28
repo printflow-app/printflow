@@ -51,10 +51,37 @@ export class TenantInterceptor implements NestInterceptor {
     // another tenant, it cannot access this tenant's data.
     const employee = await this.prisma.employee.findFirst({
       where: { id: userId, tenantId },
+      include: { tenant: true },
     });
 
-    if (!employee) {
+    if (!employee || !employee.tenant) {
       throw new ForbiddenException('Bu workspace\'ga kirish taqiqlangan');
+    }
+
+    const tenant = employee.tenant;
+
+    // Billing route exemption
+    const isBillingRoute = req.url.includes('/api/billing') || req.url.includes('/api/auth/logout') || req.url.includes('/api/auth/me');
+
+    if (!isBillingRoute) {
+      const now = new Date();
+      let isExpired = false;
+
+      if (tenant.status === 'TRIAL' && tenant.trialEndsAt && now > tenant.trialEndsAt) {
+        // Trial expired! Automatically update status to EXPIRED
+        await this.prisma.tenant.update({ where: { id: tenant.id }, data: { status: 'EXPIRED' } });
+        isExpired = true;
+      } else if (tenant.status === 'ACTIVE' && tenant.subscriptionEndsAt && now > tenant.subscriptionEndsAt) {
+        // Subscription expired!
+        await this.prisma.tenant.update({ where: { id: tenant.id }, data: { status: 'EXPIRED' } });
+        isExpired = true;
+      } else if (tenant.status === 'EXPIRED' || tenant.status === 'PENDING_PAYMENT') {
+        isExpired = true;
+      }
+
+      if (isExpired) {
+        throw new ForbiddenException('SUBSCRIPTION_EXPIRED');
+      }
     }
 
     // Wrap the entire handler execution in AsyncLocalStorage.run()

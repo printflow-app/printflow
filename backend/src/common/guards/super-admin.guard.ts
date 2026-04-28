@@ -20,8 +20,8 @@ export class SuperAdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest();
 
-    // Super admin uses a dedicated header to avoid confusion with tenant tokens
-    const token = req.headers['x-super-admin-key'];
+    // Super admin uses a dedicated cookie to avoid confusion with tenant tokens
+    const token = req.cookies?.['pf_sa_token'] || req.headers['x-super-admin-key'];
     if (!token) throw new ForbiddenException('Super Admin access only');
 
     try {

@@ -7,6 +7,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
@@ -63,6 +64,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('pf_token', { path: '/' });
+    res.clearCookie('pf_sa_token', { path: '/' });
     return { message: 'Tizimdan chiqdingiz' };
   }
 
@@ -85,12 +87,12 @@ export class AuthController {
     res.cookie('pf_sa_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 4 * 60 * 60 * 1000, // 4 hours — shorter for admin
       path: '/',
     });
 
-    return { message: 'Super Admin tizimga kirdi' };
+    return { message: 'Super Admin tizimga kirdi', token };
   }
 
   /**
@@ -110,20 +112,78 @@ export class AuthController {
     return { valid };
   }
 
-  /**
-   * Returns current user info from JWT payload (no DB query).
-   * Frontend calls on page refresh to restore session state.
-   */
+  @Public()
   @Get('me')
-  me(@Req() req: Request) {
+  async me(@Req() req: Request) {
+    try {
+      const token = req.cookies?.['pf_token'];
+      if (!token) return null;
+      
+      const payload = this.authService['jwt'].verify(token, { secret: process.env.JWT_SECRET });
+      
+      const [tenant, employee] = await Promise.all([
+        this.authService['prisma'].tenant.findUnique({
+          where: { id: payload.tenantId },
+          include: { plan: true }
+        }),
+        this.authService['prisma'].employee.findUnique({
+          where: { id: payload.sub },
+          include: { role: true }
+        })
+      ]);
+
+      if (!tenant || !employee) return null;
+
+      let tenantFeatures = {};
+      if (tenant?.plan?.features) {
+        try {
+          tenantFeatures = typeof tenant.plan.features === 'string' 
+            ? JSON.parse(tenant.plan.features) 
+            : tenant.plan.features;
+        } catch { }
+      }
+
+      return {
+        id: employee.id,
+        fullName: employee.fullName,
+        login: employee.login,
+        phone: employee.phone,
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        workspaceSlug: tenant.slug,
+        role: employee.role,
+        permissions: employee.role,
+        isFirstLogin: employee.isFirstLogin, // Return flag for frontend onboarding
+        passwordVersion: employee.passwordVersion,
+        tenantFeatures
+      };
+    } catch (e) {
+      console.error('Me endpoint error:', e);
+      return null;
+    }
+  }
+
+  @Post('onboarding')
+  @HttpCode(HttpStatus.OK)
+  async onboarding(
+    @Req() req: Request,
+    @Body() body: {
+      tenantName: string;
+      tenantSlug: string;
+      fullName: string;
+      phone: string;
+      login: string;
+      password?: string;
+    },
+  ) {
     const payload = (req as any).user;
-    return {
-      id: payload.sub,
-      tenantId: payload.tenantId,
-      workspaceSlug: payload.workspaceSlug,
-      role: payload.role,
-      passwordVersion: payload.passwordVersion,
-    };
+    if (!payload) throw new UnauthorizedException();
+    
+    return this.authService.completeOnboarding(
+      payload.tenantId,
+      payload.sub,
+      body
+    );
   }
 }
 

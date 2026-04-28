@@ -1,73 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Printer, LogOut, LayoutDashboard, Building2, Plus, X, Users } from 'lucide-react';
-import { authApi, tenantsApi, leadsApi } from './api';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Printer, LogOut, LayoutDashboard, Building2, Plus, X, Users, CreditCard, Package, Check, XCircle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
+import { authApi, tenantsApi, leadsApi, plansApi, settingsApi } from './api';
+import logo from '../dist/assets/logo.png';
 
-// --- Auth Context Mock (Simple State) ---
 const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('sa_auth') === 'true';
-  });
-
-  const login = () => {
-    sessionStorage.setItem('sa_auth', 'true');
-    setIsAuthenticated(true);
-  };
-
-  const logout = async () => {
-    try { await authApi.logout(); } catch (e) {}
-    sessionStorage.removeItem('sa_auth');
-    setIsAuthenticated(false);
-  };
-
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => sessionStorage.getItem('sa_auth') === 'true');
+  const login = () => { sessionStorage.setItem('sa_auth', 'true'); setIsAuthenticated(true); };
+  const logout = async () => { try { await authApi.logout(); } catch (e) { } localStorage.removeItem('pf_sa_token'); sessionStorage.removeItem('sa_auth'); setIsAuthenticated(false); };
   return { isAuthenticated, login, logout };
 };
 
-// --- Components ---
-
 function Login({ onLogin }: { onLogin: () => void }) {
-  const [login, setLogin] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
+  const [login, setLogin] = useState(''); const [password, setPassword] = useState('');
+  const [error, setError] = useState(''); const [loading, setLoading] = useState(false);
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+    e.preventDefault(); setLoading(true); setError('');
     try {
-      await authApi.login({ login, password });
+      const res = await authApi.login({ login, password });
+      if (res.data?.token) {
+        localStorage.setItem('pf_sa_token', res.data.token);
+      }
       onLogin();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login xatosi');
-    } finally {
-      setLoading(false);
     }
+    catch (err: any) { setError(err.response?.data?.message || 'Login xatosi'); }
+    finally { setLoading(false); }
   };
-
   return (
-    <div className="login-screen">
-      <div className="login-card">
+    <div className="login-screen" style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,107,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,0,0.06) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0 }} />
+      <div className="login-card" style={{ position: 'relative', zIndex: 10 }}>
         <div className="login-header">
-          <Printer size={48} color="var(--primary)" style={{ margin: '0 auto 16px' }} />
+          <div className="relative w-24 h-24 mx-auto mb-6 group">
+            <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl" />
+            <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain" />
+          </div>
           <h1>Print<span>Flow</span></h1>
           <p>Super Admin Panel</p>
         </div>
-        
         {error && <div className="error-msg">{error}</div>}
-
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Login</label>
-            <input type="text" required value={login} onChange={e => setLogin(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Parol</label>
-            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} />
-          </div>
-          <button type="submit" className="btn login-btn" disabled={loading}>
-            {loading ? 'Tekshirilmoqda...' : 'Tizimga Kirish'}
-          </button>
+          <div className="form-group"><label>Login</label><input type="text" required value={login} onChange={e => setLogin(e.target.value)} /></div>
+          <div className="form-group"><label>Parol</label><input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
+          <button type="submit" className="btn login-btn" disabled={loading}>{loading ? 'Tekshirilmoqda...' : 'Tizimga Kirish'}</button>
         </form>
       </div>
     </div>
@@ -76,208 +52,599 @@ function Login({ onLogin }: { onLogin: () => void }) {
 
 function Layout({ onLogout, children }: { onLogout: () => void, children: React.ReactNode }) {
   const location = useLocation();
-
+  const navItems = [
+    { path: '/', icon: <LayoutDashboard />, label: 'Dashboard' },
+    { path: '/tenants', icon: <Building2 />, label: 'Workspaces' },
+    { path: '/plans', icon: <Package />, label: 'Tariflar' },
+    { path: '/payments', icon: <CreditCard />, label: "To'lovlar" },
+    { path: '/leads', icon: <Users />, label: "So'rovlar" },
+  ];
   return (
     <div className="admin-container">
       <div className="sidebar">
         <div className="sidebar-header">
+          <img src={logo} alt="PF" style={{ height: 28, width: 'auto', marginRight: 10 }} />
           Print<span>Flow</span>
         </div>
         <div className="sidebar-nav">
-          <a href="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-            <LayoutDashboard /> Dashboard
-          </a>
-          <a href="/tenants" className={`nav-item ${location.pathname === '/tenants' ? 'active' : ''}`}>
-            <Building2 /> Workspaces
-          </a>
-          <a href="/leads" className={`nav-item ${location.pathname === '/leads' ? 'active' : ''}`}>
-            <Users /> So'rovlar (Leads)
-          </a>
+          {navItems.map(n => (
+            <a key={n.path} href={n.path} className={`nav-item ${location.pathname === n.path ? 'active' : ''}`}>{n.icon} {n.label}</a>
+          ))}
         </div>
       </div>
-      
       <div className="main-content">
-        <div className="topbar">
-          <div className="page-title">Admin Panel</div>
-          <button className="logout-btn" onClick={onLogout}>
-            <LogOut size={16} /> Chiqish
-          </button>
-        </div>
-        <div className="content-area">
-          {children}
-        </div>
+        <div className="topbar"><div className="page-title">Admin Panel</div><button className="logout-btn" onClick={onLogout}><LogOut size={16} /> Chiqish</button></div>
+        <div className="content-area">{children}</div>
       </div>
     </div>
   );
 }
 
 function Dashboard() {
-  const [stats, setStats] = useState({ totalTenants: 0, activeTenants: 0, newThisMonth: 0 });
+  const [stats, setStats] = useState<any>({});
+  useEffect(() => { tenantsApi.getStats().then(r => setStats(r.data)).catch(console.error); }, []);
 
-  useEffect(() => {
-    tenantsApi.getStats().then(res => setStats(res.data)).catch(console.error);
-  }, []);
+  const cards = [
+    { label: 'Jami Workspacelar', value: stats.totalTenants || 0 },
+    { label: 'Faol', value: stats.activeTenants || 0 },
+    { label: 'Yangi So\'rovlar (Leads)', value: stats.totalLeads || 0 },
+    { label: "Kutilayotgan to'lovlar", value: stats.pendingPayments || 0 },
+    { label: 'Jami daromad (UZS)', value: (stats.totalRevenue || 0).toLocaleString() },
+    { label: 'Jami xodimlar', value: stats.totalEmployees || 0 },
+  ];
 
   return (
     <div>
-      <h2 style={{ marginBottom: '24px', fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Statistika</h2>
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-title">Jami Workspacelar</div>
-          <div className="stat-value">{stats.totalTenants}</div>
+      <h2 style={{ marginBottom: 24, fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Statistika</h2>
+      <div className="stats-grid" style={{ marginBottom: 32 }}>
+        {cards.map((c, i) => (<div key={i} className="stat-card"><div className="stat-title">{c.label}</div><div className="stat-value">{c.value}</div></div>))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 24 }}>
+        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800 }}>Oylik Daromad (MRR)</h3>
+          <div style={{ height: 300 }}>
+            {stats.revenueChart && stats.revenueChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.revenueChart}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `${val / 1000}k`} />
+                  <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                  <Bar dataKey="amount" name="Daromad (UZS)" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Ma'lumot yo'q</div>}
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-title">Faol Workspacelar</div>
-          <div className="stat-value">{stats.activeTenants}</div>
+
+        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800 }}>Workspace Holatlari</h3>
+          <div style={{ height: 300 }}>
+            {stats.statusDistribution && stats.statusDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={stats.statusDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {stats.statusDistribution.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Ma'lumot yo'q</div>}
+            {stats.statusDistribution && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 16 }}>
+                {stats.statusDistribution.map((s: any, i: number) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: s.color }} /> {s.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-title">Bu oy qo'shilganlar</div>
-          <div className="stat-value">{stats.newThisMonth}</div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800 }}>Yangi Workspacelar</h3>
+          <div style={{ height: 250 }}>
+            {stats.tenantGrowthChart && stats.tenantGrowthChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.tenantGrowthChart}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} allowDecimals={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="count" name="Yangi Tenantlar" stroke="#FF6B00" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Ma'lumot yo'q</div>}
+          </div>
+        </div>
+
+        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800 }}>Demo So'rovlar (Leads)</h3>
+          <div style={{ height: 250 }}>
+            {stats.leadsChart && stats.leadsChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.leadsChart}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} allowDecimals={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="count" name="So'rovlar" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Ma'lumot yo'q</div>}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function Tenants() {
-  const [tenants, setTenants] = useState<any[]>([]);
-  const [showModal, setShowModal] = useState(false);
+// ========== FEATURE KEYS (Granular) ==========
+const PLAN_FEATURES = [
+  {
+    category: 'Moliya & Kassa',
+    features: [
+      { key: 'finance', label: "Moliya bo'limi (Dashboard)" },
+      { key: 'canViewFinance', label: "Moliyani ko'rish" },
+      { key: 'canAddIncome', label: "Kirim qo'shish" },
+      { key: 'canAddExpense', label: "Chiqim qo'shish" },
+      { key: 'canViewTotalBalance', label: "Kassa qoldig'ini ko'rish" },
+      { key: 'canManagePaymentTypes', label: "To'lov turlarini boshqarish" },
+    ]
+  },
+  {
+    category: 'Xizmatlar (Kanban)',
+    features: [
+      { key: 'kanban', label: "Kanban (Buyurtmalar) bo'limi" },
+      { key: 'canViewTasks', label: "Topshiriqlarni ko'rish" },
+      { key: 'canCreateTask', label: "Yangi topshiriq yaratish" },
+      { key: 'canEditTask', label: "Topshiriqni tahrirlash" },
+      { key: 'canDeleteTask', label: "Topshiriqni o'chirish" },
+      { key: 'canMoveTask', label: "Bosqichdan bosqichga o'tkazish" },
+      { key: 'canManageColumns', label: "Bosqichlarni boshqarish" },
+    ]
+  },
+  {
+    category: 'Mijozlar',
+    features: [
+      { key: 'customers', label: "Mijozlar bo'limi" },
+      { key: 'canViewCustomers', label: "Mijozlar ro'yxatini ko'rish" },
+      { key: 'canManageCustomers', label: "Mijozlarni boshqarish" },
+    ]
+  },
+  {
+    category: 'Ombor & Inventar',
+    features: [
+      { key: 'warehouse', label: "Ombor bo'limi" },
+      { key: 'canViewInventory', label: "Omborni ko'rish" },
+      { key: 'canManageInventory', label: "Omborni boshqarish" },
+    ]
+  },
+  {
+    category: 'Davomat',
+    features: [
+      { key: 'attendance', label: "Davomat bo'limi" },
+      { key: 'canViewAttendance', label: "Davomatni ko'rish" },
+      { key: 'canManageAttendance', label: "Davomatni boshqarish" },
+    ]
+  },
+  {
+    category: 'Xizmatlar Katalogi & Tizim',
+    features: [
+      { key: 'employees', label: "Xodimlar bo'limi" },
+      { key: 'canViewEmployees', label: "Xodimlarni ko'rish" },
+      { key: 'canManageEmployees', label: "Xodimlarni boshqarish" },
+      { key: 'canManageRoles', label: "Lavozimlarni boshqarish" },
+      { key: 'canViewSalary', label: "Maoshlarni ko'rish" },
+      { key: 'canViewServices', label: "Xizmatlar katalogni ko'rish" },
+      { key: 'canManageServices', label: "Xizmatlar katalogni boshqarish" },
+    ]
+  },
+  {
+    category: 'Qo\'shimcha Modullar',
+    features: [
+      { key: 'telegram_bot', label: 'Telegram Bot integratsiyasi' },
+      { key: 'tasks', label: 'Task Management (Vazifalar)' },
+      { key: 'kpi', label: 'KPI tahlili' },
+      { key: 'debtors', label: 'Qarzdorlarga avto-xabar' },
+      { key: 'multi_branch', label: 'Multi-filial (Tez kunda)' },
+    ]
+  }
+];
 
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [generatedCreds, setGeneratedCreds] = useState<{slug: string, login: string, pass: string} | null>(null);
+const ALL_FEATURES_KEYS = PLAN_FEATURES.flatMap(g => g.features.map(f => f.key));
 
-  const loadTenants = () => {
-    tenantsApi.findAll().then(res => setTenants(res.data)).catch(console.error);
+function Plans() {
+  const [plans, setPlans] = useState<any[]>([]); const [showModal, setShowModal] = useState(false); const [editing, setEditing] = useState<any>(null);
+  const [form, setForm] = useState({ name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0, maxEmployees: 8, description: '', isPopular: false, sortOrder: 0, features: {} as Record<string, boolean> });
+
+  const load = () => plansApi.findAll().then(r => setPlans(r.data)).catch(console.error);
+  useEffect(() => { load(); }, []);
+
+  const openCreate = () => {
+    const features: Record<string, boolean> = {}; ALL_FEATURES_KEYS.forEach(k => features[k] = false);
+    setForm({ name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0, maxEmployees: 8, description: '', isPopular: false, sortOrder: 0, features });
+    setEditing(null); setShowModal(true);
   };
-
-  useEffect(() => {
-    loadTenants();
-  }, []);
-
-  const generateRandomPassword = () => {
-    return Math.random().toString(36).slice(-8);
+  const openEdit = (p: any) => {
+    let features: Record<string, boolean> = {}; try { const parsed = JSON.parse(p.features); ALL_FEATURES_KEYS.forEach(k => features[k] = !!parsed[k]); } catch { ALL_FEATURES_KEYS.forEach(k => features[k] = false); }
+    setForm({ name: p.name, displayName: p.displayName, price3m: p.price3m, price6m: p.price6m, price12m: p.price12m, maxEmployees: p.maxEmployees, description: p.description || '', isPopular: p.isPopular, sortOrder: p.sortOrder, features });
+    setEditing(p); setShowModal(true);
   };
-
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    const payload = { ...form, features: JSON.stringify(form.features) };
     try {
-      const generatedSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const login = 'admin';
-      const password = generateRandomPassword();
-
-      await tenantsApi.create({ 
-        name, 
-        slug: generatedSlug, 
-        adminEmail: login, 
-        adminPassword: password 
-      });
-      
-      setGeneratedCreds({ slug: generatedSlug, login, pass: password });
-      setName('');
-      loadTenants();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Xatolik');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleStatus = async (id: string, currentStatus: boolean) => {
-    if (!confirm('Rostdan ham holatini o\'zgartirmoqchimisiz?')) return;
-    try {
-      await tenantsApi.update(id, { isActive: !currentStatus });
-      loadTenants();
-    } catch (err) {
-      alert('Xatolik');
-    }
+      if (editing) await plansApi.update(editing.id, payload); else await plansApi.create(payload);
+      setShowModal(false); load();
+    } catch (err: any) { alert(err.response?.data?.message || 'Xatolik'); }
   };
 
   return (
     <div>
       <div className="flex-between">
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Workspacelar</h2>
-        <button className="btn" onClick={() => setShowModal(true)}>
-          <Plus size={16} /> Yangi Qo'shish
-        </button>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Tariflar</h2>
+        <button className="btn" onClick={openCreate}><Plus size={16} /> Yangi Tarif</button>
+      </div>
+      <div className="stats-grid">
+        {plans.map(p => (
+          <div key={p.id} className="stat-card" style={{ cursor: 'pointer', border: p.isPopular ? '2px solid var(--primary)' : undefined }} onClick={() => openEdit(p)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div className="stat-title">{p.displayName}</div>
+              {p.isPopular && <span className="badge active">🔥 OMMABOP</span>}
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 4 }}>{p.price3m?.toLocaleString()} UZS <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/ 3 oy</span></div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Xodimlar: {p.maxEmployees === 0 ? 'Cheksiz' : p.maxEmployees} ta</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>Mijozlar: {p._count?.tenants || 0}</div>
+          </div>
+        ))}
       </div>
 
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 600, maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header"><h2>{editing ? 'Tahrirlash' : 'Yangi Tarif'}</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button></div>
+            <form onSubmit={handleSave}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="form-group"><label>Nomi (unikal)</label><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })} placeholder="STARTER" /></div>
+                <div className="form-group"><label>Ko'rsatiladigan nomi</label><input required value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} placeholder="Starter (Kichik)" /></div>
+                <div className="form-group"><label>3 oylik narx (UZS)</label><input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} /></div>
+                <div className="form-group"><label>6 oylik narx (UZS)</label><input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} /></div>
+                <div className="form-group"><label>12 oylik narx (UZS)</label><input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} /></div>
+                <div className="form-group"><label>Xodimlar limiti (0=cheksiz)</label><input type="number" required value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} /></div>
+              </div>
+              <div className="form-group"><label>Tavsif</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input type="checkbox" checked={form.isPopular} onChange={e => setForm({ ...form, isPopular: e.target.checked })} style={{ width: 18, height: 18 }} />
+                <label style={{ margin: 0 }}>🔥 Eng ommabop (Highlight)</label>
+              </div>
+              <div className="form-group"><label>Platforma funksiyalari (Ruxtsatlar)</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginTop: 8 }}>
+                  {PLAN_FEATURES.map((group, i) => (
+                    <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 8 }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', marginBottom: 8, textTransform: 'uppercase' }}>
+                        {group.category}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        {group.features.map(f => (
+                          <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={!!form.features[f.key]}
+                              onChange={e => setForm({ ...form, features: { ...form.features, [f.key]: e.target.checked } })}
+                              style={{ width: 16, height: 16 }}
+                            />
+                            {f.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                <button type="submit" className="btn" style={{ flex: 1, height: 48 }}>{editing ? 'Saqlash' : 'Yaratish'}</button>
+                {editing && (
+                  <button type="button" className="btn" style={{ background: '#ef4444', height: 48 }} onClick={async () => {
+                    if (!confirm('Ushbu tarifni o\'chirmoqchimisiz? Unga ulangan workspacelar bo\'lsa xato berishi mumkin.')) return;
+                    try {
+                      await plansApi.delete(editing.id);
+                      setShowModal(false); load();
+                    } catch (e: any) { alert(e.response?.data?.message || 'Xatolik'); }
+                  }}>O'chirish</button>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Payments() {
+  const [payments, setPayments] = useState<any[]>([]); const [tab, setTab] = useState<'pending' | 'all'>('pending');
+  const [cards, setCards] = useState<any[]>([]);
+  const [cardsLoading, setCardsLoading] = useState(true);
+  const [savingCards, setSavingCards] = useState(false);
+
+  const loadPayments = () => {
+    const fn = tab === 'pending' ? tenantsApi.getPendingPayments() : tenantsApi.getAllPayments();
+    fn.then(r => setPayments(r.data)).catch(console.error);
+  };
+
+  const loadCards = () => {
+    settingsApi.get('PAYMENT_CARDS')
+      .then(r => { setCards(r.data.value || []); })
+      .catch(() => { setCards([]); })
+      .finally(() => setCardsLoading(false));
+  };
+
+  useEffect(() => { loadPayments(); }, [tab]);
+  useEffect(() => { loadCards(); }, []);
+
+  const approve = async (id: string) => { if (!confirm('Tasdiqlaysizmi?')) return; await tenantsApi.approvePayment(id); loadPayments(); };
+  const reject = async (id: string) => { if (!confirm('Rad etasizmi?')) return; await tenantsApi.rejectPayment(id); loadPayments(); };
+  
+  const handleSaveCards = async () => {
+    setSavingCards(true);
+    try {
+      await settingsApi.update('PAYMENT_CARDS', cards);
+      alert("Kartalar saqlandi!");
+    } catch { alert("Xatolik!"); }
+    finally { setSavingCards(false); }
+  };
+
+  const addCard = () => setCards([...cards, { name: '', number: '', owner: '' }]);
+  const removeCard = (idx: number) => setCards(cards.filter((_, i) => i !== idx));
+  const updateCard = (idx: number, field: string, val: string) => {
+    const newCards = [...cards];
+    newCards[idx][field] = val;
+    setCards(newCards);
+  };
+
+  const statusBadge = (s: string) => {
+    if (s === 'APPROVED') return <span className="badge active">TASDIQLANGAN</span>;
+    if (s === 'REJECTED') return <span className="badge inactive">RAD ETILGAN</span>;
+    return <span className="badge" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>KUTILMOQDA</span>;
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 40 }}>
+      {/* 1. Payments Table */}
+      <div className="animate-fade-in">
+        <div className="flex-between" style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>To'lovlar</h2>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={tab === 'pending' ? 'btn' : 'btn btn-outline-tab'} style={tab !== 'pending' ? { background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' } : {}} onClick={() => setTab('pending')}>Kutilayotgan</button>
+            <button className={tab === 'all' ? 'btn' : 'btn btn-outline-tab'} style={tab !== 'all' ? { background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' } : {}} onClick={() => setTab('all')}>Barcha</button>
+          </div>
+        </div>
+        <div className="table-container shadow-sm">
+          <table>
+            <thead><tr><th>Sana</th><th>Workspace</th><th>Tarif</th><th>Muddat</th><th>Summa</th><th>Yuboruvchi</th><th>Holat</th><th>Amallar</th></tr></thead>
+            <tbody>
+              {payments.map(p => (
+                <tr key={p.id}>
+                  <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(p.createdAt).toLocaleDateString()}</td>
+                  <td style={{ fontWeight: 700 }}>{p.tenant?.name || '—'}</td>
+                  <td>{p.planName}</td>
+                  <td>{p.duration} oy</td>
+                  <td style={{ fontWeight: 700 }}>{p.amount?.toLocaleString()} UZS</td>
+                  <td>{p.sender}</td>
+                  <td>{statusBadge(p.status)}</td>
+                  <td>
+                    {p.status === 'PENDING' && (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => approve(p.id)}><Check size={14} /> Tasdiqlash</button>
+                        <button className="btn-danger" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', cursor: 'pointer', borderRadius: 6, fontWeight: 800, fontFamily: 'inherit' }} onClick={() => reject(p.id)}><XCircle size={14} /></button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {payments.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', padding: 32 }}>Ma'lumot topilmadi</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 2. Card Management */}
+      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-fade-in" style={{ marginTop: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, textTransform: 'uppercase' }}>To'lov Kartalari</h3>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Mijozlar to'lov sahifasida ko'radigan karta raqamlari</p>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={addCard} className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '0.8rem' }}>+ Karta Qo'shish</button>
+            <button onClick={handleSaveCards} disabled={savingCards} className="btn" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+              {savingCards ? 'Saqlanmoqda...' : 'SAQLASH'}
+            </button>
+          </div>
+        </div>
+
+        {cardsLoading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Yuklanmoqda...</div>
+        ) : (
+          <div style={{ display: 'grid', gap: 16 }}>
+            {cards.length === 0 && <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>Kartalar mavjud emas. Mijozlar to'lov qila olishi uchun karta qo'shing.</p>}
+            {cards.map((c, i) => (
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, alignItems: 'end', background: '#f8fafc', padding: 20, borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', marginBottom: 6, textTransform: 'uppercase' }}>Karta Turi (Masalan: Humo)</label>
+                  <input type="text" value={c.name} onChange={e => updateCard(i, 'name', e.target.value)} placeholder="UzCard / Humo" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: 600 }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', marginBottom: 6, textTransform: 'uppercase' }}>Karta Raqami</label>
+                  <input type="text" value={c.number} onChange={e => updateCard(i, 'number', e.target.value)} placeholder="0000 0000 0000 0000" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '1px' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', marginBottom: 6, textTransform: 'uppercase' }}>Ega Ism-Familiyasi</label>
+                  <input type="text" value={c.owner} onChange={e => updateCard(i, 'owner', e.target.value)} placeholder="PrintFlow LLC" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: 600 }} />
+                </div>
+                <button onClick={() => removeCard(i)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', width: 40, height: 40, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} className="hover:bg-rose-100">
+                  <X size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Tenants() {
+  const [tenants, setTenants] = useState<any[]>([]); const [showModal, setShowModal] = useState(false);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [name, setName] = useState(''); const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [loading, setLoading] = useState(false); const [generatedCreds, setGeneratedCreds] = useState<any>(null);
+  const [selectedTenant, setSelectedTenant] = useState<any>(null);
+
+  const load = () => { tenantsApi.findAll().then(r => setTenants(r.data)).catch(console.error); };
+  useEffect(() => { load(); plansApi.findAll().then(r => setPlans(r.data)).catch(console.error); }, []);
+  const generateRandomPassword = () => Math.random().toString(36).slice(-8);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault(); setLoading(true);
+    try {
+      const slug = name.toLowerCase().replace(/[^a-z0-9]/g, ''); const pwd = generateRandomPassword();
+      await tenantsApi.create({ name, slug, planId: selectedPlanId || undefined, adminEmail: 'admin', adminPassword: pwd });
+      setGeneratedCreds({ slug, login: 'admin', pass: pwd }); setName(''); load();
+    } catch (err: any) { alert(err.response?.data?.message || 'Xatolik'); }
+    finally { setLoading(false); }
+  };
+
+  const openDetails = async (id: string) => {
+    try {
+      const res = await tenantsApi.findOne(id);
+      setSelectedTenant(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const toggleStatus = async (id: string, cur: boolean) => { if (!confirm("Holatini o'zgartirmoqchimisiz?")) return; await tenantsApi.update(id, { isActive: !cur }); load(); };
+  const statusBadge = (t: any) => {
+    const s = t.status;
+    if (s === 'TRIAL') return <span className="badge" style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>TRIAL</span>;
+    if (s === 'ACTIVE') return <span className="badge active">FAOL</span>;
+    if (s === 'EXPIRED') return <span className="badge inactive">MUDDATI TUGAGAN</span>;
+    if (s === 'PENDING_PAYMENT') return <span className="badge" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>TO'LOV KUTILMOQDA</span>;
+    return <span className="badge">{s}</span>;
+  };
+  return (
+    <div>
+      <div className="flex-between">
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Workspacelar</h2>
+        <button className="btn" onClick={() => setShowModal(true)}><Plus size={16} /> Yangi Qo'shish</button>
+      </div>
       <div className="table-container">
         <table>
-          <thead>
-            <tr>
-              <th>Nomi</th>
-              <th>Slug</th>
-              <th>Holat</th>
-              <th>Yaratilgan sana</th>
-              <th>Amallar</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Nomi</th><th>Slug</th><th>Tarif</th><th>Holat</th><th>Yaratilgan</th><th>Amallar</th></tr></thead>
           <tbody>
             {tenants.map(t => (
               <tr key={t.id}>
                 <td style={{ fontWeight: 700 }}>{t.name}</td>
                 <td style={{ color: 'var(--text-muted)' }}>{t.slug}</td>
+                <td>{t.plan?.displayName || '—'}</td>
+                <td>{statusBadge(t)}</td>
+                <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{new Date(t.createdAt).toLocaleDateString()}</td>
                 <td>
-                  <span className={`badge ${t.isActive ? 'active' : 'inactive'}`}>
-                    {t.isActive ? 'FAOL' : 'BLOKLANGAN'}
-                  </span>
-                </td>
-                <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  {new Date(t.createdAt).toLocaleDateString()}
-                </td>
-                <td>
-                  <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => toggleStatus(t.id, t.isActive)}>
-                    {t.isActive ? 'Bloklash' : 'Faollashtirish'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)' }} onClick={() => openDetails(t.id)}>Tafsilotlar</button>
+                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => toggleStatus(t.id, t.isActive)}>{t.isActive ? 'Bloklash' : 'Faollashtirish'}</button>
+                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={async () => { if(confirm("Haqiqatdan ham o'chirmoqchimisiz?")) { await tenantsApi.delete(t.id); load(); } }}>O'chirish</button>
+                  </div>
                 </td>
               </tr>
             ))}
-            {tenants.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '32px' }}>Ma'lumot topilmadi</td></tr>
-            )}
+            {tenants.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32 }}>Ma'lumot topilmadi</td></tr>}
           </tbody>
         </table>
       </div>
-
-      {showModal && (
+      {showModal && !generatedCreds && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <div className="modal-header">
-              <h2>Yangi Workspace</h2>
-              <button className="modal-close" onClick={() => { setShowModal(false); setGeneratedCreds(null); }}><X size={24} /></button>
-            </div>
-            
-            {!generatedCreds ? (
-              <form onSubmit={handleCreate}>
-                <div className="form-group">
-                  <label>Workspace Nomi</label>
-                  <input required value={name} onChange={e => setName(e.target.value)} placeholder="Masalan: Ideal Print" />
-                </div>
-                <button className="btn" style={{ width: '100%', height: '48px', marginTop: '16px' }} disabled={loading}>
-                  {loading ? 'Yaratilmoqda...' : 'Yaratish'}
-                </button>
-              </form>
-            ) : (
-              <div>
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                  <h3 style={{ color: 'var(--success)', marginBottom: '8px' }}>Workspace Muvaffaqiyatli Yaratildi!</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Mijozga quyidagi ma'lumotlarni yuboring:</p>
-                </div>
-                
-                <div className="generated-creds">
-                  <h4>Kirish Ma'lumotlari</h4>
-                  <p><strong>Workspace:</strong> {generatedCreds.slug}</p>
-                  <p><strong>Login:</strong> {generatedCreds.login}</p>
-                  <p><strong>Parol:</strong> {generatedCreds.pass}</p>
-                </div>
-
-                <button className="btn" style={{ width: '100%', height: '48px', marginTop: '16px' }} onClick={() => { setShowModal(false); setGeneratedCreds(null); }}>
-                  Yopish
-                </button>
+            <div className="modal-header"><h2>Yangi Workspace</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button></div>
+            <form onSubmit={handleCreate}>
+              <div className="form-group"><label>Workspace Nomi</label><input required value={name} onChange={e => setName(e.target.value)} placeholder="Masalan: Ideal Print" /></div>
+              <div className="form-group"><label>Tarif (ixtiyoriy)</label>
+                <select value={selectedPlanId} onChange={e => setSelectedPlanId(e.target.value)} style={{ width: '100%', height: 48, border: '1px solid var(--border)', borderRadius: 6, padding: '0 16px', fontFamily: 'inherit', fontSize: '0.95rem' }}>
+                  <option value="">Tanlanmagan (7 kunlik trial)</option>
+                  {plans.map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
+                </select>
               </div>
-            )}
+              <button className="btn" style={{ width: '100%', height: 48, marginTop: 16 }} disabled={loading}>{loading ? 'Yaratilmoqda...' : 'Yaratish'}</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {generatedCreds && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header"><h2>Workspace Yaratildi!</h2><button className="modal-close" onClick={() => setGeneratedCreds(null)}><X size={24} /></button></div>
+            <div className="generated-creds" style={{ marginTop: 16 }}>
+              <h4>Kirish Ma'lumotlari</h4>
+              <p><strong>Workspace URL:</strong> /t/{generatedCreds.slug}</p>
+              <p><strong>Login:</strong> {generatedCreds.login}</p>
+              <p><strong>Parol:</strong> {generatedCreds.pass}</p>
+            </div>
+            <button className="btn" style={{ width: '100%', height: 48, marginTop: 16 }} onClick={() => setGeneratedCreds(null)}>Yopish</button>
+          </div>
+        </div>
+      )}
+
+      {selectedTenant && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 600 }}>
+            <div className="modal-header"><h2>{selectedTenant.name} tafsilotlari</h2><button className="modal-close" onClick={() => setSelectedTenant(null)}><X size={24} /></button></div>
+            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="stat-card" style={{ padding: 16 }}>
+                <div className="stat-title">Holat</div>
+                <div style={{ marginTop: 8 }}>{statusBadge(selectedTenant)}</div>
+              </div>
+              <div className="stat-card" style={{ padding: 16 }}>
+                <div className="stat-title">Jami To'langan (UZS)</div>
+                <div className="stat-value" style={{ fontSize: '1.2rem' }}>{(selectedTenant.totalPaid || 0).toLocaleString()}</div>
+              </div>
+              <div className="stat-card" style={{ padding: 16 }}>
+                <div className="stat-title">Aktivatsiya Sanasi</div>
+                <div className="stat-value" style={{ fontSize: '1.1rem' }}>{new Date(selectedTenant.createdAt).toLocaleDateString()}</div>
+              </div>
+              <div className="stat-card" style={{ padding: 16 }}>
+                <div className="stat-title">Tugash Sanasi</div>
+                <div className="stat-value" style={{ fontSize: '1.1rem', color: selectedTenant.status === 'EXPIRED' ? 'var(--danger)' : 'var(--text)' }}>
+                  {selectedTenant.status === 'TRIAL' && selectedTenant.trialEndsAt ? new Date(selectedTenant.trialEndsAt).toLocaleDateString() :
+                    selectedTenant.subscriptionEndsAt ? new Date(selectedTenant.subscriptionEndsAt).toLocaleDateString() : 'Noma\'lum'}
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: 12 }}>So'nggi to'lovlar</h3>
+              {selectedTenant.payments?.length > 0 ? (
+                <table style={{ width: '100%', fontSize: '0.85rem' }}>
+                  <thead><tr><th style={{ textAlign: 'left', padding: '8px 0' }}>Sana</th><th style={{ textAlign: 'left' }}>Summa</th><th style={{ textAlign: 'left' }}>Tarif</th><th style={{ textAlign: 'right' }}>Holat</th></tr></thead>
+                  <tbody>
+                    {selectedTenant.payments.map((p: any) => (
+                      <tr key={p.id} style={{ borderTop: '1px solid var(--border)' }}>
+                        <td style={{ padding: '8px 0', color: 'var(--text-muted)' }}>{new Date(p.createdAt).toLocaleDateString()}</td>
+                        <td style={{ fontWeight: 700 }}>{p.amount.toLocaleString()}</td>
+                        <td>{p.planName} ({p.duration} oy)</td>
+                        <td style={{ textAlign: 'right' }}>{p.status === 'APPROVED' ? <Check size={14} color="var(--success)" /> : p.status === 'REJECTED' ? <XCircle size={14} color="var(--danger)" /> : 'Kutilmoqda'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>To'lovlar topilmadi</p>}
+            </div>
           </div>
         </div>
       )}
@@ -287,107 +654,142 @@ function Tenants() {
 
 function Leads() {
   const [leads, setLeads] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [slug, setSlug] = useState('');
+  const [planId, setPlanId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [generatedCreds, setGeneratedCreds] = useState<any>(null);
 
-  const loadLeads = () => {
-    leadsApi.findAll().then(res => setLeads(res.data)).catch(console.error);
-  };
+  const load = () => { leadsApi.findAll().then(r => setLeads(r.data)).catch(console.error); };
 
   useEffect(() => {
-    loadLeads();
+    load();
+    plansApi.findAll().then(r => setPlans(r.data)).catch(console.error);
   }, []);
 
-  const updateStatus = async (id: string, status: string) => {
-    try {
-      await leadsApi.updateStatus(id, status);
-      loadLeads();
-    } catch (err) {
-      alert('Status o\'zgartirishda xatolik');
-    }
+  const updateStatus = async (id: string, status: string) => { await leadsApi.updateStatus(id, status); load(); };
+
+  const openCreateModal = (lead: any) => {
+    setSelectedLead(lead);
+    setSlug(lead.companyName.toLowerCase().replace(/[^a-z0-9]/g, '') || '');
+    setPlanId('');
+    setGeneratedCreds(null);
+    setShowModal(true);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'new': return <span className="badge" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>YANGI</span>;
-      case 'contacted': return <span className="badge" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>BOG'LANILDI</span>;
-      case 'demo_done': return <span className="badge" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>DEMO QILINDI</span>;
-      case 'closed': return <span className="badge" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>SOTILDI</span>;
-      default: return <span className="badge">{status}</span>;
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLead) return;
+    setLoading(true);
+    try {
+      const res = await tenantsApi.createFromLead({
+        leadId: selectedLead.id,
+        slug,
+        planId: planId || undefined
+      });
+      setGeneratedCreds(res.data.credentials);
+      load(); // refresh leads to show status closed
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Xatolik');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
-      <div className="flex-between">
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Demo So'rovlar</h2>
-      </div>
-
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 24 }}>Demo So'rovlar</h2>
       <div className="table-container">
         <table>
-          <thead>
-            <tr>
-              <th>Sana</th>
-              <th>Mijoz</th>
-              <th>Kompaniya</th>
-              <th>Aloqa</th>
-              <th>Holat</th>
-              <th>Amallar</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Sana</th><th>Mijoz</th><th>Kompaniya</th><th>Aloqa</th><th>Holat</th><th>Amallar</th></tr></thead>
           <tbody>
-            {leads.map(lead => (
-              <tr key={lead.id}>
-                <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  {new Date(lead.createdAt).toLocaleDateString()}
-                </td>
+            {leads.map(l => (
+              <tr key={l.id}>
+                <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{new Date(l.createdAt).toLocaleDateString()}</td>
+                <td><div style={{ fontWeight: 700 }}>{l.firstName} {l.lastName}</div><div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{l.role}</div></td>
+                <td style={{ fontWeight: 700 }}>{l.companyName}</td>
+                <td><div>{l.phone}</div>{l.telegramUser && <div style={{ color: '#3b82f6', fontSize: '0.85rem' }}>{l.telegramUser}</div>}</td>
+                <td><span className="badge">{l.status}</span></td>
                 <td>
-                  <div style={{ fontWeight: 700 }}>{lead.firstName} {lead.lastName}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{lead.role}</div>
-                </td>
-                <td style={{ fontWeight: 700 }}>{lead.companyName}</td>
-                <td>
-                  <div>{lead.phone}</div>
-                  {lead.telegramUser && <div style={{ color: '#3b82f6', fontSize: '0.85rem' }}>{lead.telegramUser}</div>}
-                </td>
-                <td>{getStatusBadge(lead.status)}</td>
-                <td>
-                  <select 
-                    value={lead.status} 
-                    onChange={e => updateStatus(lead.id, e.target.value)}
-                    style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', padding: '6px', borderRadius: '4px' }}
-                  >
-                    <option value="new">Yangi</option>
-                    <option value="contacted">Bog'lanildi</option>
-                    <option value="demo_done">Demo Qilindi</option>
-                    <option value="closed">Sotildi</option>
-                  </select>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <select value={l.status} onChange={e => updateStatus(l.id, e.target.value)} style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', padding: 6, borderRadius: 4 }}>
+                      <option value="new">Yangi</option><option value="contacted">Bog'lanildi</option><option value="demo_done">Demo Qilindi</option><option value="closed">Yopilgan</option>
+                    </select>
+                    {l.status !== 'closed' && (
+                      <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => openCreateModal(l)}>Workspace Ochish</button>
+                    )}
+                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={async () => { if(confirm("So'rovni o'chirmoqchimisiz?")) { await leadsApi.delete(l.id); load(); } }}>O'chirish</button>
+                  </div>
                 </td>
               </tr>
             ))}
-            {leads.length === 0 && (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '32px' }}>Ma'lumot topilmadi</td></tr>
-            )}
+            {leads.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32 }}>Ma'lumot topilmadi</td></tr>}
           </tbody>
         </table>
       </div>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>{generatedCreds ? 'Workspace Yaratildi!' : 'Workspace Yaratish'}</h2>
+              <button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button>
+            </div>
+            {!generatedCreds ? (
+              <form onSubmit={handleCreateWorkspace}>
+                <div className="form-group">
+                  <label>Mijoz Kompaniyasi</label>
+                  <input readOnly value={selectedLead?.companyName || ''} style={{ background: 'var(--bg)' }} />
+                </div>
+                <div className="form-group">
+                  <label>Workspace Slug (Manzil)</label>
+                  <input required value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))} placeholder="idealprint" />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>printflow.uz/t/{slug || '...'}</span>
+                </div>
+                <div className="form-group">
+                  <label>Tarif (ixtiyoriy)</label>
+                  <select value={planId} onChange={e => setPlanId(e.target.value)} style={{ width: '100%', height: 48, border: '1px solid var(--border)', borderRadius: 6, padding: '0 16px', fontFamily: 'inherit' }}>
+                    <option value="">Tanlanmagan (7 kunlik trial)</option>
+                    {plans.map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
+                  </select>
+                </div>
+                <button className="btn" style={{ width: '100%', height: 48, marginTop: 16 }} disabled={loading}>
+                  {loading ? 'Yaratilmoqda...' : 'Workspace Yaratish'}
+                </button>
+              </form>
+            ) : (
+              <div>
+                <p style={{ marginBottom: 16 }}>Mijoz uchun tizimga kirish ma'lumotlari yaratildi. Ushbu ma'lumotlarni mijozga yuboring:</p>
+                <div className="generated-creds">
+                  <p><strong>URL Manzil:</strong> /t/{generatedCreds.slug}</p>
+                  <p><strong>Login:</strong> {generatedCreds.login}</p>
+                  <p><strong>Parol:</strong> {generatedCreds.password}</p>
+                </div>
+                <button className="btn" style={{ width: '100%', height: 48, marginTop: 16 }} onClick={() => setShowModal(false)}>Yopish</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// --- Main App ---
+
 
 export default function App() {
   const { isAuthenticated, login, logout } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Login onLogin={login} />;
-  }
-
+  if (!isAuthenticated) return <Login onLogin={login} />;
   return (
     <BrowserRouter>
       <Layout onLogout={logout}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/tenants" element={<Tenants />} />
+          <Route path="/plans" element={<Plans />} />
+          <Route path="/payments" element={<Payments />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

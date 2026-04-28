@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package } from 'lucide-react';
 import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi } from '../api';
 import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
 import NumberInput from '../components/NumberInput';
 
 const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
@@ -246,14 +247,31 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         canManageEmployees: "Xodimlarni boshqarish",
         canManageRoles: "Lavozimlarni boshqarish",
         canViewSalary: "Maoshlarni ko'rish",
+        canManageAdmins: "Ma'murlarni boshqarish",
       }
     }
   ];
 
+  // Filter permissionGroups based on tenantFeatures
+  const tf = currentUser.tenantFeatures || {};
+  const filteredPermissionGroups = permissionGroups.map(group => {
+    const filteredPerms: Record<string, string> = {};
+    Object.entries(group.permissions).forEach(([key, label]) => {
+      // If the plan has this feature explicitly checked, OR if the plan is old/empty (fallback)
+      // Actually, if we want strict SaaS, we only show it if tf[key] is true.
+      // But for basic keys like canManageRoles, maybe they are always true? 
+      // In the new system, Admin MUST check them. Let's strictly check tf[key].
+      if (tf[key] === true || tf[key] === "true") {
+        filteredPerms[key] = label;
+      }
+    });
+    return { ...group, permissions: filteredPerms };
+  }).filter(group => Object.keys(group.permissions).length > 0);
+
   const allPermissionKeys = permissionGroups.flatMap(g => Object.keys(g.permissions));
   const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null);
 
-  if (isLoading) return <div className="p-20 text-center font-black text-slate-400 animate-pulse">YUKLANMOQDA...</div>;
+  if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
     <div className="space-y-10 pb-20 animate-fade-in">
@@ -271,11 +289,11 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
             <div>
               <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-                 <Shield className="text-indigo-600" size={24} /> Lavozimlar & Ruxsatlar
+                 <Shield className="text-orange-600" size={24} /> Lavozimlar & Ruxsatlar
               </h3>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Sahifalar va funksiyalarga dostupni sozlash</p>
             </div>
-            <button className="bg-indigo-600 hover:bg-indigo-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2" onClick={() => setIsRoleModalOpen(true)}>
+            <button className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2" onClick={() => setIsRoleModalOpen(true)}>
               <Plus size={16} strokeWidth={3} /> Yangi Lavozim
             </button>
           </div>
@@ -287,12 +305,12 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               const dataSource = isEditing ? editRoleData : role;
 
               return (
-                <div key={role.id} className={`bg-white rounded-3xl border shadow-sm overflow-hidden transition-all duration-300 ${isEditing ? 'border-indigo-400 ring-4 ring-indigo-50' : 'border-slate-200 hover:border-slate-300 hover:shadow-lg'}`}>
+                <div key={role.id} className={`bg-white rounded-3xl border shadow-sm overflow-hidden transition-all duration-300 ${isEditing ? 'border-orange-400 ring-4 ring-orange-50' : 'border-slate-200 hover:border-slate-300 hover:shadow-lg'}`}>
                   
                   {/* Role header */}
                   <div className={`flex items-center justify-between p-5 cursor-pointer ${isExpanded ? 'bg-slate-50/50' : ''}`} onClick={() => !isEditing && setExpandedRoleId(isExpanded ? null : role.id)}>
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center font-black text-base border border-indigo-200 shadow-inner">
+                      <div className="w-10 h-10 bg-orange-100 text-orange-700 rounded-xl flex items-center justify-center font-black text-base border border-orange-200 shadow-inner">
                         {role.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -317,13 +335,13 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEditRole(role)} className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-indigo-500 hover:text-white hover:shadow-md transition-all active:scale-90">
+                          <button onClick={() => startEditRole(role)} className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-orange-500 hover:text-white hover:shadow-md transition-all active:scale-90">
                             <Edit3 size={14} />
                           </button>
                           <button onClick={() => handleDeleteRole(role.id)} className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white hover:shadow-md transition-all active:scale-90">
                             <Trash2 size={14} />
                           </button>
-                          <button onClick={() => setExpandedRoleId(isExpanded ? null : role.id)} className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${isExpanded ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                          <button onClick={() => setExpandedRoleId(isExpanded ? null : role.id)} className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${isExpanded ? 'bg-orange-600 text-white shadow-md shadow-orange-500/30' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
                             {isExpanded ? <ChevronUp size={16} strokeWidth={3} /> : <ChevronDown size={16} strokeWidth={3} />}
                           </button>
                         </>
@@ -345,7 +363,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                               {Object.entries(group.permissions).map(([key, label]) => (
                                 <div key={key} className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${
                                   isEditing 
-                                    ? 'bg-white cursor-pointer hover:border-indigo-400 hover:shadow-md border-slate-200' 
+                                    ? 'bg-white cursor-pointer hover:border-orange-400 hover:shadow-md border-slate-200' 
                                     : 'bg-slate-50 border-slate-50 opacity-80'
                                 }`}
                                 onClick={() => {
@@ -373,11 +391,11 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                       </div>
                       
                       {isEditing && (
-                        <div className="mt-10 p-5 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-start gap-4">
-                           <AlertCircle className="text-indigo-500 mt-1" size={20} />
+                        <div className="mt-10 p-5 bg-orange-50 rounded-2xl border border-orange-100 flex items-start gap-4">
+                           <AlertCircle className="text-orange-500 mt-1" size={20} />
                            <div className="space-y-1">
-                              <p className="text-xs font-black text-indigo-900 uppercase">Ruxsatlarni tahrirlash</p>
-                              <p className="text-[11px] font-bold text-indigo-700">Tugmalarni bosish orqali ruxsatlarni yoqishingiz yoki o'chirishingiz mumkin. Saqlash tugmasini bosishni unutmang.</p>
+                              <p className="text-xs font-black text-orange-900 uppercase">Ruxsatlarni tahrirlash</p>
+                              <p className="text-[11px] font-bold text-orange-700">Tugmalarni bosish orqali ruxsatlarni yoqishingiz yoki o'chirishingiz mumkin. Saqlash tugmasini bosishni unutmang.</p>
                            </div>
                         </div>
                       )}
@@ -405,7 +423,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                        placeholder="Yangi usul nomi (Click, Uzcard...)"
                     />
                  </div>
-                 <button type="submit" className="h-12 px-10 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs uppercase tracking-[0.1em] rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5 active:scale-95">
+                 <button type="submit" className="h-12 px-10 bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-[0.1em] rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 active:scale-95">
                     <Plus size={18} strokeWidth={3}/> QO'SHISH
                  </button>
               </form>
@@ -542,30 +560,30 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                  {kanbanColumns.map(col => {
                    const isEditingCol = editingColId === col.id;
                    return (
-                      <div key={col.id} className={`group p-5 rounded-2xl border-2 transition-all duration-300 ${isEditingCol ? 'bg-white border-sky-400 shadow-lg scale-105' : 'bg-slate-50/50 border-transparent hover:bg-white hover:border-sky-100 hover:shadow-md'}`}>
+                      <div key={col.id} className={`group p-5 rounded-2xl border-2 transition-all duration-300 ${isEditingCol ? 'bg-white border-orange-400 shadow-lg scale-105' : 'bg-slate-50/50 border-transparent hover:bg-white hover:border-orange-100 hover:shadow-md'}`}>
                          {isEditingCol ? (
                            <div className="space-y-3">
-                              <label className="text-[9px] font-black text-sky-500 uppercase tracking-widest">Bosqich nomi</label>
+                              <label className="text-[9px] font-black text-orange-500 uppercase tracking-widest">Bosqich nomi</label>
                               <input 
                                 type="text" 
                                 autoFocus
                                 value={editColTitle}
                                 onChange={(e) => setEditColTitle(e.target.value)}
-                                className="w-full h-10 text-xs font-black bg-white border-2 border-sky-100 rounded-xl px-4 outline-none focus:border-sky-500 uppercase"
+                                className="w-full h-10 text-xs font-black bg-white border-2 border-orange-100 rounded-xl px-4 outline-none focus:border-orange-500 uppercase"
                               />
                               <div className="flex gap-2">
-                                 <button onClick={() => handleUpdateColumn(col.id)} className="flex-1 h-9 bg-sky-500 text-white text-[10px] font-black rounded-lg hover:bg-sky-600 transition-all uppercase tracking-widest">SAQLASH</button>
+                                 <button onClick={() => handleUpdateColumn(col.id)} className="flex-1 h-9 bg-orange-500 text-white text-[10px] font-black rounded-lg hover:bg-orange-600 transition-all uppercase tracking-widest">SAQLASH</button>
                                  <button onClick={() => setEditingColId(null)} className="flex-1 h-9 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg hover:bg-slate-200 uppercase tracking-widest">BEKOR</button>
                               </div>
                            </div>
                          ) : (
                            <div className="flex flex-col gap-3">
                               <div className="flex justify-between items-start">
-                                 <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-sky-500 shadow-sm border border-slate-100 group-hover:bg-sky-500 group-hover:text-white transition-all">
+                                 <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-orange-500 shadow-sm border border-slate-100 group-hover:bg-orange-500 group-hover:text-white transition-all">
                                     <LayoutGrid size={16}/>
                                  </div>
                                  <div className="flex gap-1">
-                                    <button onClick={() => { setEditingColId(col.id); setEditColTitle(col.title); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-sky-500 hover:border-sky-200 border border-slate-100 flex items-center justify-center transition-all">
+                                    <button onClick={() => { setEditingColId(col.id); setEditColTitle(col.title); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-orange-500 hover:border-orange-200 border border-slate-100 flex items-center justify-center transition-all">
                                        <Edit3 size={12}/>
                                     </button>
                                     <button onClick={() => { setConfirmModal({ isOpen: true, title: "Bosqichni o'chirish", message: "${col.title} bosqichi o'chirilsinmi?", onConfirm: () => { tasksApi.deleteColumn(col.id).then(fetchData); setConfirmModal(null); } }); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:border-rose-200 border border-slate-100 flex items-center justify-center transition-all">
@@ -602,7 +620,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         <form onSubmit={handleAddRole} className="space-y-10">
            <div className="space-y-3">
               <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Lavozim Nomi (Masalan: Admin, Katta Hodim, Manager...)</label>
-              <input type="text" required value={newRole.name} onChange={(e) => setNewRole({...newRole, name: e.target.value})} className="w-full h-16 text-2xl font-black bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 outline-none focus:bg-white focus:border-indigo-500 transition-all shadow-inner placeholder:text-slate-200" placeholder="Manager..." />
+              <input type="text" required value={newRole.name} onChange={(e) => setNewRole({...newRole, name: e.target.value})} className="w-full h-16 text-2xl font-black bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 outline-none focus:bg-white focus:border-orange-500 transition-all shadow-inner placeholder:text-slate-200" placeholder="Manager..." />
            </div>
            
            <div className="space-y-10">
@@ -619,7 +637,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                              type="checkbox" 
                              checked={(newRole as any)[key]} 
                              onChange={(e) => setNewRole({...newRole, [key]: e.target.checked})}
-                             className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                             className="h-5 w-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                           />
                           <span className="text-[12px] font-black uppercase tracking-tight text-slate-800">
                              {label}
@@ -633,7 +651,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
            <div className="flex justify-end gap-4 pt-10 border-t border-slate-100 mt-10">
              <button type="button" className="h-14 px-10 text-xs font-black uppercase tracking-widest bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all font-black" onClick={() => setIsRoleModalOpen(false)}>BEKOR QILISH</button>
-             <button type="submit" className="h-14 px-16 text-sm font-black tracking-[0.1em] bg-gradient-to-r from-indigo-500 to-indigo-700 text-white rounded-2xl shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all active:translate-y-0 uppercase">YARATISH VA SAQLASH</button>
+             <button type="submit" className="h-14 px-16 text-sm font-black tracking-[0.1em] bg-gradient-to-r from-orange-500 to-orange-700 text-white rounded-2xl shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-1 transition-all active:translate-y-0 uppercase">YARATISH VA SAQLASH</button>
            </div>
         </form>
       </Modal>
@@ -651,7 +669,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               <button onClick={() => setConfirmModal(null)} className="flex-1 btn-outline h-12">BEKOR QILISH</button>
               <button 
                 onClick={confirmModal.onConfirm} 
-                className="flex-1 btn-primary bg-indigo-600 text-white h-12 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-500/20"
+                className="flex-1 btn-primary bg-orange-600 text-white h-12 rounded-xl font-black uppercase tracking-widest hover:bg-orange-700 shadow-lg shadow-orange-500/20"
               >
                 TASDIQLASH
               </button>
@@ -811,13 +829,13 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
         <div>
           <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Layers className="text-violet-600" size={24} /> Xizmatlar Katalogi
+            <Layers className="text-orange-600" size={24} /> Xizmatlar Katalogi
           </h3>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Pricing Engine — xizmat va opsiyalar narxlari</p>
         </div>
         {canManage && (
           <button
-            className="bg-violet-600 hover:bg-violet-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-violet-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2"
+            className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2"
             onClick={() => setIsAddOpen(true)}
           >
             <Plus size={16} strokeWidth={3} /> Yangi Xizmat
@@ -836,11 +854,11 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           const isExpanded = expandedId === svc.id;
           const isEditing = editSvcId === svc.id;
           return (
-            <div key={svc.id} className={`bg-white rounded-3xl border shadow-sm overflow-hidden transition-all ${isEditing ? 'border-violet-400 ring-4 ring-violet-50' : 'border-slate-200 hover:shadow-md hover:border-slate-300'}`}>
+            <div key={svc.id} className={`bg-white rounded-3xl border shadow-sm overflow-hidden transition-all ${isEditing ? 'border-orange-400 ring-4 ring-orange-50' : 'border-slate-200 hover:shadow-md hover:border-slate-300'}`}>
               {/* Service header */}
               <div className="flex items-center justify-between p-6 cursor-pointer" onClick={() => !isEditing && setExpandedId(isExpanded ? null : svc.id)}>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-violet-100 text-violet-700 rounded-2xl flex items-center justify-center font-black text-lg border border-violet-200">
+                  <div className="w-12 h-12 bg-orange-100 text-orange-700 rounded-2xl flex items-center justify-center font-black text-lg border border-orange-200">
                     {svc.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -900,7 +918,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {svc.options.map((opt: any) => (
-                          <div key={opt.id} className="group flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 hover:border-violet-200 hover:bg-violet-50 transition-all">
+                          <div key={opt.id} className="group flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 hover:border-orange-200 hover:bg-orange-50 transition-all">
                             <div>
                               <p className="text-[8px] font-black text-slate-400 uppercase leading-none mb-1">{opt.name}</p>
                               <p className="text-xs font-black text-slate-800">{opt.value}</p>
@@ -1001,7 +1019,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
       {/* Add Option Modal */}
       <Modal isOpen={isOptionOpen} onClose={() => setIsOptionOpen(false)} title={`Optsiya: ${selectedService?.name || ''}`}>
         <form onSubmit={handleAddOption} className="space-y-5">
-          <div className="bg-violet-50 border border-violet-100 p-4 rounded-2xl text-[11px] font-bold text-violet-700">
+          <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-[11px] font-bold text-orange-700">
             Asosiy narx: <strong>{Number(selectedService?.basePrice || 0).toLocaleString()} UZS</strong> / {selectedService?.unit}
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -1015,41 +1033,45 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Ustama Foizi (%)</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Yakuniy Narx (UZS)</label>
             <div className="relative">
-              <input 
-                type="number" 
-                required 
-                value={newOptionForm.percentageMarkup} 
-                onChange={e => setNewOptionForm(f => ({ ...f, percentageMarkup: e.target.value }))} 
-                className={`input-minimal font-black text-2xl h-14 ${Number(newOptionForm.percentageMarkup) >= 0 ? 'text-emerald-600 border-emerald-100' : 'text-rose-600 border-rose-100'}`} 
-                placeholder="0" 
+              <NumberInput
+                value={newOptionForm.percentageMarkup === '' ? '' : String(Number(selectedService?.basePrice || 0) + Math.round((Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)) / 1000) * 1000)}
+                onChange={(num) => {
+                  const base = Number(selectedService?.basePrice || 0);
+                  if (base > 0 && num !== undefined) {
+                    const markup = ((num / base) - 1) * 100;
+                    setNewOptionForm(f => ({ ...f, percentageMarkup: String(markup) }));
+                  }
+                }}
+                placeholder="0"
+                className="input-minimal font-black text-2xl h-14 text-orange-600"
               />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-2xl text-slate-300">%</div>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-2xl text-slate-200">UZS</div>
             </div>
             
-            <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-               <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400 mb-2">
-                  <span>Hisoblangan Ustama:</span>
-                  <span className="text-slate-800">
-                    {Math.round((Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)) / 1000) * 1000} UZS
-                  </span>
+            <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
+               <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Ustama Foizi:</p>
+                  <p className={`text-lg font-black ${Number(newOptionForm.percentageMarkup) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {Number(newOptionForm.percentageMarkup) > 0 ? '+' : ''}{Math.round(Number(newOptionForm.percentageMarkup) * 100) / 100}%
+                  </p>
                </div>
-               <div className="flex justify-between items-center text-[11px] font-black uppercase text-slate-500">
-                  <span>Yakuniy Narx:</span>
-                  <span className="text-violet-600 text-lg">
-                    {(Number(selectedService?.basePrice || 0) + Math.round((Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)) / 1000) * 1000).toLocaleString()} UZS
-                  </span>
+               <div className="text-right space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Narx Farqi:</p>
+                  <p className={`text-lg font-black ${Number(newOptionForm.percentageMarkup) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {Number(newOptionForm.percentageMarkup) >= 0 ? '+' : ''}{Math.round((Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)) / 1000) * 1000} UZS
+                  </p>
                </div>
             </div>
             
             <p className="text-[10px] font-bold text-slate-400 mt-3 px-1 italic">
-              * Tizim bazaviy narxga foizni qo'shib, mingliklarga yaxlitlaydi (Yaxlitlash: 1200 → 1000, 1500 → 2000).
+              * Yakuniy narxni yozing, tizim foizni avtomatik hisoblab oladi. Keyinchalik asosiy narx o'zgarganda, bu optsiya foizga qarab moslashadi.
             </p>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" onClick={() => setIsOptionOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-10 bg-violet-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-violet-700 transition-all">Qo'shish</button>
+            <button type="submit" className="h-12 flex-2 px-10 bg-orange-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-orange-700 transition-all">Qo'shish</button>
           </div>
         </form>
       </Modal>
@@ -1111,7 +1133,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
               <button onClick={() => setConfirmModal(null)} className="flex-1 btn-outline h-12">BEKOR</button>
               <button 
                 onClick={confirmModal.onConfirm} 
-                className="flex-1 btn-primary bg-indigo-600 text-white h-12 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-500/20"
+                className="flex-1 btn-primary bg-orange-600 text-white h-12 rounded-xl font-black uppercase tracking-widest hover:bg-orange-700 shadow-lg shadow-orange-500/20"
               >
                 TASDIQLASH
               </button>

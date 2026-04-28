@@ -14,6 +14,20 @@ const api = axios.create({
   withCredentials: true, // httpOnly cookie avtomatik yuboriladi
 });
 
+// Interceptor to handle SUBSCRIPTION_EXPIRED
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 403 && error.response?.data?.message === 'SUBSCRIPTION_EXPIRED') {
+      window.dispatchEvent(new CustomEvent('subscription_expired'));
+    }
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/')) {
+      window.dispatchEvent(new CustomEvent('session_expired'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 // =============================================
 // AUTH — Login, Logout, Session
 // =============================================
@@ -33,6 +47,16 @@ export const authApi = {
   // Super-admin login (alohida panel uchun)
   superAdminLogin: (data: { email: string; password: string }) =>
     api.post('/auth/super-admin/login', data),
+
+  // Birinchi marta kirganda ma'lumotlarni to'ldirish
+  onboarding: (data: {
+    tenantName: string;
+    tenantSlug: string;
+    fullName: string;
+    phone: string;
+    login: string;
+    password?: string;
+  }) => api.post('/auth/onboarding', data),
 };
 
 // =============================================
@@ -213,6 +237,15 @@ export const settingsApi = {
   getAll: () => api.get('/settings'),
   get: (key: string) => api.get(`/settings/${key}`),
   set: (key: string, value: any) => api.post(`/settings/${key}`, value),
+};
+
+// =============================================
+// BILLING
+// =============================================
+export const billingApi = {
+  submitPayment: (data: any) => api.post('/billing/payment', data),
+  getPayments: () => api.get('/billing/payments'),
+  getStatus: () => api.get('/billing/status'),
 };
 
 export default api;

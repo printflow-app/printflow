@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import { customersApi } from '../api';
 import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
 };
 
 const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
-  const p = currentUser.permissions;
+  const p = currentUser.permissions || {};
   const [customers, setCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,7 +70,7 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   }, 0);
   const totalCreditors = customers.filter(c => (c.totalDebt - c.totalPaid) < 0).length;
 
-  if (isLoading) return <div className="p-20 text-center font-black text-slate-400 animate-pulse">MIJOZLAR YUKLANMOQDA...</div>;
+  if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
     <div className="space-y-6">
@@ -96,7 +97,7 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               placeholder="Qidirish..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 transition-all placeholder:text-slate-300 shadow-inner"
+              className="w-full pl-10 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all placeholder:text-slate-300 shadow-inner"
            />
         </div>
       </div>
@@ -115,9 +116,9 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <p className="text-[8px] font-black text-rose-400 uppercase mb-1 tracking-widest">Umumiy Qarzlar</p>
             <h4 className="text-lg font-black text-rose-600 truncate">{formatCurrency(totalDebtAmount)}</h4>
          </div>
-         <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm transition-all hover:shadow-md">
-            <p className="text-[8px] font-black text-indigo-400 uppercase mb-1 tracking-widest">Haqdorlar</p>
-            <h4 className="text-lg font-black text-indigo-600">{totalCreditors}</h4>
+         <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm transition-all hover:shadow-md">
+            <p className="text-[8px] font-black text-orange-400 uppercase mb-1 tracking-widest">Haqdorlar</p>
+            <h4 className="text-lg font-black text-orange-600">{totalCreditors}</h4>
          </div>
       </div>
 
@@ -147,9 +148,9 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                       const tasks = c.tasks || [];
                       return (
                         <React.Fragment key={c.id}>
-                        <tr className={`hover:bg-slate-50/50 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/70 border-b border-indigo-50' : ''}`} onClick={() => toggleExpand(c.id)}>
+                        <tr className={`hover:bg-slate-50/50 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/70 border-b border-orange-50' : ''}`} onClick={() => toggleExpand(c.id)}>
                            <td className="py-3 px-5">
-                              <button className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                              <button className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-sm">
                                 {isExpanded ? <ChevronUp size={12} strokeWidth={3} /> : <ChevronDown size={12} strokeWidth={3} />}
                               </button>
                            </td>
@@ -167,7 +168,7 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                            <td className="px-5">
                               <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-tight ${
                                 balance > 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 
-                                balance < 0 ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 
+                                balance < 0 ? 'bg-orange-50 text-orange-600 border-orange-100' : 
                                 'bg-emerald-50 text-emerald-600 border-emerald-100'
                               }`}>
                                  {balance > 0 ? `${formatCurrency(balance)}` : 
@@ -191,7 +192,7 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                                   
                                   {/* Buyurtmalar (Xizmatlar) */}
                                   <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                                    <h5 className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <h5 className="text-xs font-black text-orange-600 uppercase tracking-widest mb-4 flex items-center gap-2">
                                       <FileText size={14} /> Buyurtmalar (Xizmatlar)
                                     </h5>
                                     {tasks.length === 0 ? (

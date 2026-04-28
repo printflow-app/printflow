@@ -7,16 +7,13 @@ import {
   Body,
   Param,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
+import { Public } from '../../common/decorators/public.decorator';
 
-// =============================================
-// TENANTS CONTROLLER — Super-Admin only
-// Workspace (tenant) CRUD management
-// All routes protected by SuperAdminGuard
-// =============================================
-
+@Public()
 @Controller('super-admin/tenants')
 @UseGuards(SuperAdminGuard)
 export class TenantsController {
@@ -25,6 +22,38 @@ export class TenantsController {
   @Get()
   findAll() {
     return this.tenantsService.findAll();
+  }
+
+  @Get('stats/overview')
+  getStats() {
+    return this.tenantsService.getStats();
+  }
+
+  @Get('payments/pending')
+  getPendingPayments() {
+    return this.tenantsService.getPendingPayments();
+  }
+
+  @Get('payments/all')
+  getAllPayments() {
+    return this.tenantsService.getAllPayments();
+  }
+
+  @Post('payments/:id/approve')
+  approvePayment(@Param('id') id: string, @Req() req: any) {
+    const superAdminId = req.superAdmin?.sub || 'system';
+    return this.tenantsService.approvePayment(id, superAdminId);
+  }
+
+  @Post('payments/:id/reject')
+  rejectPayment(@Param('id') id: string) {
+    return this.tenantsService.rejectPayment(id);
+  }
+
+  // Create workspace from a Lead (So'rov)
+  @Post('from-lead')
+  createFromLead(@Body() body: { leadId: string; slug: string; planId?: string }) {
+    return this.tenantsService.createFromLead(body);
   }
 
   @Get(':id')
@@ -38,7 +67,7 @@ export class TenantsController {
     body: {
       name: string;
       slug: string;
-      plan?: string;
+      planId?: string;
       trialDays?: number;
       adminEmail: string;
       adminPassword: string;
@@ -50,7 +79,7 @@ export class TenantsController {
   @Put(':id')
   update(
     @Param('id') id: string,
-    @Body() body: { name?: string; plan?: string; isActive?: boolean },
+    @Body() body: { name?: string; planId?: string; isActive?: boolean; status?: string },
   ) {
     return this.tenantsService.update(id, body);
   }
@@ -58,10 +87,5 @@ export class TenantsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tenantsService.remove(id);
-  }
-
-  @Get('stats/overview')
-  getStats() {
-    return this.tenantsService.getStats();
   }
 }

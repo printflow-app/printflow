@@ -3,6 +3,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { QrCode, Clock, RefreshCw, UserCheck, Timer, Calendar, CheckCircle2, AlertCircle, LogIn, LogOut, Users } from 'lucide-react';
 import { attendanceApi, employeesApi, settingsApi } from '../api';
 import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 interface AttendanceRecord {
   id: string;
@@ -203,11 +204,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const timerSeconds = timeLeft % 60;
   const timerPercent = (timeLeft / (TOKEN_LIFETIME_MS / 1000)) * 100;
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-full p-20">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
-    </div>
-  );
+  if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
     <div className="space-y-6 pb-16 animate-fade-in">
@@ -223,7 +220,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <QrCode size={22} className="text-indigo-500" /> Davomat Tizimi
+            <QrCode size={22} className="text-orange-500" /> Davomat Tizimi
           </h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
             QR-asosli kirim/chiqim nazorati
@@ -243,14 +240,14 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsSettingsModalOpen(true)}
-                className="w-11 h-11 flex items-center justify-center bg-slate-100 text-slate-500 rounded-2xl border border-slate-200 hover:bg-white hover:text-indigo-600 hover:border-indigo-200 transition-all"
+                className="w-11 h-11 flex items-center justify-center bg-slate-100 text-slate-500 rounded-2xl border border-slate-200 hover:bg-white hover:text-orange-600 hover:border-orange-200 transition-all"
                 title="Ish vaqti sozlamalari"
               >
                 <Clock size={18} />
               </button>
               <button
                 onClick={() => setIsScanModalOpen(true)}
-                className="flex items-center gap-2 h-11 px-6 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all"
+                className="flex items-center gap-2 h-11 px-6 bg-orange-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
               >
                 <UserCheck size={16} /> Belgilash
               </button>
@@ -266,7 +263,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex flex-col items-center gap-5">
             <div className="text-center">
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight flex items-center justify-center gap-2">
-                <QrCode size={16} className="text-indigo-500" /> Joriy QR Kod
+                <QrCode size={16} className="text-orange-500" /> Joriy QR Kod
               </h3>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                 Xodim skaner qiladi
@@ -275,7 +272,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
             {/* QR Code */}
             {tokenData ? (
-              <div className="relative p-4 bg-white rounded-2xl border-4 border-indigo-100 shadow-inner">
+              <div className="relative p-4 bg-white rounded-2xl border-4 border-orange-100 shadow-inner">
                 {(() => {
                   const currentSiteUrl = window.location.origin;
                   const finalQrUrl = `${currentSiteUrl}/attendance/scan?token=${tokenData.token}`;
@@ -306,14 +303,14 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
                   <Timer size={10} /> Muddat tugashiga
                 </span>
-                <span className={`text-base font-black tabular-nums ${timeLeft < 60 ? 'text-rose-500 animate-pulse' : 'text-indigo-600'}`}>
+                <span className={`text-base font-black tabular-nums ${timeLeft < 60 ? 'text-rose-500 animate-pulse' : 'text-orange-600'}`}>
                   {String(timerMinutes).padStart(2, '0')}:{String(timerSeconds).padStart(2, '0')}
                 </span>
               </div>
               {/* Progress bar */}
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-1000 ${timerPercent > 30 ? 'bg-indigo-500' : timerPercent > 10 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                  className={`h-full rounded-full transition-all duration-1000 ${timerPercent > 30 ? 'bg-orange-500' : timerPercent > 10 ? 'bg-amber-500' : 'bg-rose-500'}`}
                   style={{ width: `${timerPercent}%` }}
                 />
               </div>
@@ -321,7 +318,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
             <button
               onClick={handleRefreshToken}
-              className="flex items-center gap-1.5 w-full h-10 justify-center bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-500 hover:text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+              className="flex items-center gap-1.5 w-full h-10 justify-center bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-slate-500 hover:text-orange-600 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
             >
               <RefreshCw size={12} /> Yangi Kod
             </button>
@@ -339,7 +336,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <div className="p-4 border-b border-slate-100 flex justify-between items-center">
             <div>
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                <Users size={14} className="text-indigo-400" />
+                <Users size={14} className="text-orange-400" />
                 Davomat Jurnali
               </h3>
               <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">
@@ -351,8 +348,8 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                 {records.filter(r => r.checkIn).length}
               </div>
-              <div className="flex items-center gap-1 text-[9px] font-black text-sky-600">
-                <div className="w-1.5 h-1.5 rounded-full bg-sky-500"></div>
+              <div className="flex items-center gap-1 text-[9px] font-black text-orange-600">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
                 {records.filter(r => r.checkOut).length}
               </div>
               <div className="flex items-center gap-1 text-[9px] font-black text-rose-500">
@@ -386,7 +383,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     <tr key={record.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 font-black text-xs flex items-center justify-center border border-indigo-200">
+                          <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center border border-orange-200">
                             {record.employee?.fullName?.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -426,7 +423,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         {!record.checkIn ? (
                           <span className="text-slate-300 text-[8px] font-black uppercase">Kelmagan</span>
                         ) : !record.checkOut ? (
-                          <span className="text-indigo-600 text-[8px] font-black uppercase animate-pulse">Ishda</span>
+                          <span className="text-orange-600 text-[8px] font-black uppercase animate-pulse">Ishda</span>
                         ) : (
                           <span className="text-emerald-600 text-[8px] font-black uppercase">Tugallandi</span>
                         )}
@@ -446,7 +443,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div>
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                <Calendar size={14} className="text-indigo-400" />
+                <Calendar size={14} className="text-orange-400" />
                 Oylik Davomat Jadvali
               </h3>
             </div>
@@ -587,8 +584,8 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                       }}
                       className={`h-10 rounded-xl text-[9px] font-black uppercase transition-all border-2 ${
                         isActive 
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200' 
-                          : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200'
+                          ? 'bg-orange-600 border-orange-600 text-white shadow-md shadow-orange-200' 
+                          : 'bg-white border-slate-100 text-slate-400 hover:border-orange-200'
                       }`}
                     >
                       {day}
@@ -600,7 +597,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
            <div className="flex gap-3">
              <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="btn-outline flex-1 h-12 rounded-xl text-[10px] uppercase font-black tracking-widest">Bekor Berish</button>
-             <button type="submit" className="btn-primary flex-1 h-12 rounded-xl text-[10px] uppercase font-black tracking-widest bg-indigo-600 border-none shadow-indigo-200">Saqlash</button>
+             <button type="submit" className="btn-primary flex-1 h-12 rounded-xl text-[10px] uppercase font-black tracking-widest bg-orange-600 border-none shadow-orange-200">Saqlash</button>
            </div>
         </form>
       </Modal>
@@ -658,7 +655,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <button
               type="button"
               onClick={() => setManualToken(tokenData.token)}
-              className="w-full py-2 text-[9px] font-black text-indigo-600 uppercase tracking-widest border border-dashed border-indigo-200 rounded-lg hover:bg-white transition-colors"
+              className="w-full py-2 text-[9px] font-black text-orange-600 uppercase tracking-widest border border-dashed border-orange-200 rounded-lg hover:bg-white transition-colors"
             >
               Joriy kodni to'ldirish
             </button>

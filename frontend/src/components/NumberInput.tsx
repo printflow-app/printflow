@@ -47,13 +47,13 @@ const NumberInput: React.FC<NumberInputProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     if (allowDecimal) {
-      // Allow digits, dots and spaces
       const cleaned = raw.replace(/[^\d.\s]/g, '');
-      const num = parseFloat(cleaned.replace(/\s/g, '')) || 0;
+      const numString = cleaned.replace(/\s/g, '');
+      const num = numString === '' ? 0 : parseFloat(numString);
       onChange(num, cleaned);
     } else {
       const digitsOnly = raw.replace(/\D/g, '');
-      const num = parseInt(digitsOnly, 10) || 0;
+      const num = digitsOnly === '' ? 0 : parseInt(digitsOnly, 10);
       onChange(num, formatNum(digitsOnly));
     }
   };

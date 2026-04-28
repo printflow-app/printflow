@@ -30,21 +30,8 @@ async function bootstrap() {
     }),
   );
 
-  // CORS — restricted to allowed origins only
-  // CORS kelib chiqqan domenlarni qat'iy cheklash (origin: true emas!)
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
-    .split(',')
-    .map((o) => o.trim());
-
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, bot)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error(`CORS: ${origin} ruxsat etilmagan`));
-    },
+    origin: true, // Allow all for dev
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true, // Required for cookies
   });

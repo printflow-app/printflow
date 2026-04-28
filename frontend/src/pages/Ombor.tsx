@@ -6,6 +6,7 @@ import {
 import { inventoryApi, servicesApi } from '../api';
 import Modal from '../components/Modal';
 import NumberInput from '../components/NumberInput';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { Search, Layers, Calculator, Save } from 'lucide-react';
 
 interface Material {
@@ -205,11 +206,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   const lowCount = materials.filter(isLow).length;
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-full p-20">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
-    </div>
-  );
+  if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
     <div className="space-y-6 pb-16 animate-fade-in">
@@ -244,7 +241,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Jami Materiallar', value: materials.length, icon: Package, color: 'indigo', bg: 'bg-indigo-50/50', border: 'border-indigo-100', text: 'text-indigo-600' },
+          { label: 'Jami Materiallar', value: materials.length, icon: Package, color: 'indigo', bg: 'bg-orange-50/50', border: 'border-orange-100', text: 'text-orange-600' },
           { label: 'Faol (yetarli)', value: materials.filter(m => !isLow(m) && !isCritical(m)).length, icon: TrendingUp, color: 'emerald', bg: 'bg-emerald-50/50', border: 'border-emerald-100', text: 'text-emerald-600' },
           { label: 'Band (Reserved)', value: materials.reduce((acc, m) => acc + (m.reservedStock > 0 ? 1 : 0), 0), icon: ArrowDownCircle, color: 'sky', bg: 'bg-sky-50/50', border: 'border-sky-100', text: 'text-sky-600' },
           { label: 'Kam qolgan', value: lowCount, icon: TrendingDown, color: 'amber', bg: 'bg-amber-50/50', border: 'border-amber-100', text: 'text-amber-600' },

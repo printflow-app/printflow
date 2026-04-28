@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lock, User as UserIcon, Building2, Eye, EyeOff, Printer } from 'lucide-react';
 import { authApi } from '../api';
 import { buildUser, User } from '../App';
+import logo from '../assets/logo.png';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -79,8 +80,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="w-20 h-20 mx-auto bg-[#FF6B00] flex items-center justify-center mb-6 shadow-2xl shadow-orange-500/30 hover:scale-105 transition-transform duration-300">
-            <Printer className="w-10 h-10 text-white" strokeWidth={2} />
+          <div className="relative w-24 h-24 mx-auto mb-6 group">
+            <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl group-hover:bg-[#FF6B00]/20 transition-all duration-500" />
+            <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain hover:scale-110 transition-transform duration-300" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-slate-800 mb-1 uppercase">
             Print<span className="text-[#FF6B00]">Flow</span>

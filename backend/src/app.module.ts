@@ -11,6 +11,7 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 
 // Guards & Interceptors
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { FeatureGuard } from './common/guards/feature.guard';
 import { TenantInterceptor } from './common/tenant/tenant.interceptor';
 
 // Existing feature modules
@@ -26,6 +27,9 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { FinanceModule } from './modules/finance/finance.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { PlansModule } from './modules/plans/plans.module';
+import { LeadsModule } from './modules/leads/leads.module';
 
 // =============================================
 // APP MODULE — PrintFlow Multi-Tenant SaaS
@@ -49,7 +53,7 @@ import { FinanceModule } from './modules/finance/finance.module';
     ]),
 
     // JWT module — needed for JwtAuthGuard injection
-    JwtModule.register({}),
+    JwtModule.register({ global: true }),
 
     // Infrastructure
     PrismaModule,
@@ -69,6 +73,9 @@ import { FinanceModule } from './modules/finance/finance.module';
     InventoryModule,
     AttendanceModule,
     SettingsModule,
+    BillingModule,
+    PlansModule,
+    LeadsModule,
   ],
   providers: [
     // Global rate limiting guard
@@ -82,6 +89,12 @@ import { FinanceModule } from './modules/finance/finance.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+
+    // Global Feature guard
+    {
+      provide: APP_GUARD,
+      useClass: FeatureGuard,
     },
 
     // Global tenant interceptor — activates AsyncLocalStorage scope

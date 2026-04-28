@@ -8,6 +8,7 @@ import { tasksApi, employeesApi, paymentTypesApi, customersApi, servicesApi } fr
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import NumberInput from '../components/NumberInput';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 interface Task {
   id: string;
@@ -37,7 +38,7 @@ interface Column {
 }
 
 const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
-  const p = currentUser.permissions;
+  const p = currentUser.permissions || {};
 
   const [employees, setEmployees] = useState<any[]>([]);
   const [columns, setColumns] = useState<Column[]>([]);
@@ -426,7 +427,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
   };
 
-  if (isLoading) return <div className="flex items-center justify-center h-full sm:p-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div></div>;
+  if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
     <div className="space-y-4 sm:space-y-6 flex flex-col h-full animate-fade-in">
@@ -447,11 +448,11 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </div>
         <div className="flex items-center gap-2">
           {p.canManageColumns && (
-            <button onClick={() => setIsNewColumnModalOpen(true)} className="flex-1 sm:flex-none border-2 border-dashed border-slate-200 h-9 px-4 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-sky-400 hover:text-sky-500 transition-all">
+            <button onClick={() => setIsNewColumnModalOpen(true)} className="flex-1 sm:flex-none border-2 border-dashed border-slate-200 h-9 px-4 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all">
               + BOSQICH
             </button>
           )}
-          <button onClick={() => openNewTaskModal()} className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-6 bg-sky-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-sky-500/20 hover:bg-sky-700 transition-all hover:-translate-y-0.5">
+          <button onClick={() => openNewTaskModal()} className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-6 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all hover:-translate-y-0.5">
             <Plus size={14} strokeWidth={3} /> BUYURTMA
           </button>
         </div>
@@ -477,7 +478,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 {/* Column Header */}
                 <div className="flex justify-between items-center px-3 mb-3 mt-1 group">
                   <div className="flex items-center gap-1.5 flex-1 pr-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-sky-500"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
                     <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-widest truncate">{col.title}</h3>
                     <span className="bg-white text-slate-500 text-[9px] font-black px-1.5 py-0.5 rounded-md border border-slate-200/50 shadow-sm">{colTasks.length}</span>
                   </div>
@@ -494,10 +495,10 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                       draggable
                       onDragStart={(e) => onTaskDragStart(e, task.id)}
                       onClick={() => openDetailModal(task)}
-                      className="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/60 hover:border-sky-400 hover:shadow-md hover:shadow-sky-500/5 transition-all cursor-pointer group animate-fade-in flex flex-col"
+                      className="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200/60 hover:border-orange-400 hover:shadow-md hover:shadow-orange-500/5 transition-all cursor-pointer group animate-fade-in flex flex-col"
                     >
-                      <h4 className="font-black text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-sky-700 transition-colors uppercase tracking-tight line-clamp-2">
-                        {task.orderName && <span className="text-sky-600">{task.orderName} — </span>}
+                      <h4 className="font-black text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-orange-700 transition-colors uppercase tracking-tight line-clamp-2">
+                        {task.orderName && <span className="text-orange-600">{task.orderName} — </span>}
                         {task.title}
                       </h4>
                       <p className="text-[10px] font-medium text-slate-500 mb-3 line-clamp-2 leading-normal italic">{task.description}</p>
@@ -555,7 +556,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                           {parseJson(task.assignees).map((id: string) => {
                             const emp = employees.find(e => e.id === id);
                             return (
-                              <div key={id} title={emp?.fullName} className="w-5 h-5 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[9px] font-black text-indigo-500 shadow-sm">
+                              <div key={id} title={emp?.fullName} className="w-5 h-5 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[9px] font-black text-orange-500 shadow-sm">
                                 {emp?.fullName?.charAt(0).toUpperCase() || '?'}
                               </div>
                             );
@@ -579,7 +580,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
         {/* Floating Add Column Button at the end */}
         {p.canManageColumns && (
-          <button onClick={() => setIsNewColumnModalOpen(true)} className="min-w-[280px] h-20 border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 text-slate-400 hover:border-sky-400 hover:text-sky-500 hover:bg-sky-50/30 transition-all group shrink-0">
+          <button onClick={() => setIsNewColumnModalOpen(true)} className="min-w-[280px] h-20 border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 text-slate-400 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/30 transition-all group shrink-0">
             <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
             <span className="font-black text-[11px] uppercase tracking-widest">Yangi Bosqich</span>
           </button>
@@ -639,7 +640,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-black text-slate-800 uppercase tracking-tight">{it.title}</span>
-                        <span className="text-[9px] font-black bg-violet-50 text-violet-600 px-2 py-0.5 rounded uppercase">x {it.quantity}</span>
+                        <span className="text-[9px] font-black bg-orange-50 text-orange-600 px-2 py-0.5 rounded uppercase">x {it.quantity}</span>
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 mt-0.5 italic">{it.optionsSummary}</p>
                     </div>
@@ -655,8 +656,8 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             )}
 
             {/* Add Item Form */}
-            <div className="bg-violet-50/50 border border-violet-100 rounded-3xl p-5 space-y-4">
-              <h4 className="text-[9px] font-black text-violet-600 uppercase tracking-widest flex items-center gap-2 mb-2">
+            <div className="bg-orange-50/50 border border-orange-100 rounded-3xl p-5 space-y-4">
+              <h4 className="text-[9px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2 mb-2">
                 <Plus size={13}/> Xizmat Qo'shish
               </h4>
 
@@ -671,7 +672,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <div className="space-y-4 animate-fade-in">
                   {selectedServiceOptions.length > 0 && (
                     <div>
-                      <p className="text-[9px] font-black text-violet-500 uppercase tracking-widest mb-2">Opsiyalar:</p>
+                      <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest mb-2">Opsiyalar:</p>
                       <div className="flex flex-wrap gap-2">
                         {selectedServiceOptions.map((opt: any) => {
                           const active = currentOrderService.selectedOptionIds.includes(opt.id);
@@ -681,12 +682,12 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                               type="button"
                               onClick={() => toggleOption(opt.id)}
                               className={`px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-2 border-2 transition-all ${
-                                active ? 'bg-violet-600 text-white border-violet-600 shadow-lg shadow-violet-500/20' : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'
+                                active ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-500/20' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
                               }`}
                             >
                               {active && <CheckCircle2 size={12}/>}
                               <span>{opt.name}: {opt.value}</span>
-                              <span className={`font-black ${active ? 'text-violet-200' : 'text-violet-500'}`}>+{Number(opt.priceAdd).toLocaleString()}</span>
+                              <span className={`font-black ${active ? 'text-orange-200' : 'text-orange-500'}`}>+{Number(opt.priceAdd).toLocaleString()}</span>
                             </button>
                           );
                         })}
@@ -696,35 +697,35 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[9px] font-black text-violet-500 uppercase tracking-widest mb-1.5">Miqdor <span className="text-slate-400 capitalize font-medium">({services.find(s => s.id === currentOrderService.serviceId)?.unit})</span></label>
+                      <label className="block text-[9px] font-black text-orange-500 uppercase tracking-widest mb-1.5">Miqdor <span className="text-slate-400 capitalize font-medium">({services.find(s => s.id === currentOrderService.serviceId)?.unit})</span></label>
                       <input
                         type="number" min="0.1" step="0.1"
                         value={currentOrderService.quantity}
                         onChange={e => recalculatePrice({ quantity: e.target.value })}
-                        className="input-minimal font-black text-violet-700 h-11 bg-white border-2 border-violet-100"
+                        className="input-minimal font-black text-orange-700 h-11 bg-white border-2 border-orange-100"
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-black text-violet-500 uppercase tracking-widest mb-1.5">Koeffitsiyent</label>
+                      <label className="block text-[9px] font-black text-orange-500 uppercase tracking-widest mb-1.5">Koeffitsiyent</label>
                       <input
                         type="number" min="0.1" step="0.1"
                         value={currentOrderService.coefficient}
                         onChange={e => recalculatePrice({ coefficient: e.target.value })}
-                        className="input-minimal font-black text-violet-700 h-11 bg-white border-2 border-violet-100"
+                        className="input-minimal font-black text-orange-700 h-11 bg-white border-2 border-orange-100"
                       />
                     </div>
                   </div>
 
                   {priceBreakdown && (
-                    <div className="bg-white border-2 border-violet-100 rounded-2xl p-4 flex justify-between items-center">
+                    <div className="bg-white border-2 border-orange-100 rounded-2xl p-4 flex justify-between items-center">
                       <div>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Xizmat summasi</p>
-                        <span className="text-lg font-black text-violet-700">{priceBreakdown.total.toLocaleString()} UZS</span>
+                        <span className="text-lg font-black text-orange-700">{priceBreakdown.total.toLocaleString()} UZS</span>
                       </div>
                       <button 
                         type="button" 
                         onClick={addItemToOrder}
-                        className="h-10 px-6 bg-violet-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-violet-500/20 active:scale-95 transition-all"
+                        className="h-10 px-6 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
                       >
                         RO'YXATGA QO'SHISH
                       </button>
@@ -870,7 +871,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 flex-[2] items-end">
               <button type="button" className="btn-outline h-14 flex-1 rounded-2xl uppercase tracking-widest font-black" onClick={() => setIsNewTaskModalOpen(false)}>Bekor qilish</button>
-              <button type="submit" className="h-14 flex-[2] bg-violet-600 text-white rounded-2xl uppercase tracking-widest font-black shadow-xl shadow-violet-500/20 active:scale-95 transition-all">Buyurtmani Yakunlash</button>
+              <button type="submit" className="h-14 flex-[2] bg-orange-600 text-white rounded-2xl uppercase tracking-widest font-black shadow-xl shadow-orange-500/20 active:scale-95 transition-all">Buyurtmani Yakunlash</button>
             </div>
           </div>
         </form>
@@ -891,7 +892,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 </div>
                 <button 
                   onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} 
-                  className="btn-primary flex items-center gap-3 h-12 px-10 text-[12px] font-black uppercase tracking-widest bg-gradient-to-r from-sky-500 to-indigo-600 border-none shadow-xl shadow-sky-500/20 active:scale-95"
+                  className="btn-primary flex items-center gap-3 h-12 px-10 text-[12px] font-black uppercase tracking-widest bg-gradient-to-r from-orange-500 to-orange-700 border-none shadow-xl shadow-orange-500/20 active:scale-95"
                 >
                   BOSQICHNI O'ZGARTIRISH <ArrowRight size={18}/>
                 </button>
@@ -1030,7 +1031,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
           <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Yangi holat (Varonka)</label>
-            <select value={moveForm.columnId} onChange={(e) => setMoveForm({ ...moveForm, columnId: e.target.value })} className="select-minimal font-black text-indigo-600">
+            <select value={moveForm.columnId} onChange={(e) => setMoveForm({ ...moveForm, columnId: e.target.value })} className="select-minimal font-black text-orange-600">
               {columns.map(col => <option key={col.id} value={col.id}>{col.title}</option>)}
             </select>
           </div>

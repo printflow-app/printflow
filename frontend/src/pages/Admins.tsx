@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserPlus, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, rolesApi } from '../api';
 import Modal from '../components/Modal';
@@ -10,7 +10,7 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
 };
 
-const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.role?.name?.toLowerCase() === 'superadmin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
 
@@ -40,22 +40,22 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         rolesApi.findAll()
       ]);
       
-      const allRoles = roleRes.data || [];
-      const employeeRoles = allRoles.filter((r: any) => 
-        !r.name.toLowerCase().includes('admin') && 
-        !r.name.toLowerCase().includes('rahbar') &&
-        !r.name.toLowerCase().includes('owner')
-      );
-      const employeeRoleIds = employeeRoles.map((r: any) => r.id);
+      // Filter for Admins/Owners
+      const adminRoles = roleRes.data?.filter((r: any) => 
+        r.name.toLowerCase().includes('admin') || 
+        r.name.toLowerCase().includes('rahbar') ||
+        r.name.toLowerCase().includes('owner')
+      ) || [];
+      const adminRoleIds = adminRoles.map((r: any) => r.id);
 
-      const filteredEmployees = (empRes.data || []).filter((emp: any) => 
-        employeeRoleIds.includes(emp.roleId) && 
-        emp.login !== 'admin' &&
-        !emp.role?.name?.toLowerCase().includes('admin')
-      );
+      const adminsList = empRes.data?.filter((emp: any) => 
+        adminRoleIds.includes(emp.roleId) || 
+        emp.login === 'admin' || 
+        emp.role?.name?.toLowerCase().includes('admin')
+      ) || [];
 
-      setEmployees(filteredEmployees);
-      setRoles(employeeRoles);
+      setEmployees(adminsList);
+      setRoles(adminRoles);
     } catch (err) {
       console.error("Xatolik:", err);
     } finally {
@@ -74,10 +74,10 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       setGeneratedCredentials({ login: res.data.login, password: res.data.password });
       setNewEmployee({ fullName: '', phone: '', roleId: '', baseSalary: '' });
       fetchData();
-      toast.success("Xodim muvaffaqiyatli qo'shildi!");
+      toast.success("Admin muvaffaqiyatli qo'shildi!");
       setIsEmployeeModalOpen(false);
     } catch (err) {
-      toast.error("Xodim qo'shishda xatolik yuz berdi.");
+      toast.error("Admin qo'shishda xatolik yuz berdi.");
     }
   };
 
@@ -90,13 +90,13 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const handleDeleteEmployee = (id: string) => {
     setConfirmModal({
       isOpen: true,
-      title: "Xodimni o'chirish",
-      message: "Ushbu xodimni tizimdan butunlay o'chirmoqchimisiz?",
+      title: "Adminni o'chirish",
+      message: "Ushbu foydalanuvchini tizimdan butunlay o'chirmoqchimisiz?",
       onConfirm: async () => {
         try {
           await employeesApi.delete(id);
           fetchData();
-          toast.success("Xodim tizimdan o'chirildi.");
+          toast.success("Foydalanuvchi tizimdan o'chirildi.");
         } catch (err) {
           toast.error("O'chirishda xatolik yuz berdi.");
         }
@@ -109,7 +109,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     setConfirmModal({
       isOpen: true,
       title: "Parolni yangilash",
-      message: "Ushbu xodim uchun yangi parol generatsiya qilinsinmi?",
+      message: "Ushbu foydalanuvchi uchun yangi parol generatsiya qilinsinmi?",
       onConfirm: async () => {
         try {
           const res = await employeesApi.update(id, { password: Math.floor(100000 + Math.random() * 900000).toString() });
@@ -137,12 +137,14 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="space-y-6 animate-fade-in">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">Jamoa A'zolari</h3>
-            <p className="text-[9px] font-black text-slate-400 mt-0.5 uppercase tracking-widest">Tizimga kirish huquqiga ega barcha xodimlar</p>
+            <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+              <ShieldCheck className="text-orange-600" size={24} /> Tizim Ma'murlari
+            </h3>
+            <p className="text-[9px] font-black text-slate-400 mt-0.5 uppercase tracking-widest">Asoschilar va raxbarlar uchun maxsus saxifa</p>
           </div>
-          {(isAdmin || p.canManageEmployees) && (
+          {(isAdmin || p.canManageAdmins) && (
              <button className="flex items-center gap-2 h-10 px-8 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all hover:-translate-y-0.5" onClick={() => setIsEmployeeModalOpen(true)}>
-               <UserPlus size={16} strokeWidth={2.5} /> Yangi Xodim
+               <UserPlus size={16} strokeWidth={2.5} /> Yangi Ma'mur Qo'shish
              </button>
           )}
         </div>
@@ -155,7 +157,6 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 py-3 px-5">F.I.SH & Aloqa</th>
                   <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 px-5">Lavozimi</th>
                   <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 px-5">Login</th>
-                  {(isAdmin || p.canViewSalary) && <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 px-5 text-emerald-600">Asosiy Maosh</th>}
                   <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 text-right pr-6 px-5">Harakat</th>
                 </tr>
               </thead>
@@ -181,7 +182,6 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         )}
                       </div>
                     </td>
-                    {(isAdmin || p.canViewSalary) && <td className="px-5 font-black text-xs text-slate-700 tabular-nums">{formatCurrency(emp.baseSalary)}</td>}
                     <td className="text-right pr-6">
                       <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         {isAdmin && (
@@ -189,7 +189,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                             <RefreshCw size={12} strokeWidth={3} />
                           </button>
                         )}
-                        {(isAdmin || p.canManageEmployees) && (
+                        {(isAdmin || p.canManageAdmins) && (
                           <button 
                             onClick={() => handleDeleteEmployee(emp.id)} 
                             disabled={emp.login === 'admin'}
@@ -213,11 +213,11 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </div>
       </div>
 
-      {/* Employee Modal: Create */}
+      {/* Admin Modal: Create */}
       <Modal
         isOpen={isEmployeeModalOpen}
         onClose={handleCloseModal}
-        title={generatedCredentials ? "Muvaffaqiyatli saqlandi!" : "Yangi Xodim Qo'shish"}
+        title={generatedCredentials ? "Muvaffaqiyatli saqlandi!" : "Yangi Ma'mur Qo'shish"}
         maxWidth="max-w-md"
       >
           {generatedCredentials ? (
@@ -225,7 +225,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                <div className="w-16 h-16 bg-emerald-100 text-emerald-500 flex items-center justify-center rounded-2xl mx-auto mb-4">
                   <UserPlus size={32} />
                </div>
-               <p className="text-sm font-bold text-slate-600 mb-6">Xodim tizimga kirishi uchun quyidagi ma'lumotlarni siri saqlagan holda unga taqdim eting:</p>
+               <p className="text-sm font-bold text-slate-600 mb-6">Ma'mur tizimga kirishi uchun quyidagi ma'lumotlarni siri saqlagan holda unga taqdim eting:</p>
                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-left space-y-4">
                   <div>
                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Login</p>
@@ -271,12 +271,6 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                </div>
-               {(isAdmin || p.canViewSalary) && (
-                 <div>
-                    <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Maoshi (UZS)</label>
-                    <NumberInput value={newEmployee.baseSalary} onChange={(num) => setNewEmployee({...newEmployee, baseSalary: num || ''})} className="input-minimal font-black text-emerald-600 w-full" placeholder="Masalan: 5 000 000" />
-                 </div>
-               )}
                <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
                  <button type="button" className="btn-outline h-12 px-6 flex-1 rounded-xl text-xs font-black uppercase" onClick={handleCloseModal}>Bekor qilish</button>
                  <button type="submit" className="btn-primary h-12 px-10 font-black flex-1 rounded-xl text-xs uppercase shadow-lg shadow-orange-500/20 bg-orange-500 text-white hover:bg-orange-600">SAQLASH</button>
@@ -295,7 +289,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           {selectedEmp && (
             <div className="space-y-4 animate-fade-in">
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Xodim</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Foydalanuvchi</p>
                 <p className="font-bold text-slate-800">{selectedEmp.fullName}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -356,4 +350,4 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   );
 };
 
-export default Hodimlar;
+export default Admins;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Wallet, Filter } from 'lucide-react';
 import { financeApi } from '../api';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 
 const formatCurrency = (amount: number) => {
@@ -67,7 +68,7 @@ const Moliya: React.FC<any> = () => {
     fetchData();
   }, [startDate, endDate]);
 
-  if (isLoading && chartData.length === 0) return <div className="flex items-center justify-center p-20 animate-pulse text-slate-400 font-bold uppercase tracking-widest italic">Ma'lumotlar yuklanmoqda...</div>;
+  if (isLoading && chartData.length === 0) return <LoadingSpinner fullPage />;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -75,16 +76,16 @@ const Moliya: React.FC<any> = () => {
       {/* Filters Header */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3">
         <div>
-           <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 px-1"><Filter size={18} className="text-indigo-500" /> Filtrlar</h3>
+           <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 px-1"><Filter size={18} className="text-[#FF6B00]" /> Filtrlar</h3>
            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">Sana bo'yicha tahlil</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3 border-t xl:border-t-0 border-slate-100 pt-3 xl:pt-0">
             <div className="flex bg-slate-100 p-0.5 rounded-lg w-full sm:w-auto shadow-inner">
-              <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'all' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Barchasi</button>
-              <button onClick={() => setFilter('today')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'today' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Bugun</button>
-              <button onClick={() => setFilter('week')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'week' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Hafta</button>
-              <button onClick={() => setFilter('month')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'month' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>Oy</button>
+              <button onClick={() => setFilter('all')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'all' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}>Barchasi</button>
+              <button onClick={() => setFilter('today')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'today' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}>Bugun</button>
+              <button onClick={() => setFilter('week')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'week' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}>Hafta</button>
+              <button onClick={() => setFilter('month')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'month' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}>Oy</button>
             </div>
             
             <div className="hidden sm:flex items-center gap-2">
@@ -116,7 +117,7 @@ const Moliya: React.FC<any> = () => {
         <div className="bg-slate-900 p-4 rounded-xl shadow-lg relative overflow-hidden group sm:col-span-2 lg:col-span-1">
           <div className="absolute bottom-0 right-0 w-32 h-32 bg-slate-800 rounded-full -mr-12 -mb-12 opacity-40 transition-transform group-hover:scale-110"></div>
           <div className="relative">
-            <div className="w-9 h-9 bg-indigo-500 text-white rounded-xl flex items-center justify-center mb-3 ring-4 ring-indigo-500/20 shadow-lg"><Wallet size={18}/></div>
+            <div className="w-9 h-9 bg-[#FF6B00] text-white rounded-xl flex items-center justify-center mb-3 ring-4 ring-orange-500/20 shadow-lg"><Wallet size={18}/></div>
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Sof Foyda (Balans)</p>
             <h3 className="text-xl font-black text-white tracking-tight">{formatCurrency(dashboard.balance)}</h3>
           </div>
@@ -127,7 +128,7 @@ const Moliya: React.FC<any> = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Dynamic Line Chart */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative lg:col-span-2">
-           {isLoading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 rounded-xl items-center justify-center flex p-10"><div className="w-8 h-8 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div></div>}
+           {isLoading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 rounded-xl items-center justify-center flex p-10"><LoadingSpinner /></div>}
            
            <div className="flex justify-between items-center mb-5">
              <div>
@@ -173,7 +174,7 @@ const Moliya: React.FC<any> = () => {
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', paddingTop: '24px' }} />
                   <Line type="monotone" name="Kirim" dataKey="kirim" stroke="#10b981" strokeWidth={4} dot={{r: 0}} activeDot={{r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2}} />
                   <Line type="monotone" name="Chiqim" dataKey="chiqim" stroke="#ef4444" strokeWidth={4} dot={{r: 0}} activeDot={{r: 6, fill: '#ef4444', stroke: '#fff', strokeWidth: 2}} />
-                  <Line type="monotone" name="Qoldiq" dataKey="balance" stroke="#6366f1" strokeWidth={4} strokeDasharray="5 5" dot={{r: 0}} activeDot={{r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2}} />
+                  <Line type="monotone" name="Qoldiq" dataKey="balance" stroke="#FF6B00" strokeWidth={4} strokeDasharray="5 5" dot={{r: 0}} activeDot={{r: 6, fill: '#FF6B00', stroke: '#fff', strokeWidth: 2}} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -200,7 +201,7 @@ const Moliya: React.FC<any> = () => {
                       dataKey="value"
                     >
                       {paymentTypeStats.kirim.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={['#10b981', '#3b82f6', '#f59e0b', '#6366f1'][index % 4]} />
+                        <Cell key={`cell-${index}`} fill={['#10b981', '#3b82f6', '#FF6B00', '#6366f1'][index % 4]} />
                       ))}
                     </Pie>
                     <Tooltip 

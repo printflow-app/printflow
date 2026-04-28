@@ -14,13 +14,44 @@ datasource db {
 // PLATFORM LEVEL — Super-Admin scope
 // =============================================
 
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  PENDING_PAYMENT
+}
+
+// Dynamic Plans — Super-Admin manages from panel
+model Plan {
+  id          String   @id @default(uuid())
+  name        String   @unique           // "STARTER", "STANDARD", "INDUSTRIAL"
+  displayName String                     // "Starter (Kichik)"
+  price3m     Float    @default(0)       // 3 oylik narx
+  price6m     Float    @default(0)       // 6 oylik narx
+  price12m    Float    @default(0)       // 12 oylik narx
+  maxEmployees Int     @default(8)       // Xodimlar limiti (0 = cheksiz)
+  features    String   @default("{}")    // JSON: { "kanban": true, "finance": false, ... }
+  description String?                    // Qisqa ta'rif
+  isPopular   Boolean  @default(false)   // 🔥 Eng ommabop — highlight qilish
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  tenants     Tenant[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Tenant {
-  id          String    @id @default(uuid())
-  name        String                          // "Toshkent Bosmaxonasi"
-  slug        String    @unique               // "toshkent-bosma" → printflow.uz/t/toshkent-bosma
-  plan        String    @default("starter")   // starter | pro | enterprise
-  isActive    Boolean   @default(true)
-  trialEndsAt DateTime?
+  id                 String       @id @default(uuid())
+  name               String
+  slug               String       @unique
+  status             TenantStatus @default(TRIAL)
+  isActive           Boolean      @default(true)
+  trialEndsAt        DateTime?
+  subscriptionEndsAt DateTime?
+
+  // Plan relation
+  planId             String?
+  plan               Plan?        @relation(fields: [planId], references: [id])
 
   // Relations to all tenant-scoped data
   roles              Role[]
@@ -40,6 +71,7 @@ model Tenant {
   attendanceRecords  AttendanceRecord[]
   systemSettings     SystemSetting[]
   botSessions        BotSession[]
+  payments           Payment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -50,6 +82,29 @@ model SuperAdmin {
   login        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
+}
+
+model PlatformSetting {
+  id    String @id @default(uuid())
+  key   String @unique // e.g. "PAYMENT_CARDS"
+  value String         // JSON string
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planName    String                      // Plan nomi vaqtidagi snapshot
+  duration    Int                         // Duration in months (3, 6, 12)
+  amount      Float                       // To'langan summa
+  sender      String                      // Yuboruvchi ism-familiyasi
+  receiptUrl  String?                     // Chek/Kvitansiya rasmining URL
+  notes       String?                     // Qo'shimcha izoh
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy  String?                     // Super-Admin ID
+  approvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // Leads from Landing Page
@@ -268,6 +323,7 @@ model Role {
   canManageEmployees Boolean @default(false)
   canManageRoles     Boolean @default(false)
   canViewSalary      Boolean @default(false)
+  canManageAdmins    Boolean @default(false)
 
   employees Employee[]
 
@@ -287,6 +343,7 @@ model Employee {
   telegramId      String?
   deviceId        String?                 // Davomat anti-cheat uchun qurilma ID
   passwordVersion Int     @default(1)    // Har safar parol o'zgarganda +1 (forced logout uchun)
+  isFirstLogin    Boolean @default(true) // Birinchi marta kirganda malumotlarni tahrirlashni majburlash uchun
 
   roleId String
   role   Role   @relation(fields: [roleId], references: [id])

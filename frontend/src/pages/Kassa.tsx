@@ -4,13 +4,14 @@ import { financeApi, paymentTypesApi, customersApi, employeesApi, expenseTypesAp
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import NumberInput from '../components/NumberInput';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
 };
 
 const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
-  const p = currentUser.permissions;
+  const p = currentUser.permissions || {};
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [paymentTypes, setPaymentTypes] = useState<any[]>([]);
@@ -121,12 +122,7 @@ const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  if (isLoading) return (
-    <div className="flex flex-col items-center justify-center p-20 animate-pulse space-y-4">
-      <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-slate-400 font-black uppercase tracking-widest text-xs italic">Kassa ma'lumotlari yuklanmoqda...</p>
-    </div>
-  );
+  if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in relative">
@@ -143,7 +139,7 @@ const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-slate-50/30">
           <div>
             <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-              Kassa Amaliyotlari <Wallet size={18} className="text-indigo-500" />
+              Kassa Amaliyotlari <Wallet size={18} className="text-orange-500" />
             </h3>
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Barcha tranzaksiyalar tarixi</p>
           </div>
@@ -251,11 +247,11 @@ const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
           {customerTasks.length > 0 && (
             <div className="animate-fade-in">
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1 text-indigo-500">Bog'liq xizmat (Mijoz nomiga)</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1 text-orange-500">Bog'liq xizmat (Mijoz nomiga)</label>
               <select 
                 value={kirimForm.serviceType} 
                 onChange={e => setKirimForm(f => ({ ...f, serviceType: e.target.value }))}
-                className="select-minimal font-black text-violet-700 h-11 border-indigo-100 bg-indigo-50/30"
+                className="select-minimal font-black text-orange-700 h-11 border-orange-100 bg-orange-50/30"
               >
                 <option value="">— Xizmatni tanlang (ixtiyoriy) —</option>
                 {customerTasks.map((t, idx) => <option key={idx} value={t}>{t}</option>)}
@@ -302,7 +298,7 @@ const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={() => setIsKirimModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
             <button type="submit" disabled={isSubmitting} className="flex-1 btn-success h-11 shadow-emerald-500/20">
-              {isSubmitting ? "YUKLANMOQDA..." : "TASDIQLASH"}
+              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : "TASDIQLASH"}
             </button>
           </div>
         </form>
@@ -318,7 +314,7 @@ const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         <form onSubmit={handleAddChiqim} className="space-y-4">
           <div className="flex bg-slate-100 p-1 rounded-2xl mb-2">
             <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: false}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${!chiqimForm.isEmployeeExpense ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>UMUMIY</button>
-            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow text-indigo-600' : 'text-slate-400'}`}>HODIM UCHUN</button>
+            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow text-orange-600' : 'text-slate-400'}`}>HODIM UCHUN</button>
           </div>
 
           {!chiqimForm.isEmployeeExpense ? (
@@ -367,7 +363,7 @@ const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={() => setIsChiqimModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
             <button type="submit" disabled={isSubmitting} className="flex-1 btn-danger h-11 shadow-rose-500/20">
-              {isSubmitting ? "YUKLANMOQDA..." : "TASDIQLASH"}
+              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : "TASDIQLASH"}
             </button>
           </div>
         </form>
