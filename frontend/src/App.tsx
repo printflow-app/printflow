@@ -203,7 +203,7 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-slate-900 font-sans">
         <div className="relative mb-8">
           <img src={logo} alt="PrintFlow" className="w-24 h-24 object-contain animate-pulse" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -213,7 +213,7 @@ const App: React.FC = () => {
         <h1 className="text-2xl font-black tracking-tight uppercase mb-2">
           Print<span className="text-[#FF6B00]">Flow</span>
         </h1>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
           Tizimga kirilmoqda...
         </p>
       </div>

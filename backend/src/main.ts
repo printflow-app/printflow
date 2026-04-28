@@ -31,9 +31,17 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    origin: [
+      'https://printflow-admin.vercel.app',
+      'https://printflow-gilt.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000',
+      'http://localhost:5175'
+    ],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-tenant-id', 'x-super-admin-key'],
   });
 
   const port = parseInt(process.env.PORT || '4000', 10);

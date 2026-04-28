@@ -6,8 +6,8 @@ import axios from 'axios';
 // - Barcha so'rovlar /api prefix'li
 // =============================================
 
-// @ts-ignore
-const API_URL = (import.meta.env.VITE_API_URL || 'https://printflow-production-bb78.up.railway.app') + '/api';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'https://printflow-production-bb78.up.railway.app';
+const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api';
 
 const api = axios.create({
   baseURL: API_URL,

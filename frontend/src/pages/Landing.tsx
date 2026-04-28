@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Layers, Users, Zap, ShieldCheck, Check, Send, PlayCircle } from 'lucide-react';
 import logo from '../assets/logo.png';
 
-const API_URL = ((import.meta as any).env.VITE_API_URL || 'http://localhost:4000') + '/api';
+const rawApiUrl = (import.meta as any).env.VITE_API_URL || 'https://printflow-production-bb78.up.railway.app';
+const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api';
 
 function Landing({ onLoginClick }: { onLoginClick: () => void }) {
   const [scrolled, setScrolled] = useState(false);
