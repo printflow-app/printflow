@@ -28,66 +28,196 @@ function Login({ onLogin }: { onLogin: () => void }) {
     finally { setLoading(false); }
   };
   return (
-    <div className="login-screen">
-      {/* Dynamic Background Pattern */}
+    <div className="pf-super-login-wrapper" style={{ 
+      position: 'fixed', 
+      inset: 0, 
+      width: '100vw', 
+      height: '100vh', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      backgroundColor: '#f8fafc',
+      zIndex: 9999,
+      overflow: 'hidden'
+    }}>
+      {/* Background Dots */}
       <div style={{ 
         position: 'absolute', 
         inset: 0, 
-        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,107,0,0.05) 1px, transparent 0)', 
-        backgroundSize: '40px 40px', 
+        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,107,0,0.08) 1.5px, transparent 0)', 
+        backgroundSize: '32px 32px', 
         zIndex: 0 
       }} />
       
-      <div className="login-card">
-        <div className="login-header">
-          <div className="relative w-20 h-20 mx-auto mb-6 group">
-            <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl group-hover:bg-[#FF6B00]/20 transition-all duration-500" />
-            <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-110" />
+      <div className="pf-super-login-card" style={{ 
+        position: 'relative', 
+        zIndex: 10,
+        width: '100%',
+        maxWidth: '440px',
+        backgroundColor: '#ffffff',
+        border: '1px solid #e2e8f0',
+        padding: '50px 40px',
+        borderRadius: '30px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+        textAlign: 'center'
+      }}>
+        <div className="pf-super-login-header" style={{ marginBottom: '40px' }}>
+          <div style={{ 
+            position: 'relative', 
+            width: '100px', 
+            height: '100px', 
+            margin: '0 auto 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{ 
+              position: 'absolute', 
+              inset: 0, 
+              backgroundColor: 'rgba(255,107,0,0.12)', 
+              borderRadius: '50%', 
+              filter: 'blur(20px)' 
+            }} />
+            <img 
+              src={logo} 
+              alt="PrintFlow" 
+              style={{ 
+                position: 'relative', 
+                width: '85px', 
+                height: '85px', 
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 8px 12px rgba(255,107,0,0.25))'
+              }} 
+            />
           </div>
-          <h1 style={{ marginBottom: '8px' }}>Print<span>Flow</span></h1>
-          <p style={{ fontSize: '10px', letterSpacing: '3px', fontWeight: 900 }}>SUPER ADMIN PANEL</p>
+          <h1 style={{ 
+            fontSize: '32px', 
+            fontWeight: 900, 
+            textTransform: 'uppercase', 
+            letterSpacing: '-1.5px',
+            margin: '0 0 8px 0',
+            color: '#0f172a'
+          }}>
+            Print<span style={{ color: '#FF6B00' }}>Flow</span>
+          </h1>
+          <p style={{ 
+            fontSize: '11px', 
+            letterSpacing: '4px', 
+            fontWeight: 900, 
+            color: '#64748b',
+            margin: 0,
+            textTransform: 'uppercase'
+          }}>SUPER ADMIN PANEL</p>
         </div>
 
-        {error && <div className="error-msg">{error}</div>}
+        {error && (
+          <div style={{ 
+            backgroundColor: 'rgba(239,68,68,0.1)', 
+            color: '#ef4444', 
+            padding: '12px', 
+            borderRadius: '12px', 
+            fontSize: '12px', 
+            fontWeight: 800, 
+            marginBottom: '24px',
+            textTransform: 'uppercase'
+          }}>
+            {error}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="form-group">
-            <label>Login Ma'lumoti</label>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ 
+              display: 'block', 
+              fontSize: '10px', 
+              fontWeight: 900, 
+              textTransform: 'uppercase', 
+              letterSpacing: '1px', 
+              color: '#64748b',
+              marginBottom: '8px',
+              paddingLeft: '4px'
+            }}>Login Ma'lumoti</label>
             <input 
               type="text" 
               required 
-              placeholder="Admin loginini kiriting"
+              placeholder="Admin login..."
+              style={{
+                width: '100%',
+                height: '56px',
+                backgroundColor: '#f8fafc',
+                border: '2px solid #f1f5f9',
+                borderRadius: '16px',
+                padding: '0 20px',
+                fontSize: '15px',
+                fontWeight: 600,
+                outline: 'none',
+                transition: 'all 0.2s'
+              }}
               value={login} 
               onChange={e => setLogin(e.target.value)} 
             />
           </div>
-          <div className="form-group">
-            <label>Maxfiy Parol</label>
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ 
+              display: 'block', 
+              fontSize: '10px', 
+              fontWeight: 900, 
+              textTransform: 'uppercase', 
+              letterSpacing: '1px', 
+              color: '#64748b',
+              marginBottom: '8px',
+              paddingLeft: '4px'
+            }}>Maxfiy Parol</label>
             <input 
               type="password" 
               required 
               placeholder="••••••••"
+              style={{
+                width: '100%',
+                height: '56px',
+                backgroundColor: '#f8fafc',
+                border: '2px solid #f1f5f9',
+                borderRadius: '16px',
+                padding: '0 20px',
+                fontSize: '15px',
+                fontWeight: 600,
+                outline: 'none',
+                transition: 'all 0.2s'
+              }}
               value={password} 
               onChange={e => setPassword(e.target.value)} 
             />
           </div>
-          <button type="submit" className="btn login-btn" disabled={loading} style={{ borderRadius: '12px', height: '54px', fontSize: '12px' }}>
-            {loading ? (
-              <div style={{ width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            ) : 'TIZIMGA KIRISH'}
+          <button 
+            type="submit" 
+            disabled={loading} 
+            style={{ 
+              width: '100%',
+              height: '56px',
+              backgroundColor: '#FF6B00',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '16px',
+              fontSize: '13px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              cursor: 'pointer',
+              boxShadow: '0 10px 20px -5px rgba(255,107,0,0.3)',
+              transition: 'all 0.2s',
+              marginTop: '8px'
+            }}
+          >
+            {loading ? 'YUKLANMOQDA...' : 'TIZIMGA KIRISH'}
           </button>
         </form>
 
-        <div style={{ marginTop: '32px', textAlign: 'center' }}>
-          <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>© 2026 PRINTFLOW SaaS CORE</p>
+        <div style={{ marginTop: '40px' }}>
+          <p style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.5px' }}>
+            © 2026 PRINTFLOW SaaS CORE • v2.5.0
+          </p>
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .login-btn:active { transform: scale(0.98); }
-        .form-group input:hover { border-color: #cbd5e1; }
-      `}</style>
     </div>
   );
 }

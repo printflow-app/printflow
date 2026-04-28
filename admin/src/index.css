@@ -276,14 +276,13 @@ tr:last-child td {
 
 /* Login Screen */
 .login-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100vw !important;
+  min-height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   background-color: var(--bg);
-  background-image: linear-gradient(rgba(255,107,0,0.05) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,107,0,0.05) 1px, transparent 1px);
-  background-size: 60px 60px;
+  position: relative !important;
 }
 
 .login-card {
