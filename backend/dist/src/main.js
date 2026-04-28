@@ -14,14 +14,9 @@ async function bootstrap() {
         transform: true,
     }));
     app.enableCors({
-        origin: [
-            'https://printflow-admin.vercel.app',
-            'https://printflow-gilt.vercel.app',
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:3000',
-            'http://localhost:5175'
-        ],
+        origin: function (origin, callback) {
+            callback(null, origin || true);
+        },
         methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true,
         allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-tenant-id', 'x-super-admin-key'],

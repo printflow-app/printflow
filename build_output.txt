@@ -1,0 +1,12 @@
+ERROR:
+
+> printflow-backend@0.0.1 build
+> npx prisma generate && nest build
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+Error: 
+EPERM: operation not permitted, rename 'D:\PrintFlow\backend\node_modules\.prisma\client\query_engine-windows.dll.node.tmp20640' -> 'D:\PrintFlow\backend\node_modules\.prisma\client\query_engine-windows.dll.node'
+
+
