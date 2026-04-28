@@ -2,14 +2,12 @@ import React from 'react';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
-  color?: string;
   className?: string;
   fullPage?: boolean;
 }
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'md', 
-  color = '#FF6B00', // Default Orange
   className = '',
   fullPage = false
 }) => {
