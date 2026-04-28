@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { LogOut, LayoutDashboard, Building2, Plus, X, Users, CreditCard, Package, Check, XCircle } from 'lucide-react';
+import { LogOut, LayoutDashboard, Building2, Plus, X, Users, CreditCard, Package, Check, XCircle, Eye, EyeOff } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
 import { authApi, tenantsApi, leadsApi, plansApi, settingsApi } from './api';
 import logo from './assets/logo.png';
@@ -14,6 +14,7 @@ const useAuth = () => {
 
 function Login({ onLogin }: { onLogin: () => void }) {
   const [login, setLogin] = useState(''); const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(''); const [loading, setLoading] = useState(false);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setError('');
@@ -168,25 +169,46 @@ function Login({ onLogin }: { onLogin: () => void }) {
               marginBottom: '8px',
               paddingLeft: '4px'
             }}>Maxfiy Parol</label>
-            <input 
-              type="password" 
-              required 
-              placeholder="••••••••"
-              style={{
-                width: '100%',
-                height: '56px',
-                backgroundColor: '#f8fafc',
-                border: '2px solid #f1f5f9',
-                borderRadius: '16px',
-                padding: '0 20px',
-                fontSize: '15px',
-                fontWeight: 600,
-                outline: 'none',
-                transition: 'all 0.2s'
-              }}
-              value={password} 
-              onChange={e => setPassword(e.target.value)} 
-            />
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                required 
+                placeholder="••••••••"
+                style={{
+                  width: '100%',
+                  height: '56px',
+                  backgroundColor: '#f8fafc',
+                  border: '2px solid #f1f5f9',
+                  borderRadius: '16px',
+                  padding: '0 50px 0 20px',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  outline: 'none',
+                  transition: 'all 0.2s'
+                }}
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px'
+                }}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
           <button 
             type="submit" 
