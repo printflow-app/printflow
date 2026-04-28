@@ -36,13 +36,13 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT || 4000;
+  const port = parseInt(process.env.PORT || '4000', 10);
   await app.listen(port, '0.0.0.0');
   
   const url = await app.getUrl();
   console.log(`\n=============================================`);
   console.log(`🚀 PrintFlow API Muvaffaqiyatli Ishga Tushdi!`);
-  console.log(`📡 Port: ${port}`);
+  console.log(`📡 Port: ${port} (Binding: 0.0.0.0)`);
   console.log(`🔗 URL: ${url}`);
   console.log(`📋 Node Env: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🏠 Database: ${process.env.DATABASE_URL ? 'ULANGAN (HIDDEN)' : 'DATABASE_URL TOPILMADI!'}`);
