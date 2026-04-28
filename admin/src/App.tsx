@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Printer, LogOut, LayoutDashboard, Building2, Plus, X, Users, CreditCard, Package, Check, XCircle } from 'lucide-react';
+import { LogOut, LayoutDashboard, Building2, Plus, X, Users, CreditCard, Package, Check, XCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
 import { authApi, tenantsApi, leadsApi, plansApi, settingsApi } from './api';
-import logo from '../dist/assets/logo.png';
+import logo from './assets/logo.png';
 
 const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => sessionStorage.getItem('sa_auth') === 'true');
