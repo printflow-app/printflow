@@ -28,24 +28,66 @@ function Login({ onLogin }: { onLogin: () => void }) {
     finally { setLoading(false); }
   };
   return (
-    <div className="login-screen" style={{ position: 'relative' }}>
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,107,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,0,0.06) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0 }} />
-      <div className="login-card" style={{ position: 'relative', zIndex: 10 }}>
+    <div className="login-screen">
+      {/* Dynamic Background Pattern */}
+      <div style={{ 
+        position: 'absolute', 
+        inset: 0, 
+        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,107,0,0.05) 1px, transparent 0)', 
+        backgroundSize: '40px 40px', 
+        zIndex: 0 
+      }} />
+      
+      <div className="login-card">
         <div className="login-header">
-          <div className="relative w-24 h-24 mx-auto mb-6 group">
-            <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl" />
-            <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain" />
+          <div className="relative w-20 h-20 mx-auto mb-6 group">
+            <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl group-hover:bg-[#FF6B00]/20 transition-all duration-500" />
+            <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-110" />
           </div>
-          <h1>Print<span>Flow</span></h1>
-          <p>Super Admin Panel</p>
+          <h1 style={{ marginBottom: '8px' }}>Print<span>Flow</span></h1>
+          <p style={{ fontSize: '10px', letterSpacing: '3px', fontWeight: 900 }}>SUPER ADMIN PANEL</p>
         </div>
+
         {error && <div className="error-msg">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group"><label>Login</label><input type="text" required value={login} onChange={e => setLogin(e.target.value)} /></div>
-          <div className="form-group"><label>Parol</label><input type="password" required value={password} onChange={e => setPassword(e.target.value)} /></div>
-          <button type="submit" className="btn login-btn" disabled={loading}>{loading ? 'Tekshirilmoqda...' : 'Tizimga Kirish'}</button>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="form-group">
+            <label>Login Ma'lumoti</label>
+            <input 
+              type="text" 
+              required 
+              placeholder="Admin loginini kiriting"
+              value={login} 
+              onChange={e => setLogin(e.target.value)} 
+            />
+          </div>
+          <div className="form-group">
+            <label>Maxfiy Parol</label>
+            <input 
+              type="password" 
+              required 
+              placeholder="••••••••"
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+            />
+          </div>
+          <button type="submit" className="btn login-btn" disabled={loading} style={{ borderRadius: '12px', height: '54px', fontSize: '12px' }}>
+            {loading ? (
+              <div style={{ width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            ) : 'TIZIMGA KIRISH'}
+          </button>
         </form>
+
+        <div style={{ marginTop: '32px', textAlign: 'center' }}>
+          <p style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>© 2026 PRINTFLOW SaaS CORE</p>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .login-btn:active { transform: scale(0.98); }
+        .form-group input:hover { border-color: #cbd5e1; }
+      `}</style>
     </div>
   );
 }
@@ -53,27 +95,44 @@ function Login({ onLogin }: { onLogin: () => void }) {
 function Layout({ onLogout, children }: { onLogout: () => void, children: React.ReactNode }) {
   const location = useLocation();
   const navItems = [
-    { path: '/', icon: <LayoutDashboard />, label: 'Dashboard' },
-    { path: '/tenants', icon: <Building2 />, label: 'Workspaces' },
-    { path: '/plans', icon: <Package />, label: 'Tariflar' },
-    { path: '/payments', icon: <CreditCard />, label: "To'lovlar" },
-    { path: '/leads', icon: <Users />, label: "So'rovlar" },
+    { path: '/', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+    { path: '/tenants', icon: <Building2 size={18} />, label: 'Workspaces' },
+    { path: '/plans', icon: <Package size={18} />, label: 'Tariflar' },
+    { path: '/payments', icon: <CreditCard size={18} />, label: "To'lovlar" },
+    { path: '/leads', icon: <Users size={18} />, label: "So'rovlar" },
   ];
   return (
     <div className="admin-container">
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <img src={logo} alt="PF" style={{ height: 28, width: 'auto', marginRight: 10 }} />
-          Print<span>Flow</span>
+      <div className="sidebar" style={{ borderRight: '1px solid var(--border)', boxShadow: '4px 0 24px rgba(0,0,0,0.02)' }}>
+        <div className="sidebar-header" style={{ borderBottom: '1px solid var(--border)' }}>
+          <img src={logo} alt="PF" style={{ height: 32, width: 'auto', marginRight: 12, filter: 'drop-shadow(0 4px 6px rgba(255,107,0,0.2))' }} />
+          Print<span style={{ color: 'var(--primary)' }}>Flow</span>
         </div>
         <div className="sidebar-nav">
+          <div style={{ padding: '0 16px 12px 28px', fontSize: '9px', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '2px', textTransform: 'uppercase' }}>Boshqaruv</div>
           {navItems.map(n => (
-            <a key={n.path} href={n.path} className={`nav-item ${location.pathname === n.path ? 'active' : ''}`}>{n.icon} {n.label}</a>
+            <a key={n.path} href={n.path} className={`nav-item ${location.pathname === n.path ? 'active' : ''}`}>
+              {n.icon}
+              <span style={{ marginTop: '1px' }}>{n.label}</span>
+            </a>
           ))}
+        </div>
+        <div style={{ padding: '24px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+           <p style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '1px' }}>v2.4.0 CORE</p>
         </div>
       </div>
       <div className="main-content">
-        <div className="topbar"><div className="page-title">Admin Panel</div><button className="logout-btn" onClick={onLogout}><LogOut size={16} /> Chiqish</button></div>
+        <div className="topbar" style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', sticky: 'top', zIndex: 40 }}>
+          <div className="page-title" style={{ letterSpacing: '-0.5px' }}>
+            {navItems.find(n => n.path === location.pathname)?.label || 'Boshqaruv Paneli'}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
+            <button className="logout-btn" onClick={onLogout} style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800 }}>
+              <LogOut size={14} strokeWidth={3} /> Chiqish
+            </button>
+          </div>
+        </div>
         <div className="content-area">{children}</div>
       </div>
     </div>
