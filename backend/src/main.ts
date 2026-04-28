@@ -31,22 +31,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        'https://printflow-admin.vercel.app',
-        'https://printflow-v1.vercel.app',
-        'http://localhost:3000',
-        'http://localhost:5173',
-      ];
-      
-      // Allow if no origin (like mobile apps or curl) or if in allowed list
-      if (!origin || allowedOrigins.some(ao => origin.startsWith(ao))) {
-        callback(null, true);
-      } else {
-        console.warn(`[CORS] Origin blocked: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
