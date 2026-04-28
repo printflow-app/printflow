@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, ArrowRight, Layers, Users, Zap, ShieldCheck, Check, Send, PlayCircle } from 'lucide-react';
+import { ArrowRight, Layers, Users, Zap, ShieldCheck, Check, Send, PlayCircle } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 const API_URL = ((import.meta as any).env.VITE_API_URL || 'http://localhost:4000') + '/api';

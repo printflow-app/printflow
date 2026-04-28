@@ -6,7 +6,7 @@ import Dashboard from './pages/Dashboard';
 import ScanAttendance from './pages/ScanAttendance';
 import Landing from './pages/Landing';
 import Billing from './pages/Billing';
-import { authApi, employeesApi } from './api';
+import { authApi } from './api';
 import logo from './assets/logo.png';
 
 // =============================================
@@ -56,15 +56,6 @@ const SESSION_KEY = 'pf_user_info';
 
 function saveSession(user: User) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-}
-
-function loadSession(): User | null {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
 }
 
 function clearSession() {

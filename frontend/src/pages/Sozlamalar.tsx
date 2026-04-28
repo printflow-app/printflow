@@ -252,22 +252,6 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   ];
 
-  // Filter permissionGroups based on tenantFeatures
-  const tf = currentUser.tenantFeatures || {};
-  const filteredPermissionGroups = permissionGroups.map(group => {
-    const filteredPerms: Record<string, string> = {};
-    Object.entries(group.permissions).forEach(([key, label]) => {
-      // If the plan has this feature explicitly checked, OR if the plan is old/empty (fallback)
-      // Actually, if we want strict SaaS, we only show it if tf[key] is true.
-      // But for basic keys like canManageRoles, maybe they are always true? 
-      // In the new system, Admin MUST check them. Let's strictly check tf[key].
-      if (tf[key] === true || tf[key] === "true") {
-        filteredPerms[key] = label;
-      }
-    });
-    return { ...group, permissions: filteredPerms };
-  }).filter(group => Object.keys(group.permissions).length > 0);
-
   const allPermissionKeys = permissionGroups.flatMap(g => Object.keys(g.permissions));
   const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null);
 

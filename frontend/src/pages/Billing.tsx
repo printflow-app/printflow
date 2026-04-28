@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Clock, AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck } from 'lucide-react';
 import { billingApi } from '../api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -143,7 +143,6 @@ export default function Billing() {
             {plans.map(plan => {
               const features = parseFeatures(plan.features);
               const price = getPrice(plan);
-              const isSelected = selectedPlan?.id === plan.id;
               
               return (
                 <div 

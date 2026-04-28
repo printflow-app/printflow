@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, User as UserIcon, Building2, Eye, EyeOff, Printer } from 'lucide-react';
+import { Lock, User as UserIcon, Building2, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../api';
 import { buildUser, User } from '../App';
 import logo from '../assets/logo.png';

@@ -20,15 +20,6 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     xl: 'w-24 h-24 border-4'
   };
 
-  const spinner = (
-    <div 
-      className={`animate-spin rounded-full border-solid border-transparent border-t-current ${sizeClasses[size]} ${className}`}
-      style={{ color: color, borderTopColor: 'currentColor', borderRightColor: 'transparent', borderBottomColor: 'transparent', borderLeftColor: 'transparent', borderStyle: 'solid', borderWidth: size === 'xl' ? '4px' : size === 'lg' ? '3px' : '2px', borderTopStyle: 'solid' }}
-    >
-      <div className="sr-only">Yuklanmoqda...</div>
-    </div>
-  );
-
   // Simplified spinner logic using Tailwind animate-spin and border utilities
   const tailwindSpinner = (
     <div className={`flex items-center justify-center ${className}`}>
