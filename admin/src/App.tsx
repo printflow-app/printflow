@@ -252,7 +252,7 @@ function Layout({ onLogout, children }: { onLogout: () => void, children: React.
         </div>
       </div>
       <div className="main-content">
-        <div className="topbar" style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', sticky: 'top', zIndex: 40 }}>
+        <div className="topbar" style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 40 }}>
           <div className="page-title" style={{ letterSpacing: '-0.5px' }}>
             {navItems.find(n => n.path === location.pathname)?.label || 'Boshqaruv Paneli'}
           </div>
