@@ -1,0 +1,290 @@
+import { AttendanceService } from './attendance.service';
+export declare class AttendanceController {
+    private attendanceService;
+    constructor(attendanceService: AttendanceService);
+    getCurrentToken(): Promise<{
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        token: string;
+        expiresAt: Date;
+    }>;
+    refreshToken(): Promise<{
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        token: string;
+        expiresAt: Date;
+    }>;
+    checkIn(body: {
+        employeeId: string;
+        token: string;
+        deviceId?: string;
+    }): Promise<{
+        employee: {
+            id: string;
+            tenantId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            login: string;
+            passwordHash: string;
+            fullName: string;
+            phone: string | null;
+            telegramId: string | null;
+            deviceId: string | null;
+            passwordVersion: number;
+            isFirstLogin: boolean;
+            roleId: string;
+            baseSalary: number;
+            givenAmount: number;
+            workDebt: number;
+        };
+    } & {
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deviceId: string | null;
+        date: string;
+        employeeId: string;
+        note: string | null;
+        checkIn: Date | null;
+        checkOut: Date | null;
+        lateMinutes: number;
+    }>;
+    checkOut(body: {
+        employeeId: string;
+        token: string;
+        deviceId?: string;
+    }): Promise<{
+        employee: {
+            id: string;
+            tenantId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            login: string;
+            passwordHash: string;
+            fullName: string;
+            phone: string | null;
+            telegramId: string | null;
+            deviceId: string | null;
+            passwordVersion: number;
+            isFirstLogin: boolean;
+            roleId: string;
+            baseSalary: number;
+            givenAmount: number;
+            workDebt: number;
+        };
+    } & {
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deviceId: string | null;
+        date: string;
+        employeeId: string;
+        note: string | null;
+        checkIn: Date | null;
+        checkOut: Date | null;
+        lateMinutes: number;
+    }>;
+    getTodayRecords(): Promise<({
+        employee: {
+            role: {
+                id: string;
+                tenantId: string;
+                name: string;
+                canViewFinance: boolean;
+                canAddIncome: boolean;
+                canAddExpense: boolean;
+                canViewTotalBalance: boolean;
+                canManagePaymentTypes: boolean;
+                canViewTasks: boolean;
+                canCreateTask: boolean;
+                canEditTask: boolean;
+                canDeleteTask: boolean;
+                canMoveTask: boolean;
+                canManageColumns: boolean;
+                canViewCustomers: boolean;
+                canManageCustomers: boolean;
+                canViewInventory: boolean;
+                canManageInventory: boolean;
+                canViewAttendance: boolean;
+                canManageAttendance: boolean;
+                canViewServices: boolean;
+                canManageServices: boolean;
+                canViewEmployees: boolean;
+                canManageEmployees: boolean;
+                canManageRoles: boolean;
+                canViewSalary: boolean;
+                canManageAdmins: boolean;
+            };
+        } & {
+            id: string;
+            tenantId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            login: string;
+            passwordHash: string;
+            fullName: string;
+            phone: string | null;
+            telegramId: string | null;
+            deviceId: string | null;
+            passwordVersion: number;
+            isFirstLogin: boolean;
+            roleId: string;
+            baseSalary: number;
+            givenAmount: number;
+            workDebt: number;
+        };
+    } & {
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deviceId: string | null;
+        date: string;
+        employeeId: string;
+        note: string | null;
+        checkIn: Date | null;
+        checkOut: Date | null;
+        lateMinutes: number;
+    })[]>;
+    getRecords(date?: string): Promise<({
+        employee: {
+            role: {
+                id: string;
+                tenantId: string;
+                name: string;
+                canViewFinance: boolean;
+                canAddIncome: boolean;
+                canAddExpense: boolean;
+                canViewTotalBalance: boolean;
+                canManagePaymentTypes: boolean;
+                canViewTasks: boolean;
+                canCreateTask: boolean;
+                canEditTask: boolean;
+                canDeleteTask: boolean;
+                canMoveTask: boolean;
+                canManageColumns: boolean;
+                canViewCustomers: boolean;
+                canManageCustomers: boolean;
+                canViewInventory: boolean;
+                canManageInventory: boolean;
+                canViewAttendance: boolean;
+                canManageAttendance: boolean;
+                canViewServices: boolean;
+                canManageServices: boolean;
+                canViewEmployees: boolean;
+                canManageEmployees: boolean;
+                canManageRoles: boolean;
+                canViewSalary: boolean;
+                canManageAdmins: boolean;
+            };
+        } & {
+            id: string;
+            tenantId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            login: string;
+            passwordHash: string;
+            fullName: string;
+            phone: string | null;
+            telegramId: string | null;
+            deviceId: string | null;
+            passwordVersion: number;
+            isFirstLogin: boolean;
+            roleId: string;
+            baseSalary: number;
+            givenAmount: number;
+            workDebt: number;
+        };
+    } & {
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deviceId: string | null;
+        date: string;
+        employeeId: string;
+        note: string | null;
+        checkIn: Date | null;
+        checkOut: Date | null;
+        lateMinutes: number;
+    })[]>;
+    getMonthlyRecords(year: string, month: string): Promise<({
+        employee: {
+            role: {
+                id: string;
+                tenantId: string;
+                name: string;
+                canViewFinance: boolean;
+                canAddIncome: boolean;
+                canAddExpense: boolean;
+                canViewTotalBalance: boolean;
+                canManagePaymentTypes: boolean;
+                canViewTasks: boolean;
+                canCreateTask: boolean;
+                canEditTask: boolean;
+                canDeleteTask: boolean;
+                canMoveTask: boolean;
+                canManageColumns: boolean;
+                canViewCustomers: boolean;
+                canManageCustomers: boolean;
+                canViewInventory: boolean;
+                canManageInventory: boolean;
+                canViewAttendance: boolean;
+                canManageAttendance: boolean;
+                canViewServices: boolean;
+                canManageServices: boolean;
+                canViewEmployees: boolean;
+                canManageEmployees: boolean;
+                canManageRoles: boolean;
+                canViewSalary: boolean;
+                canManageAdmins: boolean;
+            };
+        } & {
+            id: string;
+            tenantId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            login: string;
+            passwordHash: string;
+            fullName: string;
+            phone: string | null;
+            telegramId: string | null;
+            deviceId: string | null;
+            passwordVersion: number;
+            isFirstLogin: boolean;
+            roleId: string;
+            baseSalary: number;
+            givenAmount: number;
+            workDebt: number;
+        };
+    } & {
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deviceId: string | null;
+        date: string;
+        employeeId: string;
+        note: string | null;
+        checkIn: Date | null;
+        checkOut: Date | null;
+        lateMinutes: number;
+    })[]>;
+    getByEmployee(employeeId: string): Promise<{
+        id: string;
+        tenantId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deviceId: string | null;
+        date: string;
+        employeeId: string;
+        note: string | null;
+        checkIn: Date | null;
+        checkOut: Date | null;
+        lateMinutes: number;
+    }[]>;
+}
