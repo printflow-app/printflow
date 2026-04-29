@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cookie, X, ShieldCheck } from 'lucide-react';
+import { Cookie, ShieldCheck } from 'lucide-react';
 
 // =============================================
 // COOKIE CONSENT BANNER
@@ -74,23 +74,19 @@ const CookieConsent: React.FC = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0, border: '1px solid rgba(255,107,0,0.3)',
           }}>
-            <ShieldCheck size={20} color="#FF6B00" />
+            <Cookie size={20} color="#FF6B00" />
           </div>
           <div style={{ flex: 1 }}>
-            <p style={{ color: '#f1f5f9', fontWeight: 800, fontSize: '0.9rem', margin: '0 0 2px', letterSpacing: '-0.3px' }}>
-              Biz xavfsizlikni qadrlaymiz 🛡️
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '0 0 2px' }}>
+              <p style={{ color: '#f1f5f9', fontWeight: 800, fontSize: '0.9rem', margin: 0, letterSpacing: '-0.3px' }}>
+                Biz xavfsizlikni qadrlaymiz
+              </p>
+              <ShieldCheck size={14} color="#FF6B00" />
+            </div>
             <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0, lineHeight: 1.4 }}>
               Tizim ishlashi uchun cookie fayllaridan foydalanamiz.
             </p>
           </div>
-          <button
-            onClick={decline}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4, flexShrink: 0 }}
-            title="Yopish"
-          >
-            <X size={18} />
-          </button>
         </div>
 
         {/* Buttons */}
@@ -122,7 +118,7 @@ const CookieConsent: React.FC = () => {
             onMouseEnter={e => (e.currentTarget.style.background = '#e85e00')}
             onMouseLeave={e => (e.currentTarget.style.background = '#FF6B00')}
           >
-            Qabul qilish ✓
+            Qabul qilish
           </button>
         </div>
       </div>

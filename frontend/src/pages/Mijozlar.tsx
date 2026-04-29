@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, FileText, CheckCircle2, AlertCircle, Trophy, Package, X, ClipboardList } from 'lucide-react';
+import { Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, FileText, AlertCircle, Trophy, Package, ClipboardList } from 'lucide-react';
 import { customersApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
