@@ -1,5 +1,8 @@
 FROM node:18-slim
 
+# OpenSSL 1.1 o'rnatish
+RUN apt-get update -y && apt-get install -y openssl
+
 WORKDIR /app
 
 # Copy package files
@@ -18,7 +21,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Expose port
-EXPOSE 8080
+EXPOSE 3000
 
 # Start the compiled app
 CMD ["node", "dist/main.js"]
