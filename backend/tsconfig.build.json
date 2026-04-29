@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "test-db.ts",
+    "query_columns.ts",
+    "seed.ts",
+    "prisma"
+  ]
+}
