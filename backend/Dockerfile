@@ -1,31 +1,37 @@
+# 1. Muhitni tayyorlash (Yengil va barqaror Linux versiyasi)
 FROM node:18-slim
 
-# OpenSSL va kerakli system kutubxonalarni o'rnatish
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# 2. Prisma va tizim uchun kerakli kutubxonalarni o'rnatish
+RUN apt-get update -y && \
+    apt-get install -y openssl libc6 && \
+    rm -rf /var/lib/apt/lists/*
 
+# 3. Ishchi papkani belgilash
 WORKDIR /app
 
-# Copy package files and prisma schema first (cache optimization)
+# 4. Paketlar ro'yxatini va Prisma sxemasini ko'chirish
+# (Bu qadam keshdan foydalanish uchun alohida qilinadi)
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install ALL dependencies (fresh Linux-native binaries)
+# 5. Barcha kutubxonalarni o'rnatish
+# (Development kutubxonalari ham o'rnatiladi, chunki 'nest build' uchun ular shart)
 RUN npm install
 
-# Generate Prisma client for Linux
-RUN npx prisma generate
-
-# Copy source code and config (node_modules excluded via .dockerignore)
+# 6. Loyihaning barcha kodlarini konteynerga ko'chirish
 COPY . .
 
-# Build the NestJS app — creates dist/main.js
-RUN npx nest build
+# 7. Prisma Client'ni Linux uchun generatsiya qilish va Loyihani Build qilish
+# Sening package.json'dagi "build" buyrug'ingni ishlatamiz.
+# Bu buyruq 'dist' papkasini yaratishga kafolat beradi.
+RUN npm run build
 
-# Debug: verify dist/main.js exists
-RUN ls -la dist/ && echo "BUILD SUCCESS: dist/main.js found"
+# 8. Muhit o'zgaruvchisi (Port Railway tomonidan avtomat beriladi)
+ENV NODE_ENV=production
 
-# Expose port (Railway uses PORT env variable)
+# 9. Konteyner ichidagi portni ochish
 EXPOSE 3000
 
-# Start the compiled app
-CMD ["node", "dist/main.js"]
+# 10. Dasturni ishga tushirish
+# 'npm run start:prod' buyrug'i 'dist/main.js' ni xatosiz topadi
+CMD ["npm", "run", "start:prod"]
