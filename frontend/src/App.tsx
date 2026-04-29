@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ScanAttendance from './pages/ScanAttendance';
 import Landing from './pages/Landing';
 import Billing from './pages/Billing';
+import CookieConsent from './components/CookieConsent';
 import { authApi } from './api';
 import logo from './assets/logo.png';
 
@@ -143,7 +144,7 @@ const App: React.FC = () => {
         setShowOnboarding(false);
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Xatolik yuz berdi');
+      toast.error(err.response?.data?.message || 'Xatolik yuz berdi');
     }
   };
 
@@ -287,9 +288,12 @@ const App: React.FC = () => {
           onUpdateUser={handleUpdateUser}
         />
       ) : showLanding ? (
-        <Landing onLoginClick={() => setShowLanding(false)} />
+        <>
+          <Landing onLoginClick={() => setShowLanding(false)} />
+          <CookieConsent />
+        </>
       ) : (
-        <Login onLogin={handleLogin} />
+        <Login onLogin={handleLogin} onBack={() => setShowLanding(true)} />
       )}
       <ToastContainer
         position="top-right"

@@ -41,7 +41,7 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = this.jwt.verify(token, {
-        secret: process.env.JWT_SECRET,
+        secret: process.env.JWT_SECRET || 'printflow_super_secret_key_2024',
       });
 
       // Attach user to request for downstream use

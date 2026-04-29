@@ -34,14 +34,4 @@ export class FinanceController {
   async getExpenseBreakdown(@Query('start') start?: string, @Query('end') end?: string) {
     return this.financeService.getExpenseBreakdown(start, end);
   }
-
-  @Get('top-customers')
-  async getTopCustomers(@Query('limit') limit?: string) {
-    return this.financeService.getTopCustomers(limit ? parseInt(limit) : 10);
-  }
-
-  @Get('employee-kpi/:id')
-  async getEmployeeKpi(@Param('id') id: string) {
-    return this.financeService.getEmployeeKpi(id);
-  }
 }

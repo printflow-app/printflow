@@ -41,12 +41,12 @@ function Login({ onLogin }: { onLogin: () => void }) {
       zIndex: 9999,
       overflow: 'hidden'
     }}>
-      {/* Background Dots */}
+      {/* Background Grid */}
       <div style={{ 
         position: 'absolute', 
         inset: 0, 
-        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,107,0,0.08) 1.5px, transparent 0)', 
-        backgroundSize: '32px 32px', 
+        backgroundImage: 'linear-gradient(rgba(255,107,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,0,0.1) 1px, transparent 1px)', 
+        backgroundSize: '60px 60px', 
         zIndex: 0 
       }} />
       
@@ -458,13 +458,15 @@ const PLAN_FEATURES = [
     ]
   },
   {
-    category: 'Qo\'shimcha Modullar',
+    category: '🚀 Premium Modullar',
     features: [
-      { key: 'telegram_bot', label: 'Telegram Bot integratsiyasi' },
+      { key: 'telegram_bot', label: 'Telegram Bot (Asosiy xabarlar)' },
+      { key: 'advancedBot', label: '⚡ Kengaytirilgan Bot (Hisobotlar, Ogohlantirishlar)' },
+      { key: 'kpiTracking', label: '📊 KPI Tahlili (Xodimlar samaradorligi)' },
+      { key: 'expenseAnalytics', label: '📈 Chiqim Tahlili (Kategoriyalar grafigi)' },
+      { key: 'multiBranch', label: '🏢 Multi-Filial (Ko\'p ofis boshqaruvi)' },
       { key: 'tasks', label: 'Task Management (Vazifalar)' },
-      { key: 'kpi', label: 'KPI tahlili' },
       { key: 'debtors', label: 'Qarzdorlarga avto-xabar' },
-      { key: 'multi_branch', label: 'Multi-filial (Tez kunda)' },
     ]
   }
 ];
@@ -474,6 +476,9 @@ const ALL_FEATURES_KEYS = PLAN_FEATURES.flatMap(g => g.features.map(f => f.key))
 function Plans() {
   const [plans, setPlans] = useState<any[]>([]); const [showModal, setShowModal] = useState(false); const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0, maxEmployees: 8, description: '', isPopular: false, sortOrder: 0, features: {} as Record<string, boolean> });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const [errorMsg, setErrorMsg] = useState('');
 
   const load = () => plansApi.findAll().then(r => setPlans(r.data)).catch(console.error);
   useEffect(() => { load(); }, []);
@@ -481,12 +486,12 @@ function Plans() {
   const openCreate = () => {
     const features: Record<string, boolean> = {}; ALL_FEATURES_KEYS.forEach(k => features[k] = false);
     setForm({ name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0, maxEmployees: 8, description: '', isPopular: false, sortOrder: 0, features });
-    setEditing(null); setShowModal(true);
+    setEditing(null); setErrorMsg(''); setShowModal(true);
   };
   const openEdit = (p: any) => {
     let features: Record<string, boolean> = {}; try { const parsed = JSON.parse(p.features); ALL_FEATURES_KEYS.forEach(k => features[k] = !!parsed[k]); } catch { ALL_FEATURES_KEYS.forEach(k => features[k] = false); }
     setForm({ name: p.name, displayName: p.displayName, price3m: p.price3m, price6m: p.price6m, price12m: p.price12m, maxEmployees: p.maxEmployees, description: p.description || '', isPopular: p.isPopular, sortOrder: p.sortOrder, features });
-    setEditing(p); setShowModal(true);
+    setEditing(p); setErrorMsg(''); setShowModal(true);
   };
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -494,7 +499,14 @@ function Plans() {
     try {
       if (editing) await plansApi.update(editing.id, payload); else await plansApi.create(payload);
       setShowModal(false); load();
-    } catch (err: any) { alert(err.response?.data?.message || 'Xatolik'); }
+    } catch (err: any) { setErrorMsg(err.response?.data?.message || 'Xatolik yuz berdi'); }
+  };
+  const handleDelete = async () => {
+    if (!editing) return;
+    try {
+      await plansApi.delete(editing.id);
+      setShowModal(false); load();
+    } catch (e: any) { setErrorMsg(e.response?.data?.message || 'O\'chirishda xatolik'); }
   };
 
   return (
@@ -517,67 +529,85 @@ function Plans() {
         ))}
       </div>
 
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 600, maxHeight: '90vh', overflow: 'auto' }}>
-            <div className="modal-header"><h2>{editing ? 'Tahrirlash' : 'Yangi Tarif'}</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button></div>
-            <form onSubmit={handleSave}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group"><label>Nomi (unikal)</label><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })} placeholder="STARTER" /></div>
-                <div className="form-group"><label>Ko'rsatiladigan nomi</label><input required value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} placeholder="Starter (Kichik)" /></div>
-                <div className="form-group"><label>3 oylik narx (UZS)</label><input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} /></div>
-                <div className="form-group"><label>6 oylik narx (UZS)</label><input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} /></div>
-                <div className="form-group"><label>12 oylik narx (UZS)</label><input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} /></div>
-                <div className="form-group"><label>Xodimlar limiti (0=cheksiz)</label><input type="number" required value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} /></div>
-              </div>
-              <div className="form-group"><label>Tavsif</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="checkbox" checked={form.isPopular} onChange={e => setForm({ ...form, isPopular: e.target.checked })} style={{ width: 18, height: 18 }} />
-                <label style={{ margin: 0 }}>🔥 Eng ommabop (Highlight)</label>
-              </div>
-              <div className="form-group"><label>Platforma funksiyalari (Ruxtsatlar)</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginTop: 8 }}>
-                  {PLAN_FEATURES.map((group, i) => (
-                    <div key={i} style={{ border: '1px solid var(--border)', padding: 12, borderRadius: 8 }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', marginBottom: 8, textTransform: 'uppercase' }}>
-                        {group.category}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        {group.features.map(f => (
-                          <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
-                            <input
-                              type="checkbox"
-                              checked={!!form.features[f.key]}
-                              onChange={e => setForm({ ...form, features: { ...form.features, [f.key]: e.target.checked } })}
-                              style={{ width: 16, height: 16 }}
-                            />
-                            {f.label}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+        {showModal && (
+          <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: 640, maxHeight: '90vh', overflow: 'auto' }}>
+              <div className="modal-header"><h2>{editing ? 'Tahrirlash' : 'Yangi Tarif'}</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button></div>
+              <form onSubmit={handleSave}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="form-group"><label>Nomi (unikal)</label><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })} placeholder="STARTER" /></div>
+                  <div className="form-group"><label>Ko'rsatiladigan nomi</label><input required value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} placeholder="Starter (Kichik)" /></div>
+                  <div className="form-group"><label>3 oylik narx (UZS)</label><input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} /></div>
+                  <div className="form-group"><label>6 oylik narx (UZS)</label><input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} /></div>
+                  <div className="form-group"><label>12 oylik narx (UZS)</label><input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} /></div>
+                  <div className="form-group"><label>Xodimlar limiti (0=cheksiz)</label><input type="number" required value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} /></div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                <button type="submit" className="btn" style={{ flex: 1, height: 48 }}>{editing ? 'Saqlash' : 'Yaratish'}</button>
-                {editing && (
-                  <button type="button" className="btn" style={{ background: '#ef4444', height: 48 }} onClick={async () => {
-                    if (!confirm('Ushbu tarifni o\'chirmoqchimisiz? Unga ulangan workspacelar bo\'lsa xato berishi mumkin.')) return;
-                    try {
-                      await plansApi.delete(editing.id);
-                      setShowModal(false); load();
-                    } catch (e: any) { alert(e.response?.data?.message || 'Xatolik'); }
-                  }}>O'chirish</button>
+                <div className="form-group"><label>Tavsif</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" checked={form.isPopular} onChange={e => setForm({ ...form, isPopular: e.target.checked })} style={{ width: 18, height: 18 }} />
+                  <label style={{ margin: 0 }}>🔥 Eng ommabop (Highlight)</label>
+                </div>
+                <div className="form-group"><label>Platforma funksiyalari (Ruxsatlar)</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginTop: 8 }}>
+                    {PLAN_FEATURES.map((group, i) => (
+                      <div key={i} style={{ border: '1px solid var(--border)', padding: 14, borderRadius: 10 }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', marginBottom: 10, textTransform: 'uppercase' }}>
+                          {group.category}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                          {group.features.map(f => (
+                            <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: '8px 10px', borderRadius: 8, background: form.features[f.key] ? 'rgba(255,107,0,0.08)' : 'transparent', border: form.features[f.key] ? '1px solid rgba(255,107,0,0.2)' : '1px solid transparent', transition: 'all 0.15s' }}>
+                              <input
+                                type="checkbox"
+                                checked={!!form.features[f.key]}
+                                onChange={e => setForm({ ...form, features: { ...form.features, [f.key]: e.target.checked } })}
+                                style={{ width: 16, height: 16, accentColor: 'var(--primary)' }}
+                              />
+                              {f.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {errorMsg && (
+                  <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', color: '#dc2626', fontSize: '0.85rem', fontWeight: 700, marginBottom: 8 }}>
+                    ❌ {errorMsg}
+                  </div>
                 )}
-              </div>
-            </form>
+                <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                  <button type="submit" className="btn" style={{ flex: 1, height: 48 }}>{editing ? 'Saqlash' : 'Yaratish'}</button>
+                  {editing && (
+                    <button type="button" className="btn" style={{ background: '#ef4444', height: 48 }}
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >O'chirish</button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
+        )}
+        {/* Delete Confirm Modal */}
+        {showDeleteConfirm && (
+          <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: 420, textAlign: 'center', padding: 32 }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>Tarifni o'chirish</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 24 }}>
+                <strong>{editing?.displayName}</strong> tarifini o'chirmoqchisiz. Unga ulangan workspacelar ta'sirlanishi mumkin!
+              </p>
+              {errorMsg && <div style={{ background: '#fee2e2', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: '0.85rem', marginBottom: 12 }}>{errorMsg}</div>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn" style={{ flex: 1, background: '#64748b' }} onClick={() => { setShowDeleteConfirm(false); setErrorMsg(''); }}>Bekor qilish</button>
+                <button className="btn" style={{ flex: 1, background: '#ef4444' }} onClick={handleDelete}>Ha, o'chirilsin</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
 function Payments() {
   const [payments, setPayments] = useState<any[]>([]); const [tab, setTab] = useState<'pending' | 'all'>('pending');

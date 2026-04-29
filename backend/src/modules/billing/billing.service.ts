@@ -44,6 +44,7 @@ export class BillingService {
     // Notify Super Admin via Telegram
     try {
       await this.telegramService.notifyAdmins(
+        tenantId,
         `💸 *Yangi To'lov So'rovi!*\n\n` +
         `🏢 *Workspace:* ${tenant.name}\n` +
         `📦 *Ta'rif:* ${data.planName}\n` +

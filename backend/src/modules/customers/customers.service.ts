@@ -43,13 +43,51 @@ export class CustomersService {
 
   async getCustomerTasks(id: string) {
     if (!id) return [];
-    const tasks = await this.prisma.task.findMany({
+    return this.prisma.task.findMany({
       where: { customerId: id },
-      select: { title: true },
-      distinct: ['title'],
+      include: {
+        column: { select: { title: true } },
+        service: { select: { name: true } },
+      },
       orderBy: { createdAt: 'desc' },
-      take: 20
+      take: 50,
     });
-    return tasks.map(t => t.title);
+  }
+
+  /**
+   * Top 10 customers by total orders amount and order count
+   */
+  async getTopCustomers(limit = 10) {
+    const customers = await this.prisma.customer.findMany({
+      include: {
+        _count: { select: { tasks: true } },
+      },
+      orderBy: { totalPaid: 'desc' },
+      take: limit,
+    });
+
+    return customers.map(c => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      totalDebt: c.totalDebt,
+      totalPaid: c.totalPaid,
+      orderCount: c._count.tasks,
+    }));
+  }
+
+  /**
+   * Full order history for a specific customer (with detailed task info)
+   */
+  async getOrderHistory(customerId: string) {
+    return this.prisma.task.findMany({
+      where: { customerId },
+      include: {
+        column: { select: { title: true } },
+        service: { select: { name: true, unit: true } },
+        paymentType: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

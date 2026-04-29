@@ -74,7 +74,7 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
 
       {/* Hero with Grid Background */}
       <section className="hero" style={{ position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,107,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,0,0.06) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0 }} />
+        <div className="pf-animated-grid" style={{ position: 'absolute' }} />
         <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: 600, height: 600, background: 'radial-gradient(circle, rgba(255,107,0,0.12) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div className="hero-content">
@@ -244,7 +244,7 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
       </section>
 
       {/* Footer */}
-      <footer className="footer">
+      <footer className="footer pb-24 md:pb-10">
         <div className="container">
           <div className="footer-content">
             <a href="/" className="footer-logo">

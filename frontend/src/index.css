@@ -234,6 +234,19 @@ body {
   animation: float 20s ease-in-out infinite alternate-reverse;
 }
 
+/* Animated Grid Background */
+.pf-animated-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,107,0,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,107,0,0.1) 1px, transparent 1px);
+  background-size: 60px 60px;
+  overflow: hidden;
+}
+
 @keyframes float {
   0% {
     transform: translate(0, 0);
@@ -287,6 +300,12 @@ body {
 .nav {
   display: flex;
   gap: 40px;
+}
+
+@media (max-width: 768px) {
+  .nav {
+    display: none !important;
+  }
 }
 
 .nav a {

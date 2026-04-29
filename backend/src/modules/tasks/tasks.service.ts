@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
+import { TenantContext } from '../../common/tenant/tenant.context';
 
 @Injectable()
 export class TasksService {
@@ -406,7 +407,10 @@ export class TasksService {
       // Check minStock and notify admins
       if (updatedMaterial.currentStock <= updatedMaterial.minStock) {
         const warningMessage = `⚠️ *OMBOR OGOHLANTIRISHI*\n\n📌 *Mahsulot:* ${updatedMaterial.name}\n📊 *Qoldiq:* ${updatedMaterial.currentStock} ${updatedMaterial.unit}\n📉 *Minimal qoldiq:* ${updatedMaterial.minStock} ${updatedMaterial.unit}\n\n_Iltimos, zaxirani to'ldiring!_`;
-        this.telegramService.notifyAdmins(warningMessage);
+        const tenantId = TenantContext.getTenantId();
+        if (tenantId) {
+          this.telegramService.notifyAdmins(tenantId, warningMessage);
+        }
       }
     }
   }

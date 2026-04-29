@@ -4,7 +4,6 @@
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
-  output        = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -80,29 +79,32 @@ model Tenant {
   updatedAt DateTime @updatedAt
 }
 
-// WorkspaceAdmin — Tenant ichidagi egasi/direktori (to'liq huquq, tayinlanmaydi)
-model WorkspaceAdmin {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fullName     String
-  phone        String?
-  login        String
-  passwordHash String
-  telegramId   String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@unique([tenantId, login])
-  @@index([tenantId])
-}
-
 model SuperAdmin {
   id           String   @id @default(uuid())
   login        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
+}
+
+// Workspace Owner/Director — has full access, NOT an Employee, never shows in assignee dropdowns
+model WorkspaceAdmin {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  fullName        String
+  phone           String?
+  login           String
+  passwordHash    String                  // bcrypt hash
+  telegramId      String?
+  passwordVersion Int      @default(1)
+  isActive        Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, login])
+  @@index([tenantId])
 }
 
 model PlatformSetting {
@@ -148,10 +150,10 @@ model DemoRequest {
 model BotSession {
   id         String    @id @default(uuid())
   chatId     String    @unique               // Telegram chat ID
-  tenantId   String?
-  tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employeeId String?                         // NULL until authenticated
-  step       String    @default("IDLE")      // ENTER_SLUG | LOGIN | PASSWORD | IDLE
+  step       String    @default("IDLE")      // LOGIN | PASSWORD | IDLE
   loginAttempt String?                       // Temporary login storage during auth flow
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -346,10 +348,10 @@ model Role {
   canViewSalary      Boolean @default(false)
   canManageAdmins    Boolean @default(false)
 
-  // KPI va Analytics ruxsatlari (yangi)
-  canViewKpi              Boolean @default(false) // Xodim KPI ko'rsatkichlari
-  canViewExpenseCharts    Boolean @default(false) // Chiqim diagrammasi
-  canManageNotifications  Boolean @default(false) // Telegram xabarlar sozlamalari
+  // Yangi ruxsatlar (Feature-gated)
+  canViewKpi              Boolean @default(false)  // KPI ko'rsatkichlarini ko'rish
+  canManageNotifications  Boolean @default(false)  // Bot bildirishnomalarini boshqarish
+  canViewExpenseCharts    Boolean @default(false)  // Chiqim tahlil grafiklarini ko'rish
 
   employees Employee[]
 

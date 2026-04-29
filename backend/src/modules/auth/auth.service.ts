@@ -43,24 +43,49 @@ export class AuthService {
       throw new UnauthorizedException('Sinov muddati tugagan. Obuna xarid qiling');
     }
 
-    // Step 2: Temporarily set TenantContext to query this tenant's employees
-    const employee = await TenantContext.run(
+    // Step 2: Temporarily set TenantContext to query this tenant's users
+    let roleObj: any = null;
+    let isWorkspaceAdmin = false;
+
+    const userEntity = await TenantContext.run(
       { tenantId: tenant.id, userId: '', userRole: '' },
       async () => {
-        return this.prisma.employee.findFirst({
+        const admin = await this.prisma.workspaceAdmin.findFirst({
+          where: { login },
+        });
+        if (admin) {
+          isWorkspaceAdmin = true;
+          roleObj = {
+            name: 'Admin',
+            canViewFinance: true, canAddIncome: true, canAddExpense: true, canViewTotalBalance: true,
+            canManagePaymentTypes: true, canViewTasks: true, canCreateTask: true, canEditTask: true,
+            canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
+            canManageCustomers: true, canViewInventory: true, canManageInventory: true,
+            canViewAttendance: true, canManageAttendance: true, canViewServices: true, canManageServices: true,
+            canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true
+          };
+          return admin;
+        }
+
+        const emp = await this.prisma.employee.findFirst({
           where: { login },
           include: { role: true },
         });
+        if (emp) {
+          roleObj = emp.role;
+          return emp;
+        }
+        return null;
       },
     );
 
-    if (!employee) {
+    if (!userEntity) {
       // Generic error — don't reveal if user exists or not
       throw new UnauthorizedException('Login yoki parol noto\'g\'ri');
     }
 
     // Step 3: Verify password with bcrypt
-    const isValid = await bcrypt.compare(password, employee.passwordHash);
+    const isValid = await bcrypt.compare(password, userEntity.passwordHash);
     if (!isValid) {
       throw new UnauthorizedException('Login yoki parol noto\'g\'ri');
     }
@@ -68,14 +93,14 @@ export class AuthService {
     // Step 4: Sign JWT
     const token = this.jwt.sign(
       {
-        sub: employee.id,
+        sub: userEntity.id,
         tenantId: tenant.id,
         workspaceSlug: tenant.slug,
-        role: employee.role.name,
-        passwordVersion: employee.passwordVersion,
+        role: roleObj.name,
+        passwordVersion: userEntity.passwordVersion,
       },
       {
-        secret: process.env.JWT_SECRET,
+        secret: process.env.JWT_SECRET || 'printflow_super_secret_key_2024',
         expiresIn: '7d',
       },
     );
@@ -84,18 +109,18 @@ export class AuthService {
     return {
       token,
       user: {
-        id: employee.id,
-        fullName: employee.fullName,
-        login: employee.login,
-        phone: employee.phone,
-        telegramId: employee.telegramId,
-        passwordVersion: employee.passwordVersion,
-        isFirstLogin: employee.isFirstLogin, // Return flag for frontend onboarding
-        role: employee.role,
-        permissions: employee.role,
-        baseSalary: employee.baseSalary,
-        givenAmount: employee.givenAmount,
-        workDebt: employee.workDebt,
+        id: userEntity.id,
+        fullName: userEntity.fullName,
+        login: userEntity.login,
+        phone: userEntity.phone,
+        telegramId: userEntity.telegramId,
+        passwordVersion: userEntity.passwordVersion,
+        isFirstLogin: isWorkspaceAdmin ? false : (userEntity as any).isFirstLogin, // Return flag for frontend onboarding
+        role: roleObj,
+        permissions: roleObj,
+        baseSalary: isWorkspaceAdmin ? 0 : (userEntity as any).baseSalary,
+        givenAmount: isWorkspaceAdmin ? 0 : (userEntity as any).givenAmount,
+        workDebt: isWorkspaceAdmin ? 0 : (userEntity as any).workDebt,
         tenantFeatures: tenant.plan?.features ? JSON.parse(tenant.plan.features) : {},
       },
     };

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, FileText, CheckCircle2, AlertCircle, Trophy, Package, X, ClipboardList } from 'lucide-react';
 import { customersApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { toast } from 'react-toastify';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
@@ -11,23 +12,30 @@ const formatCurrency = (amount: number) => {
 const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const p = currentUser.permissions || {};
   const [customers, setCustomers] = useState<any[]>([]);
+  const [topCustomers, setTopCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'all' | 'top'>('all');
 
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Order History Modal
+  const [orderHistoryModal, setOrderHistoryModal] = useState<{ isOpen: boolean; customer: any | null; orders: any[] }>({
+    isOpen: false, customer: null, orders: [],
+  });
+  const [orderHistoryLoading, setOrderHistoryLoading] = useState(false);
+
+  // Delete confirm
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; id: string | null; name: string }>({ isOpen: false, id: null, name: '' });
-
-  const showStatus = (type: 'success' | 'error', text: string) => {
-    setStatusMessage({ type, text });
-    setTimeout(() => setStatusMessage(null), 3000);
-  };
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const res = await customersApi.findAll();
-      setCustomers(res.data || []);
+      const [customersRes, topRes] = await Promise.all([
+        customersApi.findAll(),
+        customersApi.getTopCustomers(10),
+      ]);
+      setCustomers(customersRes.data || []);
+      setTopCustomers(topRes.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -37,8 +45,8 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredCustomers = customers.filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.phone?.includes(searchTerm)
   );
 
@@ -46,21 +54,28 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     if (!confirmModal.id) return;
     try {
       await customersApi.delete(confirmModal.id);
-      showStatus('success', 'Mijoz muvaffaqiyatli o\'chirildi! ✅');
+      toast.success('Mijoz muvaffaqiyatli o\'chirildi!');
       setConfirmModal({ isOpen: false, id: null, name: '' });
       fetchData();
     } catch {
-      showStatus('error', 'O\'chirishda xatolik yuz berdi!');
+      toast.error('O\'chirishda xatolik yuz berdi!');
     }
   };
 
-  const openDeleteModal = (id: string, name: string) => {
-    setConfirmModal({ isOpen: true, id, name });
+  const openOrderHistory = async (customer: any) => {
+    setOrderHistoryModal({ isOpen: true, customer, orders: [] });
+    setOrderHistoryLoading(true);
+    try {
+      const res = await customersApi.getOrderHistory(customer.id);
+      setOrderHistoryModal(prev => ({ ...prev, orders: res.data || [] }));
+    } catch {
+      toast.error('Buyurtmalar tarixini yuklashda xatolik!');
+    } finally {
+      setOrderHistoryLoading(false);
+    }
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
+  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
 
   // Stats
   const totalDebtors = customers.filter(c => (c.totalDebt - c.totalPaid) > 0).length;
@@ -72,128 +87,183 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   if (isLoading) return <LoadingSpinner fullPage />;
 
+  const MEDAL_COLORS = ['#f59e0b', '#94a3b8', '#cd7c2f'];
+  const MEDAL_LABELS = ['🥇', '🥈', '🥉'];
+
   return (
     <div className="space-y-6">
-      {/* Status notification */}
-      {statusMessage && (
-        <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-          {statusMessage.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-          <span className="font-bold text-sm tracking-tight">{statusMessage.text}</span>
-        </div>
-      )}
-      
       {/* Header */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-           <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-              Mijozlar Bazasi
-           </h2>
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
+          <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+            Mijozlar Bazasi
+          </h2>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
         </div>
-        <div className="relative w-full md:w-80">
-           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-           <input 
-              type="text" 
-              placeholder="Qidirish..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all placeholder:text-slate-300 shadow-inner"
-           />
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* View switcher */}
+          <div className="flex bg-slate-100 p-0.5 rounded-lg shadow-inner">
+            <button onClick={() => setActiveView('all')} className={`px-3 py-1.5 text-[10px] font-black rounded-md transition-all ${activeView === 'all' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500'}`}>
+              Barchasi
+            </button>
+            <button onClick={() => setActiveView('top')} className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black rounded-md transition-all ${activeView === 'top' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500'}`}>
+              <Trophy size={11} /> Top 10
+            </button>
+          </div>
+          {activeView === 'all' && (
+            <div className="relative flex-1 md:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                type="text"
+                placeholder="Qidirish..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all placeholder:text-slate-300 shadow-inner"
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Grid Stats */}
+      {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-            <p className="text-[8px] font-black text-slate-400 uppercase mb-1 tracking-widest">Jami Mijozlar</p>
-            <h4 className="text-lg font-black text-slate-800">{customers.length}</h4>
-         </div>
-         <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm transition-all hover:shadow-md">
-            <p className="text-[8px] font-black text-rose-400 uppercase mb-1 tracking-widest">Qarzdorlar</p>
-            <h4 className="text-lg font-black text-rose-600">{totalDebtors}</h4>
-         </div>
-         <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm transition-all hover:shadow-md">
-            <p className="text-[8px] font-black text-rose-400 uppercase mb-1 tracking-widest">Umumiy Qarzlar</p>
-            <h4 className="text-lg font-black text-rose-600 truncate">{formatCurrency(totalDebtAmount)}</h4>
-         </div>
-         <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm transition-all hover:shadow-md">
-            <p className="text-[8px] font-black text-orange-400 uppercase mb-1 tracking-widest">Haqdorlar</p>
-            <h4 className="text-lg font-black text-orange-600">{totalCreditors}</h4>
-         </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+          <p className="text-[8px] font-black text-slate-400 uppercase mb-1 tracking-widest">Jami Mijozlar</p>
+          <h4 className="text-lg font-black text-slate-800">{customers.length}</h4>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm transition-all hover:shadow-md">
+          <p className="text-[8px] font-black text-rose-400 uppercase mb-1 tracking-widest">Qarzdorlar</p>
+          <h4 className="text-lg font-black text-rose-600">{totalDebtors}</h4>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm transition-all hover:shadow-md">
+          <p className="text-[8px] font-black text-rose-400 uppercase mb-1 tracking-widest">Umumiy Qarzlar</p>
+          <h4 className="text-lg font-black text-rose-600 truncate">{formatCurrency(totalDebtAmount)}</h4>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm transition-all hover:shadow-md">
+          <p className="text-[8px] font-black text-orange-400 uppercase mb-1 tracking-widest">Haqdorlar</p>
+          <h4 className="text-lg font-black text-orange-600">{totalCreditors}</h4>
+        </div>
       </div>
 
-      {/* Customers Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-         <div className="overflow-x-auto">
+      {/* ================================================ */}
+      {/* TOP CUSTOMERS VIEW */}
+      {/* ================================================ */}
+      {activeView === 'top' && (
+        <div className="space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm">
+            <h3 className="text-base font-black text-slate-800 flex items-center gap-2 mb-1">
+              <Trophy className="text-amber-500" size={18} /> Top Mijozlar (Buyurtmalar bo'yicha)
+            </h3>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-6">Eng ko'p buyurtma bergan va eng ko'p to'lagan mijozlar</p>
+            <div className="space-y-3">
+              {topCustomers.map((c, i) => (
+                <div key={c.id} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
+                  <div className="text-2xl flex-shrink-0 w-10 text-center">{MEDAL_LABELS[i] || `${i + 1}`}</div>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0 shadow-lg" style={{ background: MEDAL_COLORS[i] || '#6366f1' }}>
+                    {c.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-800 truncate">{c.name}</p>
+                    <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1 mt-0.5">
+                      <Package size={10} /> {c.orderCount} ta buyurtma
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-black text-emerald-600">{formatCurrency(c.totalPaid)}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Jami to'lagan</p>
+                  </div>
+                  <button
+                    onClick={() => openOrderHistory(c)}
+                    className="flex-shrink-0 w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all shadow-sm"
+                    title="Buyurtmalar tarixini ko'rish"
+                  >
+                    <ClipboardList size={14} />
+                  </button>
+                </div>
+              ))}
+              {topCustomers.length === 0 && (
+                <div className="py-16 text-center text-slate-300 font-bold text-xs uppercase tracking-widest">Ma'lumot yo'q</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================ */}
+      {/* ALL CUSTOMERS TABLE */}
+      {/* ================================================ */}
+      {activeView === 'all' && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="w-full text-left">
-               <thead className="bg-slate-50/80">
-                  <tr className="border-b border-slate-100">
-                     <th className="py-3 px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest w-8"></th>
-                     <th className="py-3 px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest">Mijoz Ismi</th>
-                     <th className="px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest">Telefon</th>
-                     <th className="px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest">Umumiy</th>
-                     <th className="px-5 text-[9px] uppercase font-black text-emerald-500 tracking-widest">To'langan</th>
-                     <th className="px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest">Holat</th>
-                     <th className="px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest text-right pr-6">Harakat</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-100">
-                  {filteredCustomers.length === 0 ? (
-                    <tr><td colSpan={7} className="py-20 text-center font-bold text-slate-300">Hech qanday mijoz topilmadi</td></tr>
-                  ) : (
-                    filteredCustomers.map(c => {
-                      const balance = c.totalDebt - c.totalPaid;
-                      const isExpanded = expandedId === c.id;
-                      const transactions = c.transactions || [];
-                      const tasks = c.tasks || [];
-                      return (
-                        <React.Fragment key={c.id}>
+              <thead className="bg-slate-50/80">
+                <tr className="border-b border-slate-100">
+                  <th className="py-3 px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest w-8"></th>
+                  <th className="py-3 px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest">Mijoz Ismi</th>
+                  <th className="px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest">Telefon</th>
+                  <th className="px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest">Umumiy</th>
+                  <th className="px-5 text-[9px] uppercase font-black text-emerald-500 tracking-widest">To'langan</th>
+                  <th className="px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest">Holat</th>
+                  <th className="px-5 text-[9px] uppercase font-black text-slate-400 tracking-widest text-right pr-6">Harakat</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredCustomers.length === 0 ? (
+                  <tr><td colSpan={7} className="py-20 text-center font-bold text-slate-300">Hech qanday mijoz topilmadi</td></tr>
+                ) : (
+                  filteredCustomers.map(c => {
+                    const balance = c.totalDebt - c.totalPaid;
+                    const isExpanded = expandedId === c.id;
+                    const transactions = c.transactions || [];
+                    const tasks = c.tasks || [];
+                    return (
+                      <React.Fragment key={c.id}>
                         <tr className={`hover:bg-slate-50/50 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/70 border-b border-orange-50' : ''}`} onClick={() => toggleExpand(c.id)}>
-                           <td className="py-3 px-5">
-                              <button className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-sm">
-                                {isExpanded ? <ChevronUp size={12} strokeWidth={3} /> : <ChevronDown size={12} strokeWidth={3} />}
+                          <td className="py-3 px-5">
+                            <button className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-sm">
+                              {isExpanded ? <ChevronUp size={12} strokeWidth={3} /> : <ChevronDown size={12} strokeWidth={3} />}
+                            </button>
+                          </td>
+                          <td className="py-3 px-5">
+                            <div className="font-black text-slate-800 text-xs flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 group-hover:bg-sky-500 group-hover:text-white transition-all shadow-sm">{c.name.charAt(0)}</div>
+                              {c.name}
+                            </div>
+                          </td>
+                          <td className="px-5">
+                            <p className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5"><Phone size={11} className="text-sky-400" /> {c.phone || "—"}</p>
+                          </td>
+                          <td className="px-5 font-bold text-[11px] text-slate-600">{formatCurrency(c.totalDebt)}</td>
+                          <td className="px-5 font-black text-[11px] text-emerald-600">{formatCurrency(c.totalPaid)}</td>
+                          <td className="px-5">
+                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-tight ${balance > 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : balance < 0 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                              {balance > 0 ? `${formatCurrency(balance)}` : balance < 0 ? `Haqdor: ${formatCurrency(Math.abs(balance))}` : 'Yopilgan'}
+                            </span>
+                          </td>
+                          <td className="px-5 text-right pr-6" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => openOrderHistory(c)} className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-400 hover:bg-orange-500 hover:text-white transition-all shadow-sm" title="Buyurtmalar tarixi">
+                                <ClipboardList size={13} />
                               </button>
-                           </td>
-                           <td className="py-3 px-5">
-                              <div className="font-black text-slate-800 text-xs flex items-center gap-2.5">
-                                 <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 group-hover:bg-sky-500 group-hover:text-white transition-all shadow-sm">{c.name.charAt(0)}</div>
-                                 {c.name}
-                              </div>
-                           </td>
-                           <td className="px-5">
-                              <p className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5"><Phone size={11} className="text-sky-400"/> {c.phone || "—"}</p>
-                           </td>
-                           <td className="px-5 font-bold text-[11px] text-slate-600">{formatCurrency(c.totalDebt)}</td>
-                           <td className="px-5 font-black text-[11px] text-emerald-600">{formatCurrency(c.totalPaid)}</td>
-                           <td className="px-5">
-                              <span className={`px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-tight ${
-                                balance > 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 
-                                balance < 0 ? 'bg-orange-50 text-orange-600 border-orange-100' : 
-                                'bg-emerald-50 text-emerald-600 border-emerald-100'
-                              }`}>
-                                 {balance > 0 ? `${formatCurrency(balance)}` : 
-                                  balance < 0 ? `Haqdor: ${formatCurrency(Math.abs(balance))}` : 
-                                  'Yopilgan'}
-                              </span>
-                           </td>
-                           <td className="px-5 text-right pr-6" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 {p.canManageCustomers && <button onClick={() => openDeleteModal(c.id, c.name)} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Trash2 size={13}/></button>}
-                              </div>
-                           </td>
+                              {p.canManageCustomers && (
+                                <button onClick={() => setConfirmModal({ isOpen: true, id: c.id, name: c.name })} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
                         </tr>
-                        
-                        {/* Expanded Row: Transaction & Task Details */}
+
+                        {/* Expanded Row */}
                         {isExpanded && (
                           <tr>
                             <td colSpan={7} className="p-0">
                               <div className="bg-slate-50/80 px-8 py-6 border-t border-slate-100 animate-fade-in">
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                  
-                                  {/* Buyurtmalar (Xizmatlar) */}
+                                  {/* Buyurtmalar */}
                                   <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
                                     <h5 className="text-xs font-black text-orange-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                      <FileText size={14} /> Buyurtmalar (Xizmatlar)
+                                      <FileText size={14} /> Buyurtmalar ({tasks.length})
                                     </h5>
                                     {tasks.length === 0 ? (
                                       <p className="text-xs text-slate-400 font-bold py-4">Hech qanday buyurtma topilmadi</p>
@@ -203,18 +273,10 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                                           <div key={t.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
                                             <div>
                                               <p className="text-xs font-black text-slate-700">{t.title}</p>
-                                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">
-                                                {new Date(t.createdAt).toLocaleDateString('uz-UZ')}
-                                              </p>
+                                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">{new Date(t.createdAt).toLocaleDateString('uz-UZ')}</p>
                                             </div>
                                             <div className="text-right">
                                               <p className="text-xs font-black text-slate-800">{formatCurrency(t.totalAmount)}</p>
-                                              {t.depositAmount > 0 && (
-                                                <p className="text-[10px] font-bold text-emerald-500">Zakolat: {formatCurrency(t.depositAmount)}</p>
-                                              )}
-                                              {t.remainingAmount > 0 && (
-                                                <p className="text-[10px] font-bold text-rose-500">Qoldiq: {formatCurrency(t.remainingAmount)}</p>
-                                              )}
                                             </div>
                                           </div>
                                         ))}
@@ -222,7 +284,7 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                                     )}
                                   </div>
 
-                                  {/* Tranzaksiyalar tarixi */}
+                                  {/* To'lovlar tarixi */}
                                   <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
                                     <h5 className="text-xs font-black text-sky-600 uppercase tracking-widest mb-4 flex items-center gap-2">
                                       <TrendingUp size={14} /> To'lovlar Tarixi
@@ -239,9 +301,7 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                                               </div>
                                               <div>
                                                 <p className="text-xs font-bold text-slate-700">{tr.serviceType || tr.expenseReason || tr.type}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold">
-                                                  {new Date(tr.date).toLocaleDateString('uz-UZ')} • {tr.paymentType?.name || 'Naqd'}
-                                                </p>
+                                                <p className="text-[10px] text-slate-400 font-bold">{new Date(tr.date).toLocaleDateString('uz-UZ')} • {tr.paymentType?.name || 'Naqd'}</p>
                                               </div>
                                             </div>
                                             <span className={`text-xs font-black ${tr.type === 'kirim' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -252,28 +312,65 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                                       </div>
                                     )}
                                   </div>
-
                                 </div>
                               </div>
                             </td>
                           </tr>
                         )}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
-               </tbody>
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </tbody>
             </table>
-         </div>
-      </div>
+          </div>
+        </div>
+      )}
 
-      {/* MODAL: CONFIRM DELETE */}
-      <Modal 
-        isOpen={confirmModal.isOpen} 
-        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} 
-        title="Mijozni o'chirish"
-        type="danger"
-      >
+      {/* ORDER HISTORY MODAL */}
+      <Modal isOpen={orderHistoryModal.isOpen} onClose={() => setOrderHistoryModal({ isOpen: false, customer: null, orders: [] })} title={`Buyurtmalar Tarixi — ${orderHistoryModal.customer?.name || ''}`} maxWidth="max-w-2xl">
+        {orderHistoryLoading ? (
+          <div className="flex justify-center py-12"><LoadingSpinner /></div>
+        ) : orderHistoryModal.orders.length === 0 ? (
+          <div className="py-16 text-center text-slate-300 font-bold text-xs uppercase tracking-widest">Hech qanday buyurtma topilmadi</div>
+        ) : (
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scroll">
+            {orderHistoryModal.orders.map((order: any) => (
+              <div key={order.id} className="bg-slate-50 rounded-xl border border-slate-100 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-800 truncate">{order.title}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {order.service && (
+                        <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[9px] font-black rounded-lg border border-orange-100 uppercase">{order.service.name}</span>
+                      )}
+                      {order.column && (
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-black rounded-lg uppercase">{order.column.title}</span>
+                      )}
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded-lg">{new Date(order.createdAt).toLocaleDateString('uz-UZ')}</span>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-black text-slate-800">{formatCurrency(order.totalAmount || 0)}</p>
+                    {order.depositAmount > 0 && (
+                      <p className="text-[10px] font-bold text-emerald-500">Zakolat: {formatCurrency(order.depositAmount)}</p>
+                    )}
+                    {order.remainingAmount > 0 && (
+                      <p className="text-[10px] font-bold text-rose-500">Qoldiq: {formatCurrency(order.remainingAmount)}</p>
+                    )}
+                  </div>
+                </div>
+                {order.note && (
+                  <p className="text-[10px] text-slate-400 font-medium mt-2 italic border-t border-slate-100 pt-2">{order.note}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
+
+      {/* DELETE CONFIRM MODAL */}
+      <Modal isOpen={confirmModal.isOpen} onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} title="Mijozni o'chirish" type="danger">
         <div className="space-y-6">
           <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-start gap-4">
             <AlertCircle className="text-rose-500 mt-1" size={24} />
@@ -284,22 +381,11 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               </p>
             </div>
           </div>
-          <p className="text-xs font-medium text-slate-500 px-1">
-            Ushbu mijozga biriktirilgan barcha tranzaktsiyalar va buyurtmalar tarixi ham o'chib ketishi mumkin. Davom etishni xohlaysizmi?
-          </p>
           <div className="flex gap-3 pt-2">
-            <button 
-              type="button" 
-              className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" 
-              onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-            >
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}>
               Bekor qilish
             </button>
-            <button 
-              type="button" 
-              className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all"
-              onClick={handleDelete}
-            >
+            <button type="button" className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
               Ha, o'chirilsin
             </button>
           </div>

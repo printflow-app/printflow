@@ -10,6 +10,11 @@ export class CustomersController {
     return this.customersService.findAll();
   }
 
+  @Get('top')
+  getTopCustomers(@Query('limit') limit?: string) {
+    return this.customersService.getTopCustomers(limit ? parseInt(limit) : 10);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customersService.findOne(id);
@@ -33,5 +38,10 @@ export class CustomersController {
   @Get(':id/tasks')
   getCustomerTasks(@Param('id') id: string) {
     return this.customersService.getCustomerTasks(id);
+  }
+
+  @Get(':id/orders')
+  getOrderHistory(@Param('id') id: string) {
+    return this.customersService.getOrderHistory(id);
   }
 }

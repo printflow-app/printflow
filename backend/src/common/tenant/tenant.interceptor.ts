@@ -47,18 +47,23 @@ export class TenantInterceptor implements NestInterceptor {
     const { tenantId, userId, userRole } = tenantPayload;
 
     // CRITICAL SECURITY CHECK: Verify the user actually belongs to this tenant.
-    // Cross-tenant attack prevention — even if a valid JWT is stolen from
-    // another tenant, it cannot access this tenant's data.
-    const employee = await this.prisma.employee.findFirst({
+    let userEntity: any = await this.prisma.employee.findFirst({
       where: { id: userId, tenantId },
       include: { tenant: true },
     });
 
-    if (!employee || !employee.tenant) {
+    if (!userEntity) {
+      userEntity = await this.prisma.workspaceAdmin.findFirst({
+        where: { id: userId, tenantId },
+        include: { tenant: true },
+      });
+    }
+
+    if (!userEntity || !userEntity.tenant) {
       throw new ForbiddenException('Bu workspace\'ga kirish taqiqlangan');
     }
 
-    const tenant = employee.tenant;
+    const tenant = userEntity.tenant;
 
     // Billing route exemption
     const isBillingRoute = req.url.includes('/api/billing') || req.url.includes('/api/auth/logout') || req.url.includes('/api/auth/me');

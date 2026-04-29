@@ -92,6 +92,8 @@ export const customersApi = {
   update: (id: string, data: any) => api.put(`/customers/${id}`, data),
   delete: (id: string) => api.delete(`/customers/${id}`),
   getCustomerTasks: (id: string) => api.get(`/customers/${id}/tasks`),
+  getOrderHistory: (id: string) => api.get(`/customers/${id}/orders`),
+  getTopCustomers: (limit?: number) => api.get('/customers/top', { params: limit ? { limit } : {} }),
 };
 
 // =============================================
@@ -144,8 +146,8 @@ export const financeApi = {
   getTransactions: (config?: any) => api.get('/finance/transactions', config),
   createTransaction: (data: any) => api.post('/finance/transactions', data),
   getDinamika: (config?: any) => api.get('/finance/dinamika', config),
-  getStatsByPaymentType: (config?: any) =>
-    api.get('/finance/stats-by-payment-type', config),
+  getStatsByPaymentType: (config?: any) => api.get('/finance/stats-by-payment-type', config),
+  getExpenseBreakdown: (config?: any) => api.get('/finance/expense-breakdown', config),
 };
 
 // =============================================
@@ -246,6 +248,17 @@ export const billingApi = {
   submitPayment: (data: any) => api.post('/billing/payment', data),
   getPayments: () => api.get('/billing/payments'),
   getStatus: () => api.get('/billing/status'),
+};
+
+// =============================================
+// WORKSPACE ADMINS
+// =============================================
+export const workspaceAdminsApi = {
+  findAll: () => api.get('/workspace-admins'),
+  create: (data: { fullName: string; phone?: string }) => api.post('/workspace-admins', data),
+  update: (id: string, data: any) => api.put(`/workspace-admins/${id}`, data),
+  delete: (id: string) => api.delete(`/workspace-admins/${id}`),
+  resetPassword: (id: string) => api.post(`/workspace-admins/${id}/reset-password`),
 };
 
 export default api;
