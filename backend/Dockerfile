@@ -10,17 +10,22 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# 🚨 MANA ASOSIY ZARBA! 
-# Railway qanaqa rejimda bo'lishidan qat'i nazar, barcha asboblarni kuch bilan o'rnatamiz:
+# Railway qanaqa rejimda bo'lishidan qat'i nazar, asboblarni kuch bilan o'rnatamiz
 RUN npm install --include=dev
 
 COPY . .
 
-# Endi Nest CLI aniq bor, build 100% ishlaydi va dist papka yaratiladi
+# Build qilamiz
 RUN npm run build
+
+# 🚨 DIAGNOSTIKA BOSHLANADI 🚨
+RUN echo "=== DOCKER ICHIDAGI FAYLLAR ===" && ls -la
+RUN echo "=== DIST PAPKA ICHIDAGI FAYLLAR ===" && ls -la dist || echo "DIST U-MU-MAN YOQ!!!"
+RUN echo "=== DIST/SRC ICHIDAGI FAYLLAR ===" && ls -la dist/src || echo "DIST/SRC HAM YOQ!!!"
+# 🚨 DIAGNOSTIKA TUGAydi 🚨
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# Start qotirib yoziladi
-CMD sh -c "node dist/main.js || node dist/src/main.js"
+# Universal Start buyrug'i
+CMD ["sh", "-c", "node dist/main.js || node dist/src/main.js"]
