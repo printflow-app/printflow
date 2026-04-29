@@ -47,24 +47,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.start(async (ctx: any) => {
       const chatId = ctx.chat.id.toString();
-      const payload = ctx.startPayload;
-      if (payload && payload.startsWith('workspace_')) {
-        const slug = payload.replace('workspace_', '');
-        const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
-        if (!tenant || !tenant.isActive) return ctx.reply('❌ Workspace topilmadi yoki faol emas.');
-        
-        const existing = await this.prisma.botSession.findUnique({ where: { chatId } });
-        if (existing && existing.tenantId === tenant.id) return ctx.reply(`✅ Siz allaqachon *${tenant.name}* workspacega ulangansiz.`, { parse_mode: 'Markdown' });
-        
-        await this.prisma.botSession.upsert({
-          where: { chatId },
-          update: { tenantId: tenant.id, step: 'LOGIN', employeeId: null, loginAttempt: null },
-          create: { chatId, tenantId: tenant.id, step: 'LOGIN' }
-        });
-        return ctx.reply(`🖨️ *PrintFlow — ${tenant.name}*\n\nTizimga kirish uchun loginingizni kiriting:`, { parse_mode: 'Markdown' });
+
+      if (ctx.tenantId) {
+        return ctx.reply(`✅ *${ctx.tenant.name}* ga ulangansiz.\n/report — Hisobot\n/check — Vazifalar`, { parse_mode: 'Markdown' });
       }
-      if (ctx.tenantId) return ctx.reply(`✅ *${ctx.tenant.name}* ga ulangansiz.\n/report — Hisobot\n/check — Vazifalar`, { parse_mode: 'Markdown' });
-      return ctx.reply('👋 Botga xush kelibsiz! Admin yuborgan havolani bosing.');
+
+      await this.prisma.botSession.upsert({
+        where: { chatId },
+        update: { step: 'ENTER_SLUG', employeeId: null, loginAttempt: null, tenantId: null },
+        create: { chatId, step: 'ENTER_SLUG' }
+      });
+
+      return ctx.reply('👋 Botga xush kelibsiz!\n\n1️⃣ Ishlaydigan kompaniyangizni kiriting (Workspace Slug):');
     });
 
     this.bot.command('report', async (ctx: any) => {
@@ -92,21 +86,39 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.on('text', async (ctx: any) => {
       const chatId = ctx.chat.id.toString();
-      const text = ctx.message.text;
-      if (!ctx.botSession || !ctx.tenantId) return;
-      const { step } = ctx.botSession;
+      const text = ctx.message.text.trim();
       
+      const session = await this.prisma.botSession.findUnique({ where: { chatId } });
+      if (!session) return;
+      
+      const { step } = session;
+      
+      if (step === 'ENTER_SLUG') {
+        const tenant = await this.prisma.tenant.findUnique({ where: { slug: text } });
+        if (!tenant || !tenant.isActive) {
+          return ctx.reply('❌ Bunday kompaniya topilmadi yoki nofaol. Qaytadan kiriting (Workspace Slug):');
+        }
+        
+        await this.prisma.botSession.update({
+          where: { chatId },
+          data: { tenantId: tenant.id, step: 'LOGIN' }
+        });
+        return ctx.reply(`🖨️ *PrintFlow — ${tenant.name}*\n\n2️⃣ Tizimga kirish uchun loginingizni kiriting:`, { parse_mode: 'Markdown' });
+      }
+      
+      if (!session.tenantId) return;
+
       if (step === 'LOGIN') {
         await this.prisma.botSession.update({
           where: { chatId },
           data: { loginAttempt: text, step: 'PASSWORD' }
         });
-        return ctx.reply('🔐 Parolingizni kiriting:');
+        return ctx.reply('🔐 3️⃣ Parolingizni kiriting:');
       }
       
       if (step === 'PASSWORD') {
         const emp = await this.prisma.employee.findFirst({
-          where: { login: ctx.botSession.loginAttempt, tenantId: ctx.tenantId }
+          where: { login: session.loginAttempt, tenantId: session.tenantId }
         });
         if (emp && await bcrypt.compare(text, emp.passwordHash)) {
           await this.prisma.botSession.update({
@@ -123,7 +135,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           where: { chatId },
           data: { step: 'LOGIN', loginAttempt: null }
         });
-        return ctx.reply('❌ Xato. Qaytadan login kiriting:');
+        return ctx.reply('❌ Login yoki parol xato. Qaytadan loginingizni kiriting:');
       }
     });
   }

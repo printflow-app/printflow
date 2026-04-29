@@ -48,7 +48,7 @@ export class AuthController {
     res.cookie('pf_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
@@ -87,7 +87,7 @@ export class AuthController {
     res.cookie('pf_sa_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 4 * 60 * 60 * 1000, // 4 hours — shorter for admin
       path: '/',
     });

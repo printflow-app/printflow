@@ -205,4 +205,91 @@ export class FinanceService {
       chiqim: formatForChart(stats.chiqim).sort((a, b) => b.value - a.value),
     };
   }
+
+  // =============================================
+  // YANGI: Chiqim Breakdown — Diagramma uchun
+  // =============================================
+  async getExpenseBreakdown(start?: string, end?: string) {
+    const where = this.getDateRange(start, end);
+
+    const expenses = await this.prisma.transaction.findMany({
+      where: { ...where, type: 'chiqim' },
+      include: { expenseType: true },
+    });
+
+    const breakdown: Record<string, number> = {};
+    expenses.forEach(t => {
+      const category = t.expenseType?.name || t.expenseReason || 'Boshqa';
+      breakdown[category] = (breakdown[category] || 0) + t.amount;
+    });
+
+    const total = Object.values(breakdown).reduce((s, v) => s + v, 0);
+
+    return Object.entries(breakdown)
+      .map(([name, value]) => ({
+        name,
+        value,
+        percentage: total > 0 ? Math.round((value / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8); // Top 8 kategoriya
+  }
+
+  // =============================================
+  // YANGI: Top Mijozlar — CRM uchun
+  // =============================================
+  async getTopCustomers(limit = 10) {
+    const customers = await this.prisma.customer.findMany({
+      include: {
+        _count: { select: { tasks: true } },
+      },
+      orderBy: { totalPaid: 'desc' },
+      take: limit,
+    });
+
+    return customers.map(c => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      totalPaid: c.totalPaid,
+      totalDebt: c.totalDebt,
+      orderCount: c._count.tasks,
+    }));
+  }
+
+  // =============================================
+  // YANGI: Xodim KPI — 30 kunlik
+  // =============================================
+  async getEmployeeKpi(employeeId: string) {
+    const since = new Date();
+    since.setDate(since.getDate() - 30);
+
+    const [completedTasks, activeTasks, allHistories] = await Promise.all([
+      this.prisma.taskHistory.count({
+        where: {
+          employeeId,
+          action: "ko'chirildi",
+          createdAt: { gte: since },
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          assignees: { contains: employeeId },
+        },
+      }),
+      this.prisma.taskHistory.count({
+        where: {
+          employeeId,
+          createdAt: { gte: since },
+        },
+      }),
+    ]);
+
+    return {
+      employeeId,
+      completedTasks30d: completedTasks,
+      activeTasks,
+      activityVolume30d: allHistories,
+    };
+  }
 }

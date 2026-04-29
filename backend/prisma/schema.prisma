@@ -4,6 +4,7 @@
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  output        = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -57,6 +58,7 @@ model Tenant {
   // Relations to all tenant-scoped data
   roles              Role[]
   employees          Employee[]
+  workspaceAdmins    WorkspaceAdmin[]
   customers          Customer[]
   paymentTypes       PaymentType[]
   transactions       Transaction[]
@@ -76,6 +78,24 @@ model Tenant {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// WorkspaceAdmin — Tenant ichidagi egasi/direktori (to'liq huquq, tayinlanmaydi)
+model WorkspaceAdmin {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fullName     String
+  phone        String?
+  login        String
+  passwordHash String
+  telegramId   String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, login])
+  @@index([tenantId])
 }
 
 model SuperAdmin {
@@ -128,10 +148,10 @@ model DemoRequest {
 model BotSession {
   id         String    @id @default(uuid())
   chatId     String    @unique               // Telegram chat ID
-  tenantId   String
-  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId   String?
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employeeId String?                         // NULL until authenticated
-  step       String    @default("IDLE")      // LOGIN | PASSWORD | IDLE
+  step       String    @default("IDLE")      // ENTER_SLUG | LOGIN | PASSWORD | IDLE
   loginAttempt String?                       // Temporary login storage during auth flow
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -325,6 +345,11 @@ model Role {
   canManageRoles     Boolean @default(false)
   canViewSalary      Boolean @default(false)
   canManageAdmins    Boolean @default(false)
+
+  // KPI va Analytics ruxsatlari (yangi)
+  canViewKpi              Boolean @default(false) // Xodim KPI ko'rsatkichlari
+  canViewExpenseCharts    Boolean @default(false) // Chiqim diagrammasi
+  canManageNotifications  Boolean @default(false) // Telegram xabarlar sozlamalari
 
   employees Employee[]
 
