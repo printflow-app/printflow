@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.local
+*.md
+.git
+.gitignore
+test-db.ts
+query_columns.ts
+debug_finance.js
+debug_query.js
+test-leads.js
