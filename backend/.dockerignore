@@ -10,3 +10,9 @@ query_columns.ts
 debug_finance.js
 debug_query.js
 test-leads.js
+
+# Build cache and logs
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

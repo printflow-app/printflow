@@ -6,8 +6,12 @@
     "dist",
     "**/*spec.ts",
     "test-db.ts",
+    "test-db.d.ts",
     "query_columns.ts",
+    "query_columns.d.ts",
     "seed.ts",
-    "prisma"
+    "prisma",
+    "scripts",
+    "*.js"
   ]
 }

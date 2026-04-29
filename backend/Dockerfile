@@ -15,17 +15,14 @@ RUN npm install --include=dev
 
 COPY . .
 
-# Build qilamiz
+# Build the NestJS app
 RUN npm run build
 
-# 🚨 DIAGNOSTIKA BOSHLANADI 🚨
-RUN echo "=== DOCKER ICHIDAGI FAYLLAR ===" && ls -la
-RUN echo "=== DIST PAPKA ICHIDAGI FAYLLAR ===" && ls -la dist || echo "DIST U-MU-MAN YOQ!!!"
-RUN echo "=== DIST/SRC ICHIDAGI FAYLLAR ===" && ls -la dist/src || echo "DIST/SRC HAM YOQ!!!"
-# 🚨 DIAGNOSTIKA TUGAydi 🚨
+# Remove development dependencies to keep the image small and secure
+RUN npm prune --omit=dev
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# Universal Start buyrug'i
-CMD ["sh", "-c", "node dist/main.js || node dist/src/main.js"]
+# Start the compiled app
+CMD ["node", "dist/main.js"]
