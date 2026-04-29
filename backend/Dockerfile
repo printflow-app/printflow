@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:20-slim
 
 # Prisma uchun kerakli kutubxonalar
 RUN apt-get update -y && \
