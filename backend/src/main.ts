@@ -34,9 +34,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: function (origin, callback) {
-      callback(null, origin || true);
-    },
+    origin: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-tenant-id', 'x-super-admin-key'],
