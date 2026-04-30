@@ -86,8 +86,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       if (ctx.tenantId && ctx.employeeId) {
         return ctx.reply(
           `✅ *${ctx.tenant?.name || 'Workspace'}*ga ulangansiz.\n\n` +
-          `📊 /report — Kunlik hisobot\n` +
-          `✅ /check — Muddati o'tgan vazifalar`,
+          `Siz ushbu bot orqali bildirishnomalar qabul qilib turasiz.`,
           { parse_mode: 'Markdown' },
         );
       }
@@ -121,34 +120,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         `_(Masalan: mycompany, sharq-bosma, printshop123)_`,
         { parse_mode: 'Markdown' },
       );
-    });
-
-    // Komandalar
-    this.bot.command('report', async (ctx: any) => {
-      if (!ctx.tenantId || !ctx.employeeId) {
-        return ctx.reply('❌ Avval tizimga kiring. /start bosing.');
-      }
-      const emp = await this.prisma.employee.findFirst({
-        where: { id: ctx.employeeId, tenantId: ctx.tenantId },
-        include: { role: true },
-      });
-      if (!emp?.role?.canViewFinance) return ctx.reply("❌ Moliya hisobotini ko'rish huquqi yo'q.");
-      const report = await this.generateReportForTenant(ctx.tenantId);
-      return ctx.reply(report, { parse_mode: 'Markdown' });
-    });
-
-    this.bot.command('check', async (ctx: any) => {
-      if (!ctx.tenantId || !ctx.employeeId) {
-        return ctx.reply('❌ Avval tizimga kiring. /start bosing.');
-      }
-      const emp = await this.prisma.employee.findFirst({
-        where: { id: ctx.employeeId, tenantId: ctx.tenantId },
-        include: { role: true },
-      });
-      if (!emp?.role?.canViewTasks) return ctx.reply("❌ Vazifalarni ko'rish huquqi yo'q.");
-      await ctx.reply('🔄 Tekshirilmoqda...');
-      await this.checkInactiveTasks(ctx.tenantId);
-      return ctx.reply('✅ Tekshirish yakunlandi.');
     });
 
     // Matn xabarlari — qadamli onboarding oqimi
@@ -232,9 +203,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
           return ctx.reply(
             `🎉 *Xush kelibsiz, ${emp.fullName}!*\n\n` +
-            `Siz muvaffaqiyatli tizimga kirdingiz.\n\n` +
-            `📊 /report — Kunlik hisobot\n` +
-            `✅ /check — Muddati o'tgan vazifalar`,
+            `Siz muvaffaqiyatli tizimga kirdingiz. Endi ushbu bot orqali bildirishnomalar qabul qilasiz.`,
             { parse_mode: 'Markdown' },
           );
         }
@@ -254,7 +223,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       // IDLE holatda — qo'shimcha xabarlar uchun
       if (step === 'IDLE') {
         return ctx.reply(
-          '📋 Buyruqlar:\n/report — Kunlik hisobot\n/check — Muddati o\'tgan vazifalar',
+          'Siz tizimga ulangansiz. Yangi xabarlar kelishini kuting.',
         );
       }
     });
