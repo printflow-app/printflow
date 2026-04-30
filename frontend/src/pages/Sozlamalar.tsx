@@ -443,45 +443,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </section>
       )}
 
-      {/* Notification Preferences Section (Admin only) */}
-      {isAdmin && (
-        <section className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-1">
-              <Bell className="text-orange-600" size={22} />
-              <h3 className="text-xl font-black text-slate-800 tracking-tight">Telegram Xabarnomalari</h3>
-            </div>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-5">Avtomatik xabarnomalarni yoqish/o'chirish</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[
-                { key: 'adminDaily' as const, title: 'Admin: Kunlik hisobot', desc: 'Har kuni 21:00 da kunlik kirim/chiqim xulosasi' },
-                { key: 'managerDeadlines' as const, title: 'Menejer: Vazifa muddatlari', desc: '24 soatdan ortiq turgan vazifalar haqida ogohlantirish' },
-                { key: 'inventoryLowStock' as const, title: 'Ombor: Kam qoldiq', desc: "Har kuni 09:00 da minimal qoldiqdan oshgan materiallar" },
-              ].map(item => {
-                const enabled = notifPrefs[item.key];
-                return (
-                  <div key={item.key} className={`p-4 rounded-xl border transition-all ${enabled ? 'bg-orange-50/40 border-orange-200' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <h4 className="text-sm font-black text-slate-800 leading-tight">{item.title}</h4>
-                      <button
-                        type="button"
-                        disabled={savingNotifPrefs}
-                        onClick={() => saveNotifPrefs({ ...notifPrefs, [item.key]: !enabled })}
-                        className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${enabled ? 'bg-orange-500' : 'bg-slate-300'} ${savingNotifPrefs ? 'opacity-50' : ''}`}
-                        aria-pressed={enabled}
-                      >
-                        <span className={`absolute top-0.5 ${enabled ? 'left-[22px]' : 'left-0.5'} w-5 h-5 bg-white rounded-full shadow transition-all`}></span>
-                      </button>
-                    </div>
-                    <p className="text-[11px] font-bold text-slate-500 leading-snug">{item.desc}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Payment Types Section */}
       {(isAdmin || p.canManagePaymentTypes) && (

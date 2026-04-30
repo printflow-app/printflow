@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Building2, BarChart2, ChevronDown } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Building2, ChevronDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
@@ -14,7 +14,6 @@ import Davomat from './Davomat';
 import Admins from './Admins';
 import Billing from './Billing';
 import Filiallar from './Filiallar';
-import Kpi from './Kpi';
 import Modal from '../components/Modal';
 
 interface DashboardProps {
