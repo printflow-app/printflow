@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Building2, ChevronDown } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Building2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
@@ -30,8 +30,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Global branch filter (multiBranch feature)
-  const [branches, setBranches] = useState<any[]>([]);
-  const [activeBranchId, setActiveBranchId] = useState<string>(() => localStorage.getItem('pf_active_branch') || '');
+  const [activeBranchId] = useState<string>(() => localStorage.getItem('pf_active_branch') || '');
 
   // Profile Form
   const [profileForm, setProfileForm] = useState({ fullName: '', login: '', password: '', confirmPassword: '' });
@@ -176,7 +175,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   useEffect(() => {
     const tf = currentUser.tenantFeatures || {};
     if (tf.multiBranch) {
-      branchesApi.findAll().then(r => setBranches(Array.isArray(r.data) ? r.data : [])).catch(() => { });
+      // branches logic removed
     }
   }, [currentUser]);
 
