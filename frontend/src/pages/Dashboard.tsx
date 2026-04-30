@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Building2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { employeesApi, branchesApi } from '../api';
+import { employeesApi } from '../api';
 import logo from '../assets/logo.png';
 import Moliya from './Moliya';
 import Hodimlar from './Hodimlar';
