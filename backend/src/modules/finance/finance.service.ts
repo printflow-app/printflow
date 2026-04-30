@@ -9,31 +9,47 @@ export class FinanceService {
     private telegramService: TelegramService,
   ) {}
 
+  /**
+   * Treat date-only strings (YYYY-MM-DD) as a calendar day in the SERVER's local
+   * timezone, not as UTC midnight. `new Date('YYYY-MM-DD')` in Node parses to UTC,
+   * so a client in UZ (UTC+5) clicking "Today" loses the first 5 hours of records.
+   * We rebuild the bounds explicitly to avoid that drift.
+   */
+  private parseDayBoundary(input: string, end: boolean): Date | null {
+    if (!input) return null;
+    const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
+    if (dateOnlyMatch) {
+      const [, y, m, d] = dateOnlyMatch;
+      return end
+        ? new Date(Number(y), Number(m) - 1, Number(d), 23, 59, 59, 999)
+        : new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0, 0);
+    }
+    const dt = new Date(input);
+    if (isNaN(dt.getTime())) return null;
+    if (end) dt.setHours(23, 59, 59, 999);
+    else dt.setHours(0, 0, 0, 0);
+    return dt;
+  }
+
   private getDateRange(start?: string, end?: string) {
     if (!start && !end) return {};
-    
+
     const where: any = {};
-    if (start && end) {
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      
-      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
-        where.date = { gte: startDate, lte: endDate };
-      }
-    } else if (start) {
-      const startDate = new Date(start);
-      if (!isNaN(startDate.getTime())) {
-        startDate.setHours(0, 0, 0, 0);
-        where.date = { gte: startDate };
-      }
+    const startDate = start ? this.parseDayBoundary(start, false) : null;
+    const endDate = end ? this.parseDayBoundary(end, true) : null;
+
+    if (startDate && endDate) {
+      where.date = { gte: startDate, lte: endDate };
+    } else if (startDate) {
+      where.date = { gte: startDate };
+    } else if (endDate) {
+      where.date = { lte: endDate };
     }
     return where;
   }
 
-  async findAll(start?: string, end?: string) {
-    const where = this.getDateRange(start, end);
+  async findAll(start?: string, end?: string, branchId?: string) {
+    const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
 
     return this.prisma.transaction.findMany({
       where,
@@ -46,8 +62,8 @@ export class FinanceService {
     });
   }
 
-  async getDashboard(start?: string, end?: string) {
-    const where = this.getDateRange(start, end);
+  async getDashboard(start?: string, end?: string, branchId?: string) {
+    const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
 
     const [incomes, expenses] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -60,10 +76,27 @@ export class FinanceService {
       })
     ]);
 
+    // Calculate completed tasks
+    const columns = await this.prisma.kanbanColumn.findMany({
+      orderBy: { orderIdx: 'asc' },
+    });
+    let completedTasksCount = 0;
+    if (columns.length > 0) {
+      const finalColumnId = columns[columns.length - 1].id;
+      // For tasks, we use updatedAt for the date filter since that's when it was moved
+      const taskWhere: any = { columnId: finalColumnId, ...(branchId ? { branchId } : {}) };
+      const range = this.getDateRange(start, end);
+      if (range.date) {
+        taskWhere.updatedAt = range.date; // reusing the gte/lte from getDateRange
+      }
+      completedTasksCount = await this.prisma.task.count({ where: taskWhere });
+    }
+
     return {
       totalKirim: incomes._sum.amount || 0,
       totalChiqim: expenses._sum.amount || 0,
       balance: (incomes._sum.amount || 0) - (expenses._sum.amount || 0),
+      completedTasks: completedTasksCount,
     };
   }
 
@@ -124,21 +157,21 @@ export class FinanceService {
     return transaction;
   }
 
-  async getDinamika(start?: string, end?: string) {
-    let startDate = start ? new Date(start) : null;
-    if (!startDate || isNaN(startDate.getTime())) {
+  async getDinamika(start?: string, end?: string, branchId?: string) {
+    let startDate = start ? this.parseDayBoundary(start, false) : null;
+    if (!startDate) {
       startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
+      startDate.setHours(0, 0, 0, 0);
     }
-    startDate.setHours(0, 0, 0, 0);
 
-    let endDate = end ? new Date(end) : null;
-    if (!endDate || isNaN(endDate.getTime())) {
+    let endDate = end ? this.parseDayBoundary(end, true) : null;
+    if (!endDate) {
       endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
     }
-    endDate.setHours(23, 59, 59, 999);
-    
-    const where: any = { date: { gte: startDate, lte: endDate } };
+
+    const where: any = { date: { gte: startDate, lte: endDate }, ...(branchId ? { branchId } : {}) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -175,8 +208,8 @@ export class FinanceService {
     return Object.values(data);
   }
 
-  async getStatsByPaymentType(start?: string, end?: string) {
-    const where = this.getDateRange(start, end);
+  async getStatsByPaymentType(start?: string, end?: string, branchId?: string) {
+    const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,

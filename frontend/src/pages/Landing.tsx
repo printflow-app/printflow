@@ -19,7 +19,23 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_URL}/plans`).then(r => r.json()).then(setPlans).catch(() => { });
+    let cancelled = false;
+    const loadPlans = async () => {
+      try {
+        const res = await fetch(`${API_URL}/plans`, { credentials: 'omit', cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        // Backend may return either an array OR an error object with { statusCode, message }.
+        // Guard to prevent ".map is not a function" crash on non-array payloads.
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        if (!cancelled) setPlans(list);
+      } catch (err) {
+        console.error('[Landing] Failed to load plans:', err);
+        if (!cancelled) setPlans([]);
+      }
+    };
+    loadPlans();
+    return () => { cancelled = true; };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,8 +48,16 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
-  const getPrice = (plan: any) => duration === 3 ? plan.price3m : duration === 6 ? plan.price6m : plan.price12m;
-  const parseFeatures = (str: string) => { try { return JSON.parse(str); } catch { return {}; } };
+  const getPrice = (plan: any) => {
+    const v = duration === 3 ? plan?.price3m : duration === 6 ? plan?.price6m : plan?.price12m;
+    return typeof v === 'number' ? v : 0;
+  };
+  const parseFeatures = (input: any): Record<string, any> => {
+    if (input && typeof input === 'object') return input as Record<string, any>;
+    if (typeof input !== 'string') return {};
+    try { const parsed = JSON.parse(input); return (parsed && typeof parsed === 'object') ? parsed : {}; }
+    catch { return {}; }
+  };
 
   return (
     <>
@@ -42,7 +66,7 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
         <div className="container header-container">
           <a href="/" className="logo">
             <img src={logo} alt="PrintFlow" style={{ height: 36, width: 'auto' }} className="md:h-12" />
-            <span style={{ fontSize: '1.4rem' }}>Print<span>Flow</span></span>
+            <span style={{ fontSize: '1.4rem', color: '#0f172a' }}>Print<span style={{ color: '#FF6B00' }}>Flow</span></span>
           </a>
           <nav className="nav hidden md:flex">
             <a href="#features" onClick={e => { e.preventDefault(); scrollTo('features'); }}>Imkoniyatlar</a>
@@ -114,15 +138,15 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
       </section>
 
       {/* Dynamic Pricing Section */}
-      {plans.length > 0 && (
-        <section id="pricing" style={{ padding: '120px 0', background: '#fafafa', position: 'relative' }}>
+      {Array.isArray(plans) && plans.length > 0 && (
+        <section id="pricing" style={{ padding: '120px 0', background: '#fafafa', position: 'relative', overflow: 'hidden' }}>
           {/* Subtle grid for pricing section too */}
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,107,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,0,0.06) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0 }} />
           <div className="container" style={{ position: 'relative', zIndex: 10 }}>
             <div style={{ textAlign: 'center', marginBottom: 60 }}>
               <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 900, color: '#0f172a', marginBottom: 16 }}>Tariflar va Narxlar</h2>
               <p style={{ color: '#64748b', fontSize: '1.1rem', maxWidth: 500, margin: '0 auto 32px' }}>Sizning biznesingiz hajmiga mos ta'rifni tanlang</p>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
                 {[3, 6, 12].map(m => (
                   <button key={m} onClick={() => setDuration(m)} style={{
                     padding: '10px 24px', fontSize: '0.85rem', fontWeight: 800, borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
@@ -131,7 +155,7 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
                 ))}
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 960, margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 24, maxWidth: 960, margin: '0 auto' }}>
               {plans.map(plan => {
                 const features = parseFeatures(plan.features);
                 const price = getPrice(plan);
@@ -149,29 +173,31 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
                     <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 20 }}>{duration} oylik / Xodimlar: {plan.maxEmployees === 0 ? 'Cheksiz' : plan.maxEmployees}</div>
                     <ul style={{ listStyle: 'none', padding: 0, marginBottom: 24, flex: 1 }}>
                       {(() => {
-                        const allFeatures = [
-                          { id: 'kanban', label: 'Kanban (Buyurtmalar)' },
-                          { id: 'warehouse', label: 'Ombor boshqaruvi' },
-                          { id: 'telegram_bot', label: 'Telegram Bot (Xabarlar)' },
-                          { id: 'attendance', label: 'Ishga davomat (QR)' },
-                          { id: 'finance', label: 'Moliya (Sof foyda/Zarar)' },
-                          { id: 'tasks', label: 'Task Management' },
-                          { id: 'kpi', label: 'Xodimlar KPI tahlili' },
-                          { id: 'debtors', label: 'Qarzdorlarga avto-xabar' },
-                          { id: 'multi_branch', label: 'Multi Filiallar (Tez kunda)' }
+                        // Each entry lists the canonical id PLUS aliases — admin panel
+                        // saves keys like "kpiTracking"/"multiBranch" while older plans
+                        // used "kpi"/"multi_branch". Accept either to keep landing/admin in sync.
+                        const allFeatures: Array<{ ids: string[]; label: string }> = [
+                          { ids: ['kanban'], label: 'Kanban (Buyurtmalar)' },
+                          { ids: ['warehouse', 'canViewInventory'], label: 'Ombor boshqaruvi' },
+                          { ids: ['telegram_bot', 'advancedBot'], label: 'Telegram Bot (Xabarlar)' },
+                          { ids: ['attendance', 'canViewAttendance'], label: 'Ishga davomat (QR)' },
+                          { ids: ['finance', 'canViewFinance'], label: 'Moliya (Sof foyda/Zarar)' },
+                          { ids: ['tasks'], label: 'Task Management' },
+                          { ids: ['kpiTracking', 'kpi'], label: 'Xodimlar KPI tahlili' },
+                          { ids: ['expenseAnalytics'], label: 'Chiqim Tahlili' },
+                          { ids: ['debtors'], label: 'Qarzdorlarga avto-xabar' },
+                          { ids: ['multiBranch', 'multi_branch'], label: 'Multi Filiallar' },
                         ];
 
+                        const isOn = (entry: { ids: string[] }) => entry.ids.some(id => !!features[id]);
+
                         // Sort: active features first
-                        const sortedFeatures = [...allFeatures].sort((a, b) => {
-                          const valA = features[a.id] ? 1 : 0;
-                          const valB = features[b.id] ? 1 : 0;
-                          return valB - valA;
-                        });
+                        const sortedFeatures = [...allFeatures].sort((a, b) => Number(isOn(b)) - Number(isOn(a)));
 
                         return sortedFeatures.map(feat => {
-                          const val = features[feat.id];
+                          const val = isOn(feat);
                           return (
-                            <li key={feat.id} style={{
+                            <li key={feat.ids[0]} style={{
                               display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, fontSize: '0.85rem',
                               color: val ? '#1e293b' : '#94a3b8',
                               fontWeight: val ? 600 : 400
@@ -249,7 +275,7 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
           <div className="footer-content">
             <a href="/" className="footer-logo">
               <img src={logo} alt="PF" style={{ height: 32, width: 'auto' }} />
-              <span>Print<span>Flow</span></span>
+              <span style={{ color: '#0f172a' }}>Print<span style={{ color: '#FF6B00' }}>Flow</span></span>
             </a>
             <div className="footer-links">
               <a href="#features">Imkoniyatlar</a><a href="#pricing">Narxlar</a><a href="#contact">Aloqa</a>

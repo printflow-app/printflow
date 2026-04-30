@@ -28,8 +28,8 @@ export class TasksController {
 
   // Task Endpoints
   @Get()
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(@Query('branchId') branchId?: string) {
+    return this.tasksService.findAll(branchId);
   }
 
   @Get(':id')

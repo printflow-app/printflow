@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package } from 'lucide-react';
-import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi } from '../api';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell } from 'lucide-react';
+import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NumberInput from '../components/NumberInput';
@@ -14,6 +14,9 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [expenseTypes, setExpenseTypes] = useState<any[]>([]);
   const [kanbanColumns, setKanbanColumns] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [notifPrefs, setNotifPrefs] = useState<{ hisobotReceivers: string[]; newOrderReceivers: string[]; reminderReceivers: string[] }>({ hisobotReceivers: [], newOrderReceivers: [], reminderReceivers: [] });
+  const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -26,22 +29,49 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [roleRes, ptRes, etRes, kcRes, svcRes] = await Promise.all([
+      const [roleRes, ptRes, etRes, kcRes, svcRes, empRes] = await Promise.all([
         rolesApi.findAll(),
         paymentTypesApi.findAll(),
         expenseTypesApi.findAll(),
         tasksApi.getColumns(),
         servicesApi.findAll(),
+        employeesApi.findAll(),
       ]);
       setRoles(roleRes.data || []);
       setPaymentTypes(ptRes.data || []);
       setExpenseTypes(etRes.data || []);
       setKanbanColumns(kcRes.data || []);
       setServices(svcRes.data || []);
+      setEmployees(empRes.data || []);
+
+      // Load notification preferences
+      try {
+        const notifRes = await settingsApi.get('TELEGRAM_BOT_PREFS');
+        if (notifRes.data && typeof notifRes.data === 'object') {
+          setNotifPrefs({
+            hisobotReceivers: notifRes.data.hisobotReceivers || [],
+            newOrderReceivers: notifRes.data.newOrderReceivers || [],
+            reminderReceivers: notifRes.data.reminderReceivers || [],
+          });
+        }
+      } catch { /* default prefs already set */ }
     } catch (err) {
       console.error("Sozlamalarni yuklashda xato:", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const saveNotifPrefs = async (next: typeof notifPrefs) => {
+    setNotifPrefs(next);
+    setSavingNotifPrefs(true);
+    try {
+      await settingsApi.set('TELEGRAM_BOT_PREFS', next);
+      showStatus('success', 'Xabarnoma sozlamalari saqlandi');
+    } catch {
+      showStatus('error', 'Xabarnoma sozlamalarini saqlashda xato');
+    } finally {
+      setSavingNotifPrefs(false);
     }
   };
 
@@ -56,7 +86,9 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     canViewFinance: false, canAddIncome: false, canAddExpense: false, canViewTotalBalance: false, canManagePaymentTypes: false,
     canViewTasks: false, canCreateTask: false, canEditTask: false, canDeleteTask: false, canMoveTask: false, canManageColumns: false,
     canViewCustomers: false, canManageCustomers: false,
-    canViewEmployees: false, canManageEmployees: false, canManageRoles: false, canViewSalary: false
+    canViewEmployees: false, canManageEmployees: false, canManageRoles: false, canViewSalary: false, canManageAdmins: false,
+    canManageBranches: false, canViewKpi: false, canViewExpenseCharts: false, canViewSettings: false, canAssignToOtherBranches: false,
+    canManageBilling: false, canManageNotifications: false,
   };
   const [newRole, setNewRole] = useState(initialRoleForm);
 
@@ -249,6 +281,25 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         canViewSalary: "Maoshlarni ko'rish",
         canManageAdmins: "Ma'murlarni boshqarish",
       }
+    },
+    {
+      title: 'Tizim va Xavfsizlik',
+      color: 'slate',
+      permissions: {
+        canViewSettings: "Sozlamalar sahifasiga kirish",
+        canManageBilling: "Obuna va to'lovlarni boshqarish",
+        canManageNotifications: "Bot bildirishnomalarini sozlash",
+      }
+    },
+    {
+      title: 'Filiallar & Tahlil',
+      color: 'orange',
+      permissions: {
+        canManageBranches: "Filiallarni boshqarish",
+        canAssignToOtherBranches: "Boshqa filial xodimlariga vazifa berish",
+        canViewKpi: "KPI va samaradorlikni ko'rish",
+        canViewExpenseCharts: "Chiqim tahlil grafiklarini ko'rish",
+      }
     }
   ];
 
@@ -388,6 +439,46 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {/* Notification Preferences Section (Admin only) */}
+      {isAdmin && (
+        <section className="space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-1">
+              <Bell className="text-orange-600" size={22} />
+              <h3 className="text-xl font-black text-slate-800 tracking-tight">Telegram Xabarnomalari</h3>
+            </div>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-5">Avtomatik xabarnomalarni yoqish/o'chirish</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { key: 'adminDaily' as const, title: 'Admin: Kunlik hisobot', desc: 'Har kuni 21:00 da kunlik kirim/chiqim xulosasi' },
+                { key: 'managerDeadlines' as const, title: 'Menejer: Vazifa muddatlari', desc: '24 soatdan ortiq turgan vazifalar haqida ogohlantirish' },
+                { key: 'inventoryLowStock' as const, title: 'Ombor: Kam qoldiq', desc: "Har kuni 09:00 da minimal qoldiqdan oshgan materiallar" },
+              ].map(item => {
+                const enabled = notifPrefs[item.key];
+                return (
+                  <div key={item.key} className={`p-4 rounded-xl border transition-all ${enabled ? 'bg-orange-50/40 border-orange-200' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <h4 className="text-sm font-black text-slate-800 leading-tight">{item.title}</h4>
+                      <button
+                        type="button"
+                        disabled={savingNotifPrefs}
+                        onClick={() => saveNotifPrefs({ ...notifPrefs, [item.key]: !enabled })}
+                        className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${enabled ? 'bg-orange-500' : 'bg-slate-300'} ${savingNotifPrefs ? 'opacity-50' : ''}`}
+                        aria-pressed={enabled}
+                      >
+                        <span className={`absolute top-0.5 ${enabled ? 'left-[22px]' : 'left-0.5'} w-5 h-5 bg-white rounded-full shadow transition-all`}></span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] font-bold text-slate-500 leading-snug">{item.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}
@@ -585,6 +676,82 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                    );
                  })}
               </div>
+           </div>
+        </section>
+      )}
+
+      {/* Bot Notifications Section */}
+      {(isAdmin || p.canManageNotifications) && (
+        <section className="space-y-6">
+           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+             <div>
+               <h3 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                  <Bell className="text-sky-500" size={28} /> Telegram Xabarnomalar
+               </h3>
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Bot orqali keladigan bildirishnomalar sozlamalari</p>
+             </div>
+           </div>
+           
+           <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-3">
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Hisobotlar (Kunlik/Haftalik)</label>
+                   <select 
+                     multiple 
+                     value={notifPrefs.hisobotReceivers} 
+                     onChange={(e) => {
+                       const vals = Array.from(e.target.selectedOptions, o => o.value);
+                       setNotifPrefs(prev => ({...prev, hisobotReceivers: vals}));
+                     }}
+                     className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:border-sky-500 outline-none custom-scroll"
+                   >
+                     {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
+                   </select>
+                   <p className="text-[9px] text-slate-400 italic">Hisobot yuboriladigan xodimlar (Ctrl bilan bir nechta tanlash mumkin)</p>
+                </div>
+
+                <div className="space-y-3">
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yangi Buyurtmalar</label>
+                   <select 
+                     multiple 
+                     value={notifPrefs.newOrderReceivers} 
+                     onChange={(e) => {
+                       const vals = Array.from(e.target.selectedOptions, o => o.value);
+                       setNotifPrefs(prev => ({...prev, newOrderReceivers: vals}));
+                     }}
+                     className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:border-sky-500 outline-none custom-scroll"
+                   >
+                     {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
+                   </select>
+                   <p className="text-[9px] text-slate-400 italic">Yangi buyurtma tushganda kimlarga xabar borishi kerak</p>
+                </div>
+
+                <div className="space-y-3">
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Muddat Eslatmalari</label>
+                   <select 
+                     multiple 
+                     value={notifPrefs.reminderReceivers} 
+                     onChange={(e) => {
+                       const vals = Array.from(e.target.selectedOptions, o => o.value);
+                       setNotifPrefs(prev => ({...prev, reminderReceivers: vals}));
+                     }}
+                     className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:border-sky-500 outline-none custom-scroll"
+                   >
+                     {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
+                   </select>
+                   <p className="text-[9px] text-slate-400 italic">Muddat oz qolganda va tugaganda eslatmalar kimlarga borishi kerak</p>
+                </div>
+             </div>
+             
+             <div className="mt-6 flex justify-end">
+                <button 
+                  onClick={() => saveNotifPrefs(notifPrefs)} 
+                  disabled={savingNotifPrefs}
+                  className="bg-sky-500 hover:bg-sky-600 text-white font-black text-xs uppercase px-8 h-12 rounded-xl shadow-lg shadow-sky-500/20 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {savingNotifPrefs ? 'SAQLANMOQDA...' : 'SAQLASH'}
+                </button>
+             </div>
            </div>
         </section>
       )}

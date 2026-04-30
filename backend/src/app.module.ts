@@ -31,6 +31,8 @@ import { BillingModule } from './modules/billing/billing.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { WorkspaceAdminModule } from './modules/workspace-admin/workspace-admin.module';
+import { KpiModule } from './modules/kpi/kpi.module';
+import { BranchesModule } from './modules/branches/branches.module';
 
 // =============================================
 // APP MODULE — PrintFlow Multi-Tenant SaaS
@@ -78,6 +80,8 @@ import { WorkspaceAdminModule } from './modules/workspace-admin/workspace-admin.
     PlansModule,
     LeadsModule,
     WorkspaceAdminModule,
+    KpiModule,
+    BranchesModule,
   ],
   providers: [
     // Global rate limiting guard

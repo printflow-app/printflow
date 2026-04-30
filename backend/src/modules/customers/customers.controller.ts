@@ -6,8 +6,8 @@ export class CustomersController {
   constructor(private customersService: CustomersService) {}
 
   @Get()
-  findAll() {
-    return this.customersService.findAll();
+  findAll(@Query('branchId') branchId?: string) {
+    return this.customersService.findAll(branchId);
   }
 
   @Get('top')

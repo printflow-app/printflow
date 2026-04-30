@@ -25,6 +25,7 @@ const TENANT_SCOPED_MODELS = new Set([
   'attendanceRecord',
   'systemSetting',
   'botSession',
+  'branch',
 ]);
 
 // These models are NOT tenant-scoped (platform-level):

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, Filter } from 'lucide-react';
-import { financeApi } from '../api';
+import { TrendingUp, TrendingDown, Wallet, Filter, CheckCircle } from 'lucide-react';
+import { financeApi, branchesApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 
@@ -8,8 +8,8 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
 };
 
-const Moliya: React.FC<any> = () => {
-  const [dashboard, setDashboard] = useState({ totalKirim: 0, totalChiqim: 0, balance: 0 });
+const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ activeBranchId }) => {
+  const [dashboard, setDashboard] = useState({ totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
   const [chartData, setChartData] = useState<any[]>([]);
   const [paymentTypeStats, setPaymentTypeStats] = useState<{ kirim: any[], chiqim: any[] }>({ kirim: [], chiqim: [] });
   const [expenseBreakdown, setExpenseBreakdown] = useState<any[]>([]);
@@ -19,24 +19,35 @@ const Moliya: React.FC<any> = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all'|'today'|'week'|'month'>('all');
+  const [branches, setBranches] = useState<any[]>([]);
+  const [localBranchId, setLocalBranchId] = useState(activeBranchId || '');
+
+  // Local-date YYYY-MM-DD — `toISOString()` shifts to UTC and silently rolls back
+  // by a day for users in UTC+ timezones during early-morning hours.
+  const localYMD = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
 
   const setFilter = (type: 'all'|'today'|'week'|'month') => {
     setActiveFilter(type);
     const today = new Date();
     if (type === 'today') {
-      const d = today.toISOString().split('T')[0];
+      const d = localYMD(today);
       setStartDate(d);
       setEndDate(d);
     } else if (type === 'week') {
       const w = new Date();
       w.setDate(w.getDate() - 7);
-      setStartDate(w.toISOString().split('T')[0]);
-      setEndDate(today.toISOString().split('T')[0]);
+      setStartDate(localYMD(w));
+      setEndDate(localYMD(today));
     } else if (type === 'month') {
       const m = new Date();
       m.setDate(m.getDate() - 30);
-      setStartDate(m.toISOString().split('T')[0]);
-      setEndDate(today.toISOString().split('T')[0]);
+      setStartDate(localYMD(m));
+      setEndDate(localYMD(today));
     } else {
       setStartDate('');
       setEndDate('');
@@ -49,17 +60,21 @@ const Moliya: React.FC<any> = () => {
       const params: any = {};
       if (startDate) params.start = startDate;
       if (endDate) params.end = endDate;
+      if (localBranchId) params.branchId = localBranchId;
+      else if (activeBranchId && localBranchId === undefined) params.branchId = activeBranchId; // Fallback if needed
 
-      const [dashRes, chartRes, statsRes, breakdownRes] = await Promise.all([
+      const [dashRes, chartRes, statsRes, breakdownRes, branchRes] = await Promise.all([
         financeApi.getDashboard({ params }),
         financeApi.getDinamika({ params }),
         financeApi.getStatsByPaymentType({ params }),
         financeApi.getExpenseBreakdown({ params }),
+        branchesApi.findAll(),
       ]);
-      setDashboard(dashRes.data || { totalKirim: 0, totalChiqim: 0, balance: 0 });
+      setDashboard(dashRes.data || { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
       setChartData(chartRes.data || []);
       setPaymentTypeStats(statsRes.data || { kirim: [], chiqim: [] });
       setExpenseBreakdown(breakdownRes.data || []);
+      setBranches(branchRes.data || []);
     } catch (err) {
       console.error("Moliya hisobot yuklashda xato:", err);
     } finally {
@@ -69,7 +84,7 @@ const Moliya: React.FC<any> = () => {
 
   useEffect(() => {
     fetchData();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, localBranchId, activeBranchId]);
 
   if (isLoading && chartData.length === 0) return <LoadingSpinner fullPage />;
 
@@ -91,6 +106,17 @@ const Moliya: React.FC<any> = () => {
               <button onClick={() => setFilter('month')} className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === 'month' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}>Oy</button>
             </div>
             
+            {branches.length > 0 && (
+              <select 
+                value={localBranchId} 
+                onChange={e => setLocalBranchId(e.target.value)} 
+                className="select-minimal h-[32px] text-[10px] font-black py-0 px-3 bg-slate-50 border-slate-200 text-slate-600 rounded-lg min-w-[150px]"
+              >
+                <option value="">Barcha filiallar</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            )}
+
             <div className="hidden sm:flex items-center gap-2">
                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 px-3 py-1.5 rounded-lg bg-slate-50/50">
                   Hisobotlar markazi
@@ -100,7 +126,7 @@ const Moliya: React.FC<any> = () => {
       </div>
 
       {/* Dashboard Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125"></div>
           <div className="relative">
@@ -115,6 +141,14 @@ const Moliya: React.FC<any> = () => {
             <div className="w-9 h-9 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-3 border border-rose-200 shadow-sm"><TrendingDown size={18}/></div>
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Jami Chiqim</p>
             <h3 className="text-xl font-black text-slate-800 tracking-tight">{formatCurrency(dashboard.totalChiqim)}</h3>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125"></div>
+          <div className="relative">
+            <div className="w-9 h-9 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-3 border border-blue-200 shadow-sm"><CheckCircle size={18}/></div>
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bajarilgan Buyurtmalar</p>
+            <h3 className="text-xl font-black text-slate-800 tracking-tight">{dashboard.completedTasks || 0} ta</h3>
           </div>
         </div>
         <div className="bg-slate-900 p-4 rounded-xl shadow-lg relative overflow-hidden group sm:col-span-2 lg:col-span-1">

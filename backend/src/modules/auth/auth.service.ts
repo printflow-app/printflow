@@ -181,18 +181,22 @@ export class AuthService {
    */
   async checkSession(
     tenantId: string,
-    employeeId: string,
+    userId: string,
     passwordVersion: number,
   ): Promise<boolean> {
-    const employee = await TenantContext.run(
-      { tenantId, userId: employeeId, userRole: '' },
+    return TenantContext.run(
+      { tenantId, userId, userRole: '' },
       async () => {
-        return this.prisma.employee.findFirst({ where: { id: employeeId } });
+        // Try workspace admin first
+        const admin = await this.prisma.workspaceAdmin.findFirst({ where: { id: userId } });
+        if (admin) {
+          return (admin.passwordVersion || 1) === (passwordVersion || 1);
+        }
+        const employee = await this.prisma.employee.findFirst({ where: { id: userId } });
+        if (!employee) return false;
+        return (employee.passwordVersion || 1) === (passwordVersion || 1);
       },
     );
-
-    if (!employee) return false;
-    return (employee.passwordVersion || 1) === (passwordVersion || 1);
   }
 
   /**

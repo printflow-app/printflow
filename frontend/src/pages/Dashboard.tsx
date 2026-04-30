@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Building2, BarChart2, ChevronDown } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { employeesApi } from '../api';
+import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
 import Moliya from './Moliya';
 import Hodimlar from './Hodimlar';
@@ -13,6 +13,8 @@ import Ombor from './Ombor';
 import Davomat from './Davomat';
 import Admins from './Admins';
 import Billing from './Billing';
+import Filiallar from './Filiallar';
+import Kpi from './Kpi';
 import Modal from '../components/Modal';
 
 interface DashboardProps {
@@ -22,12 +24,16 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
-  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing'>(() => {
+  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'kpi'>(() => {
     return (localStorage.getItem('pf_active_tab') as any) || 'kassa';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  
+
+  // Global branch filter (multiBranch feature)
+  const [branches, setBranches] = useState<any[]>([]);
+  const [activeBranchId, setActiveBranchId] = useState<string>(() => localStorage.getItem('pf_active_branch') || '');
+
   // Profile Form
   const [profileForm, setProfileForm] = useState({ fullName: '', login: '', password: '', confirmPassword: '' });
   const [showProfilePass, setShowProfilePass] = useState(false);
@@ -40,7 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const [isLockSettingsOpen, setIsLockSettingsOpen] = useState(false);
   const [lockPin, setLockPin] = useState(() => localStorage.getItem('pf_lock_pin') || '');
   const [lockTimeout, setLockTimeout] = useState(() => Number(localStorage.getItem('pf_lock_timeout')) || 5); // Default 5 min
-  
+
   // NEW: Per-page locking state
   const [lockedTabs, setLockedTabs] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('pf_locked_tabs');
@@ -50,7 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const [pinInput, setPinInput] = useState('');
   const [newPin, setNewPin] = useState({ pin1: '', pin2: '' });
   const [showPins, setShowPins] = useState({ p1: false, p2: false, input: false });
-  
+
   const idleTimerRef = useRef<any>(null);
 
   const resetIdleTimer = useCallback(() => {
@@ -158,18 +164,26 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
   useEffect(() => {
     if (currentUser) {
-      setProfileForm({ 
-        fullName: currentUser.fullName || '', 
-        login: currentUser.login || '', 
+      setProfileForm({
+        fullName: currentUser.fullName || '',
+        login: currentUser.login || '',
         password: '',
         confirmPassword: ''
       });
     }
   }, [currentUser]);
 
+  // Fetch branches when multiBranch feature is enabled
+  useEffect(() => {
+    const tf = currentUser.tenantFeatures || {};
+    if (tf.multiBranch) {
+      branchesApi.findAll().then(r => setBranches(Array.isArray(r.data) ? r.data : [])).catch(() => { });
+    }
+  }, [currentUser]);
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (profileForm.password && profileForm.password !== profileForm.confirmPassword) {
       toast.error("Parollar bir xil emas!");
       return;
@@ -185,11 +199,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       if (profileForm.password) {
         updateData.password = profileForm.password;
       }
-      
+
       await employeesApi.update(currentUser.id, updateData);
-      
+
       const isCredentialChanged = updateData.password || updateData.login;
-      
+
       if (isCredentialChanged) {
         toast.success("Ma'lumotlar o'zgartirildi! Barcha qurilmalardan chiqish amalga oshiriladi.");
         setIsProfileModalOpen(false);
@@ -218,21 +232,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   }, [p]);
 
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.role?.name?.toLowerCase() === 'superadmin';
-  const tf = currentUser.tenantFeatures && Object.keys(currentUser.tenantFeatures).length > 0 
-    ? currentUser.tenantFeatures 
+  const tf = currentUser.tenantFeatures && Object.keys(currentUser.tenantFeatures).length > 0
+    ? currentUser.tenantFeatures
     : { finance: true, kanban: true, customers: true, employees: true, warehouse: true, attendance: true };
 
   const navItems = [
     { id: 'kassa', label: 'Kassa (Tranzaksiyalar)', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
-    { id: 'moliya', label: 'Moliya Bo\'limi', icon: TrendingUp, show: (p.canViewFinance || isAdmin) && tf.finance, sub: 'Daromad va hisobotlar' },
+    { id: 'moliya', label: 'Statistika', icon: TrendingUp, show: (p.canViewFinance || isAdmin) && tf.finance, sub: 'Daromad va hisobotlar' },
     { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
     { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: 'Qarzlar va hamkorlar' },
     { id: 'hodimlar', label: 'Xodimlar', icon: Users, show: (p.canViewEmployees || isAdmin) && tf.employees, sub: 'Jamoa ro\'yxati' },
-    { id: 'admins', label: 'Ma\'murlar', icon: ShieldCheck, show: isAdmin, sub: 'Raxbarlar boshqaruvi' },
+    { id: 'admins', label: 'Ma\'muriyat', icon: ShieldCheck, show: isAdmin, sub: 'Raxbarlar boshqaruvi' },
     { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
     { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
-    { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: isAdmin, sub: 'Tarif va obuna holati' },
-    { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canManageRoles || p.canManagePaymentTypes || p.canViewServices || p.canManageServices || isAdmin, sub: 'Lavozim va To\'lovlar' },
+    { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: p.canManageBilling || isAdmin, sub: 'Tarif va obuna holati' },
+    { id: 'filiallar', label: 'Filiallar', icon: Building2, show: (isAdmin || (p as any).canManageBranches) && tf.multiBranch, sub: 'Multi-filial boshqaruvi' },
+    { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Lavozim va To\'lovlar' },
   ];
 
   const handleTabChange = (id: any) => {
@@ -252,7 +267,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             {pendingTab === 'settings_access' ? 'Sozlamalarga' : pendingTab === 'profile_access' ? 'Profilga' : pendingTab ? 'Sahifaga' : 'Tizimga'} <span className="text-orange-400">Kirish</span>
           </h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Davom etish uchun PIN kodni kiriting</p>
-          
+
           <form onSubmit={handleUnlock} className="space-y-4">
             <div className="relative group">
               <input
@@ -266,10 +281,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               />
               <button
                 type="button"
-                onClick={() => setShowPins({...showPins, input: !showPins.input})}
+                onClick={() => setShowPins({ ...showPins, input: !showPins.input })}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
               >
-                {showPins.input ? <EyeOff size={20}/> : <Eye size={20}/>}
+                {showPins.input ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
             <button
@@ -302,17 +317,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900 font-sans relative overflow-x-hidden">
-      
+
       <header className="md:hidden h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
-            <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
-            <h1 className="text-sm font-black text-slate-900 tracking-tighter uppercase italic">Print<span className="text-[#FF6B00]">Flow</span></h1>
+          <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
+          <h1 className="text-sm font-black text-slate-900 tracking-tighter uppercase italic">Print<span className="text-[#FF6B00]">Flow</span></h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={handleManualLock} className="w-9 h-9 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg">
             <Lock size={16} />
           </button>
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="w-9 h-9 flex items-center justify-center text-slate-600 bg-slate-50 rounded-lg"
           >
@@ -335,7 +350,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button 
+            <button
               onClick={() => {
                 if (lockPin) {
                   setPendingTab('settings_access');
@@ -348,7 +363,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             >
               <Settings size={14} />
             </button>
-            <button 
+            <button
               onClick={handleManualLock}
               className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
               title="Tizimni qulflash"
@@ -363,34 +378,32 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             <button
               key={item.id}
               onClick={() => handleTabChange(item.id as any)}
-              className={`group relative flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[11px] font-black transition-all duration-300 border ${
-                activeTab === item.id
+              className={`group relative flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[11px] font-black transition-all duration-300 border ${activeTab === item.id
                   ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 border-orange-500'
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'
-              }`}
-            >
-              <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} className={activeTab === item.id ? 'text-white' : 'text-slate-300 group-hover:text-slate-500'} /> 
-              <div className="text-left flex-1">
-                 <p className="leading-none uppercase tracking-tight">{item.label}</p>
-                 <p className={`text-[8px] font-bold mt-0.5 uppercase tracking-tighter ${activeTab === item.id ? 'text-orange-100' : 'text-slate-400 opacity-60'}`}>{item.sub}</p>
-              </div>
-              
-              <div 
-                onClick={(e) => toggleTabLock(item.id, e)}
-                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
-                  lockedTabs.has(item.id) 
-                    ? 'bg-rose-500 text-white shadow-md' 
-                    : 'bg-transparent text-slate-300 hover:bg-slate-100 hover:text-slate-600'
                 }`}
+            >
+              <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} className={activeTab === item.id ? 'text-white' : 'text-slate-300 group-hover:text-slate-500'} />
+              <div className="text-left flex-1">
+                <p className="leading-none uppercase tracking-tight">{item.label}</p>
+                <p className={`text-[8px] font-bold mt-0.5 uppercase tracking-tighter ${activeTab === item.id ? 'text-orange-100' : 'text-slate-400 opacity-60'}`}>{item.sub}</p>
+              </div>
+
+              <div
+                onClick={(e) => toggleTabLock(item.id, e)}
+                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${lockedTabs.has(item.id)
+                    ? 'bg-rose-500 text-white shadow-md'
+                    : 'bg-transparent text-slate-300 hover:bg-slate-100 hover:text-slate-600'
+                  }`}
               >
-                {lockedTabs.has(item.id) ? <Lock size={10} strokeWidth={3}/> : <Unlock size={10}/>}
+                {lockedTabs.has(item.id) ? <Lock size={10} strokeWidth={3} /> : <Unlock size={10} />}
               </div>
             </button>
           ))}
         </nav>
 
         <div className="p-3 border-t border-slate-100 bg-slate-50/50">
-          <button 
+          <button
             onClick={() => {
               if (lockPin) {
                 setPendingTab('profile_access');
@@ -404,8 +417,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="overflow-hidden">
-               <p className="text-[11px] font-black text-slate-800 truncate leading-tight uppercase tracking-tight">{currentUser.fullName}</p>
-               <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate italic group-hover:text-orange-500">Profil Sozlamalari</p>
+              <p className="text-[11px] font-black text-slate-800 truncate leading-tight uppercase tracking-tight">{currentUser.fullName}</p>
+              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate italic group-hover:text-orange-500">Profil Sozlamalari</p>
             </div>
           </button>
           <button
@@ -421,23 +434,40 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         <header className="hidden md:flex h-16 px-6 items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md z-10">
           <div className="flex flex-col">
             <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2.5 uppercase">
-               {navItems.find(i => i.id === activeTab)?.label}
-               {lockedTabs.has(activeTab) && <Lock size={16} className="text-rose-500" />}
-               {!lockedTabs.has(activeTab) && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>}
+              {navItems.find(i => i.id === activeTab)?.label}
+              {lockedTabs.has(activeTab) && <Lock size={16} className="text-rose-500" />}
+              {!lockedTabs.has(activeTab) && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>}
             </h2>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5 opacity-80">
-               PrintFlow • {navItems.find(i => i.id === activeTab)?.sub}
+              PrintFlow • {navItems.find(i => i.id === activeTab)?.sub}
             </p>
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <button 
+            {branches.length > 0 && (
+              <div className="relative">
+                <select
+                  value={activeBranchId}
+                  onChange={e => {
+                    setActiveBranchId(e.target.value);
+                    localStorage.setItem('pf_active_branch', e.target.value);
+                  }}
+                  className="h-10 pl-3 pr-8 bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-black uppercase tracking-widest rounded-xl outline-none appearance-none cursor-pointer hover:bg-blue-100 transition-all"
+                >
+                  <option value="">Barcha filiallar</option>
+                  {branches.filter(b => b.isActive).map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none" />
+              </div>
+            )}
+            <button
               onClick={(e) => toggleTabLock(activeTab, e)}
-              className={`group flex items-center gap-2 h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
-                lockedTabs.has(activeTab) 
-                  ? 'bg-rose-600 text-white shadow-rose-500/20' 
+              className={`group flex items-center gap-2 h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${lockedTabs.has(activeTab)
+                  ? 'bg-rose-600 text-white shadow-rose-500/20'
                   : 'bg-orange-600 text-white shadow-orange-500/10 hover:bg-orange-700'
-              }`}
+                }`}
             >
               {lockedTabs.has(activeTab) ? <Lock size={14} /> : <Unlock size={14} />}
               <span>{lockedTabs.has(activeTab) ? 'Sahifa Qulflangan' : 'Sahifani Qulflash'}</span>
@@ -448,38 +478,39 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         <div className="flex-1 overflow-y-auto p-3 md:p-8 relative bg-slate-50/30 custom-scroll">
           {lockedTabs.has(activeTab) ? (
             <div className="absolute inset-0 z-[50] flex items-center justify-center p-8 overflow-hidden">
-               {/* Content is blurred behind */}
-               <div className="absolute inset-0 backdrop-blur-[40px] bg-slate-50/40 z-0"></div>
-               
-               <div className="relative z-10 w-full max-w-sm text-center animate-slide-up">
-                  <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-orange-500/10 border border-slate-100 rotate-3 hover:rotate-0 transition-transform duration-500">
-                    <Lock className="w-8 h-8 text-orange-600" strokeWidth={2.5} />
-                  </div>
-                  <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tight mb-2">Sahifa <span className="text-rose-500">Qulflangan</span></h3>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8 leading-relaxed">Ushbu bo'limga kirish uchun<br/>tizim PIN kodini kiriting</p>
-                  
-                  <form onSubmit={(e) => { e.preventDefault(); setPendingTab(activeTab); }} className="space-y-4">
-                    <button
-                      type="submit"
-                      className="w-full h-14 bg-slate-900 hover:bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-3"
-                    >
-                      <span>PIN KODNI KIRITISH</span>
-                      <ShieldCheck size={16} />
-                    </button>
-                  </form>
-               </div>
+              {/* Content is blurred behind */}
+              <div className="absolute inset-0 backdrop-blur-[40px] bg-slate-50/40 z-0"></div>
+
+              <div className="relative z-10 w-full max-w-sm text-center animate-slide-up">
+                <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-orange-500/10 border border-slate-100 rotate-3 hover:rotate-0 transition-transform duration-500">
+                  <Lock className="w-8 h-8 text-orange-600" strokeWidth={2.5} />
+                </div>
+                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tight mb-2">Sahifa <span className="text-rose-500">Qulflangan</span></h3>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8 leading-relaxed">Ushbu bo'limga kirish uchun<br />tizim PIN kodini kiriting</p>
+
+                <form onSubmit={(e) => { e.preventDefault(); setPendingTab(activeTab); }} className="space-y-4">
+                  <button
+                    type="submit"
+                    className="w-full h-14 bg-slate-900 hover:bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-3"
+                  >
+                    <span>PIN KODNI KIRITISH</span>
+                    <ShieldCheck size={16} />
+                  </button>
+                </form>
+              </div>
             </div>
           ) : (
             <>
-              {activeTab === 'kassa' && <Kassa currentUser={currentUser} />}
-              {activeTab === 'moliya' && <Moliya currentUser={currentUser} />}
+              {activeTab === 'kassa' && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'moliya' && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'hodimlar' && <Hodimlar currentUser={currentUser} />}
-              {activeTab === 'topshiriqlar' && <Topshiriqlar currentUser={currentUser} />}
-              {activeTab === 'mijozlar' && <Mijozlar currentUser={currentUser} />}
+              {activeTab === 'topshiriqlar' && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'mijozlar' && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'ombor' && <Ombor currentUser={currentUser} />}
               {activeTab === 'davomat' && <Davomat currentUser={currentUser} />}
               {activeTab === 'billing' && <Billing />}
               {activeTab === 'admins' && <Admins currentUser={currentUser} />}
+              {activeTab === 'filiallar' && <Filiallar currentUser={currentUser} />}
               {activeTab === 'sozlamalar' && <Sozlamalar currentUser={currentUser} />}
             </>
           )}
@@ -494,7 +525,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
             <p className="text-[10px] font-bold text-orange-700 uppercase leading-tight">PIN kod tizim xavfsizligini ta'minlash uchun xizmat qiladi.</p>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Yangi PIN kod</label>
@@ -503,13 +534,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   type={showPins.p1 ? "text" : "password"}
                   required
                   value={newPin.pin1}
-                  onChange={(e) => setNewPin({...newPin, pin1: e.target.value})}
+                  onChange={(e) => setNewPin({ ...newPin, pin1: e.target.value })}
                   className="input-minimal w-full text-center text-xl font-black tracking-[0.5em]"
                   placeholder="••••"
                   maxLength={8}
                 />
-                <button type="button" onClick={() => setShowPins({...showPins, p1: !showPins.p1})} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-orange-500">
-                  {showPins.p1 ? <EyeOff size={16}/> : <Eye size={16}/>}
+                <button type="button" onClick={() => setShowPins({ ...showPins, p1: !showPins.p1 })} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-orange-500">
+                  {showPins.p1 ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -520,13 +551,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   type={showPins.p2 ? "text" : "password"}
                   required
                   value={newPin.pin2}
-                  onChange={(e) => setNewPin({...newPin, pin2: e.target.value})}
+                  onChange={(e) => setNewPin({ ...newPin, pin2: e.target.value })}
                   className="input-minimal w-full text-center text-xl font-black tracking-[0.5em]"
                   placeholder="••••"
                   maxLength={8}
                 />
-                <button type="button" onClick={() => setShowPins({...showPins, p2: !showPins.p2})} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-orange-500">
-                  {showPins.p2 ? <EyeOff size={16}/> : <Eye size={16}/>}
+                <button type="button" onClick={() => setShowPins({ ...showPins, p2: !showPins.p2 })} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-orange-500">
+                  {showPins.p2 ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -550,7 +581,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               </div>
             </div>
           </div>
-          
+
           <button type="submit" className="btn-primary w-full h-14 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-orange-500/20">
             SOZLAMALARNI SAQLASH
           </button>
@@ -562,20 +593,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         <form onSubmit={handleUpdateProfile} className="space-y-5">
           <div>
             <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">To'liq Ism (F.I.SH)</label>
-            <input 
-              type="text" required 
-              value={profileForm.fullName} 
-              onChange={(e) => setProfileForm({...profileForm, fullName: e.target.value})} 
-              className="input-minimal w-full" 
+            <input
+              type="text" required
+              value={profileForm.fullName}
+              onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+              className="input-minimal w-full"
             />
           </div>
           <div>
             <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Login</label>
-            <input 
-              type="text" required 
-              value={profileForm.login} 
-              onChange={(e) => setProfileForm({...profileForm, login: e.target.value})} 
-              className="input-minimal w-full font-mono text-xs" 
+            <input
+              type="text" required
+              value={profileForm.login}
+              onChange={(e) => setProfileForm({ ...profileForm, login: e.target.value })}
+              className="input-minimal w-full font-mono text-xs"
             />
           </div>
           <div className="pt-4 border-t border-slate-100">
@@ -583,28 +614,28 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             <div className="space-y-4">
               <div className="relative">
                 <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Yangi Parol</label>
-                <input 
-                  type={showProfilePass ? "text" : "password"} 
-                  value={profileForm.password} 
-                  onChange={(e) => setProfileForm({...profileForm, password: e.target.value})} 
-                  className="input-minimal w-full font-mono text-orange-600 text-xs pr-10" 
+                <input
+                  type={showProfilePass ? "text" : "password"}
+                  value={profileForm.password}
+                  onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
+                  className="input-minimal w-full font-mono text-orange-600 text-xs pr-10"
                   autoComplete="new-password"
                 />
                 <button type="button" onClick={() => setShowProfilePass(!showProfilePass)} className="absolute right-3 bottom-3 text-slate-300 hover:text-orange-500">
-                  {showProfilePass ? <EyeOff size={16}/> : <Eye size={16}/>}
+                  {showProfilePass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               <div className="relative">
                 <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Parolni tasdiqlang</label>
-                <input 
-                  type={showProfileConfirmPass ? "text" : "password"} 
-                  value={profileForm.confirmPassword} 
-                  onChange={(e) => setProfileForm({...profileForm, confirmPassword: e.target.value})} 
-                  className="input-minimal w-full font-mono text-orange-600 text-xs pr-10" 
+                <input
+                  type={showProfileConfirmPass ? "text" : "password"}
+                  value={profileForm.confirmPassword}
+                  onChange={(e) => setProfileForm({ ...profileForm, confirmPassword: e.target.value })}
+                  className="input-minimal w-full font-mono text-orange-600 text-xs pr-10"
                   autoComplete="new-password"
                 />
                 <button type="button" onClick={() => setShowProfileConfirmPass(!showProfileConfirmPass)} className="absolute right-3 bottom-3 text-slate-300 hover:text-orange-500">
-                  {showProfileConfirmPass ? <EyeOff size={16}/> : <Eye size={16}/>}
+                  {showProfileConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>

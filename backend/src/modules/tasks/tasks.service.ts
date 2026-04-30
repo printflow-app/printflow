@@ -11,10 +11,11 @@ export class TasksService {
     private telegramService: TelegramService,
   ) {}
 
-  async findAll() {
+  async findAll(branchId?: string) {
     return this.prisma.task.findMany({
-      include: { 
-        column: true, 
+      where: branchId ? { branchId } : undefined,
+      include: {
+        column: true,
         customer: true,
         paymentType: true,
         histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } }
@@ -119,6 +120,10 @@ export class TasksService {
 
     // Telegram Notification
     this.notifyAssignees(task, '🆕 Yangi topshiriq');
+    const tId = TenantContext.getTenantId();
+    if (tId) {
+      this.telegramService.notifyNewOrder(tId, `📌 *${title}*\n💰 ${totalAmount} UZS\n📍 Bosqich: Yangi Buyurtma`);
+    }
 
     return task;
   }
@@ -227,8 +232,12 @@ export class TasksService {
     });
 
     // Notify for each task
+    const tId = TenantContext.getTenantId();
     for (const t of tasks) {
       this.notifyAssignees(t, '🆕 Yangi topshiriq (Guruhli)');
+      if (tId) {
+        this.telegramService.notifyNewOrder(tId, `📌 *${t.title}* (Guruhli)\n💰 ${t.totalAmount} UZS\n📍 Bosqich: Yangi Buyurtma`);
+      }
     }
 
     return tasks;
@@ -415,39 +424,6 @@ export class TasksService {
     }
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
-  async handleDeadlineReminders() {
-    const now = new Date();
-    
-    // Find all active tasks with deadline
-    const tasks = await this.prisma.task.findMany({
-      where: {
-        deadlineAt: { not: null },
-      },
-      include: { column: true }
-    });
 
-    for (const task of tasks) {
-      if (!task.deadlineAt) continue;
-      
-      const finishedKeywords = ['tayyor', 'topshirildi', 'yakunlandi', 'bajarildi'];
-      const isFinished = finishedKeywords.some(k => task.column?.title?.toLowerCase().includes(k));
-      if (isFinished) continue;
-
-      const diffMs = task.deadlineAt.getTime() - now.getTime();
-      const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-      
-      // Eslatmalar: 20, 12, 3 soat oldin
-      if (diffHours === 20) {
-         this.notifyAssignees(task, `⏰ Eslatma: Topshiriq muddatiga 20 soat qoldi!`);
-      } else if (diffHours === 12) {
-         this.notifyAssignees(task, `⏳ DIQQAT: Topshiriq muddatiga 12 soat qoldi!`);
-      } else if (diffHours === 3) {
-         this.notifyAssignees(task, `🚨 SHOSHILINCH: Topshiriq muddatiga 3 soat qoldi!`);
-      } else if (diffHours === 0 && diffMs > -3600000) {
-         this.notifyAssignees(task, `🔥 MUDDAT TUGADI: Topshiriqni yopish vaqti keldi!`);
-      }
-    }
-  }
 }
 

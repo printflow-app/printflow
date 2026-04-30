@@ -4,7 +4,7 @@ import {
   Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle, 
   Users, AlertTriangle, ExternalLink, Package
 } from 'lucide-react';
-import { tasksApi, employeesApi, paymentTypesApi, customersApi, servicesApi } from '../api';
+import { tasksApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi } from '../api';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import NumberInput from '../components/NumberInput';
@@ -37,7 +37,7 @@ interface Column {
   title: string;
 }
 
-const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
 
   const [employees, setEmployees] = useState<any[]>([]);
@@ -46,6 +46,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [paymentTypes, setPaymentTypes] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, type: 'task' | 'column', id: string, title: string }>({ isOpen: false, type: 'task', id: '', title: '' });
@@ -54,13 +55,14 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [colRes, empRes, ptRes, custRes, taskRes, svcRes] = await Promise.all([
+      const [colRes, empRes, ptRes, custRes, taskRes, svcRes, branchRes] = await Promise.all([
         tasksApi.getColumns(),
         employeesApi.findAll(),
         paymentTypesApi.findAll(),
         customersApi.findAll(),
-        tasksApi.findAll(),
+        tasksApi.findAll(activeBranchId),
         servicesApi.findAll(),
+        branchesApi.findAll(),
       ]);
       setColumns(colRes.data || []);
       setEmployees(empRes.data || []);
@@ -68,6 +70,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       setCustomers(custRes.data || []);
       setTasks(taskRes.data || []);
       setServices(svcRes.data || []);
+      setBranches(branchRes.data || []);
     } catch (err) {
       showStatus('error', "Ma'lumotlarni yuklashda xatolik yuz berdi!");
       console.error("Ma'lumotlarni yuklashda xato:", err);
@@ -78,7 +81,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeBranchId]);
 
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text });
@@ -104,7 +107,8 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     items: [] as any[],
     manualTotal: '',
     justification: '',
-    deadlineAt: ''
+    deadlineAt: '',
+    targetBranchId: ''
   });
   const [currentOrderService, setCurrentOrderService] = useState({
     serviceId: '', selectedOptionIds: [] as string[], quantity: '1', coefficient: '1', totalAmount: 0
@@ -161,7 +165,8 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
        columnId: initialColId || (columns[0]?.id || ''),
        customerId: '', customerName: '', customerPhone: '',
        totalAmount: '', depositAmount: '', paymentTypeId: paymentTypes[0]?.id || '',
-       items: [], manualTotal: '', justification: '', deadlineAt: ''
+       items: [], manualTotal: '', justification: '', deadlineAt: '',
+       targetBranchId: activeBranchId || (branches.length > 0 ? branches[0].id : '')
     });
     setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '1', coefficient: '1', totalAmount: 0 });
     setSelectedServiceOptions([]);
@@ -265,6 +270,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         justification: newTaskForm.justification,
         assigneeIds: newTaskForm.assigneeIds,
         deadlineAt: newTaskForm.deadlineAt || null,
+        branchId: newTaskForm.targetBranchId || activeBranchId || undefined,
         items: newTaskForm.items.map(it => ({
           ...it,
           totalAmount: finalTotal !== calculatedTotal ? (it.totalAmount * (finalTotal / calculatedTotal)) : it.totalAmount
@@ -792,6 +798,19 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <span className="text-sky-500">{newTaskForm.assigneeIds.length} ta tanlandi</span>
               </label>
 
+              {(currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin' || p.canAssignToOtherBranches) && (
+                <div className="mb-3">
+                  <select 
+                    value={newTaskForm.targetBranchId} 
+                    onChange={(e) => setNewTaskForm(f => ({ ...f, targetBranchId: e.target.value, assigneeIds: [] }))} 
+                    className="select-minimal h-10 font-black text-orange-600 border-orange-200"
+                  >
+                    <option value="">Barcha filiallar / Filialsiz</option>
+                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              )}
+
               <div className="relative">
                 <div 
                   onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
@@ -828,6 +847,7 @@ const Topshiriqlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     <div className="overflow-y-auto custom-scroll space-y-1">
                       {employees
                         .filter(e => e.fullName.toLowerCase().includes(empSearchTerm.toLowerCase()))
+                        .filter(e => !newTaskForm.targetBranchId || e.branchId === newTaskForm.targetBranchId)
                         .map(emp => {
                           const active = newTaskForm.assigneeIds.includes(emp.id);
                           const busy = isEmployeeBusy(emp.id);

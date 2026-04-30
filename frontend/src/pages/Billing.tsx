@@ -23,13 +23,14 @@ export default function Billing() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statusRes, plansRes, cardsRes] = await Promise.all([
+      const [statusRes, plansResRaw, cardsRes] = await Promise.all([
         billingApi.getStatus(),
         fetch(`${API_URL}/plans`).then(r => r.json()),
         fetch(`${API_URL}/billing/settings/payment-cards`).then(r => r.json())
       ]);
       setStatus(statusRes.data);
-      setPlans(plansRes);
+      const list = Array.isArray(plansResRaw) ? plansResRaw : (Array.isArray(plansResRaw?.data) ? plansResRaw.data : []);
+      setPlans(list);
       setCardNumbers(cardsRes || []);
     } catch (err) {
       console.error(err);
@@ -172,29 +173,29 @@ export default function Billing() {
 
                   <ul className="space-y-3 mb-8 flex-1">
                     {(() => {
-                      const allFeatures = [
-                        { id: 'kanban', label: 'Kanban (Buyurtmalar)' },
-                        { id: 'warehouse', label: 'Ombor boshqaruvi' },
-                        { id: 'telegram_bot', label: 'Telegram Bot (Xabarlar)' },
-                        { id: 'attendance', label: 'Ishga davomat (QR)' },
-                        { id: 'finance', label: 'Moliya (Sof foyda/Zarar)' },
-                        { id: 'tasks', label: 'Task Management' },
-                        { id: 'kpi', label: 'Xodimlar KPI tahlili' },
-                        { id: 'debtors', label: 'Qarzdorlarga avto-xabar' },
-                        { id: 'multi_branch', label: 'Multi Filiallar (Tez kunda)' }
+                      const allFeatures: Array<{ ids: string[]; label: string }> = [
+                        { ids: ['kanban'], label: 'Kanban (Buyurtmalar)' },
+                        { ids: ['warehouse'], label: 'Ombor boshqaruvi' },
+                        { ids: ['telegram_bot', 'telegramBot'], label: 'Telegram Bot (Xabarlar)' },
+                        { ids: ['attendance'], label: 'Ishga davomat (QR)' },
+                        { ids: ['finance'], label: 'Moliya (Sof foyda/Zarar)' },
+                        { ids: ['tasks', 'taskManagement'], label: 'Task Management' },
+                        { ids: ['kpi', 'kpiTracking'], label: 'Xodimlar KPI tahlili' },
+                        { ids: ['debtors', 'debtorReminders'], label: 'Qarzdorlarga avto-xabar' },
+                        { ids: ['multi_branch', 'multiBranch'], label: 'Multi Filiallar (Tez kunda)' }
                       ];
 
                       // Sort: active features first
                       const sortedFeatures = [...allFeatures].sort((a, b) => {
-                        const valA = features[a.id] ? 1 : 0;
-                        const valB = features[b.id] ? 1 : 0;
+                        const valA = a.ids.some(id => features[id]) ? 1 : 0;
+                        const valB = b.ids.some(id => features[id]) ? 1 : 0;
                         return valB - valA;
                       });
 
                       return sortedFeatures.map(feat => {
-                        const val = features[feat.id];
+                        const val = feat.ids.some(id => features[id]);
                         return (
-                          <li key={feat.id} className={`flex items-center gap-3 text-[11px] font-bold ${val ? 'text-slate-700' : 'text-slate-400 opacity-60'}`}>
+                          <li key={feat.ids[0]} className={`flex items-center gap-3 text-[11px] font-bold ${val ? 'text-slate-700' : 'text-slate-400 opacity-60'}`}>
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${val ? 'bg-orange-50' : 'bg-slate-100'}`}>
                               {val ? <Check size={12} className="text-[#FF6B00]" strokeWidth={4} /> : <div className="w-3 h-0.5 bg-slate-300" />}
                             </div>

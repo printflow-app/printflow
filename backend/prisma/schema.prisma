@@ -33,9 +33,10 @@ model Plan {
   maxEmployees Int     @default(8)       // Xodimlar limiti (0 = cheksiz)
   features    String   @default("{}")    // JSON: { "kanban": true, "finance": false, ... }
   description String?                    // Qisqa ta'rif
-  isPopular   Boolean  @default(false)   // 🔥 Eng ommabop — highlight qilish
+  isPopular   Boolean  @default(false)   // Eng ommabop — highlight qilish
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
+  durationDays Int     @default(30)      // Obuna muddati kunlarda (30, 90, 180, 365)
   tenants     Tenant[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -53,6 +54,9 @@ model Tenant {
   // Plan relation
   planId             String?
   plan               Plan?        @relation(fields: [planId], references: [id])
+
+  // Obuna davomiyligi (oxirgi to'lov asosida)
+  subscriptionDurationMonths Int? // 1, 3, 6, 12 — oxirgi tasdiqlangan to'lov muddati
 
   // Relations to all tenant-scoped data
   roles              Role[]
@@ -74,6 +78,7 @@ model Tenant {
   systemSettings     SystemSetting[]
   botSessions        BotSession[]
   payments           Payment[]
+  branches           Branch[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -300,6 +305,33 @@ model AttendanceRecord {
 }
 
 // =============================================
+// FILIALLAR (Multi-Branch)
+// =============================================
+
+model Branch {
+  id       String   @id @default(uuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name              String
+  address           String?
+  phone             String?
+  managerEmployeeId String?   // Employee.id reference (soft, no FK to avoid circular)
+  isActive          Boolean   @default(true)
+
+  employees    Employee[]
+  tasks        Task[]
+  customers    Customer[]
+  transactions Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+// =============================================
 // ROLES & EMPLOYEES
 // =============================================
 
@@ -350,8 +382,12 @@ model Role {
 
   // Yangi ruxsatlar (Feature-gated)
   canViewKpi              Boolean @default(false)  // KPI ko'rsatkichlarini ko'rish
+  canManageBranches       Boolean @default(false)  // Filiallarni boshqarish
   canManageNotifications  Boolean @default(false)  // Bot bildirishnomalarini boshqarish
   canViewExpenseCharts    Boolean @default(false)  // Chiqim tahlil grafiklarini ko'rish
+  canViewSettings         Boolean @default(false)  // Sozlamalar sahifasiga kirish
+  canAssignToOtherBranches Boolean @default(false) // Boshqa filial xodimlariga vazifa berish
+  canManageBilling        Boolean @default(false)  // Obuna va to'lovlarni boshqarish
 
   employees Employee[]
 
@@ -375,6 +411,9 @@ model Employee {
 
   roleId String
   role   Role   @relation(fields: [roleId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
 
   baseSalary  Float @default(0)
   givenAmount Float @default(0)
@@ -403,6 +442,9 @@ model Customer {
   phone     String?
   totalDebt Float   @default(0) // Umumiy buyurtmalar summasi
   totalPaid Float   @default(0) // Umumiy to'langan summa
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
 
   transactions Transaction[]
   tasks        Task[]
@@ -455,6 +497,10 @@ model Transaction {
   expenseTypeId String?
   expenseType   ExpenseType? @relation(fields: [expenseTypeId], references: [id])
   employeeId    String?
+
+  // Filial bog'liq
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -530,6 +576,9 @@ model Task {
   attachments       String   @default("[]") // JSON: image array
   materialOverrides String   @default("[]") // JSON: {materialId, quantity}[]
   deadlineAt        DateTime?               // Topshiriq muddati (ixtiyoriy)
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
 
   histories      TaskHistory[]
   stockMovements StockMovement[]

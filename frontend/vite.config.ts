@@ -8,7 +8,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://sharq-admin-production.up.railway.app',
+        target: 'http://127.0.0.1:4000',
         changeOrigin: true,
       },
     },

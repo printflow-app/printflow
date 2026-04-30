@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserPlus, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, Users, BarChart2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { employeesApi, rolesApi } from '../api';
+import { employeesApi, rolesApi, branchesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NumberInput from '../components/NumberInput';
+import Kpi from './Kpi';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
@@ -16,7 +17,9 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   const [roles, setRoles] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState<'jamoa' | 'kpi'>('jamoa');
 
   // Modals
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
@@ -26,7 +29,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   // Employee Form
   const [newEmployee, setNewEmployee] = useState<any>({
-    fullName: '', phone: '', roleId: '', baseSalary: ''
+    fullName: '', phone: '', roleId: '', baseSalary: '', branchId: ''
   });
   const [generatedCredentials, setGeneratedCredentials] = useState<{login: string, password: string} | null>(null);
   const [showGenPass, setShowGenPass] = useState(false);
@@ -35,10 +38,12 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [empRes, roleRes] = await Promise.all([
+      const [empRes, roleRes, branchRes] = await Promise.all([
         employeesApi.findAll(),
-        rolesApi.findAll()
+        rolesApi.findAll(),
+        branchesApi.findAll().catch(() => ({ data: [] })),
       ]);
+      setBranches(Array.isArray(branchRes.data) ? branchRes.data : []);
       
       const allRoles = roleRes.data || [];
       const employeeRoles = allRoles.filter((r: any) => 
@@ -70,9 +75,9 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await employeesApi.create({ ...newEmployee, baseSalary: Number(newEmployee.baseSalary) || 0 });
+      const res = await employeesApi.create({ ...newEmployee, baseSalary: Number(newEmployee.baseSalary) || 0, branchId: newEmployee.branchId || undefined });
       setGeneratedCredentials({ login: res.data.login, password: res.data.password });
-      setNewEmployee({ fullName: '', phone: '', roleId: '', baseSalary: '' });
+      setNewEmployee({ fullName: '', phone: '', roleId: '', baseSalary: '', branchId: '' });
       fetchData();
       toast.success("Xodim muvaffaqiyatli qo'shildi!");
       setIsEmployeeModalOpen(false);
@@ -133,9 +138,35 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-10 animate-fade-in relative">
-      <div className="space-y-6 animate-fade-in">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in relative">
+      <div className="bg-white p-2 rounded-xl border border-slate-200 flex w-fit gap-2">
+        <button
+          onClick={() => setActiveSubTab('jamoa')}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all ${
+            activeSubTab === 'jamoa'
+              ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+          }`}
+        >
+          <Users size={16} /> Jamoa Ro'yxati
+        </button>
+        <button
+          onClick={() => setActiveSubTab('kpi')}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all ${
+            activeSubTab === 'kpi'
+              ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+          }`}
+        >
+          <BarChart2 size={16} /> KPI & Velocity
+        </button>
+      </div>
+
+      {activeSubTab === 'kpi' ? (
+        <Kpi currentUser={currentUser} />
+      ) : (
+        <div className="space-y-6 animate-fade-in">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">Jamoa A'zolari</h3>
             <p className="text-[9px] font-black text-slate-400 mt-0.5 uppercase tracking-widest">Tizimga kirish huquqiga ega barcha xodimlar</p>
@@ -155,6 +186,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 py-3 px-5">F.I.SH & Aloqa</th>
                   <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 px-5">Lavozimi</th>
                   <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 px-5">Login</th>
+                  {branches.length > 0 && <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 px-5">Filial</th>}
                   {(isAdmin || p.canViewSalary) && <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 px-5 text-emerald-600">Asosiy Maosh</th>}
                   <th className="text-[9px] uppercase tracking-widest font-black text-slate-400 text-right pr-6 px-5">Harakat</th>
                 </tr>
@@ -181,6 +213,17 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         )}
                       </div>
                     </td>
+                    {branches.length > 0 && (
+                      <td className="px-5">
+                        {emp.branchId ? (
+                          <span className="text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded-lg uppercase tracking-tight">
+                            {branches.find(b => b.id === emp.branchId)?.name || '—'}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-slate-300 font-bold">—</span>
+                        )}
+                      </td>
+                    )}
                     {(isAdmin || p.canViewSalary) && <td className="px-5 font-black text-xs text-slate-700 tabular-nums">{formatCurrency(emp.baseSalary)}</td>}
                     <td className="text-right pr-6">
                       <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -212,6 +255,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Employee Modal: Create */}
       <Modal
@@ -271,6 +315,15 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                </div>
+               {branches.length > 0 && (
+                 <div>
+                    <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Filial</label>
+                    <select value={newEmployee.branchId} onChange={(e) => setNewEmployee({...newEmployee, branchId: e.target.value})} className="select-minimal font-black w-full">
+                       <option value="">Filial tanlanmagan</option>
+                       {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                 </div>
+               )}
                {(isAdmin || p.canViewSalary) && (
                  <div>
                     <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Maoshi (UZS)</label>

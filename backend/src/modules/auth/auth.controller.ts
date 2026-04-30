@@ -118,30 +118,59 @@ export class AuthController {
     try {
       const token = req.cookies?.['pf_token'];
       if (!token) return null;
-      
-      const payload = this.authService['jwt'].verify(token, { secret: process.env.JWT_SECRET });
-      
-      const [tenant, employee] = await Promise.all([
-        this.authService['prisma'].tenant.findUnique({
-          where: { id: payload.tenantId },
-          include: { plan: true }
-        }),
-        this.authService['prisma'].employee.findUnique({
-          where: { id: payload.sub },
-          include: { role: true }
-        })
-      ]);
 
-      if (!tenant || !employee) return null;
+      const payload = this.authService['jwt'].verify(token, { secret: process.env.JWT_SECRET });
+      const prisma = this.authService['prisma'];
+
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: payload.tenantId },
+        include: { plan: true }
+      });
+      if (!tenant) return null;
 
       let tenantFeatures = {};
       if (tenant?.plan?.features) {
         try {
-          tenantFeatures = typeof tenant.plan.features === 'string' 
-            ? JSON.parse(tenant.plan.features) 
+          tenantFeatures = typeof tenant.plan.features === 'string'
+            ? JSON.parse(tenant.plan.features)
             : tenant.plan.features;
         } catch { }
       }
+
+      // Workspace admins and employees live in separate tables — try admin first.
+      const admin = await prisma.workspaceAdmin.findUnique({ where: { id: payload.sub } });
+      if (admin && admin.tenantId === tenant.id) {
+        const adminRole = {
+          name: 'Admin',
+          isAdmin: true,
+          canViewFinance: true, canAddIncome: true, canAddExpense: true, canViewTotalBalance: true,
+          canManagePaymentTypes: true, canViewTasks: true, canCreateTask: true, canEditTask: true,
+          canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
+          canManageCustomers: true, canViewInventory: true, canManageInventory: true,
+          canViewAttendance: true, canManageAttendance: true, canViewServices: true, canManageServices: true,
+          canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true,
+        };
+        return {
+          id: admin.id,
+          fullName: admin.fullName,
+          login: admin.login,
+          phone: admin.phone,
+          tenantId: tenant.id,
+          tenantName: tenant.name,
+          workspaceSlug: tenant.slug,
+          role: adminRole,
+          permissions: adminRole,
+          isFirstLogin: false,
+          passwordVersion: admin.passwordVersion,
+          tenantFeatures,
+        };
+      }
+
+      const employee = await prisma.employee.findUnique({
+        where: { id: payload.sub },
+        include: { role: true }
+      });
+      if (!employee) return null;
 
       return {
         id: employee.id,
@@ -153,7 +182,7 @@ export class AuthController {
         workspaceSlug: tenant.slug,
         role: employee.role,
         permissions: employee.role,
-        isFirstLogin: employee.isFirstLogin, // Return flag for frontend onboarding
+        isFirstLogin: employee.isFirstLogin,
         passwordVersion: employee.passwordVersion,
         tenantFeatures
       };

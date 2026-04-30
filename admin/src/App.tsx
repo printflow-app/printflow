@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { LogOut, LayoutDashboard, Building2, Plus, X, Users, CreditCard, Package, Check, XCircle, Eye, EyeOff } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
 import { authApi, tenantsApi, leadsApi, plansApi, settingsApi } from './api';
+import { UIProvider, useUI } from './ui';
 import logo from './assets/logo.png';
 
 const useAuth = () => {
@@ -610,6 +611,7 @@ function Plans() {
   }
 
 function Payments() {
+  const { toast, confirm } = useUI();
   const [payments, setPayments] = useState<any[]>([]); const [tab, setTab] = useState<'pending' | 'all'>('pending');
   const [cards, setCards] = useState<any[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
@@ -630,15 +632,31 @@ function Payments() {
   useEffect(() => { loadPayments(); }, [tab]);
   useEffect(() => { loadCards(); }, []);
 
-  const approve = async (id: string) => { if (!confirm('Tasdiqlaysizmi?')) return; await tenantsApi.approvePayment(id); loadPayments(); };
-  const reject = async (id: string) => { if (!confirm('Rad etasizmi?')) return; await tenantsApi.rejectPayment(id); loadPayments(); };
-  
+  const approve = async (id: string) => {
+    const ok = await confirm({ title: "To'lovni tasdiqlash", message: 'Ushbu to\'lovni tasdiqlaysizmi?', confirmText: 'Tasdiqlash' });
+    if (!ok) return;
+    try {
+      await tenantsApi.approvePayment(id);
+      toast("To'lov tasdiqlandi", 'success');
+      loadPayments();
+    } catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
+  };
+  const reject = async (id: string) => {
+    const ok = await confirm({ title: "To'lovni rad etish", message: 'Ushbu to\'lovni rad etasizmi?', confirmText: 'Rad etish', danger: true });
+    if (!ok) return;
+    try {
+      await tenantsApi.rejectPayment(id);
+      toast("To'lov rad etildi", 'success');
+      loadPayments();
+    } catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
+  };
+
   const handleSaveCards = async () => {
     setSavingCards(true);
     try {
       await settingsApi.update('PAYMENT_CARDS', cards);
-      alert("Kartalar saqlandi!");
-    } catch { alert("Xatolik!"); }
+      toast('Kartalar saqlandi!', 'success');
+    } catch { toast('Xatolik!', 'error'); }
     finally { setSavingCards(false); }
   };
 
@@ -743,6 +761,7 @@ function Payments() {
 }
 
 function Tenants() {
+  const { toast, confirm } = useUI();
   const [tenants, setTenants] = useState<any[]>([]); const [showModal, setShowModal] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
   const [name, setName] = useState(''); const [selectedPlanId, setSelectedPlanId] = useState('');
@@ -759,7 +778,7 @@ function Tenants() {
       const slug = name.toLowerCase().replace(/[^a-z0-9]/g, ''); const pwd = generateRandomPassword();
       await tenantsApi.create({ name, slug, planId: selectedPlanId || undefined, adminEmail: 'admin', adminPassword: pwd });
       setGeneratedCreds({ slug, login: 'admin', pass: pwd }); setName(''); load();
-    } catch (err: any) { alert(err.response?.data?.message || 'Xatolik'); }
+    } catch (err: any) { toast(err.response?.data?.message || 'Xatolik', 'error'); }
     finally { setLoading(false); }
   };
 
@@ -771,7 +790,12 @@ function Tenants() {
       console.error(err);
     }
   };
-  const toggleStatus = async (id: string, cur: boolean) => { if (!confirm("Holatini o'zgartirmoqchimisiz?")) return; await tenantsApi.update(id, { isActive: !cur }); load(); };
+  const toggleStatus = async (id: string, cur: boolean) => {
+    const ok = await confirm({ title: 'Holatini o\'zgartirish', message: cur ? 'Workspace bloklansinmi?' : 'Workspace faollashtirilsinmi?', danger: cur });
+    if (!ok) return;
+    try { await tenantsApi.update(id, { isActive: !cur }); toast('Holat yangilandi', 'success'); load(); }
+    catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
+  };
   const statusBadge = (t: any) => {
     const s = t.status;
     if (s === 'TRIAL') return <span className="badge" style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>TRIAL</span>;
@@ -801,7 +825,12 @@ function Tenants() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)' }} onClick={() => openDetails(t.id)}>Tafsilotlar</button>
                     <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => toggleStatus(t.id, t.isActive)}>{t.isActive ? 'Bloklash' : 'Faollashtirish'}</button>
-                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={async () => { if(confirm("Haqiqatdan ham o'chirmoqchimisiz?")) { await tenantsApi.delete(t.id); load(); } }}>O'chirish</button>
+                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={async () => {
+                      const ok = await confirm({ title: 'Workspace o\'chirish', message: `${t.name} workspace butunlay o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.`, confirmText: 'Ha, o\'chirilsin', danger: true });
+                      if (!ok) return;
+                      try { await tenantsApi.delete(t.id); toast('Workspace o\'chirildi', 'success'); load(); }
+                      catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
+                    }}>O'chirish</button>
                   </div>
                 </td>
               </tr>
@@ -894,6 +923,7 @@ function Tenants() {
 }
 
 function Leads() {
+  const { toast, confirm } = useUI();
   const [leads, setLeads] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
@@ -933,7 +963,7 @@ function Leads() {
       setGeneratedCreds(res.data.credentials);
       load(); // refresh leads to show status closed
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Xatolik');
+      toast(err.response?.data?.message || 'Xatolik', 'error');
     } finally {
       setLoading(false);
     }
@@ -961,7 +991,12 @@ function Leads() {
                     {l.status !== 'closed' && (
                       <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => openCreateModal(l)}>Workspace Ochish</button>
                     )}
-                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={async () => { if(confirm("So'rovni o'chirmoqchimisiz?")) { await leadsApi.delete(l.id); load(); } }}>O'chirish</button>
+                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={async () => {
+                      const ok = await confirm({ title: 'So\'rovni o\'chirish', message: 'Ushbu demo so\'rov o\'chirilsinmi?', confirmText: 'O\'chirish', danger: true });
+                      if (!ok) return;
+                      try { await leadsApi.delete(l.id); toast('So\'rov o\'chirildi', 'success'); load(); }
+                      catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
+                    }}>O'chirish</button>
                   </div>
                 </td>
               </tr>
@@ -1022,19 +1057,24 @@ function Leads() {
 
 export default function App() {
   const { isAuthenticated, login, logout } = useAuth();
-  if (!isAuthenticated) return <Login onLogin={login} />;
   return (
-    <BrowserRouter>
-      <Layout onLogout={logout}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/tenants" element={<Tenants />} />
-          <Route path="/plans" element={<Plans />} />
-          <Route path="/payments" element={<Payments />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <UIProvider>
+      {!isAuthenticated ? (
+        <Login onLogin={login} />
+      ) : (
+        <BrowserRouter>
+          <Layout onLogout={logout}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/tenants" element={<Tenants />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/payments" element={<Payments />} />
+              <Route path="/leads" element={<Leads />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      )}
+    </UIProvider>
   );
 }

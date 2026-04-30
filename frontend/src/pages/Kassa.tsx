@@ -10,7 +10,7 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
 };
 
-const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
 
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -25,7 +25,7 @@ const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       setIsLoading(true);
       const [transRes, ptRes, custRes, empRes, etRes] = await Promise.all([
-        financeApi.getTransactions(),
+        financeApi.getTransactions(activeBranchId ? { params: { branchId: activeBranchId } } : undefined),
         paymentTypesApi.findAll(),
         customersApi.findAll(),
         employeesApi.findAll(),
@@ -45,7 +45,7 @@ const Kassa: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeBranchId]);
 
   // Modals
   const [isKirimModalOpen, setIsKirimModalOpen] = useState(false);

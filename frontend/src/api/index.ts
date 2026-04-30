@@ -6,12 +6,31 @@ import axios from 'axios';
 // - Barcha so'rovlar /api prefix'li
 // =============================================
 
-const rawApiUrl = import.meta.env.VITE_API_URL || 'https://printflow-production-bb78.up.railway.app';
-const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api';
+const rawApiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://printflow-production-bb78.up.railway.app');
+const API_URL = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api') : '/api';
 
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // httpOnly cookie avtomatik yuboriladi
+});
+
+// Request interceptor: attach X-Tenant-Id from session (defense-in-depth)
+// + optional Authorization Bearer for non-cookie clients (mobile, embeds).
+api.interceptors.request.use((config) => {
+  try {
+    const raw = sessionStorage.getItem('pf_user_info');
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (user?.tenantId) {
+        (config.headers as any)['X-Tenant-Id'] = user.tenantId;
+      }
+    }
+    const bearer = localStorage.getItem('pf_token');
+    if (bearer && !(config.headers as any).Authorization) {
+      (config.headers as any).Authorization = `Bearer ${bearer}`;
+    }
+  } catch { /* sessionStorage might be blocked in private mode */ }
+  return config;
 });
 
 // Interceptor to handle SUBSCRIPTION_EXPIRED
@@ -87,7 +106,7 @@ export const rolesApi = {
 // CUSTOMERS
 // =============================================
 export const customersApi = {
-  findAll: () => api.get('/customers'),
+  findAll: (branchId?: string) => api.get('/customers', { params: branchId ? { branchId } : {} }),
   create: (data: any) => api.post('/customers', data),
   update: (id: string, data: any) => api.put(`/customers/${id}`, data),
   delete: (id: string) => api.delete(`/customers/${id}`),
@@ -120,7 +139,7 @@ export const expenseTypesApi = {
 // TASKS & KANBAN
 // =============================================
 export const tasksApi = {
-  findAll: () => api.get('/tasks'),
+  findAll: (branchId?: string) => api.get('/tasks', { params: branchId ? { branchId } : {} }),
   findOne: (id: string) => api.get(`/tasks/${id}`),
   create: (data: any, employeeId: string) =>
     api.post(`/tasks?employeeId=${employeeId}`, data),
@@ -248,6 +267,29 @@ export const billingApi = {
   submitPayment: (data: any) => api.post('/billing/payment', data),
   getPayments: () => api.get('/billing/payments'),
   getStatus: () => api.get('/billing/status'),
+};
+
+// =============================================
+// KPI (Xodimlar samaradorligi)
+// =============================================
+export const kpiApi = {
+  list: (params?: { start?: string; end?: string }) =>
+    api.get('/kpi/employees', { params }),
+  me: (params?: { start?: string; end?: string }) =>
+    api.get('/kpi/me', { params }),
+  summary: (params?: { start?: string; end?: string }) =>
+    api.get('/kpi/summary', { params }),
+};
+
+// =============================================
+// BRANCHES (Multi-Filial)
+// =============================================
+export const branchesApi = {
+  findAll: () => api.get('/branches'),
+  create: (data: { name: string; address?: string; phone?: string; managerEmployeeId?: string }) =>
+    api.post('/branches', data),
+  update: (id: string, data: any) => api.put(`/branches/${id}`, data),
+  delete: (id: string) => api.delete(`/branches/${id}`),
 };
 
 // =============================================

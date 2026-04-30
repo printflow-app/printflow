@@ -96,19 +96,22 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       const existingSession = await this.prisma.botSession.findUnique({ where: { chatId } });
 
       if (!existingSession) {
-        // Placeholder tenant sifatida birinchi aktiv tenant topiladi (keyinroq slug bilan yangilanadi)
-        // Yoki session step ni WORKSPACE ga o'rnatamiz
+        // Placeholder tenant sifatida birinchi aktiv tenant topiladi
+        const firstTenant = await this.prisma.tenant.findFirst({ where: { isActive: true } });
+        if (!firstTenant) {
+          return ctx.reply("❌ Tizimda hali birorta ham ishchi workspace yo'q.");
+        }
         await this.prisma.botSession.create({
           data: {
             chatId,
-            tenantId: 'pending',  // Haqiqiy tenantId 1-qadamdan keyin set qilinadi
+            tenantId: firstTenant.id,
             step: 'WORKSPACE',
           },
         });
       } else {
         await this.prisma.botSession.update({
           where: { chatId },
-          data: { step: 'WORKSPACE', tenantId: 'pending', employeeId: null, loginAttempt: null },
+          data: { step: 'WORKSPACE', employeeId: null, loginAttempt: null },
         });
       }
 
@@ -122,7 +125,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     // Komandalar
     this.bot.command('report', async (ctx: any) => {
-      if (!ctx.tenantId || !ctx.employeeId || ctx.tenantId === 'pending') {
+      if (!ctx.tenantId || !ctx.employeeId) {
         return ctx.reply('❌ Avval tizimga kiring. /start bosing.');
       }
       const emp = await this.prisma.employee.findFirst({
@@ -135,7 +138,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.bot.command('check', async (ctx: any) => {
-      if (!ctx.tenantId || !ctx.employeeId || ctx.tenantId === 'pending') {
+      if (!ctx.tenantId || !ctx.employeeId) {
         return ctx.reply('❌ Avval tizimga kiring. /start bosing.');
       }
       const emp = await this.prisma.employee.findFirst({
@@ -205,7 +208,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       // QADAM 3: Parolni tekshirish va ulash
       // =============================================
       if (step === 'PASSWORD') {
-        if (!ctx.tenantId || ctx.tenantId === 'pending') {
+        if (!ctx.tenantId) {
           await this.prisma.botSession.update({
             where: { chatId },
             data: { step: 'WORKSPACE' },
@@ -289,6 +292,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async notifyNewOrder(tenantId: string, message: string) {
+    const prefs = await this.getNotifPrefs(tenantId);
+    if (!prefs.newOrderReceivers || prefs.newOrderReceivers.length === 0) return;
+    for (const empId of prefs.newOrderReceivers) {
+      const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
+      if (emp?.telegramId) {
+        await this.sendMessage(emp.telegramId, `🆕 *Yangi Buyurtma tushdi!*\n\n${message}`);
+      }
+    }
+  }
+
   // =============================================
   // HISOBOT GENERATSIYA
   // =============================================
@@ -362,16 +376,32 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   // CRON JOBLAR
   // =============================================
 
+  // Per-tenant notification preferences read from SystemSetting (key=NOTIFICATION_PREFS).
+  // Defaults: every channel ON (so existing tenants keep current behavior).
+  private async getNotifPrefs(tenantId: string): Promise<{ hisobotReceivers: string[]; newOrderReceivers: string[]; reminderReceivers: string[] }> {
+    const setting = await this.prisma.systemSetting.findFirst({
+      where: { tenantId, key: 'TELEGRAM_BOT_PREFS' },
+    });
+    const defaults = { hisobotReceivers: [], newOrderReceivers: [], reminderReceivers: [] };
+    if (!setting) return defaults;
+    try {
+      const parsed = JSON.parse(setting.value);
+      return { ...defaults, ...parsed };
+    } catch {
+      return defaults;
+    }
+  }
+
   @Cron('0 21 * * *')
   async handleDailyReport() {
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
     for (const t of tenants) {
+      const prefs = await this.getNotifPrefs(t.id);
+      if (!prefs.hisobotReceivers || prefs.hisobotReceivers.length === 0) continue;
       const report = await this.generateReportForTenant(t.id);
-      const admins = await this.prisma.employee.findMany({
-        where: { tenantId: t.id, role: { canViewFinance: true } },
-      });
-      for (const admin of admins) {
-        if (admin.telegramId) await this.sendMessage(admin.telegramId, report);
+      for (const empId of prefs.hisobotReceivers) {
+        const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
+        if (emp?.telegramId) await this.sendMessage(emp.telegramId, report);
       }
     }
   }
@@ -379,8 +409,49 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   @Cron('0 * * * *')
   async handleHourlyTaskCheck() {
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
+    const now = Date.now();
     for (const t of tenants) {
-      await this.checkInactiveTasks(t.id);
+      const prefs = await this.getNotifPrefs(t.id);
+      if (!prefs.reminderReceivers || prefs.reminderReceivers.length === 0) continue;
+      
+      const cols = await this.prisma.kanbanColumn.findMany({
+        where: { tenantId: t.id },
+        orderBy: { orderIdx: 'asc' },
+      });
+      if (cols.length === 0) continue;
+      const lastCol = cols[cols.length - 1].id;
+
+      const tasks = await this.prisma.task.findMany({
+        where: { tenantId: t.id, columnId: { not: lastCol }, deadlineAt: { not: null } },
+        include: { column: true },
+      });
+
+      for (const task of tasks) {
+        if (!task.deadlineAt) continue;
+        const diffHours = (task.deadlineAt.getTime() - now) / 3600000;
+        // Tolerance for cron job running exactly at the hour
+        let shouldNotify = false;
+        let msgType = '';
+        if (diffHours > 11.5 && diffHours <= 12.5) {
+          shouldNotify = true; msgType = '12 soat qoldi';
+        } else if (diffHours > 4.5 && diffHours <= 5.5) {
+          shouldNotify = true; msgType = '5 soat qoldi';
+        } else if (diffHours > -0.5 && diffHours <= 0.5) {
+          shouldNotify = true; msgType = 'Muddati keldi!';
+        }
+
+        if (shouldNotify) {
+          for (const empId of prefs.reminderReceivers) {
+            const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
+            if (emp?.telegramId) {
+              await this.sendMessage(
+                emp.telegramId,
+                `⏳ *Muddat Eslatmasi: ${msgType}*\n\n📌 Buyurtma: *${task.title}*\n🏢 Bosqich: ${task.column.title}\n📅 Muddat: ${task.deadlineAt.toLocaleString('uz-UZ')}`
+              );
+            }
+          }
+        }
+      }
     }
   }
 
@@ -389,14 +460,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   async handleLowStockAlert() {
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
     for (const t of tenants) {
-      const lowStockItems = await this.prisma.material.findMany({
-        where: {
-          tenantId: t.id,
-          currentStock: { lte: this.prisma.material.fields.minStock as any },
-        },
-      });
 
-      // Oddiy so'rov bilan almashtirish
       const materials = await this.prisma.material.findMany({
         where: { tenantId: t.id },
       });

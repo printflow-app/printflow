@@ -9,7 +9,7 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
 };
 
-const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
   const [customers, setCustomers] = useState<any[]>([]);
   const [topCustomers, setTopCustomers] = useState<any[]>([]);
@@ -31,7 +31,7 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       setIsLoading(true);
       const [customersRes, topRes] = await Promise.all([
-        customersApi.findAll(),
+        customersApi.findAll(activeBranchId),
         customersApi.getTopCustomers(10),
       ]);
       setCustomers(customersRes.data || []);
@@ -43,7 +43,7 @@ const Mijozlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [activeBranchId]);
 
   const filteredCustomers = customers.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
