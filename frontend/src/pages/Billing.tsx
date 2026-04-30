@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck, Tag, Gift } from 'lucide-react';
 import { billingApi } from '../api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const API_URL = ((import.meta as any).env.VITE_API_URL || 'http://localhost:4000') + '/api';
+const rawApiUrl = (import.meta as any).env.VITE_API_URL || 'https://printflow-production-bb78.up.railway.app';
+const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api';
 
 export default function Billing() {
   const [status, setStatus] = useState<any>(null);
@@ -17,21 +18,29 @@ export default function Billing() {
   const [sender, setSender] = useState('');
   const [step, setStep] = useState<'plans' | 'form'>('plans');
   const [receipt, setReceipt] = useState<File | null>(null);
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [promoStatus, setPromoStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
+  const [promoValidating, setPromoValidating] = useState(false);
+  const [useCashback, setUseCashback] = useState(false);
+  const [myPromo, setMyPromo] = useState<any>(null);
 
 
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statusRes, plansResRaw, cardsRes] = await Promise.all([
+      const [statusRes, plansResRaw, cardsRes, promoRes] = await Promise.all([
         billingApi.getStatus(),
-        fetch(`${API_URL}/plans`).then(r => r.json()),
-        fetch(`${API_URL}/billing/settings/payment-cards`).then(r => r.json())
+        fetch(`${API_URL}/plans`, { cache: 'no-store' }).then(r => r.json()),
+        fetch(`${API_URL}/billing/settings/payment-cards`).then(r => r.json()),
+        billingApi.getOrCreatePromoCode().catch(() => null),
       ]);
       setStatus(statusRes.data);
       const list = Array.isArray(plansResRaw) ? plansResRaw : (Array.isArray(plansResRaw?.data) ? plansResRaw.data : []);
       setPlans(list);
       setCardNumbers(cardsRes || []);
+      if (promoRes?.data) setMyPromo(promoRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -39,9 +48,20 @@ export default function Billing() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
+
+  const handleValidatePromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoValidating(true);
+    try {
+      await billingApi.validatePromoCode(promoCode.trim());
+      setPromoStatus('valid');
+      toast.success('Promo kod tasdiqlandi! 10% chegirma beriladi');
+    } catch (err: any) {
+      setPromoStatus('invalid');
+      toast.error(err?.response?.data?.message || 'Promo kod xato');
+    } finally { setPromoValidating(false); }
+  };
 
   const getPrice = (plan: any) => {
     if (duration === 3) return plan.price3m;
@@ -54,31 +74,36 @@ export default function Billing() {
     toast.success("Karta raqami nusxalandi!");
   };
 
+  const getDiscountedPrice = (plan: any) => {
+    const base = getPrice(plan);
+    if (promoStatus === 'valid') return Math.round(base * 0.9);
+    if (useCashback && myPromo?.cashbackBalance > 0) return Math.max(0, base - myPromo.cashbackBalance);
+    return base;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sender.trim()) return toast.error('Yuboruvchi ismini kiriting');
     if (!selectedPlan) return toast.error('Tarifni tanlang');
-    
     setSubmitting(true);
     try {
-      // In a real app, you would upload the file to S3 first and get a URL
-      // Here we just simulate it by sending a fake URL if file is present
       await billingApi.submitPayment({
         planName: selectedPlan.name,
         duration,
-        amount: getPrice(selectedPlan),
+        amount: getDiscountedPrice(selectedPlan),
         sender: sender.trim(),
         receiptUrl: receipt ? `receipt_${Date.now()}.png` : undefined,
-        notes: `To'lov cheki yuklangan: ${receipt ? 'Ha' : 'Yo\'q'}`
+        notes: `To'lov cheki yuklangan: ${receipt ? 'Ha' : 'Yo\'q'}`,
+        promoCode: promoStatus === 'valid' ? promoCode.trim() : undefined,
+        useCashback: useCashback && (myPromo?.cashbackBalance || 0) > 0,
       });
       toast.success("To'lov so'rovi muvaffaqiyatli yuborildi!");
       fetchData();
       setStep('plans');
+      setPromoCode(''); setPromoStatus('idle'); setUseCashback(false);
     } catch (err) {
       toast.error("Xatolik yuz berdi");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
   const parseFeatures = (str: string) => { try { return JSON.parse(str); } catch { return {}; } };
@@ -88,16 +113,16 @@ export default function Billing() {
   return (
     <div className="space-y-8 animate-fade-in max-w-7xl mx-auto p-4 md:p-6">
       {/* Current Status Header */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex items-center gap-5">
-           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${status?.status === 'EXPIRED' ? 'bg-rose-100 text-rose-600 shadow-rose-200/50' : 'bg-orange-100 text-[#FF6B00] shadow-orange-200/50'}`}>
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+           <div className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center shadow-lg ${status?.status === 'EXPIRED' ? 'bg-rose-100 text-rose-600 shadow-rose-200/50' : 'bg-orange-100 text-[#FF6B00] shadow-orange-200/50'}`}>
               <ShieldCheck size={32} />
            </div>
            <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Joriy Holat</p>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
                 {status?.plan?.displayName || 'Tarif tanlanmagan'} 
-                <span className={`ml-3 text-[10px] px-3 py-1 rounded-full border ${status?.status === 'TRIAL' ? 'bg-orange-50 text-orange-600 border-orange-200' : status?.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
+                <span className={`text-[10px] px-3 py-1 rounded-full border ${status?.status === 'TRIAL' ? 'bg-orange-50 text-orange-600 border-orange-200' : status?.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
                    {status?.status === 'TRIAL' ? 'SINOV MUDDATI' : status?.status === 'ACTIVE' ? 'FAOLLASHTIRILGAN' : 'MUDDAT TUGAGAN'}
                 </span>
               </h2>
@@ -123,15 +148,60 @@ export default function Billing() {
 
       {step === 'plans' ? (
         <div className="space-y-8 animate-fade-in">
+          {/* Referral & Cashback Card */}
+          {myPromo && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 border border-violet-200 rounded-3xl p-6 flex items-center gap-5">
+                <div className="w-14 h-14 bg-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-600/20 shrink-0">
+                  <Tag size={24} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-1">Sizning Referral Kodingiz</p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-2xl font-black text-violet-900 tracking-widest font-mono">{myPromo.code}</p>
+                    <button onClick={() => { navigator.clipboard.writeText(myPromo.code); toast.success('Kod nusxalandi!'); }} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-violet-400 hover:text-violet-600 border border-violet-200 transition-all">
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-violet-500 mt-1">Do'stlaringizga bering — ular 10% chegirma, siz cashback olasiz!</p>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-3xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                    <Gift size={18} className="text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Cashback Balansi</p>
+                    <p className="text-2xl font-black text-emerald-900">{myPromo.cashbackBalance?.toLocaleString() || 0} <span className="text-sm text-emerald-600">UZS</span></p>
+                  </div>
+                </div>
+                <div className="flex gap-4 text-xs font-bold text-emerald-700">
+                  <span>Jami jalb: <strong>{myPromo.totalReferrals}</strong> ta</span>
+                  <span>Jami topildi: <strong>{myPromo.totalEarned?.toLocaleString()}</strong> UZS</span>
+                </div>
+                {myPromo.usages?.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {myPromo.usages.slice(0, 3).map((u: any) => (
+                      <div key={u.id} className="flex justify-between text-[10px] font-bold text-emerald-600 bg-white/60 rounded-lg px-2 py-1">
+                        <span>{u.usingTenant?.name}</span>
+                        <span>+{u.cashbackEarned?.toLocaleString()} UZS</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {/* Duration Switcher */}
-          <div className="flex flex-col items-center gap-4">
-            <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">To'lov muddatini tanlang</h3>
-            <div className="flex bg-slate-100 p-1 rounded-2xl shadow-inner">
+          <div className="flex flex-col items-center gap-4 w-full">
+            <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] text-center">To'lov muddatini tanlang</h3>
+            <div className="flex flex-wrap justify-center bg-slate-100 p-1 rounded-2xl shadow-inner w-full sm:w-auto">
                {[3, 6, 12].map(m => (
                  <button 
                     key={m} 
                     onClick={() => setDuration(m)}
-                    className={`px-8 py-3 text-xs font-black rounded-xl transition-all ${duration === m ? 'bg-white shadow-md text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 sm:flex-none px-2 sm:px-8 py-3 text-[10px] sm:text-xs font-black rounded-xl transition-all whitespace-nowrap ${duration === m ? 'bg-white shadow-md text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
                  >
                    {m} OY {m === 6 ? '(-10%)' : m === 12 ? '(-25%)' : ''}
                  </button>
@@ -279,9 +349,70 @@ export default function Billing() {
                     </div>
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Summa</p>
-                       <p className="text-xs font-black text-emerald-600">{getPrice(selectedPlan).toLocaleString()} UZS</p>
+                       {getDiscountedPrice(selectedPlan) !== getPrice(selectedPlan) ? (
+                         <div>
+                           <p className="text-[10px] font-bold text-slate-400 line-through mb-0.5">{getPrice(selectedPlan).toLocaleString()} UZS</p>
+                           <p className="text-xs font-black text-emerald-600">{getDiscountedPrice(selectedPlan).toLocaleString()} UZS</p>
+                         </div>
+                       ) : (
+                         <p className="text-xs font-black text-emerald-600">{getPrice(selectedPlan).toLocaleString()} UZS</p>
+                       )}
                     </div>
                  </div>
+
+                 {/* Promo Code Input */}
+                 <div>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 px-1">Promo Kod (Chegirma uchun)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={promoCode}
+                        onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus('idle'); }}
+                        disabled={promoStatus === 'valid' || promoValidating}
+                        placeholder="KODNI KIRITING"
+                        className="input-minimal !h-12 font-black tracking-widest !text-sm uppercase flex-1"
+                      />
+                      {promoStatus === 'valid' ? (
+                        <div className="h-12 px-4 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl flex items-center justify-center font-black text-[10px] uppercase tracking-widest gap-2">
+                          <Check size={16} strokeWidth={3} /> TASDIQLANDI
+                        </div>
+                      ) : (
+                        <button 
+                          type="button"
+                          onClick={handleValidatePromo}
+                          disabled={!promoCode || promoValidating}
+                          className="h-12 px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors"
+                        >
+                          {promoValidating ? '...' : 'TEKSHIRISH'}
+                        </button>
+                      )}
+                    </div>
+                    {promoStatus === 'valid' && (
+                      <p className="text-[10px] font-bold text-emerald-600 mt-2 ml-1">Tabriklaymiz! Sizga 10% chegirma taqdim etildi.</p>
+                    )}
+                 </div>
+
+                 {/* Cashback Toggle */}
+                 {(myPromo?.cashbackBalance || 0) > 0 && (
+                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                         <Gift className="text-emerald-600" size={18} />
+                       </div>
+                       <div>
+                         <p className="text-[11px] font-black text-emerald-800 tracking-tight mb-0.5">Cashback ishlatish</p>
+                         <p className="text-[9px] font-bold text-emerald-600">Sizda {myPromo.cashbackBalance.toLocaleString()} UZS mavjud</p>
+                       </div>
+                     </div>
+                     <button
+                        type="button"
+                        onClick={() => setUseCashback(!useCashback)}
+                        className={`relative w-11 h-6 rounded-full transition-colors ${useCashback ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                      >
+                        <span className={`absolute top-0.5 ${useCashback ? 'left-[22px]' : 'left-0.5'} w-5 h-5 bg-white rounded-full shadow transition-all`}></span>
+                      </button>
+                   </div>
+                 )}
 
                  <div>
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 px-1">To'lov cheki (Image)</label>

@@ -267,6 +267,11 @@ export const billingApi = {
   submitPayment: (data: any) => api.post('/billing/payment', data),
   getPayments: () => api.get('/billing/payments'),
   getStatus: () => api.get('/billing/status'),
+  getMyPayments: () => api.get('/billing/my-payments'),
+  // Promo code
+  getOrCreatePromoCode: () => api.get('/billing/promo/my-code'),
+  getMyPromoStats: () => api.get('/billing/promo/my-stats'),
+  validatePromoCode: (code: string) => api.post('/billing/promo/validate', { code }),
 };
 
 // =============================================

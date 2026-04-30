@@ -50,6 +50,7 @@ export const tenantsApi = {
   getAllPayments: () => api.get('/super-admin/tenants/payments/all'),
   approvePayment: (id: string) => api.post(`/super-admin/tenants/payments/${id}/approve`),
   rejectPayment: (id: string) => api.post(`/super-admin/tenants/payments/${id}/reject`),
+  getPromoCodes: () => api.get('/billing/admin/promo-codes'),
 };
 
 export const plansApi = {

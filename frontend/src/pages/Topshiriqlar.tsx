@@ -447,18 +447,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 z-10 mx-1 sm:mx-0">
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 z-10 mx-1 sm:mx-0">
         <div>
           <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">Xizmatlar & Kanban</h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">Ish jarayonini boshqarish</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
           {p.canManageColumns && (
-            <button onClick={() => setIsNewColumnModalOpen(true)} className="flex-1 sm:flex-none border-2 border-dashed border-slate-200 h-9 px-4 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all">
+            <button onClick={() => setIsNewColumnModalOpen(true)} className="flex-1 border-2 border-dashed border-slate-200 h-10 px-4 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all">
               + BOSQICH
             </button>
           )}
-          <button onClick={() => openNewTaskModal()} className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-6 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all hover:-translate-y-0.5">
+          <button onClick={() => openNewTaskModal()} className="flex-1 flex items-center justify-center gap-2 h-10 px-6 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all hover:-translate-y-0.5">
             <Plus size={14} strokeWidth={3} /> BUYURTMA
           </button>
         </div>

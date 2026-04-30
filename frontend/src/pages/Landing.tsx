@@ -146,10 +146,10 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
             <div style={{ textAlign: 'center', marginBottom: 60 }}>
               <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 900, color: '#0f172a', marginBottom: 16 }}>Tariflar va Narxlar</h2>
               <p style={{ color: '#64748b', fontSize: '1.1rem', maxWidth: 500, margin: '0 auto 32px' }}>Sizning biznesingiz hajmiga mos ta'rifni tanlang</p>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', background: '#f1f5f9', padding: 6, borderRadius: 12, maxWidth: '100%', overflowX: 'auto' }}>
                 {[3, 6, 12].map(m => (
-                  <button key={m} onClick={() => setDuration(m)} style={{
-                    padding: '10px 24px', fontSize: '0.85rem', fontWeight: 800, borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                  <button key={m} onClick={() => setDuration(m)} className="flex-1 sm:flex-none" style={{
+                    padding: '10px 16px', fontSize: '0.8rem', fontWeight: 800, borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
                     background: duration === m ? '#0f172a' : '#fff', color: duration === m ? '#fff' : '#475569', boxShadow: duration !== m ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
                   }}>{m} Oy {m === 6 ? '(-10%)' : m === 12 ? '(-25%)' : ''}</button>
                 ))}

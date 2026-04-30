@@ -79,6 +79,8 @@ model Tenant {
   botSessions        BotSession[]
   payments           Payment[]
   branches           Branch[]
+  promoCode          PromoCode?     // Tenant'ning o'z referral kodı
+  promoCodeUsages    PromoCodeUsage[] // Bu tenant boshqa kodni ishlatgan holatlari
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -119,20 +121,24 @@ model PlatformSetting {
 }
 
 model Payment {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  planName    String                      // Plan nomi vaqtidagi snapshot
-  duration    Int                         // Duration in months (3, 6, 12)
-  amount      Float                       // To'langan summa
-  sender      String                      // Yuboruvchi ism-familiyasi
-  receiptUrl  String?                     // Chek/Kvitansiya rasmining URL
-  notes       String?                     // Qo'shimcha izoh
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  approvedBy  String?                     // Super-Admin ID
-  approvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planName       String                      // Plan nomi vaqtidagi snapshot
+  duration       Int                         // Duration in months (3, 6, 12)
+  amount         Float                       // To'langan summa (chegirmadan keyin)
+  originalAmount Float?                      // Chegirmadan oldingi summa
+  discountAmount Float    @default(0)        // Promo kod chegirmasi
+  sender         String                      // Yuboruvchi ism-familiyasi
+  receiptUrl     String?                     // Chek/Kvitansiya rasmining URL
+  notes          String?                     // Qo'shimcha izoh
+  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy     String?                     // Super-Admin ID
+  approvedAt     DateTime?
+  promoCodeUsed  String?                     // Ishlatilgan promo kod
+  cashbackUsed   Float    @default(0)        // Sarflangan cashback
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 // Leads from Landing Page
@@ -146,6 +152,37 @@ model DemoRequest {
   telegramUser   String?
   status         String   @default("new")
   createdAt      DateTime @default(now())
+}
+
+// =============================================
+// REFERRAL / PROMO CODE SYSTEM
+// =============================================
+
+model PromoCode {
+  id               String           @id @default(uuid())
+  code             String           @unique       // Unikal promo kod (masalan: COMPANY123)
+  tenantId         String           @unique       // Egasi (1 ta tenant — 1 ta kod)
+  tenant           Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cashbackBalance  Float            @default(0)   // Foydalanish mumkin bo'lgan cashback
+  totalEarned      Float            @default(0)   // Jami ishlab topgan cashback
+  totalReferrals   Int              @default(0)   // Jami jalb qilgan foydalanuvchilar
+  isActive         Boolean          @default(true)
+  usages           PromoCodeUsage[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model PromoCodeUsage {
+  id             String    @id @default(uuid())
+  promoCodeId    String
+  promoCode      PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  usingTenantId  String                           // Kim ishlatgan
+  usingTenant    Tenant    @relation(fields: [usingTenantId], references: [id], onDelete: Cascade)
+  planName       String                           // Qaysi tarifga to'lov qilingan
+  paymentAmount  Float                            // To'lov summasi
+  discount       Float                            // Berilgan chegirma (10%)
+  cashbackEarned Float                            // Kod egasiga berilgan cashback
+  createdAt      DateTime  @default(now())
 }
 
 // =============================================

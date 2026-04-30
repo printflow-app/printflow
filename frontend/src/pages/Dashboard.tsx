@@ -443,24 +443,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           </div>
 
           <div className="flex items-center gap-3">
-            {branches.length > 0 && (
-              <div className="relative">
-                <select
-                  value={activeBranchId}
-                  onChange={e => {
-                    setActiveBranchId(e.target.value);
-                    localStorage.setItem('pf_active_branch', e.target.value);
-                  }}
-                  className="h-10 pl-3 pr-8 bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-black uppercase tracking-widest rounded-xl outline-none appearance-none cursor-pointer hover:bg-blue-100 transition-all"
-                >
-                  <option value="">Barcha filiallar</option>
-                  {branches.filter(b => b.isActive).map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-                <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none" />
-              </div>
-            )}
+
             <button
               onClick={(e) => toggleTabLock(activeTab, e)}
               className={`group flex items-center gap-2 h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${lockedTabs.has(activeTab)

@@ -23,6 +23,23 @@ export class BillingController {
     return this.billingService.getMyPayments();
   }
 
+  // --- PROMO CODE ---
+
+  @Get('promo/my-code')
+  getOrCreatePromoCode() {
+    return this.billingService.getOrCreateMyPromoCode();
+  }
+
+  @Get('promo/my-stats')
+  getMyPromoStats() {
+    return this.billingService.getMyPromoStats();
+  }
+
+  @Post('promo/validate')
+  validatePromoCode(@Body() body: { code: string }) {
+    return this.billingService.validatePromoCode(body.code);
+  }
+
   // --- PLATFORM SETTINGS ---
 
   @Public()
@@ -33,7 +50,6 @@ export class BillingController {
 
   @Put('settings/:key')
   updateSetting(@Param('key') key: string, @Body() body: { value: any }) {
-    // Note: In real app, this should be guarded for SuperAdmin only
     return this.billingService.updateSetting(key, body.value);
   }
 
@@ -41,5 +57,11 @@ export class BillingController {
   async getSetting(@Param('key') key: string) {
     const value = await this.billingService.getSetting(key);
     return { value };
+  }
+
+  // --- SUPER ADMIN: All promo codes ---
+  @Get('admin/promo-codes')
+  getAllPromoCodes() {
+    return this.billingService.getAllPromoCodes();
   }
 }
