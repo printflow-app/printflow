@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Building2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { employeesApi } from '../api';
+import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
 import Moliya from './Moliya';
 import Hodimlar from './Hodimlar';
@@ -14,7 +14,6 @@ import Davomat from './Davomat';
 import Admins from './Admins';
 import Billing from './Billing';
 import Filiallar from './Filiallar';
-import Kpi from './Kpi';
 import Modal from '../components/Modal';
 
 interface DashboardProps {
@@ -24,14 +23,19 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
-  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'kpi'>(() => {
+  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar'>(() => {
     return (localStorage.getItem('pf_active_tab') as any) || 'kassa';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Global branch filter (multiBranch feature)
-  const [activeBranchId] = useState<string>(() => localStorage.getItem('pf_active_branch') || '');
+  const [activeBranchId, setActiveBranchId] = useState<string>(() => localStorage.getItem('pf_active_branch') || '');
+  const [branches, setBranches] = useState<any[]>([]);
+
+  useEffect(() => {
+    branchesApi.findAll().then(r => setBranches(r.data || [])).catch(() => {});
+  }, []);
 
   // Profile Form
   const [profileForm, setProfileForm] = useState({ fullName: '', login: '', password: '', confirmPassword: '' });
@@ -246,7 +250,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
     { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: p.canManageBilling || isAdmin, sub: 'Tarif va obuna holati' },
     { id: 'filiallar', label: 'Filiallar', icon: Building2, show: (isAdmin || p.canManageBranches) && tf.multiBranch, sub: 'Multi-filial boshqaruvi' },
-    { id: 'kpi', label: 'KPI & Velocity', icon: TrendingUp, show: p.canViewKpi || isAdmin, sub: 'Samaradorlik tahlili' },
     { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Lavozim va To\'lovlar' },
   ];
 
@@ -445,6 +448,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
           <div className="flex items-center gap-3">
 
+            {branches.length > 1 && (
+              <select
+                value={activeBranchId}
+                onChange={e => {
+                  setActiveBranchId(e.target.value);
+                  localStorage.setItem('pf_active_branch', e.target.value);
+                }}
+                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
+              >
+                <option value="">Barcha filiallar</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            )}
+
             <button
               onClick={(e) => toggleTabLock(activeTab, e)}
               className={`group flex items-center gap-2 h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${lockedTabs.has(activeTab)
@@ -494,7 +513,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'billing' && (p.canManageBilling || isAdmin) && <Billing />}
               {activeTab === 'admins' && isAdmin && <Admins currentUser={currentUser} />}
               {activeTab === 'filiallar' && (isAdmin || p.canManageBranches) && <Filiallar currentUser={currentUser} />}
-              {activeTab === 'kpi' && (p.canViewKpi || isAdmin) && <Kpi currentUser={currentUser} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} />}
               
               {/* Unauthorized message if tab is set but permission removed */}

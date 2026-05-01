@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
+import {
   Plus, Search, UserPlus, CheckCircle2, Clock,
-  Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle, 
-  Users, AlertTriangle, ExternalLink, Package
+  Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle,
+  Users, AlertTriangle, ExternalLink, Package, Building2
 } from 'lucide-react';
 import { tasksApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi } from '../api';
 import Modal from '../components/Modal';
@@ -111,7 +111,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     targetBranchId: ''
   });
   const [currentOrderService, setCurrentOrderService] = useState({
-    serviceId: '', selectedOptionIds: [] as string[], quantity: '1', coefficient: '1', totalAmount: 0
+    serviceId: '', selectedOptionIds: [] as string[], quantity: '', coefficient: '', totalAmount: 0
   });
   const [selectedServiceOptions, setSelectedServiceOptions] = useState<any[]>([]);
   const [priceBreakdown, setPriceBreakdown] = useState<any>(null);
@@ -168,7 +168,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
        items: [], manualTotal: '', justification: '', deadlineAt: '',
        targetBranchId: activeBranchId || (branches.length > 0 ? branches[0].id : '')
     });
-    setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '1', coefficient: '1', totalAmount: 0 });
+    setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0 });
     setSelectedServiceOptions([]);
     setPriceBreakdown(null);
     setIsNewTaskModalOpen(true);
@@ -181,23 +181,25 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     if (!serviceId) { setSelectedServiceOptions([]); return; }
     const svc = services.find((s: any) => s.id === serviceId);
     setSelectedServiceOptions(svc?.options || []);
-    if (svc) recalculatePrice({ serviceId, selectedOptionIds: [], quantity: '1', coefficient: '1' });
+    if (svc) recalculatePrice({ serviceId, selectedOptionIds: [] });
   };
 
-  // Narx hisoblash
-  const recalculatePrice = async (overrides?: any) => {
+  // Narx hisoblash — client-side (API calllarsiz, tez)
+  const recalculatePrice = (overrides?: any) => {
     const form = { ...currentOrderService, ...overrides };
     if (!form.serviceId) return;
-    try {
-      const res = await servicesApi.calculatePrice(form.serviceId, {
-        selectedOptionIds: form.selectedOptionIds,
-        quantity: Number(form.quantity) || 1,
-        discount: 0,
-        coefficient: Number(form.coefficient) || 1,
-      });
-      setPriceBreakdown(res.data);
-      setCurrentOrderService(f => ({ ...f, ...overrides, totalAmount: res.data.total }));
-    } catch {}
+    const svc = services.find((s: any) => s.id === form.serviceId);
+    if (!svc) return;
+    const qty = Number(form.quantity) || 1;
+    const coeff = Number(form.coefficient) || 1;
+    const opts = svc.options || [];
+    const optionsTotal = opts
+      .filter((o: any) => (form.selectedOptionIds || []).includes(o.id))
+      .reduce((sum: number, o: any) => sum + Number(o.priceAdd), 0);
+    const baseTotal = Number(svc.basePrice) + optionsTotal;
+    const total = Math.round(baseTotal * qty * coeff);
+    setPriceBreakdown({ basePrice: svc.basePrice, optionsTotal, baseTotal, quantity: qty, coefficient: coeff, total });
+    setCurrentOrderService(f => ({ ...f, ...overrides, totalAmount: total }));
   };
 
   const toggleOption = (optId: string) => {
@@ -224,7 +226,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     });
 
     // Reset current item form
-    setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '1', coefficient: '1', totalAmount: 0 });
+    setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0 });
     setSelectedServiceOptions([]);
     setPriceBreakdown(null);
   };
@@ -540,6 +542,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                                 <AlertTriangle size={8}/> {Math.floor(ageHours)}S KUTMOQDA
                               </span>
                             )}
+                            {!activeBranchId && task.branchId && (() => {
+                              const br = branches.find((b: any) => b.id === task.branchId);
+                              return br ? (
+                                <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-200 uppercase flex items-center gap-1">
+                                  <Building2 size={8}/> {br.name}
+                                </span>
+                              ) : null;
+                            })()}
                           </div>
                         );
                       })()}

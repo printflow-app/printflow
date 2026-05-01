@@ -42,4 +42,12 @@ export class SettingsService {
     });
     return result;
   }
+
+  // Bypasses tenant middleware — for public landing page reads
+  async getPublic(key: string) {
+    const result = await this.prisma.$queryRaw<Array<{ value: string }>>`
+      SELECT value FROM "SystemSetting" WHERE key = ${key} LIMIT 1
+    `;
+    return result.length > 0 ? JSON.parse(result[0].value) : null;
+  }
 }

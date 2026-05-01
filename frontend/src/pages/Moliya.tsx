@@ -8,7 +8,8 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
 };
 
-const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ activeBranchId }) => {
+const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
+  const isAdmin = currentUser?.role?.isAdmin ?? currentUser?.permissions?.isAdmin ?? false;
   const [dashboard, setDashboard] = useState({ totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
   const [chartData, setChartData] = useState<any[]>([]);
   const [paymentTypeStats, setPaymentTypeStats] = useState<{ kirim: any[], chiqim: any[] }>({ kirim: [], chiqim: [] });

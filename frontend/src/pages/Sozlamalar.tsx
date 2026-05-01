@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell } from 'lucide-react';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell, Upload } from 'lucide-react';
 import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -17,6 +17,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [employees, setEmployees] = useState<any[]>([]);
   const [notifPrefs, setNotifPrefs] = useState<{ hisobotReceivers: string[]; newOrderReceivers: string[]; reminderReceivers: string[] }>({ hisobotReceivers: [], newOrderReceivers: [], reminderReceivers: [] });
   const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
+  const [clientLogos, setClientLogos] = useState<string[]>([]);
+  const [savingLogos, setSavingLogos] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -55,6 +57,11 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           });
         }
       } catch { /* default prefs already set */ }
+
+      try {
+        const logosRes = await settingsApi.get('CLIENT_LOGOS');
+        if (Array.isArray(logosRes.data)) setClientLogos(logosRes.data);
+      } catch { /* default empty */ }
     } catch (err) {
       console.error("Sozlamalarni yuklashda xato:", err);
     } finally {
@@ -73,6 +80,42 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     } finally {
       setSavingNotifPrefs(false);
     }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) { showStatus('error', "Fayl 500KB dan kichik bo'lishi kerak"); return; }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target?.result as string;
+      const newLogos = [...clientLogos, base64];
+      setClientLogos(newLogos);
+      setSavingLogos(true);
+      try {
+        await settingsApi.set('CLIENT_LOGOS', newLogos);
+        showStatus('success', 'Logo saqlandi');
+      } catch {
+        showStatus('error', 'Saqlashda xato');
+        setClientLogos(clientLogos);
+      } finally { setSavingLogos(false); }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleLogoDelete = async (index: number) => {
+    const prev = [...clientLogos];
+    const newLogos = clientLogos.filter((_, i) => i !== index);
+    setClientLogos(newLogos);
+    setSavingLogos(true);
+    try {
+      await settingsApi.set('CLIENT_LOGOS', newLogos);
+      showStatus('success', "Logo o'chirildi");
+    } catch {
+      showStatus('error', 'Saqlashda xato');
+      setClientLogos(prev);
+    } finally { setSavingLogos(false); }
   };
 
   useEffect(() => {
@@ -739,6 +782,44 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 </button>
              </div>
            </div>
+        </section>
+      )}
+
+      {/* Client Logos Section */}
+      {isAdmin && (
+        <section className="space-y-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+              <Upload className="text-orange-400" size={28} /> Mijozlar Logolari
+            </h3>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Landing page'da "Bizga ishonch bildirganlar" qismida ko'rsatiladi</p>
+          </div>
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm">
+            <label className="block w-full border-2 border-dashed border-orange-200 rounded-2xl p-8 text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all group mb-6">
+              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={savingLogos} />
+              <Upload size={32} className="mx-auto mb-3 text-orange-300 group-hover:text-orange-500 transition-colors" />
+              <p className="text-sm font-black text-slate-400 group-hover:text-slate-600">Logo yuklash uchun bosing</p>
+              <p className="text-xs font-bold text-slate-300 mt-1">PNG, JPG, SVG • Maks 500KB</p>
+            </label>
+            {clientLogos.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {clientLogos.map((logo, i) => (
+                  <div key={i} className="relative group bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-center h-24">
+                    <img src={logo} alt={`Logo ${i + 1}`} className="max-w-full max-h-full object-contain" />
+                    <button
+                      onClick={() => handleLogoDelete(i)}
+                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-sm hover:bg-red-600"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-sm font-bold text-slate-300 py-8">Hali logolar yo'q. Yuqoridagi maydonga bosib qo'shing.</p>
+            )}
+            {savingLogos && <p className="text-center text-xs font-black text-orange-500 mt-4 animate-pulse">SAQLANMOQDA...</p>}
+          </div>
         </section>
       )}
 

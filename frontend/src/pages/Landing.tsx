@@ -11,6 +11,7 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
   const [duration, setDuration] = useState(3);
   const [formData, setFormData] = useState({ firstName: '', lastName: '', companyName: '', role: '', phone: '', telegramUser: '' });
   const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [clientLogos, setClientLogos] = useState<string[]>([]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -38,6 +39,13 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    fetch(`${API_URL}/settings/public/CLIENT_LOGOS`, { credentials: 'omit', cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (Array.isArray(data)) setClientLogos(data); })
+      .catch(() => {});
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setFormStatus('loading');
     try {
@@ -61,6 +69,8 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
 
   return (
     <>
+      <style>{`@keyframes logoScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}.logo-slide-track{animation:logoScroll 22s linear infinite}.logo-slide-track:hover{animation-play-state:paused}`}</style>
+
       {/* Header */}
       <header className="header" style={{ background: scrolled ? 'rgba(255,255,255,0.95)' : 'transparent', borderBottomColor: scrolled ? 'var(--border)' : 'transparent' }}>
         <div className="container header-container">
@@ -133,6 +143,220 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
                 <p className="feature-desc">{f.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Showcase */}
+      <section style={{ padding: '100px 0', background: 'linear-gradient(180deg,#fff 0%,#fafafa 100%)' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,107,0,0.08)', border: '1px solid rgba(255,107,0,0.2)', borderRadius: 100, padding: '6px 16px', marginBottom: 20 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF6B00' }} />
+              <span style={{ fontSize: '0.68rem', fontWeight: 900, color: '#FF6B00', textTransform: 'uppercase', letterSpacing: 2 }}>Platform Imkoniyatlari</span>
+            </div>
+            <h2 style={{ fontSize: 'clamp(1.8rem,3.5vw,2.8rem)', fontWeight: 900, color: '#0f172a', marginBottom: 16, lineHeight: 1.2 }}>Biznesingizni To'liq Nazorat Qiling</h2>
+            <p style={{ color: '#64748b', fontSize: '1.05rem', maxWidth: 560, margin: '0 auto' }}>Moliyaviy ma'lumotlar, buyurtmalar holati, mijozlar bazasi va xodimlar davomati – barchasi bitta tizimda.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,460px),1fr))', gap: 28 }}>
+
+            {/* Finance */}
+            <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+              <div style={{ background: 'linear-gradient(135deg,#fff5ed 0%,#fff 100%)', padding: 24, borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ background: '#f1f5f9', padding: '9px 14px', display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {['#fca5a5','#fcd34d','#86efac'].map((c,i) => <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />)}
+                    <div style={{ flex: 1, height: 18, background: '#e2e8f0', borderRadius: 5, marginLeft: 8 }} />
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                      {[{l:'Kirim',v:'12.4M',c:'#10b981'},{l:'Chiqim',v:'4.2M',c:'#ef4444'},{l:'Balans',v:'8.2M',c:'#FF6B00'}].map((s,i) => (
+                        <div key={i} style={{ flex: 1, background: s.c+'18', borderRadius: 10, padding: '8px 10px' }}>
+                          <div style={{ color: s.c, fontWeight: 900, fontSize: 12 }}>{s.v}M</div>
+                          <div style={{ color: '#94a3b8', fontSize: 8, fontWeight: 700, textTransform: 'uppercase' }}>{s.l}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <svg width="100%" height="68" viewBox="0 0 320 68" style={{ display: 'block' }}>
+                      <defs>
+                        <linearGradient id="fg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FF6B00" stopOpacity="0.28"/><stop offset="100%" stopColor="#FF6B00" stopOpacity="0"/></linearGradient>
+                      </defs>
+                      <path d="M0,52 C40,46 60,18 100,33 S160,8 200,23 S260,42 320,14" stroke="#FF6B00" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                      <path d="M0,52 C40,46 60,18 100,33 S160,8 200,23 S260,42 320,14 L320,68 L0,68Z" fill="url(#fg1)"/>
+                      <path d="M0,60 C40,56 70,46 100,52 S170,44 200,48 S270,53 320,42" stroke="#3b82f6" strokeWidth="1.5" fill="none" strokeDasharray="5,3"/>
+                    </svg>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                      {['Apr 1','Apr 10','Apr 20','May 1'].map(d => <span key={d} style={{ fontSize: 7, color: '#94a3b8', fontWeight: 700 }}>{d}</span>)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: '22px 26px 26px' }}>
+                <div style={{ display: 'inline-block', background: '#fff5ed', color: '#FF6B00', fontSize: '0.63rem', fontWeight: 900, padding: '4px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Moliya Moduli</div>
+                <h3 style={{ color: '#0f172a', fontSize: '1.15rem', fontWeight: 900, marginBottom: 8, lineHeight: 1.3 }}>Moliyaviy ma'lumotlar – real vaqtda</h3>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.7, marginBottom: 14 }}>Kirim-chiqimlarni kuzating, xodimlar oyligini va mijozlar qarzini nazorat qiling.</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {["Kunlik/haftalik/oylik dinamika grafiği","To'lov turlari bo'yicha taqsimlash","Xarajat kategoriyalari tahlili"].map((b,i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, color: '#475569', fontSize: '0.81rem', fontWeight: 600 }}>
+                      <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'rgba(255,107,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5,4 L3.5,6 L6.5,2" stroke="#FF6B00" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>{b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Kanban */}
+            <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+              <div style={{ background: 'linear-gradient(135deg,#eff6ff 0%,#fff 100%)', padding: 24, borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ background: '#f1f5f9', padding: '9px 14px', display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {['#fca5a5','#fcd34d','#86efac'].map((c,i) => <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />)}
+                    <div style={{ flex: 1, height: 18, background: '#e2e8f0', borderRadius: 5, marginLeft: 8 }} />
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {[
+                        {title:'Yangi',color:'#64748b',cards:['A4 Bosma x500','Vizitka']},
+                        {title:'Jarayonda',color:'#FF6B00',cards:['Banner 3×6m','Katalog','Sticker']},
+                        {title:'Tayyor',color:'#10b981',cards:['Papka x100','Jurnal']},
+                      ].map((col,ci) => (
+                        <div key={ci} style={{ flex: 1, background: col.color+'0f', borderRadius: 10, padding: 8 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                            <span style={{ fontSize: 7, fontWeight: 900, color: col.color, textTransform: 'uppercase' }}>{col.title}</span>
+                            <span style={{ background: col.color, color: '#fff', borderRadius: '50%', width: 13, height: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 900 }}>{col.cards.length}</span>
+                          </div>
+                          {col.cards.map((card,i) => (
+                            <div key={i} style={{ background: '#fff', borderRadius: 7, padding: '6px 7px', marginBottom: 5, boxShadow: '0 1px 3px rgba(0,0,0,0.07)', borderLeft: `2px solid ${col.color}` }}>
+                              <div style={{ fontSize: 7, fontWeight: 800, color: '#334155' }}>{card}</div>
+                              <div style={{ height: 4, background: '#f1f5f9', borderRadius: 2, marginTop: 4, width: `${50+i*18}%` }}/>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: '22px 26px 26px' }}>
+                <div style={{ display: 'inline-block', background: '#eff6ff', color: '#3b82f6', fontSize: '0.63rem', fontWeight: 900, padding: '4px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Kanban Moduli</div>
+                <h3 style={{ color: '#0f172a', fontSize: '1.15rem', fontWeight: 900, marginBottom: 8, lineHeight: 1.3 }}>Buyurtmalar holati – har doim ko'z oldida</h3>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.7, marginBottom: 14 }}>Vizual kanban doska — qaysi buyurtma qaysi bosqichda ekanligi bir qarashdayoq ko'rinadi.</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {["Sudrab-tashlash bilan buyurtmalarni ko'chirish","Muddatlar va javobgar xodim belgilash","Ko'p filial bo'yicha filtr"].map((b,i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, color: '#475569', fontSize: '0.81rem', fontWeight: 600 }}>
+                      <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5,4 L3.5,6 L6.5,2" stroke="#3b82f6" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>{b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Customers */}
+            <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+              <div style={{ background: 'linear-gradient(135deg,#f0fdf4 0%,#fff 100%)', padding: 24, borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ background: '#f1f5f9', padding: '9px 14px', display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {['#fca5a5','#fcd34d','#86efac'].map((c,i) => <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />)}
+                    <div style={{ flex: 1, height: 18, background: '#e2e8f0', borderRadius: 5, marginLeft: 8 }} />
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <div style={{ background: '#f8fafc', borderRadius: 8, padding: '6px 10px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #e2e8f0' }}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1.5px solid #94a3b8' }}/>
+                      <div style={{ height: 7, background: '#e2e8f0', borderRadius: 4, width: 80 }}/>
+                    </div>
+                    {[
+                      {name:'Ideal Print',phone:'+998 90 123...',amount:'1.2M',debt:false,c:'#3b82f6'},
+                      {name:'ArtStyle Studio',phone:'+998 91 456...',amount:'2.1M',debt:true,c:'#f59e0b'},
+                      {name:'Nova Design',phone:'+998 97 789...',amount:'650K',debt:false,c:'#10b981'},
+                      {name:'Toshkent Reklama',phone:'+998 93 234...',amount:'850K',debt:false,c:'#8b5cf6'},
+                    ].map((c,i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 4px', borderBottom: '1px solid #f8fafc' }}>
+                        <div style={{ width: 24, height: 24, borderRadius: '50%', background: c.c+'20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 900, color: c.c, flexShrink: 0 }}>{c.name[0]}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 8, fontWeight: 800, color: '#1e293b' }}>{c.name}</div>
+                          <div style={{ fontSize: 7, color: '#94a3b8' }}>{c.phone}</div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: 8, fontWeight: 900, color: '#1e293b' }}>{c.amount}</div>
+                          <div style={{ fontSize: 7, fontWeight: 700, color: c.debt ? '#ef4444' : '#10b981' }}>{c.debt ? '⚠ Qarzdor' : '✓ Toza'}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: '22px 26px 26px' }}>
+                <div style={{ display: 'inline-block', background: '#f0fdf4', color: '#16a34a', fontSize: '0.63rem', fontWeight: 900, padding: '4px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Mijozlar Moduli</div>
+                <h3 style={{ color: '#0f172a', fontSize: '1.15rem', fontWeight: 900, marginBottom: 8, lineHeight: 1.3 }}>Mijozlar bazasi – qarz va to'lovlar nazorati</h3>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.7, marginBottom: 14 }}>Har bir mijozning to'liq tarixi, qarzi va buyurtmalari bitta ekranda.</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {["Qarzdorlarga avtomatik Telegram xabar","Har bir mijoz bo'yicha alohida hisobot","Buyurtmalar tarixini ko'rish"].map((b,i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, color: '#475569', fontSize: '0.81rem', fontWeight: 600 }}>
+                      <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'rgba(22,163,74,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5,4 L3.5,6 L6.5,2" stroke="#16a34a" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>{b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Employees */}
+            <div style={{ background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+              <div style={{ background: 'linear-gradient(135deg,#f5f3ff 0%,#fff 100%)', padding: 24, borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ background: '#f1f5f9', padding: '9px 14px', display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {['#fca5a5','#fcd34d','#86efac'].map((c,i) => <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />)}
+                    <div style={{ flex: 1, height: 18, background: '#e2e8f0', borderRadius: 5, marginLeft: 8 }} />
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                      {[{l:'Jami',v:'8',c:'#8b5cf6'},{l:'Keldi',v:'7',c:'#10b981'},{l:'Kelmadi',v:'1',c:'#ef4444'}].map((s,i) => (
+                        <div key={i} style={{ flex: 1, background: s.c+'15', borderRadius: 10, padding: '6px 8px', textAlign: 'center' }}>
+                          <div style={{ color: s.c, fontWeight: 900, fontSize: 14 }}>{s.v}</div>
+                          <div style={{ color: '#94a3b8', fontSize: 7, fontWeight: 700, textTransform: 'uppercase' }}>{s.l}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {[
+                      {name:'Sardor K.',days:[1,1,1,1,1,0,1,1,1,1]},
+                      {name:'Malika T.',days:[1,1,0,1,1,1,1,1,1,1]},
+                      {name:'Jahongir A.',days:[1,1,1,1,0,1,0,1,1,1]},
+                    ].map((emp,i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: `hsl(${i*60+230},70%,92%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 900, color: `hsl(${i*60+230},60%,40%)`, flexShrink: 0 }}>{emp.name[0]}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 8, fontWeight: 800, color: '#1e293b', marginBottom: 3 }}>{emp.name}</div>
+                          <div style={{ display: 'flex', gap: 2 }}>
+                            {emp.days.map((d,di) => <div key={di} style={{ width: 8, height: 8, borderRadius: 2, background: d ? '#10b981' : '#fca5a5' }}/>)}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 8, fontWeight: 900, color: '#10b981' }}>{emp.days.filter(Boolean).length}/10</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: '22px 26px 26px' }}>
+                <div style={{ display: 'inline-block', background: '#f5f3ff', color: '#7c3aed', fontSize: '0.63rem', fontWeight: 900, padding: '4px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Xodimlar Moduli</div>
+                <h3 style={{ color: '#0f172a', fontSize: '1.15rem', fontWeight: 900, marginBottom: 8, lineHeight: 1.3 }}>Xodimlar va davomat – bir joyda nazorat</h3>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.7, marginBottom: 14 }}>QR kod yordamida davomat, oylik hisob-kitob va KPI tahlili avtomatik ishlaydi.</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {['QR kod orqali tezkor davomat belgilash','Oylik maosh va bonus hisob-kitobi','KPI va samaradorlik tahlili'].map((b,i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, color: '#475569', fontSize: '0.81rem', fontWeight: 600 }}>
+                      <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5,4 L3.5,6 L6.5,2" stroke="#7c3aed" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>{b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -268,6 +492,25 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
           </div>
         </div>
       </section>
+
+      {/* Client Logos Slider */}
+      {clientLogos.length > 0 && (
+        <section style={{ padding: '64px 0', background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <div className="container" style={{ textAlign: 'center', marginBottom: 40 }}>
+            <p style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>Bizga ishonch bildirganlar</p>
+            <h3 style={{ color: '#0f172a', fontSize: 'clamp(1.2rem,2.5vw,1.6rem)', fontWeight: 900 }}>O'zbekistonning yetakchi bosmaxonalari bilan ishlaymiz</h3>
+          </div>
+          <div style={{ position: 'relative', overflow: 'hidden' }}>
+            <div className="logo-slide-track" style={{ display: 'flex', width: 'max-content' }}>
+              {[...clientLogos, ...clientLogos].map((src, i) => (
+                <div key={i} style={{ flexShrink: 0, width: 160, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 20px', padding: '12px 20px', background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  <img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'grayscale(30%)' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="footer pb-24 md:pb-10">

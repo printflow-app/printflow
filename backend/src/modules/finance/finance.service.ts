@@ -20,14 +20,17 @@ export class FinanceService {
     const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
     if (dateOnlyMatch) {
       const [, y, m, d] = dateOnlyMatch;
-      return end
-        ? new Date(Number(y), Number(m) - 1, Number(d), 23, 59, 59, 999)
-        : new Date(Number(y), Number(m) - 1, Number(d), 0, 0, 0, 0);
+      // Use UTC so date keys stay consistent with toISOString() in getDinamika loop
+      return new Date(
+        end
+          ? Date.UTC(Number(y), Number(m) - 1, Number(d), 23, 59, 59, 999)
+          : Date.UTC(Number(y), Number(m) - 1, Number(d), 0, 0, 0, 0),
+      );
     }
     const dt = new Date(input);
     if (isNaN(dt.getTime())) return null;
-    if (end) dt.setHours(23, 59, 59, 999);
-    else dt.setHours(0, 0, 0, 0);
+    if (end) dt.setUTCHours(23, 59, 59, 999);
+    else dt.setUTCHours(0, 0, 0, 0);
     return dt;
   }
 
@@ -115,6 +118,7 @@ export class FinanceService {
           expenseReason,
           expenseTypeId,
           employeeId,
+          ...(data.date ? { date: new Date(data.date) } : {}),
         } as any,
       });
 
@@ -161,14 +165,14 @@ export class FinanceService {
     let startDate = start ? this.parseDayBoundary(start, false) : null;
     if (!startDate) {
       startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30);
-      startDate.setHours(0, 0, 0, 0);
+      startDate.setUTCDate(startDate.getUTCDate() - 30);
+      startDate.setUTCHours(0, 0, 0, 0);
     }
 
     let endDate = end ? this.parseDayBoundary(end, true) : null;
     if (!endDate) {
       endDate = new Date();
-      endDate.setHours(23, 59, 59, 999);
+      endDate.setUTCHours(23, 59, 59, 999);
     }
 
     const where: any = { date: { gte: startDate, lte: endDate }, ...(branchId ? { branchId } : {}) };
