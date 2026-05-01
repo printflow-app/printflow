@@ -52,9 +52,11 @@ export interface User {
     canViewSalary: boolean;
     canManageBranches: boolean;
     canViewKpi: boolean;
+    canViewExpenseCharts: boolean;
     canViewSettings: boolean;
     canAssignToOtherBranches: boolean;
     canManageBilling: boolean;
+    canManageNotifications: boolean;
   };
 }
 
@@ -352,9 +354,11 @@ export function buildUser(emp: any): User {
       canViewSalary: role.canViewSalary ?? false,
       canManageBranches: role.canManageBranches ?? false,
       canViewKpi: role.canViewKpi ?? false,
+      canViewExpenseCharts: role.canViewExpenseCharts ?? false,
       canViewSettings: role.canViewSettings ?? false,
       canAssignToOtherBranches: role.canAssignToOtherBranches ?? false,
       canManageBilling: role.canManageBilling ?? false,
+      canManageNotifications: role.canManageNotifications ?? false,
     },
   };
 }

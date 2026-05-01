@@ -36,6 +36,15 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  constructor() {
+    super({
+      datasources: {
+        db: { url: process.env.DATABASE_URL },
+      },
+      log: ['error', 'warn'],
+    });
+  }
+
   async onModuleInit() {
     // Global Prisma middleware — appended to EVERY query automatically.
     // This is the core of multi-tenant isolation.

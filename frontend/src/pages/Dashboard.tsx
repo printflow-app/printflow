@@ -14,6 +14,7 @@ import Davomat from './Davomat';
 import Admins from './Admins';
 import Billing from './Billing';
 import Filiallar from './Filiallar';
+import Kpi from './Kpi';
 import Modal from '../components/Modal';
 
 interface DashboardProps {
@@ -244,7 +245,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
     { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
     { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: p.canManageBilling || isAdmin, sub: 'Tarif va obuna holati' },
-    { id: 'filiallar', label: 'Filiallar', icon: Building2, show: (isAdmin || (p as any).canManageBranches) && tf.multiBranch, sub: 'Multi-filial boshqaruvi' },
+    { id: 'filiallar', label: 'Filiallar', icon: Building2, show: (isAdmin || p.canManageBranches) && tf.multiBranch, sub: 'Multi-filial boshqaruvi' },
+    { id: 'kpi', label: 'KPI & Velocity', icon: TrendingUp, show: p.canViewKpi || isAdmin, sub: 'Samaradorlik tahlili' },
     { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Lavozim va To\'lovlar' },
   ];
 
@@ -482,17 +484,27 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
           ) : (
             <>
-              {activeTab === 'kassa' && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'moliya' && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'hodimlar' && <Hodimlar currentUser={currentUser} />}
-              {activeTab === 'topshiriqlar' && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'mijozlar' && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'ombor' && <Ombor currentUser={currentUser} />}
-              {activeTab === 'davomat' && <Davomat currentUser={currentUser} />}
-              {activeTab === 'billing' && <Billing />}
-              {activeTab === 'admins' && <Admins currentUser={currentUser} />}
-              {activeTab === 'filiallar' && <Filiallar currentUser={currentUser} />}
-              {activeTab === 'sozlamalar' && <Sozlamalar currentUser={currentUser} />}
+              {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'moliya' && (p.canViewFinance || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} />}
+              {activeTab === 'topshiriqlar' && (p.canViewTasks || isAdmin) && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'mijozlar' && (p.canViewCustomers || isAdmin) && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'ombor' && (p.canViewInventory || isAdmin) && <Ombor currentUser={currentUser} />}
+              {activeTab === 'davomat' && (p.canViewAttendance || isAdmin) && <Davomat currentUser={currentUser} />}
+              {activeTab === 'billing' && (p.canManageBilling || isAdmin) && <Billing />}
+              {activeTab === 'admins' && isAdmin && <Admins currentUser={currentUser} />}
+              {activeTab === 'filiallar' && (isAdmin || p.canManageBranches) && <Filiallar currentUser={currentUser} />}
+              {activeTab === 'kpi' && (p.canViewKpi || isAdmin) && <Kpi currentUser={currentUser} />}
+              {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} />}
+              
+              {/* Unauthorized message if tab is set but permission removed */}
+              {!navItems.find(i => i.id === activeTab)?.show && (
+                <div className="flex flex-col items-center justify-center h-full text-center p-10 bg-white rounded-3xl border border-slate-200">
+                  <Lock size={48} className="text-slate-200 mb-4" />
+                  <h3 className="text-xl font-black text-slate-800 uppercase italic">Kirish cheklangan</h3>
+                  <p className="text-xs font-bold text-slate-400 mt-2">Ushbu bo'limni ko'rish uchun ruxsatingiz yo'q.</p>
+                </div>
+              )}
             </>
           )}
         </div>

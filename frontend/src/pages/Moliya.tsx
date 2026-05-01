@@ -291,62 +291,64 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ acti
            </div>
         </div>
         {/* Expense Breakdown by Category */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative lg:col-span-2">
-          {isLoading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 rounded-xl items-center justify-center flex"><LoadingSpinner /></div>}
-          <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2 mb-0.5">
-            <TrendingDown className="text-rose-500" size={16} /> Chiqim Tahlili (Kategoriyalar bo'yicha)
-          </h3>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-5">Xarajatlar bo'limi bo'yicha taqsimot</p>
-          
-          {expenseBreakdown.length === 0 ? (
-            <div className="h-[220px] flex flex-col items-center justify-center text-slate-300 font-bold text-xs uppercase tracking-widest">Ma'lumot yo'q</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-              {/* Pie chart */}
-              <div className="h-[220px] w-full overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={1} minHeight={1}>
-                  <PieChart>
-                    <Pie
-                      data={expenseBreakdown}
-                      cx="50%" cy="50%"
-                      innerRadius={55} outerRadius={85}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {expenseBreakdown.map((_, i) => (
-                        <Cell key={i} fill={['#ef4444','#f59e0b','#3b82f6','#8b5cf6','#10b981','#ec4899','#06b6d4','#f97316','#6366f1','#84cc16'][i % 10]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: any) => formatCurrency(value)}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              {/* Legend list */}
-              <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scroll pr-2">
-                {expenseBreakdown.map((item, i) => {
-                  const total = expenseBreakdown.reduce((s, x) => s + x.value, 0);
-                  const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
-                  const colors = ['#ef4444','#f59e0b','#3b82f6','#8b5cf6','#10b981','#ec4899','#06b6d4','#f97316','#6366f1','#84cc16'];
-                  return (
-                    <div key={i} className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: colors[i % 10] }} />
-                        <span className="text-[11px] font-bold text-slate-600 truncate">{item.name}</span>
+        {(isAdmin || currentUser?.permissions?.canViewExpenseCharts) && (
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative lg:col-span-2">
+            {isLoading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 rounded-xl items-center justify-center flex"><LoadingSpinner /></div>}
+            <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2 mb-0.5">
+              <TrendingDown className="text-rose-500" size={16} /> Chiqim Tahlili (Kategoriyalar bo'yicha)
+            </h3>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-5">Xarajatlar bo'limi bo'yicha taqsimot</p>
+            
+            {expenseBreakdown.length === 0 ? (
+              <div className="h-[220px] flex flex-col items-center justify-center text-slate-300 font-bold text-xs uppercase tracking-widest">Ma'lumot yo'q</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                {/* Pie chart */}
+                <div className="h-[220px] w-full overflow-hidden">
+                  <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={1} minHeight={1}>
+                    <PieChart>
+                      <Pie
+                        data={expenseBreakdown}
+                        cx="50%" cy="50%"
+                        innerRadius={55} outerRadius={85}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {expenseBreakdown.map((_, i) => (
+                          <Cell key={i} fill={['#ef4444','#f59e0b','#3b82f6','#8b5cf6','#10b981','#ec4899','#06b6d4','#f97316','#6366f1','#84cc16'][i % 10]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: any) => formatCurrency(value)}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Legend list */}
+                <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scroll pr-2">
+                  {expenseBreakdown.map((item, i) => {
+                    const total = expenseBreakdown.reduce((s, x) => s + x.value, 0);
+                    const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
+                    const colors = ['#ef4444','#f59e0b','#3b82f6','#8b5cf6','#10b981','#ec4899','#06b6d4','#f97316','#6366f1','#84cc16'];
+                    return (
+                      <div key={i} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: colors[i % 10] }} />
+                          <span className="text-[11px] font-bold text-slate-600 truncate">{item.name}</span>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[11px] font-black text-slate-800">{formatCurrency(item.value)}</p>
+                          <p className="text-[9px] font-bold text-slate-400">{pct}%</p>
+                        </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-[11px] font-black text-slate-800">{formatCurrency(item.value)}</p>
-                        <p className="text-[9px] font-bold text-slate-400">{pct}%</p>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

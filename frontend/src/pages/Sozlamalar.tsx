@@ -658,50 +658,74 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-3">
                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Hisobotlar (Kunlik/Haftalik)</label>
-                   <select 
-                     multiple 
-                     value={notifPrefs.hisobotReceivers} 
-                     onChange={(e) => {
-                       const vals = Array.from(e.target.selectedOptions, o => o.value);
-                       setNotifPrefs(prev => ({...prev, hisobotReceivers: vals}));
-                     }}
-                     className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:border-sky-500 outline-none custom-scroll"
-                   >
-                     {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
-                   </select>
-                   <p className="text-[9px] text-slate-400 italic">Hisobot yuboriladigan xodimlar (Ctrl bilan bir nechta tanlash mumkin)</p>
+                   <div className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1">
+                     {employees.map(emp => (
+                       <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
+                         <input 
+                           type="checkbox" 
+                           className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
+                           checked={notifPrefs.hisobotReceivers.includes(emp.id)}
+                           onChange={(e) => {
+                             if (e.target.checked) {
+                               setNotifPrefs(prev => ({...prev, hisobotReceivers: [...prev.hisobotReceivers, emp.id]}));
+                             } else {
+                               setNotifPrefs(prev => ({...prev, hisobotReceivers: prev.hisobotReceivers.filter(id => id !== emp.id)}));
+                             }
+                           }}
+                         />
+                         <span className="text-slate-700 text-xs font-black">{emp.fullName}</span>
+                       </label>
+                     ))}
+                   </div>
+                   <p className="text-[9px] text-slate-400 italic">Hisobot yuboriladigan xodimlar (Keraklilarini belgilang)</p>
                 </div>
 
                 <div className="space-y-3">
                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Yangi Buyurtmalar</label>
-                   <select 
-                     multiple 
-                     value={notifPrefs.newOrderReceivers} 
-                     onChange={(e) => {
-                       const vals = Array.from(e.target.selectedOptions, o => o.value);
-                       setNotifPrefs(prev => ({...prev, newOrderReceivers: vals}));
-                     }}
-                     className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:border-sky-500 outline-none custom-scroll"
-                   >
-                     {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
-                   </select>
-                   <p className="text-[9px] text-slate-400 italic">Yangi buyurtma tushganda kimlarga xabar borishi kerak</p>
+                   <div className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1">
+                     {employees.map(emp => (
+                       <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
+                         <input 
+                           type="checkbox" 
+                           className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
+                           checked={notifPrefs.newOrderReceivers.includes(emp.id)}
+                           onChange={(e) => {
+                             if (e.target.checked) {
+                               setNotifPrefs(prev => ({...prev, newOrderReceivers: [...prev.newOrderReceivers, emp.id]}));
+                             } else {
+                               setNotifPrefs(prev => ({...prev, newOrderReceivers: prev.newOrderReceivers.filter(id => id !== emp.id)}));
+                             }
+                           }}
+                         />
+                         <span className="text-slate-700 text-xs font-black">{emp.fullName}</span>
+                       </label>
+                     ))}
+                   </div>
+                   <p className="text-[9px] text-slate-400 italic">Yangi buyurtma tushganda kimlarga xabar borishi kerak (Keraklilarini belgilang)</p>
                 </div>
 
                 <div className="space-y-3">
                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Muddat Eslatmalari</label>
-                   <select 
-                     multiple 
-                     value={notifPrefs.reminderReceivers} 
-                     onChange={(e) => {
-                       const vals = Array.from(e.target.selectedOptions, o => o.value);
-                       setNotifPrefs(prev => ({...prev, reminderReceivers: vals}));
-                     }}
-                     className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold focus:border-sky-500 outline-none custom-scroll"
-                   >
-                     {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
-                   </select>
-                   <p className="text-[9px] text-slate-400 italic">Muddat oz qolganda va tugaganda eslatmalar kimlarga borishi kerak</p>
+                   <div className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1">
+                     {employees.map(emp => (
+                       <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
+                         <input 
+                           type="checkbox" 
+                           className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
+                           checked={notifPrefs.reminderReceivers.includes(emp.id)}
+                           onChange={(e) => {
+                             if (e.target.checked) {
+                               setNotifPrefs(prev => ({...prev, reminderReceivers: [...prev.reminderReceivers, emp.id]}));
+                             } else {
+                               setNotifPrefs(prev => ({...prev, reminderReceivers: prev.reminderReceivers.filter(id => id !== emp.id)}));
+                             }
+                           }}
+                         />
+                         <span className="text-slate-700 text-xs font-black">{emp.fullName}</span>
+                       </label>
+                     ))}
+                   </div>
+                   <p className="text-[9px] text-slate-400 italic">Muddat oz qolganda va tugaganda eslatmalar kimlarga borishi kerak (Keraklilarini belgilang)</p>
                 </div>
              </div>
              
@@ -1149,7 +1173,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Yakuniy Narx (UZS)</label>
             <div className="relative">
               <NumberInput
-                value={newOptionForm.percentageMarkup === '' ? '' : String(Number(selectedService?.basePrice || 0) + Math.round((Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)) / 1000) * 1000)}
+                value={newOptionForm.percentageMarkup === '' ? '' : String(Number(selectedService?.basePrice || 0) + Math.round(Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)))}
                 onChange={(num) => {
                   const base = Number(selectedService?.basePrice || 0);
                   if (base > 0 && num !== undefined) {
@@ -1173,7 +1197,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                <div className="text-right space-y-1">
                   <p className="text-[10px] font-black uppercase text-slate-400">Narx Farqi:</p>
                   <p className={`text-lg font-black ${Number(newOptionForm.percentageMarkup) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {Number(newOptionForm.percentageMarkup) >= 0 ? '+' : ''}{Math.round((Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)) / 1000) * 1000} UZS
+                    {Number(newOptionForm.percentageMarkup) >= 0 ? '+' : ''}{Math.round(Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100))} UZS
                   </p>
                </div>
             </div>

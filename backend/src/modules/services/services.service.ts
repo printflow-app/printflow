@@ -115,12 +115,7 @@ export class ServicesService {
   // Narxni yaxlitlash logikasi
   calculateRoundedPrice(base: number, markupPercent: number): number {
     const rawMarkup = base * (markupPercent / 100);
-
-    // Yaxlitlash qoidasi:
-    // oxirgi uchta raqam 500 dan past bo'lsa -> 000
-    // 500 va undan yuqori bo'lsa -> 1000
-    // Bu Math.round(val / 1000) * 1000 ga teng
-    return Math.round(rawMarkup / 1000) * 1000;
+    return Math.round(rawMarkup);
   }
 
   // BOM - Material bog'lash
