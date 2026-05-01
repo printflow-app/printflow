@@ -30,6 +30,7 @@ interface Task {
   assignees: string; // JSON string in DB
   deadlineAt?: string | null;
   createdAt?: string;
+  branchId?: string;
 }
 
 interface Column {

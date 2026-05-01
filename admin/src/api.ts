@@ -71,4 +71,9 @@ export const settingsApi = {
   update: (key: string, value: any) => api.put(`/billing/settings/${key}`, { value }),
 };
 
+export const platformApi = {
+  getClientLogos: () => api.get('/super-admin/tenants/platform-settings/client-logos'),
+  setClientLogos: (logos: string[]) => api.post('/super-admin/tenants/platform-settings/client-logos', { logos }),
+};
+
 export default api;
