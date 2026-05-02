@@ -41,10 +41,13 @@ export class EmployeesService {
 
     // Remove plaintext password from data, use hash
     const { password, ...rest } = data;
-    
-    return this.prisma.employee.create({
+
+    const employee = await this.prisma.employee.create({
       data: { ...rest, passwordHash },
     });
+
+    // Return plain-text password once so frontend can display it
+    return { ...employee, password: rawPassword };
   }
 
   async update(id: string, data: any) {
