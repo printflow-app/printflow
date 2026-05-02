@@ -1,16 +1,87 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Cron } from '@nestjs/schedule';
-import { Telegraf } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import * as bcrypt from 'bcrypt';
 
 // =============================================
 // TELEGRAM BOT SERVICE — PrintFlow
-// /start oqimi (O'zbek tilida, 3 qadam):
-// 1. Workspace slug so'rash
-// 2. Login so'rash
-// 3. Parol so'rash → tekshirish va ulash
+// Oqim: /start → Til tanlash → Workspace → Login → Parol → IDLE
 // =============================================
+
+const LANGS = {
+  uz: {
+    chooseLanguage: '🌐 *Tilni tanlang:*',
+    btnLatin:   "🇺🇿 O'zbek (lotin)",
+    btnCyrillic:"🇺🇿 O'zbek (kirill)",
+    enterWorkspace:
+      '🏢 Ishlayotgan kompaniyangizning *workspace slug*ini kiriting:\n\n' +
+      '_(Masalan: mycompany, sharq-bosma, printshop123)_',
+    workspaceNotFound: (s: string) =>
+      `❌ *"${s}"* — bu workspace topilmadi.\n\nIltimos, to'g'ri slug kiriting:`,
+    workspaceFound: (n: string) =>
+      `✅ *${n}* topildi!\n\n🔑 Endi *loginingizni* kiriting:`,
+    enterPassword: '🔐 *Parolingizni* kiriting:',
+    success: (n: string) =>
+      `🎉 *Xush kelibsiz, ${n}!*\n\nSiz muvaffaqiyatli ro'yxatdan o'tdingiz.\nEndi bu bot orqali bildirishnomalar qabul qilasiz.`,
+    wrongCredentials:
+      "❌ Login yoki parol noto'g'ri.\n\n🔑 *Loginingizni* qayta kiriting:",
+    alreadyLinked: (n: string) =>
+      `✅ *${n}*ga ulangansiz.\n\nBildirishnomalar qabul qilasiz.`,
+    pressButton: '👆 Iltimos, yuqoridagi tugmalardan birini tanlang.',
+    idle: "Bildirishnomalar kelishini kuting.\n\nChiqish uchun 🚪 tugmasini bosing.",
+    logoutConfirm: '👋 Siz tizimdan chiqdingiz. Qayta kirish uchun /start bosing.',
+    btnLogout: '🚪 Chiqish',
+    noSession: '❌ /start bosing.',
+    error: '❌ Xatolik yuz berdi. /start bosing.',
+    noWorkspace: "❌ Tizimda hali hech qanday workspace yo'q.",
+  },
+  kril: {
+    chooseLanguage: '🌐 *Тилни танланг:*',
+    btnLatin:   '🇺🇿 Ўзбек (лотин)',
+    btnCyrillic:'🇺🇿 Ўзбек (кирилл)',
+    enterWorkspace:
+      '🏢 Ишлаётган компанияси *workspace slug*ини киринг:\n\n' +
+      '_(Масалан: mycompany, sharq-bosma, printshop123)_',
+    workspaceNotFound: (s: string) =>
+      `❌ *"${s}"* — бу воркспейс топилмади.\n\nИлтимос, тўғри слуг киринг:`,
+    workspaceFound: (n: string) =>
+      `✅ *${n}* топилди!\n\n🔑 Энди *логинингизни* киринг:`,
+    enterPassword: '🔐 *Паролингизни* киринг:',
+    success: (n: string) =>
+      `🎉 *Хуш келибсиз, ${n}!*\n\nСиз муваффақиятли рўйхатдан ўтдингиз.\nЭнди бу бот орқали билдиришномалар қабул қиласиз.`,
+    wrongCredentials:
+      '❌ Логин ёки парол нотўғри.\n\n🔑 *Логинингизни* қайта киринг:',
+    alreadyLinked: (n: string) =>
+      `✅ *${n}*га уланганcиз.\n\nБилдиришномалар қабул қиласиз.`,
+    pressButton: '👆 Илтимос, юқоридаги тугмалардан бирини танланг.',
+    idle: 'Билдиришномалар келишини кутинг.\n\nЧиқиш учун 🚪 тугмасини босинг.',
+    logoutConfirm: '👋 Сиз тизимдан чиқдингиз. Қайта кириш учун /start босинг.',
+    btnLogout: '🚪 Чиқиш',
+    noSession: '❌ /start босинг.',
+    error: '❌ Хатолик юз берди. /start босинг.',
+    noWorkspace: '❌ Тизимда ҳали ҳеч қандай воркспейс йўқ.',
+  },
+};
+
+function L(session: any) {
+  return session?.lang === 'kril' ? LANGS.kril : LANGS.uz;
+}
+
+function langKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback(LANGS.uz.btnLatin,   'lang_uz')],
+    [Markup.button.callback(LANGS.uz.btnCyrillic, 'lang_kril')],
+  ]);
+}
+
+function logoutKeyboard(lang: typeof LANGS.uz) {
+  return Markup.keyboard([[lang.btnLogout]]).resize();
+}
+
+function removeKeyboard() {
+  return Markup.removeKeyboard();
+}
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
@@ -22,7 +93,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.bot = new Telegraf(token);
       this.initializeBot();
     } else {
-      console.warn('TELEGRAM_BOT_TOKEN not found. Bot is disabled.');
+      console.warn('TELEGRAM_BOT_TOKEN topilmadi. Bot o\'chirilgan.');
     }
   }
 
@@ -30,7 +101,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (this.bot) {
       this.bot.launch()
         .then(() => console.log('🚀 Telegram Bot ishga tushdi'))
-        .catch(err => console.error('Bot failed to launch', err));
+        .catch(err => console.error('Bot ishga tushmadi:', err));
     }
   }
 
@@ -38,8 +109,12 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (this.bot) this.bot.stop();
   }
 
+  // =============================================
+  // BOT ISHGA TUSHIRISH
+  // =============================================
+
   private initializeBot() {
-    // Middleware: har bir xabarga session va tenant ma'lumotlarini yuklash
+    // Har bir updateda session ma'lumotlarini yuklash
     this.bot.use(async (ctx: any, next) => {
       const chatId = ctx.chat?.id?.toString();
       if (!chatId) return next();
@@ -48,108 +123,104 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         include: { tenant: true },
       });
       if (session) {
-        ctx.tenantId = session.tenantId || null;
-        ctx.tenant = session.tenant || null;
-        ctx.botSession = session;
-        ctx.employeeId = session.employeeId || null;
+        ctx.tenantId    = session.tenantId   || null;
+        ctx.tenant      = session.tenant     || null;
+        ctx.botSession  = session;
+        ctx.employeeId  = session.employeeId || null;
       }
       return next();
     });
 
-    // /start komandasi — 3 qadam bilan onboarding
+    // /start komandasi
     this.bot.start(async (ctx: any) => {
       const chatId = ctx.chat.id.toString();
-      const payload = ctx.startPayload;
 
-      // Deep link orqali kelgan: /start workspace_<slug>
-      if (payload && payload.startsWith('workspace_')) {
-        const slug = payload.replace('workspace_', '');
-        const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
-        if (!tenant || !tenant.isActive) {
-          return ctx.reply('❌ Workspace topilmadi yoki faol emas.');
-        }
-
-        await this.prisma.botSession.upsert({
-          where: { chatId },
-          update: { tenantId: tenant.id, step: 'LOGIN', employeeId: null, loginAttempt: null },
-          create: { chatId, tenantId: tenant.id, step: 'LOGIN' },
-        });
-
+      // Allaqachon ulangan foydalanuvchi
+      if (ctx.employeeId && ctx.botSession?.step === 'IDLE') {
+        const lang = L(ctx.botSession);
         return ctx.reply(
-          `🖨️ *PrintFlow — ${tenant.name}*\n\n` +
-          `Tizimga kirish uchun *loginingizni* kiriting:`,
-          { parse_mode: 'Markdown' },
+          lang.alreadyLinked(ctx.tenant?.name || 'Workspace'),
+          { parse_mode: 'Markdown', ...logoutKeyboard(lang) },
         );
       }
 
-      // Agar allaqachon ulanganlar uchun
-      if (ctx.tenantId && ctx.employeeId) {
-        return ctx.reply(
-          `✅ *${ctx.tenant?.name || 'Workspace'}*ga ulangansiz.\n\n` +
-          `Siz ushbu bot orqali bildirishnomalar qabul qilib turasiz.`,
-          { parse_mode: 'Markdown' },
-        );
+      // Session yangilash yoki yaratish — til tanlash bosqichiga o'tish
+      const firstTenant = await this.prisma.tenant.findFirst({ where: { isActive: true } });
+      if (!firstTenant) {
+        return ctx.reply(LANGS.uz.noWorkspace);
       }
 
-      // Birinchi marta kelganlar uchun — 3 qadam boshlanadi
-      const existingSession = await this.prisma.botSession.findUnique({ where: { chatId } });
-
-      if (!existingSession) {
-        // Placeholder tenant sifatida birinchi aktiv tenant topiladi
-        const firstTenant = await this.prisma.tenant.findFirst({ where: { isActive: true } });
-        if (!firstTenant) {
-          return ctx.reply("❌ Tizimda hali birorta ham ishchi workspace yo'q.");
-        }
-        await this.prisma.botSession.create({
-          data: {
-            chatId,
-            tenantId: firstTenant.id,
-            step: 'WORKSPACE',
-          },
-        });
-      } else {
-        await this.prisma.botSession.update({
-          where: { chatId },
-          data: { step: 'WORKSPACE', employeeId: null, loginAttempt: null },
-        });
-      }
+      await this.prisma.botSession.upsert({
+        where: { chatId },
+        update: { step: 'LANG', employeeId: null, loginAttempt: null, lang: 'uz' },
+        create: { chatId, tenantId: firstTenant.id, step: 'LANG', lang: 'uz' },
+      });
 
       return ctx.reply(
-        `👋 Assalomu alaykum! *PrintFlow*ga xush kelibsiz!\n\n` +
-        `🏢 Birinchi navbatda, ishlaydigan *kompaniyangizning workspace slug*ini kiriting.\n\n` +
-        `_(Masalan: mycompany, sharq-bosma, printshop123)_`,
-        { parse_mode: 'Markdown' },
+        LANGS.uz.chooseLanguage,
+        { parse_mode: 'Markdown', ...langKeyboard() },
       );
     });
 
-    // Matn xabarlari — qadamli onboarding oqimi
+    // =============================================
+    // TIL TANLASH (inline tugmalar)
+    // =============================================
+
+    this.bot.action('lang_uz', async (ctx: any) => {
+      await ctx.answerCbQuery();
+      const chatId = ctx.chat.id.toString();
+
+      await this.prisma.botSession.update({
+        where: { chatId },
+        data: { lang: 'uz', step: 'WORKSPACE' },
+      });
+
+      return ctx.reply(LANGS.uz.enterWorkspace, { parse_mode: 'Markdown' });
+    });
+
+    this.bot.action('lang_kril', async (ctx: any) => {
+      await ctx.answerCbQuery();
+      const chatId = ctx.chat.id.toString();
+
+      await this.prisma.botSession.update({
+        where: { chatId },
+        data: { lang: 'kril', step: 'WORKSPACE' },
+      });
+
+      return ctx.reply(LANGS.kril.enterWorkspace, { parse_mode: 'Markdown' });
+    });
+
+    // =============================================
+    // MATN XABARLARI — qadamli oqim
+    // =============================================
+
     this.bot.on('text', async (ctx: any) => {
       const chatId = ctx.chat.id.toString();
-      const text = ctx.message.text.trim();
+      const text   = ctx.message.text.trim();
 
-      // Komandalarni o'tkazib yuborish
       if (text.startsWith('/')) return;
 
-      // Session yo'q bo'lsa
       if (!ctx.botSession) {
-        return ctx.reply('❌ /start bosing.');
+        return ctx.reply(LANGS.uz.noSession);
       }
 
       const { step } = ctx.botSession;
+      const lang = L(ctx.botSession);
+
+      // Til tanlash bosqichida matn kelsa — tugma bosishni so'rash
+      if (step === 'LANG') {
+        return ctx.reply(lang.pressButton, { parse_mode: 'Markdown', ...langKeyboard() });
+      }
 
       // =============================================
-      // QADAM 1: Workspace slug qabul qilish
+      // QADAM 1: Workspace slug
       // =============================================
       if (step === 'WORKSPACE') {
-        const slug = text.toLowerCase().replace(/\s+/g, '-');
+        const slug   = text.toLowerCase().replace(/\s+/g, '-');
         const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
 
         if (!tenant || !tenant.isActive) {
-          return ctx.reply(
-            `❌ *"${slug}"* — bu workspace topilmadi.\n\n` +
-            `Iltimos, to'g'ri workspace slug kiriting:`,
-            { parse_mode: 'Markdown' },
-          );
+          return ctx.reply(lang.workspaceNotFound(slug), { parse_mode: 'Markdown' });
         }
 
         await this.prisma.botSession.update({
@@ -157,22 +228,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           data: { tenantId: tenant.id, step: 'LOGIN', loginAttempt: null },
         });
 
-        return ctx.reply(
-          `✅ *${tenant.name}* workspacei topildi!\n\n` +
-          `🔑 Endi *loginingizni* kiriting:`,
-          { parse_mode: 'Markdown' },
-        );
+        return ctx.reply(lang.workspaceFound(tenant.name), { parse_mode: 'Markdown' });
       }
 
       // =============================================
-      // QADAM 2: Login qabul qilish
+      // QADAM 2: Login
       // =============================================
       if (step === 'LOGIN') {
         await this.prisma.botSession.update({
           where: { chatId },
           data: { loginAttempt: text, step: 'PASSWORD' },
         });
-        return ctx.reply('🔐 *Parolingizni* kiriting:', { parse_mode: 'Markdown' });
+        return ctx.reply(lang.enterPassword, { parse_mode: 'Markdown' });
       }
 
       // =============================================
@@ -184,7 +251,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             where: { chatId },
             data: { step: 'WORKSPACE' },
           });
-          return ctx.reply('❌ Xatolik. Qaytadan boshlang: /start');
+          return ctx.reply(lang.error);
         }
 
         const emp = await this.prisma.employee.findFirst({
@@ -202,31 +269,50 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           });
 
           return ctx.reply(
-            `🎉 *Xush kelibsiz, ${emp.fullName}!*\n\n` +
-            `Siz muvaffaqiyatli tizimga kirdingiz. Endi ushbu bot orqali bildirishnomalar qabul qilasiz.`,
-            { parse_mode: 'Markdown' },
+            lang.success(emp.fullName),
+            { parse_mode: 'Markdown', ...logoutKeyboard(lang) },
           );
         }
 
-        // Xato parol — qaytadan login dan boshlash
+        // Xato — logindan qayta boshlash
         await this.prisma.botSession.update({
           where: { chatId },
           data: { step: 'LOGIN', loginAttempt: null },
         });
-        return ctx.reply(
-          '❌ Login yoki parol noto\'g\'ri.\n\n' +
-          '🔑 Iltimos, *loginingizni* qayta kiriting:',
-          { parse_mode: 'Markdown' },
-        );
+        return ctx.reply(lang.wrongCredentials, { parse_mode: 'Markdown' });
       }
 
-      // IDLE holatda — qo'shimcha xabarlar uchun
+      // IDLE holatda — logout tugmasi bosilganini tekshirish
       if (step === 'IDLE') {
-        return ctx.reply(
-          'Siz tizimga ulangansiz. Yangi xabarlar kelishini kuting.',
-        );
+        if (text === LANGS.uz.btnLogout || text === LANGS.kril.btnLogout) {
+          return this.performLogout(ctx, chatId, lang);
+        }
+        return ctx.reply(lang.idle, logoutKeyboard(lang));
       }
     });
+
+    // /logout komandasi
+    this.bot.command('logout', async (ctx: any) => {
+      const chatId = ctx.chat.id.toString();
+      if (!ctx.botSession) return ctx.reply(LANGS.uz.noSession);
+      const lang = L(ctx.botSession);
+      return this.performLogout(ctx, chatId, lang);
+    });
+  }
+
+  private async performLogout(ctx: any, chatId: string, lang: typeof LANGS.uz) {
+    const session = ctx.botSession;
+    if (session?.employeeId) {
+      await this.prisma.employee.update({
+        where: { id: session.employeeId },
+        data: { telegramId: null },
+      });
+    }
+    await this.prisma.botSession.update({
+      where: { chatId },
+      data: { employeeId: null, step: 'LANG', loginAttempt: null },
+    });
+    return ctx.reply(lang.logoutConfirm, removeKeyboard());
   }
 
   // =============================================
@@ -234,19 +320,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   // =============================================
 
   async sendMessage(telegramId: string, text: string) {
-    if (this.bot) {
-      try {
-        await this.bot.telegram.sendMessage(telegramId, text, { parse_mode: 'Markdown' });
-      } catch (err) {
-        console.warn(`Telegram message failed for ${telegramId}:`, err.message);
-      }
+    if (!this.bot) return;
+    try {
+      await this.bot.telegram.sendMessage(telegramId, text, { parse_mode: 'Markdown' });
+    } catch (err) {
+      console.warn(`Telegram xabar yuborilmadi (${telegramId}):`, err.message);
     }
   }
 
   async sendNotification(employeeId: string, message: string) {
     const emp = await this.prisma.employee.findUnique({ where: { id: employeeId } });
     if (emp?.telegramId) {
-      await this.sendMessage(emp.telegramId, `🔔 *Yangi xabarnoma:*\n\n${message}`);
+      await this.sendMessage(emp.telegramId, `🔔 *Yangi bildirishnoma:*\n\n${message}`);
     }
   }
 
@@ -256,14 +341,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
     for (const admin of admins) {
       if (admin.telegramId) {
-        await this.sendMessage(admin.telegramId, `📢 *Admin xabarnomasi:*\n\n${message}`);
+        await this.sendMessage(admin.telegramId, `📢 *Admin bildirishnomasi:*\n\n${message}`);
       }
     }
   }
 
   async notifyNewOrder(tenantId: string, message: string) {
     const prefs = await this.getNotifPrefs(tenantId);
-    if (!prefs.newOrderReceivers || prefs.newOrderReceivers.length === 0) return;
+    if (!prefs.newOrderReceivers?.length) return;
     for (const empId of prefs.newOrderReceivers) {
       const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
       if (emp?.telegramId) {
@@ -284,10 +369,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       include: { expenseType: true },
     });
 
-    const kirim = txs.filter(t => t.type === 'kirim').reduce((s, t) => s + t.amount, 0);
+    const kirim  = txs.filter(t => t.type === 'kirim').reduce((s, t) => s + t.amount, 0);
     const chiqim = txs.filter(t => t.type === 'chiqim').reduce((s, t) => s + t.amount, 0);
 
-    // Bajarilgan buyurtmalar soni (so'nggi kunlik)
     const cols = await this.prisma.kanbanColumn.findMany({
       where: { tenantId },
       orderBy: { orderIdx: 'desc' },
@@ -310,52 +394,22 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  private async checkInactiveTasks(tenantId: string) {
-    const cols = await this.prisma.kanbanColumn.findMany({
-      where: { tenantId },
-      orderBy: { orderIdx: 'asc' },
-    });
-    if (cols.length === 0) return;
-
-    const lastCol = cols[cols.length - 1].id;
-    const old = new Date(Date.now() - 24 * 3600000);
-
-    const tasks = await this.prisma.task.findMany({
-      where: { tenantId, updatedAt: { lt: old }, columnId: { not: lastCol } },
-      include: { column: true },
-    });
-
-    for (const t of tasks) {
-      const assignees: string[] = JSON.parse(t.assignees || '[]');
-      for (const empId of assignees) {
-        const emp = await this.prisma.employee.findFirst({
-          where: { id: empId, tenantId },
-        });
-        if (emp?.telegramId) {
-          await this.sendMessage(
-            emp.telegramId,
-            `⚠️ *Vazifa qolib ketdi*\n📌 ${t.title}\n⏳ "${t.column.title}" da 24 soatdan beri turibdi.`,
-          );
-        }
-      }
-    }
-  }
-
   // =============================================
   // CRON JOBLAR
   // =============================================
 
-  // Per-tenant notification preferences read from SystemSetting (key=NOTIFICATION_PREFS).
-  // Defaults: every channel ON (so existing tenants keep current behavior).
-  private async getNotifPrefs(tenantId: string): Promise<{ hisobotReceivers: string[]; newOrderReceivers: string[]; reminderReceivers: string[] }> {
+  private async getNotifPrefs(tenantId: string): Promise<{
+    hisobotReceivers: string[];
+    newOrderReceivers: string[];
+    reminderReceivers: string[];
+  }> {
     const setting = await this.prisma.systemSetting.findFirst({
       where: { tenantId, key: 'TELEGRAM_BOT_PREFS' },
     });
     const defaults = { hisobotReceivers: [], newOrderReceivers: [], reminderReceivers: [] };
     if (!setting) return defaults;
     try {
-      const parsed = JSON.parse(setting.value);
-      return { ...defaults, ...parsed };
+      return { ...defaults, ...JSON.parse(setting.value) };
     } catch {
       return defaults;
     }
@@ -366,7 +420,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
     for (const t of tenants) {
       const prefs = await this.getNotifPrefs(t.id);
-      if (!prefs.hisobotReceivers || prefs.hisobotReceivers.length === 0) continue;
+      if (!prefs.hisobotReceivers?.length) continue;
       const report = await this.generateReportForTenant(t.id);
       for (const empId of prefs.hisobotReceivers) {
         const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
@@ -381,69 +435,59 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const now = Date.now();
     for (const t of tenants) {
       const prefs = await this.getNotifPrefs(t.id);
-      if (!prefs.reminderReceivers || prefs.reminderReceivers.length === 0) continue;
-      
+      if (!prefs.reminderReceivers?.length) continue;
+
       const cols = await this.prisma.kanbanColumn.findMany({
         where: { tenantId: t.id },
         orderBy: { orderIdx: 'asc' },
       });
-      if (cols.length === 0) continue;
-      const lastCol = cols[cols.length - 1].id;
+      if (!cols.length) continue;
+      const lastColId = cols[cols.length - 1].id;
 
       const tasks = await this.prisma.task.findMany({
-        where: { tenantId: t.id, columnId: { not: lastCol }, deadlineAt: { not: null } },
+        where: { tenantId: t.id, columnId: { not: lastColId }, deadlineAt: { not: null } },
         include: { column: true },
       });
 
       for (const task of tasks) {
         if (!task.deadlineAt) continue;
         const diffHours = (task.deadlineAt.getTime() - now) / 3600000;
-        // Tolerance for cron job running exactly at the hour
-        let shouldNotify = false;
-        let msgType = '';
-        if (diffHours > 11.5 && diffHours <= 12.5) {
-          shouldNotify = true; msgType = '12 soat qoldi';
-        } else if (diffHours > 4.5 && diffHours <= 5.5) {
-          shouldNotify = true; msgType = '5 soat qoldi';
-        } else if (diffHours > -0.5 && diffHours <= 0.5) {
-          shouldNotify = true; msgType = 'Muddati keldi!';
-        }
 
-        if (shouldNotify) {
-          for (const empId of prefs.reminderReceivers) {
-            const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
-            if (emp?.telegramId) {
-              await this.sendMessage(
-                emp.telegramId,
-                `⏳ *Muddat Eslatmasi: ${msgType}*\n\n📌 Buyurtma: *${task.title}*\n🏢 Bosqich: ${task.column.title}\n📅 Muddat: ${task.deadlineAt.toLocaleString('uz-UZ')}`
-              );
-            }
+        let label = '';
+        if (diffHours > 11.5 && diffHours <= 12.5)      label = '12 soat qoldi';
+        else if (diffHours > 4.5 && diffHours <= 5.5)   label = '5 soat qoldi';
+        else if (diffHours > -0.5 && diffHours <= 0.5)  label = '⚡ Muddati keldi!';
+
+        if (!label) continue;
+
+        for (const empId of prefs.reminderReceivers) {
+          const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
+          if (emp?.telegramId) {
+            await this.sendMessage(
+              emp.telegramId,
+              `⏳ *Muddat Eslatmasi: ${label}*\n\n` +
+              `📌 Buyurtma: *${task.title}*\n` +
+              `🏢 Bosqich: ${(task as any).column?.title}\n` +
+              `📅 Muddat: ${task.deadlineAt.toLocaleString('uz-UZ')}`,
+            );
           }
         }
       }
     }
   }
 
-  // Kam qoldiq materiallarni tekshirish (har kuni ertalab 09:00)
   @Cron('0 9 * * *')
   async handleLowStockAlert() {
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
     for (const t of tenants) {
-
-      const materials = await this.prisma.material.findMany({
-        where: { tenantId: t.id },
-      });
-      const lowStock = materials.filter(m => m.currentStock <= m.minStock && m.minStock > 0);
-
-      if (lowStock.length === 0) continue;
+      const materials = await this.prisma.material.findMany({ where: { tenantId: t.id } });
+      const lowStock  = materials.filter(m => m.minStock > 0 && m.currentStock <= m.minStock);
+      if (!lowStock.length) continue;
 
       const message =
         `⚠️ *Kam qoldiq materiallari*\n\n` +
-        lowStock.map(m =>
-          `📦 *${m.name}*: ${m.currentStock} ${m.unit} (min: ${m.minStock})`
-        ).join('\n');
+        lowStock.map(m => `📦 *${m.name}*: ${m.currentStock} ${m.unit} (min: ${m.minStock})`).join('\n');
 
-      // Ombor boshqaruvchilariga yuborish
       const managers = await this.prisma.employee.findMany({
         where: { tenantId: t.id, role: { canManageInventory: true } },
       });

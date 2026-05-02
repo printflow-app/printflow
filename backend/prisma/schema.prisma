@@ -195,7 +195,8 @@ model BotSession {
   tenantId   String
   tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employeeId String?                         // NULL until authenticated
-  step       String    @default("IDLE")      // LOGIN | PASSWORD | IDLE
+  step       String    @default("IDLE")      // LANG | WORKSPACE | LOGIN | PASSWORD | IDLE
+  lang       String    @default("uz")        // uz | kril
   loginAttempt String?                       // Temporary login storage during auth flow
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

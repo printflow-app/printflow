@@ -55,7 +55,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   // Forms
   const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false });
   const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false });
-  const [customerTasks, setCustomerTasks] = useState<string[]>([]);
+  const [customerTasks, setCustomerTasks] = useState<any[]>([]);
 
   const handleCustomerChange = async (cid: string) => {
     setKirimForm((f: any) => ({ ...f, customerId: cid, customerName: '', serviceType: '' }));
@@ -254,7 +254,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 className="select-minimal font-black text-orange-700 h-11 border-orange-100 bg-orange-50/30"
               >
                 <option value="">— Xizmatni tanlang (ixtiyoriy) —</option>
-                {customerTasks.map((t, idx) => <option key={idx} value={t}>{t}</option>)}
+                {customerTasks.map((t, idx) => <option key={idx} value={t.orderName || t.title}>{t.orderName || t.title}</option>)}
               </select>
             </div>
           )}
