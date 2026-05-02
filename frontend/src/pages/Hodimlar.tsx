@@ -117,9 +117,10 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       message: "Ushbu xodim uchun yangi parol generatsiya qilinsinmi?",
       onConfirm: async () => {
         try {
-          const res = await employeesApi.update(id, { password: Math.floor(100000 + Math.random() * 900000).toString() });
+          const newPassword = Math.floor(100000 + Math.random() * 900000).toString();
+          const res = await employeesApi.update(id, { password: newPassword });
           fetchData();
-          setSelectedEmp(res.data);
+          setSelectedEmp({ ...res.data, password: newPassword });
           setIsCredentialsModalOpen(true);
           toast.success("Parol muvaffaqiyatli yangilandi.");
         } catch (err) {
