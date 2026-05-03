@@ -24,5 +24,5 @@ RUN npm prune --omit=dev
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# Start the compiled app
-CMD ["node", "dist/main.js"]
+# db push (schema sync) + app start — DATABASE_URL faqat runtime'da mavjud
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/main.js"]
