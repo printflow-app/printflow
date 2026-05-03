@@ -35,6 +35,34 @@ export class CustomersController {
     return this.customersService.remove(id);
   }
 
+  // =============================================
+  // B2B: Contact endpoints
+  // =============================================
+
+  @Get(':id/contacts')
+  getContacts(@Param('id') id: string) {
+    return this.customersService.getContacts(id);
+  }
+
+  @Post(':id/contacts')
+  createContact(@Param('id') id: string, @Body() data: any) {
+    return this.customersService.createContact(id, data);
+  }
+
+  @Put(':id/contacts/:contactId')
+  updateContact(@Param('contactId') contactId: string, @Body() data: any) {
+    return this.customersService.updateContact(contactId, data);
+  }
+
+  @Delete(':id/contacts/:contactId')
+  removeContact(@Param('contactId') contactId: string) {
+    return this.customersService.removeContact(contactId);
+  }
+
+  // =============================================
+  // Order history & analytics
+  // =============================================
+
   @Get(':id/tasks')
   getCustomerTasks(@Param('id') id: string) {
     return this.customersService.getCustomerTasks(id);

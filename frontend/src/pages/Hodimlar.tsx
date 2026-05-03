@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, Users, BarChart2 } from 'lucide-react';
+import { Trash2, UserPlus, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, rolesApi, branchesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import NumberInput from '../components/NumberInput';
-import Kpi from './Kpi';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
@@ -19,8 +18,6 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [employees, setEmployees] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSubTab, setActiveSubTab] = useState<'jamoa' | 'kpi'>('jamoa');
-
   // Modals
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
@@ -140,33 +137,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in relative">
-      <div className="bg-white p-2 rounded-xl border border-slate-200 flex w-fit gap-2">
-        <button
-          onClick={() => setActiveSubTab('jamoa')}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all ${
-            activeSubTab === 'jamoa'
-              ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-          }`}
-        >
-          <Users size={16} /> Jamoa Ro'yxati
-        </button>
-        <button
-          onClick={() => setActiveSubTab('kpi')}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all ${
-            activeSubTab === 'kpi'
-              ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-          }`}
-        >
-          <BarChart2 size={16} /> KPI & Velocity
-        </button>
-      </div>
-
-      {activeSubTab === 'kpi' ? (
-        <Kpi currentUser={currentUser} />
-      ) : (
-        <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in">
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
             <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">Jamoa A'zolari</h3>
@@ -256,7 +227,6 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </div>
         </div>
       </div>
-      )}
 
       {/* Employee Modal: Create */}
       <Modal

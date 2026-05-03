@@ -113,6 +113,15 @@ export const customersApi = {
   getCustomerTasks: (id: string) => api.get(`/customers/${id}/tasks`),
   getOrderHistory: (id: string) => api.get(`/customers/${id}/orders`),
   getTopCustomers: (limit?: number) => api.get('/customers/top', { params: limit ? { limit } : {} }),
+
+  // B2B Contacts
+  getContacts: (id: string) => api.get(`/customers/${id}/contacts`),
+  createContact: (id: string, data: { name: string; phone?: string; role?: string; email?: string }) =>
+    api.post(`/customers/${id}/contacts`, data),
+  updateContact: (id: string, contactId: string, data: any) =>
+    api.put(`/customers/${id}/contacts/${contactId}`, data),
+  deleteContact: (id: string, contactId: string) =>
+    api.delete(`/customers/${id}/contacts/${contactId}`),
 };
 
 // =============================================
@@ -147,14 +156,31 @@ export const tasksApi = {
     api.post(`/tasks/bulk?employeeId=${employeeId}`, data),
   update: (id: string, data: any, employeeId: string) =>
     api.put(`/tasks/${id}?employeeId=${employeeId}`, data),
-  delete: (id: string) => api.delete(`/tasks/${id}`),
+  archive: (id: string) => api.post(`/tasks/${id}/archive`),
+  getArchived: () => api.get('/tasks/archived'),
   logView: (id: string, employeeId: string) =>
     api.post(`/tasks/${id}/view`, { employeeId }),
 
   getColumns: () => api.get('/tasks/columns'),
   createColumn: (data: any) => api.post('/tasks/columns', data),
   updateColumn: (id: string, data: any) => api.put(`/tasks/columns/${id}`, data),
-  deleteColumn: (id: string) => api.delete(`/tasks/columns/${id}`),
+  deleteColumn: (id: string) => api.post(`/tasks/columns/${id}/delete`),
+};
+
+// =============================================
+// VENDORS / HAMKORLAR (Subcontractors)
+// =============================================
+export const vendorsApi = {
+  findAll: () => api.get('/vendors'),
+  findOne: (id: string) => api.get(`/vendors/${id}`),
+  create: (data: any) => api.post('/vendors', data),
+  update: (id: string, data: any) => api.put(`/vendors/${id}`, data),
+  remove: (id: string) => api.delete(`/vendors/${id}`),
+  pay: (id: string, amount: number) => api.post(`/vendors/${id}/pay`, { amount }),
+  getOrderCosts: (taskId: string) => api.get(`/vendors/order-costs/${taskId}`),
+  addOrderCost: (taskId: string, data: { vendorId: string; amount: number; description?: string }) =>
+    api.post(`/vendors/order-costs/${taskId}`, data),
+  removeOrderCost: (costId: string) => api.delete(`/vendors/order-costs/entry/${costId}`),
 };
 
 // =============================================
@@ -306,6 +332,22 @@ export const workspaceAdminsApi = {
   update: (id: string, data: any) => api.put(`/workspace-admins/${id}`, data),
   delete: (id: string) => api.delete(`/workspace-admins/${id}`),
   resetPassword: (id: string) => api.post(`/workspace-admins/${id}/reset-password`),
+};
+
+// =============================================
+// REPORTS (Business Intelligence)
+// =============================================
+export const reportsApi = {
+  servicesPerformance: (params?: { start?: string; end?: string; branchId?: string }) =>
+    api.get('/reports/services-performance', { params }),
+  vendorProfitability: (params?: { start?: string; end?: string }) =>
+    api.get('/reports/vendor-profitability', { params }),
+  employeeVelocity: (params?: { start?: string; end?: string }) =>
+    api.get('/reports/employee-velocity', { params }),
+  growthMetrics: (params?: { branchId?: string }) =>
+    api.get('/reports/growth-metrics', { params }),
+  monthlyDynamics: (params?: { months?: number; branchId?: string }) =>
+    api.get('/reports/monthly-dynamics', { params }),
 };
 
 export default api;

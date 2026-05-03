@@ -13,7 +13,10 @@ export class TasksService {
 
   async findAll(branchId?: string) {
     return this.prisma.task.findMany({
-      where: branchId ? { branchId } : undefined,
+      where: {
+        isArchived: false,
+        ...(branchId ? { branchId } : {}),
+      } as any,
       include: {
         column: true,
         customer: true,
@@ -329,14 +332,32 @@ export class TasksService {
     });
   }
 
-  async remove(id: string) {
-    return this.prisma.task.delete({ where: { id } });
-  }
+  // DELETE o'chirildi — faqat arxivlash mumkin (audit trail saqlanadi)
+  // async remove() — DISABLED intentionally (use archive() instead)
 
   async getColumns() {
     return this.prisma.kanbanColumn.findMany({
       orderBy: { orderIdx: 'asc' },
-      include: { tasks: true }
+      include: {
+        tasks: {
+          where: { isArchived: false } as any,
+        },
+      },
+    });
+  }
+
+  async archive(id: string) {
+    return this.prisma.task.update({
+      where: { id },
+      data: { isArchived: true } as any,
+    });
+  }
+
+  async getArchived() {
+    return this.prisma.task.findMany({
+      where: { isArchived: true } as any,
+      include: { column: true, customer: true },
+      orderBy: { updatedAt: 'desc' },
     });
   }
 

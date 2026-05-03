@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Building2 } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Handshake, BarChart3 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
@@ -14,6 +14,7 @@ import Davomat from './Davomat';
 import Admins from './Admins';
 import Billing from './Billing';
 import Filiallar from './Filiallar';
+import Hisobotlar from './Hisobotlar';
 import Modal from '../components/Modal';
 
 interface DashboardProps {
@@ -23,7 +24,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
-  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar'>(() => {
+  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hisobotlar'>(() => {
     return (localStorage.getItem('pf_active_tab') as any) || 'kassa';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -242,6 +243,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const navItems = [
     { id: 'kassa', label: 'Kassa (Tranzaksiyalar)', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
     { id: 'moliya', label: 'Statistika', icon: TrendingUp, show: (p.canViewFinance || isAdmin) && tf.finance, sub: 'Daromad va hisobotlar' },
+    { id: 'hisobotlar', label: 'Hisobotlar', icon: BarChart3, show: isAdmin || p.canViewFinance || p.canViewKpi, sub: 'Biznes tahlil va hisobotlar' },
     { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
     { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: 'Qarzlar va hamkorlar' },
     { id: 'hodimlar', label: 'Xodimlar', icon: Users, show: (p.canViewEmployees || isAdmin) && tf.employees, sub: 'Jamoa ro\'yxati' },
@@ -249,7 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
     { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
     { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: p.canManageBilling || isAdmin, sub: 'Tarif va obuna holati' },
-    { id: 'filiallar', label: 'Filiallar', icon: Building2, show: (isAdmin || p.canManageBranches) && tf.multiBranch, sub: 'Multi-filial boshqaruvi' },
+    { id: 'filiallar', label: 'Hamkorlar va Filiallar', icon: Handshake, show: isAdmin || p.canManageBranches || p.canViewVendors, sub: 'Subpudratchi va yetkazuvchilar' },
     { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Lavozim va To\'lovlar' },
   ];
 
@@ -512,7 +514,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'davomat' && (p.canViewAttendance || isAdmin) && <Davomat currentUser={currentUser} />}
               {activeTab === 'billing' && (p.canManageBilling || isAdmin) && <Billing />}
               {activeTab === 'admins' && isAdmin && <Admins currentUser={currentUser} />}
-              {activeTab === 'filiallar' && (isAdmin || p.canManageBranches) && <Filiallar currentUser={currentUser} />}
+              {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || p.canViewVendors) && <Filiallar currentUser={currentUser} />}
+              {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinance || p.canViewKpi) && <Hisobotlar currentUser={currentUser} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} />}
               
               {/* Unauthorized message if tab is set but permission removed */}

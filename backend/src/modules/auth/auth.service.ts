@@ -62,7 +62,10 @@ export class AuthService {
             canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
             canManageCustomers: true, canViewInventory: true, canManageInventory: true,
             canViewAttendance: true, canManageAttendance: true, canViewServices: true, canManageServices: true,
-            canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true
+            canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true,
+            canManageAdmins: true, canViewKpi: true, canManageBranches: true, canManageNotifications: true,
+            canViewExpenseCharts: true, canViewSettings: true, canAssignToOtherBranches: true,
+            canManageBilling: true, canViewVendors: true,
           };
           return admin;
         }
@@ -97,6 +100,8 @@ export class AuthService {
         tenantId: tenant.id,
         workspaceSlug: tenant.slug,
         role: roleObj.name,
+        isAdmin: isWorkspaceAdmin,
+        permissions: roleObj,
         passwordVersion: userEntity.passwordVersion,
       },
       {

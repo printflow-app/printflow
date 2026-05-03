@@ -1,8 +1,10 @@
 import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { RequireFeature } from '../../common/decorators/feature.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 @Controller('finance')
+@RequirePermissions('canViewFinance')
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 

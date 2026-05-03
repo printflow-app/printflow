@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 
 @Controller('tasks')
@@ -21,7 +21,8 @@ export class TasksController {
     return this.tasksService.updateColumn(id, body.title);
   }
 
-  @Delete('columns/:id')
+  // NOTE: Column delete kept — only ORDER delete is disabled
+  @Post('columns/:id/delete')
   removeColumn(@Param('id') id: string) {
     return this.tasksService.removeColumn(id);
   }
@@ -30,6 +31,11 @@ export class TasksController {
   @Get()
   findAll(@Query('branchId') branchId?: string) {
     return this.tasksService.findAll(branchId);
+  }
+
+  @Get('archived')
+  getArchived() {
+    return this.tasksService.getArchived();
   }
 
   @Get(':id')
@@ -52,9 +58,10 @@ export class TasksController {
     return this.tasksService.update(id, data, employeeId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(id);
+  // ARCHIVE — DELETE o'rniga. Buyurtmalar hech qachon o'chirilmaydi.
+  @Post(':id/archive')
+  archive(@Param('id') id: string) {
+    return this.tasksService.archive(id);
   }
 
   @Post(':id/view')

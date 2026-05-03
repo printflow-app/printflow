@@ -12,6 +12,7 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 // Guards & Interceptors
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { FeatureGuard } from './common/guards/feature.guard';
+import { PermissionsGuard } from './common/guards/permissions.guard';
 import { TenantInterceptor } from './common/tenant/tenant.interceptor';
 
 // Existing feature modules
@@ -33,6 +34,8 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { WorkspaceAdminModule } from './modules/workspace-admin/workspace-admin.module';
 import { KpiModule } from './modules/kpi/kpi.module';
 import { BranchesModule } from './modules/branches/branches.module';
+import { VendorsModule } from './modules/vendors/vendors.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 // =============================================
 // APP MODULE — PrintFlow Multi-Tenant SaaS
@@ -82,6 +85,8 @@ import { BranchesModule } from './modules/branches/branches.module';
     WorkspaceAdminModule,
     KpiModule,
     BranchesModule,
+    VendorsModule,
+    ReportsModule,
   ],
   providers: [
     // Global rate limiting guard
@@ -101,6 +106,12 @@ import { BranchesModule } from './modules/branches/branches.module';
     {
       provide: APP_GUARD,
       useClass: FeatureGuard,
+    },
+
+    // Global Permissions guard — RBAC via JWT-embedded permissions
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
 
     // Global tenant interceptor — activates AsyncLocalStorage scope

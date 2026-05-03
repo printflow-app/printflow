@@ -19,6 +19,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
   const [clientLogos, setClientLogos] = useState<string[]>([]);
   const [savingLogos, setSavingLogos] = useState(false);
+  const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
+  const [savingPrepayment, setSavingPrepayment] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -62,10 +64,27 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         const logosRes = await settingsApi.get('CLIENT_LOGOS');
         if (Array.isArray(logosRes.data)) setClientLogos(logosRes.data);
       } catch { /* default empty */ }
+
+      try {
+        const pctRes = await settingsApi.get('MIN_PREPAYMENT_PERCENTAGE');
+        if (pctRes.data?.value) setMinPrepaymentPct(Number(pctRes.data.value));
+      } catch { /* default 70 */ }
     } catch (err) {
       console.error("Sozlamalarni yuklashda xato:", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const savePrepaymentPct = async () => {
+    setSavingPrepayment(true);
+    try {
+      await settingsApi.set('MIN_PREPAYMENT_PERCENTAGE', { value: minPrepaymentPct });
+      showStatus('success', 'Minimal zakolat foizi saqlandi!');
+    } catch {
+      showStatus('error', 'Saqlashda xatolik!');
+    } finally {
+      setSavingPrepayment(false);
     }
   };
 
@@ -132,6 +151,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     canViewEmployees: false, canManageEmployees: false, canManageRoles: false, canViewSalary: false, canManageAdmins: false,
     canManageBranches: false, canViewKpi: false, canViewExpenseCharts: false, canViewSettings: false, canAssignToOtherBranches: false,
     canManageBilling: false, canManageNotifications: false,
+    canViewVendors: false, canViewInventory: false, canManageInventory: false, canViewAttendance: false, canManageAttendance: false,
+    canViewServices: false, canManageServices: false,
   };
   const [newRole, setNewRole] = useState(initialRoleForm);
 
@@ -263,87 +284,106 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   };
 
-  // Group permissions by category for better UX
+  // Permissions grouped by page — each group = one sidebar page
   const permissionGroups = [
     {
-      title: 'Moliya & Kassa',
+      title: 'Kassa (Tranzaksiyalar) Sahifasi',
       color: 'emerald',
       permissions: {
-        canViewFinance: "Moliyani ko'rish",
+        canViewFinance: "Kassa va moliyani ko'rish",
         canAddIncome: "Kirim qo'shish",
         canAddExpense: "Chiqim qo'shish",
-        canViewTotalBalance: "Kassa qoldig'ini ko'rish",
+        canViewTotalBalance: "Umumiy kassa balansini ko'rish",
         canManagePaymentTypes: "To'lov turlarini boshqarish",
       }
     },
     {
-      title: 'Xizmatlar (Kanban)',
+      title: 'Statistika & Hisobotlar Sahifasi',
       color: 'sky',
       permissions: {
-        canViewTasks: "Topshiriqlarni ko'rish",
-        canCreateTask: "Yangi topshiriq yaratish",
-        canEditTask: "Topshiriqni tahrirlash",
-        canDeleteTask: "Topshiriqni o'chirish",
-        canMoveTask: "Bosqichdan bosqichga o'tkazish",
-        canManageColumns: "Bosqichlarni boshqarish",
+        canViewKpi: "Xodim samaradorligi (KPI) ni ko'rish",
+        canViewExpenseCharts: "Chiqim tahlil grafiklarini ko'rish",
       }
     },
     {
-      title: 'Mijozlar',
+      title: 'Xizmatlar (Kanban) Sahifasi',
+      color: 'orange',
+      permissions: {
+        canViewTasks: "Buyurtmalar va topshiriqlarni ko'rish",
+        canCreateTask: "Yangi buyurtma yaratish",
+        canEditTask: "Buyurtmani tahrirlash",
+        canDeleteTask: "Buyurtmani o'chirish",
+        canMoveTask: "Bosqichdan bosqichga o'tkazish",
+        canManageColumns: "Kanban bosqichlarini boshqarish",
+        canAssignToOtherBranches: "Boshqa filial xodimlariga buyurtma berish",
+      }
+    },
+    {
+      title: 'Mijozlar Bazasi Sahifasi',
       color: 'violet',
       permissions: {
         canViewCustomers: "Mijozlar ro'yxatini ko'rish",
-        canManageCustomers: "Mijozlarni boshqarish",
+        canManageCustomers: "Mijozlarni qo'shish va tahrirlash",
       }
     },
     {
-      title: 'Ombor & Inventar',
-      color: 'amber',
-      permissions: {
-        canViewInventory: "Omborni ko'rish",
-        canManageInventory: "Omborni boshqarish",
-      }
-    },
-    {
-      title: 'Davomat',
+      title: 'Xodimlar Sahifasi',
       color: 'indigo',
       permissions: {
-        canViewAttendance: "Davomatni ko'rish",
-        canManageAttendance: "Davomatni boshqarish",
+        canViewEmployees: "Xodimlar ro'yxatini ko'rish",
+        canManageEmployees: "Xodimlarni qo'shish va tahrirlash",
+        canViewSalary: "Xodim maoshlarini ko'rish",
       }
     },
     {
-      title: 'Xizmatlar Katalogi & Tizim',
-      color: 'violet',
+      title: "Ma'muriyat (Adminlar) Sahifasi",
+      color: 'rose',
       permissions: {
-        canViewServices: "Katalogni ko'rish",
-        canManageServices: "Katalogni boshqarish",
-        canViewEmployees: "Xodimlarni ko'rish",
-        canManageEmployees: "Xodimlarni boshqarish",
-        canManageRoles: "Lavozimlarni boshqarish",
-        canViewSalary: "Maoshlarni ko'rish",
-        canManageAdmins: "Ma'murlarni boshqarish",
+        canManageAdmins: "Adminlar va rahbarlarni boshqarish",
+        canManageRoles: "Lavozimlar va ruxsatlarni boshqarish",
       }
     },
     {
-      title: 'Tizim va Xavfsizlik',
+      title: 'Ombor Sahifasi',
+      color: 'amber',
+      permissions: {
+        canViewInventory: "Ombor va materiallarni ko'rish",
+        canManageInventory: "Ombor zaxirasini boshqarish",
+      }
+    },
+    {
+      title: 'Davomat Sahifasi',
+      color: 'teal',
+      permissions: {
+        canViewAttendance: "Davomat ma'lumotlarini ko'rish",
+        canManageAttendance: "Davomat kirim/chiqimini boshqarish",
+      }
+    },
+    {
+      title: 'Hamkorlar va Filiallar Sahifasi',
+      color: 'cyan',
+      permissions: {
+        canViewVendors: "Hamkorlar va subpudratchilarni ko'rish",
+        canManageBranches: "Filiallarni qo'shish va tahrirlash",
+      }
+    },
+    {
+      title: 'Xizmatlar Katalogi',
       color: 'slate',
       permissions: {
-        canViewSettings: "Sozlamalar sahifasiga kirish",
-        canManageBilling: "Obuna va to'lovlarni boshqarish",
-        canManageNotifications: "Bot bildirishnomalarini sozlash",
+        canViewServices: "Xizmatlar katalogini ko'rish",
+        canManageServices: "Katalogni qo'shish va tahrirlash",
       }
     },
     {
-      title: 'Filiallar & Tahlil',
-      color: 'orange',
+      title: 'Tizim Sozlamalari & Obuna Sahifasi',
+      color: 'gray',
       permissions: {
-        canManageBranches: "Filiallarni boshqarish",
-        canAssignToOtherBranches: "Boshqa filial xodimlariga vazifa berish",
-        canViewKpi: "KPI va samaradorlikni ko'rish",
-        canViewExpenseCharts: "Chiqim tahlil grafiklarini ko'rish",
+        canViewSettings: "Tizim sozlamalariga kirish",
+        canManageNotifications: "Telegram bot bildirishnomalarini sozlash",
+        canManageBilling: "Obuna va to'lovlarni boshqarish",
       }
-    }
+    },
   ];
 
   const allPermissionKeys = permissionGroups.flatMap(g => Object.keys(g.permissions));
@@ -682,6 +722,46 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                  })}
               </div>
            </div>
+        </section>
+      )}
+
+      {/* General Settings Section */}
+      {isAdmin && (
+        <section className="space-y-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                <Save className="text-orange-500" size={28}/> Umumiy Sozlamalar
+              </h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Tizim darajasidagi qoidalar va chegaralar</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-1">
+                <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">
+                  Minimal zakolat foizi (%)
+                </label>
+                <p className="text-[10px] font-bold text-amber-600 mb-3">
+                  Yangi buyurtma qo'shishda zakolat shu foizdan kam bo'lsa ogohlantirish chiqadi
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range" min="0" max="100" step="5"
+                    value={minPrepaymentPct}
+                    onChange={e => setMinPrepaymentPct(Number(e.target.value))}
+                    className="flex-1 accent-orange-500"
+                  />
+                  <span className="text-2xl font-black text-orange-600 w-14 text-right">{minPrepaymentPct}%</span>
+                </div>
+              </div>
+              <button
+                onClick={savePrepaymentPct}
+                disabled={savingPrepayment}
+                className="h-11 px-6 bg-orange-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {savingPrepayment ? 'SAQLANMOQDA...' : 'SAQLASH'}
+              </button>
+            </div>
+          </div>
         </section>
       )}
 

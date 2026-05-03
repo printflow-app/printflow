@@ -63,6 +63,9 @@ model Tenant {
   employees          Employee[]
   workspaceAdmins    WorkspaceAdmin[]
   customers          Customer[]
+  customerContacts   CustomerContact[]
+  vendors            Vendor[]
+  orderVendorCosts   OrderVendorCost[]
   paymentTypes       PaymentType[]
   transactions       Transaction[]
   expenseTypes       ExpenseType[]
@@ -426,6 +429,7 @@ model Role {
   canViewSettings         Boolean @default(false)  // Sozlamalar sahifasiga kirish
   canAssignToOtherBranches Boolean @default(false) // Boshqa filial xodimlariga vazifa berish
   canManageBilling        Boolean @default(false)  // Obuna va to'lovlarni boshqarish
+  canViewVendors          Boolean @default(false)  // Hamkorlar va subpudratchilarni ko'rish
 
   employees Employee[]
 
@@ -476,14 +480,16 @@ model Customer {
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  name      String
-  phone     String?
-  totalDebt Float   @default(0) // Umumiy buyurtmalar summasi
-  totalPaid Float   @default(0) // Umumiy to'langan summa
+  name        String         // Company / Organization name
+  phone       String?        // Primary company phone (kept for backwards compat)
+  companyInfo String?        // Extra info: INN, address, etc. (JSON or plain text)
+  totalDebt   Float @default(0)
+  totalPaid   Float @default(0)
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
 
+  contacts     CustomerContact[]
   transactions Transaction[]
   tasks        Task[]
 
@@ -491,6 +497,73 @@ model Customer {
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+}
+
+// =============================================
+// B2B: Kompaniya kontakt shaxslari
+// =============================================
+
+model CustomerContact {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  firstName  String
+  lastName   String?
+  phone      String?
+  isPrimary  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([customerId])
+}
+
+// =============================================
+// HAMKORLAR / SUBPUDRATCHILAR (Vendors)
+// =============================================
+
+model Vendor {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String
+  phone     String?
+  specialty String?   // Masalan: "Laminatsiya", "Kesish", "Bosma"
+  balance   Float @default(0)  // Negative = biz ularga qarzimiz
+
+  orderCosts OrderVendorCost[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model OrderVendorCost {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  taskId      String
+  task        Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  vendorId    String
+  vendor      Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  amount      Float
+  description String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([taskId])
+  @@index([vendorId])
 }
 
 // =============================================
@@ -615,16 +688,20 @@ model Task {
   materialOverrides String   @default("[]") // JSON: {materialId, quantity}[]
   deadlineAt        DateTime?               // Topshiriq muddati (ixtiyoriy)
 
+  isArchived Boolean @default(false) // true bo'lsa — o'chirilgan emas, arxivlangan
+
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
 
   histories      TaskHistory[]
   stockMovements StockMovement[]
+  vendorCosts    OrderVendorCost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+  @@index([tenantId, isArchived])
 }
 
 model SystemSetting {

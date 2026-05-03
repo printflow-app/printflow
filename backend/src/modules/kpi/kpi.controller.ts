@@ -2,6 +2,7 @@ import { Controller, Get, Query, Req, ForbiddenException } from '@nestjs/common'
 import { Request } from 'express';
 import { KpiService } from './kpi.service';
 import { RequireFeature } from '../../common/decorators/feature.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 // =============================================
 // KPI CONTROLLER — `kpiTracking` feature gated
@@ -17,19 +18,13 @@ export class KpiController {
   constructor(private kpiService: KpiService) {}
 
   @Get('employees')
+  @RequirePermissions('canViewKpi')
   async list(
     @Req() req: Request,
     @Query('start') start?: string,
     @Query('end') end?: string,
   ) {
-    const payload = (req as any).user;
-    const role = (req as any)._tenantPayload?.userRole;
-    // WorkspaceAdmin har doim ko'ra oladi. Aks holda canViewKpi shart.
-    const isAdmin = role === 'Admin' || payload?.role === 'Admin';
-    if (!isAdmin) {
-      // Permission check delegated to a lightweight DB lookup — KISS, no caching.
-      // Frontend allaqachon ko'rsatmaydi, bu — server-side belt&braces.
-    }
+    if (!req) throw new ForbiddenException('Foydalanuvchi aniqlanmadi');
     return this.kpiService.getEmployeeKpiList(start, end);
   }
 
