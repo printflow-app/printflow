@@ -3,7 +3,7 @@ import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2 } from 'luc
 import { financeApi, paymentTypesApi, customersApi, employeesApi, expenseTypesApi } from '../api';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
-import NumberInput from '../components/NumberInput';
+import CurrencyInput from '../components/CurrencyInput';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const formatCurrency = (amount: number) => {
@@ -278,12 +278,11 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           </div>
           
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Summa (UZS)</label>
-            <NumberInput
+            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <CurrencyInput
               value={kirimForm.amount}
-              onChange={(num) => setKirimForm(f => ({ ...f, amount: num ? String(num) : '' }))}
-              placeholder="0"
-              className="input-minimal h-12 text-lg font-black text-emerald-600 focus:border-emerald-500"
+              onChange={(uzs) => setKirimForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
+              colorClass="text-emerald-600 focus:border-emerald-500"
             />
           </div>
           
@@ -343,12 +342,11 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           </div>
 
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Summa (UZS)</label>
-            <NumberInput
+            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <CurrencyInput
               value={chiqimForm.amount}
-              onChange={(num) => setChiqimForm(f => ({ ...f, amount: num ? String(num) : '' }))}
-              placeholder="0"
-              className="input-minimal h-12 text-lg font-black text-rose-600 focus:border-rose-500"
+              onChange={(uzs) => setChiqimForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
+              colorClass="text-rose-600 focus:border-rose-500"
             />
           </div>
 

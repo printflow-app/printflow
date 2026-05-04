@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { employeesApi, rolesApi, branchesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
-import NumberInput from '../components/NumberInput';
+import CurrencyInput from '../components/CurrencyInput';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
@@ -297,8 +297,13 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                )}
                {(isAdmin || p.canViewSalary) && (
                  <div>
-                    <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Maoshi (UZS)</label>
-                    <NumberInput value={newEmployee.baseSalary} onChange={(num) => setNewEmployee({...newEmployee, baseSalary: num || ''})} className="input-minimal font-black text-emerald-600 w-full" placeholder="Masalan: 5 000 000" />
+                    <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Maoshi</label>
+                    <CurrencyInput
+                      value={newEmployee.baseSalary}
+                      onChange={(uzs) => setNewEmployee({...newEmployee, baseSalary: uzs || ''})}
+                      colorClass="text-emerald-600"
+                      className="input-minimal font-black w-full"
+                    />
                  </div>
                )}
                <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">

@@ -3,7 +3,7 @@ import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, C
 import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
-import NumberInput from '../components/NumberInput';
+import CurrencyInput from '../components/CurrencyInput';
 
 const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
@@ -1163,7 +1163,12 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                     {isEditing ? (
                       <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
                         <input type="text" value={editSvcForm.name} onChange={e => setEditSvcForm({ ...editSvcForm, name: e.target.value })} className="h-9 px-3 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white" />
-                        <input type="number" value={editSvcForm.basePrice} onChange={e => setEditSvcForm({ ...editSvcForm, basePrice: e.target.value })} className="h-9 px-3 w-32 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white" placeholder="Asosiy narx" />
+                        <CurrencyInput
+                          value={editSvcForm.basePrice}
+                          onChange={(uzs) => setEditSvcForm({ ...editSvcForm, basePrice: uzs ? String(uzs) : '' })}
+                          colorClass="text-violet-600"
+                          className="h-9 px-3 w-44 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white"
+                        />
                         <select value={editSvcForm.unit} onChange={e => setEditSvcForm({ ...editSvcForm, unit: e.target.value })} className="h-9 px-3 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white">
                           {['dona', 'metr', 'sm', 'm2', 'kg', 'litr', 'soat', 'rulon', 'varaq'].map(u => <option key={u} value={u}>{u}</option>)}
                         </select>
@@ -1288,12 +1293,11 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Asosiy Narx (UZS)</label>
-              <NumberInput
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Asosiy Narx</label>
+              <CurrencyInput
                 value={newSvcForm.basePrice}
-                onChange={(num) => setNewSvcForm(f => ({ ...f, basePrice: num ? String(num) : '' }))}
-                placeholder="50 000"
-                className="input-minimal font-black text-violet-600"
+                onChange={(uzs) => setNewSvcForm(f => ({ ...f, basePrice: uzs ? String(uzs) : '' }))}
+                colorClass="text-violet-600"
               />
             </div>
             <div>
@@ -1331,22 +1335,19 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Yakuniy Narx (UZS)</label>
-            <div className="relative">
-              <NumberInput
-                value={newOptionForm.percentageMarkup === '' ? '' : String(Number(selectedService?.basePrice || 0) + Math.round(Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)))}
-                onChange={(num) => {
-                  const base = Number(selectedService?.basePrice || 0);
-                  if (base > 0 && num !== undefined) {
-                    const markup = ((num / base) - 1) * 100;
-                    setNewOptionForm(f => ({ ...f, percentageMarkup: String(markup) }));
-                  }
-                }}
-                placeholder="0"
-                className="input-minimal font-black text-2xl h-14 text-orange-600"
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-2xl text-slate-200">UZS</div>
-            </div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Yakuniy Narx</label>
+            <CurrencyInput
+              value={newOptionForm.percentageMarkup === '' ? '' : String(Number(selectedService?.basePrice || 0) + Math.round(Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)))}
+              onChange={(uzs) => {
+                const base = Number(selectedService?.basePrice || 0);
+                if (base > 0 && uzs !== undefined) {
+                  const markup = ((uzs / base) - 1) * 100;
+                  setNewOptionForm(f => ({ ...f, percentageMarkup: String(markup) }));
+                }
+              }}
+              colorClass="text-orange-600"
+              className="input-minimal font-black text-2xl h-14"
+            />
             
             <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
                <div className="space-y-1">

@@ -8,7 +8,7 @@ import {
 import { tasksApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi } from '../api';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
-import NumberInput from '../components/NumberInput';
+import CurrencyInput from '../components/CurrencyInput';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 interface Task {
@@ -870,14 +870,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Hisoblangan jami narx</p>
                     <span className="text-2xl font-black text-slate-800">{Number(newTaskForm.totalAmount).toLocaleString()} UZS</span>
                   </div>
-                  <div className="w-48">
+                  <div className="w-64">
                     <label className="block text-[10px] font-black text-emerald-600 uppercase mb-2">Manual o'zgartirish</label>
-                     <NumberInput
-                       value={newTaskForm.manualTotal}
-                       onChange={(num) => setNewTaskForm(f => ({ ...f, manualTotal: num ? String(num) : "" }))}
-                       placeholder="700 000"
-                       className="input-minimal font-black text-emerald-600 border-2 border-emerald-100 bg-white"
-                     />
+                    <CurrencyInput
+                      value={newTaskForm.manualTotal}
+                      onChange={(uzs) => setNewTaskForm(f => ({ ...f, manualTotal: uzs ? String(uzs) : "" }))}
+                      colorClass="text-emerald-600"
+                      className="input-minimal font-black border-2 border-emerald-100 bg-white"
+                    />
                   </div>
                </div>
                
@@ -896,12 +896,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Sizga berilgan zakolat (UZS)</label>
-              <NumberInput
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Sizga berilgan zakolat</label>
+              <CurrencyInput
                 value={newTaskForm.depositAmount}
-                onChange={(num) => setNewTaskForm(f => ({ ...f, depositAmount: String(num) }))}
-                placeholder="0"
-                className="input-minimal font-black h-12 text-sky-600"
+                onChange={(uzs) => setNewTaskForm(f => ({ ...f, depositAmount: String(uzs) }))}
+                colorClass="text-sky-600"
               />
             </div>
 
@@ -1208,13 +1207,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
                       ))}
                     </select>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input
-                        type="number"
-                        placeholder="Summa (UZS)"
+                    <div className="space-y-2">
+                      <CurrencyInput
                         value={vendorCostForm.amount}
-                        onChange={e => setVendorCostForm(f => ({ ...f, amount: e.target.value }))}
-                        className="input-minimal font-black text-emerald-600"
+                        onChange={(uzs) => setVendorCostForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
+                        colorClass="text-emerald-600"
+                        placeholder="Summa"
                       />
                       <input
                         type="text"

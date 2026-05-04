@@ -92,12 +92,17 @@ export class PrismaService
 
       // UPDATE / DELETE — always scope WHERE to prevent cross-tenant mutations
       if (
-        ['update', 'updateMany', 'delete', 'deleteMany', 'upsert'].includes(
-          params.action,
-        )
+        ['update', 'updateMany', 'delete', 'deleteMany'].includes(params.action)
       ) {
         params.args = params.args || {};
         params.args.where = { ...params.args.where, tenantId };
+      }
+
+      // UPSERT — scope WHERE and inject tenantId into create payload
+      if (params.action === 'upsert') {
+        params.args = params.args || {};
+        params.args.where = { ...params.args.where, tenantId };
+        params.args.create = { ...params.args.create, tenantId };
       }
 
       return next(params);

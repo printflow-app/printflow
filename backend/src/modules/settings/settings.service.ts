@@ -25,11 +25,12 @@ export class SettingsService {
     const valueStr = JSON.stringify(value);
     const tenantId = TenantContext.getTenantId();
 
-    // Compound unique bo'lgani uchun {tenantId_key} ga upsert qilamiz
+    // Compound unique bo'lgani uchun {tenantId_key} ga upsert qilamiz.
+    // create da tenantId explicitly berish kerak — middleware upsert.create ga inject qilmaydi.
     return this.prisma.systemSetting.upsert({
       where: { tenantId_key: { tenantId, key } },
       update: { value: valueStr },
-      create: { key, value: valueStr } as any,
+      create: { tenantId, key, value: valueStr } as any,
     });
   }
 

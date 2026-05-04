@@ -3,6 +3,7 @@ import {
   Building2, Plus, Trash2, Edit3, Phone, MapPin, Save, X,
   Handshake, Search, TrendingDown, Briefcase, ClipboardList, AlertCircle, AlertTriangle, CheckCircle2,
 } from 'lucide-react';
+import CurrencyInput from '../components/CurrencyInput';
 import { branchesApi, employeesApi, vendorsApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Modal from '../components/Modal';
@@ -392,8 +393,13 @@ const HamkorlarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <div><p className="text-xs font-black text-emerald-800 uppercase">Joriy qarz</p><p className="text-lg font-black text-rose-600">{payVendor ? formatCurrency(Math.abs(payVendor.balance || 0)) : ''}</p></div>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">To'lov miqdori (UZS) *</label>
-            <input type="number" min="1" autoFocus value={payAmount} onChange={e => setPayAmount(e.target.value)} className="input-minimal font-black text-emerald-600 text-xl h-14 border-2 border-emerald-100" placeholder="500 000" />
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">To'lov miqdori *</label>
+            <CurrencyInput
+              value={payAmount}
+              onChange={(uzs) => setPayAmount(uzs ? String(uzs) : '')}
+              colorClass="text-emerald-600"
+              className="input-minimal h-14 text-xl font-black border-2 border-emerald-100"
+            />
           </div>
           <div className="flex gap-3 pt-2 border-t border-slate-100">
             <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-black text-[10px] tracking-widest" onClick={() => { setPayVendor(null); setPayAmount(''); }}>BEKOR</button>
