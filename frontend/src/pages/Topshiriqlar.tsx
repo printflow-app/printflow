@@ -69,9 +69,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [arxivTasks, setArxivTasks] = useState<any[]>([]);
   const [isArxivLoading, setIsArxivLoading] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const [colRes, empRes, ptRes, custRes, taskRes, svcRes, branchRes, vendorRes] = await Promise.all([
         tasksApi.getColumns(),
         employeesApi.findAll(),
@@ -99,7 +99,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       showStatus('error', "Ma'lumotlarni yuklashda xatolik yuz berdi!");
       console.error("Ma'lumotlarni yuklashda xato:", err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -191,7 +191,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
     try {
       await tasksApi.update(draggedTaskId, { columnId: targetColumnId }, currentUser.id);
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Bosqichni o'zgartirishda xatolik!");
       console.error(err);
@@ -325,7 +325,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       
       setIsNewTaskModalOpen(false);
       showStatus('success', "Buyurtma yaratildi (Guruhli)!");
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Xatolik yuz berdi!");
     }
@@ -338,7 +338,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         setIsDetailModalOpen(false);
         setConfirmModal({ ...confirmModal, isOpen: false });
         showStatus('success', "Buyurtma arxivlandi.");
-        fetchData();
+        fetchData(true);
     } catch (err) {
         showStatus('error', "Arxivlashda xato!");
     }
@@ -357,7 +357,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         await tasksApi.update(selectedTask.id, { attachments: JSON.stringify(updatedAttachments) }, currentUser.id);
         setSelectedTask({ ...selectedTask, attachments: JSON.stringify(updatedAttachments) });
         showStatus('success', "Rasm yuklandi!");
-        fetchData();
+        fetchData(true);
       } catch (err) {
         showStatus('error', "Yuklashda xato!");
       }
@@ -372,7 +372,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         await tasksApi.createColumn({ title: newColumnTitle, orderIdx: columns.length });
         setNewColumnTitle('');
         setIsNewColumnModalOpen(false);
-        fetchData();
+        fetchData(true);
       } catch (err) {
         showStatus('error', "Bosqich qo'shishda xatolik!");
         console.error(err);
@@ -386,7 +386,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         await tasksApi.deleteColumn(confirmModal.id);
         setConfirmModal({ ...confirmModal, isOpen: false });
         showStatus('success', "Bosqich o'chirildi.");
-        fetchData();
+        fetchData(true);
     } catch (err) {
         showStatus('error', "O'chirishda xato!");
     }
@@ -433,7 +433,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       }, currentUser.id);
       setIsMoveTaskModalOpen(false);
       showStatus('success', "Buyurtma ko'chirildi.");
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Ko'chirishda xatolik!");
     }
@@ -467,7 +467,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       await tasksApi.update(selectedTask.id, { overrides: JSON.stringify(overrides) }, currentUser.id);
       setIsOverrideModalOpen(false);
       showStatus('success', "Material sarfi yangilandi!");
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Saqlashda xatolik!");
     }

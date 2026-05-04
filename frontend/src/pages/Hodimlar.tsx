@@ -32,9 +32,9 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [showGenPass, setShowGenPass] = useState(false);
   const [showSelectedPass, setShowSelectedPass] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const [empRes, roleRes, branchRes] = await Promise.all([
         employeesApi.findAll(),
         rolesApi.findAll(),
@@ -61,7 +61,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     } catch (err) {
       console.error("Xatolik:", err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -75,7 +75,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       const res = await employeesApi.create({ ...newEmployee, baseSalary: Number(newEmployee.baseSalary) || 0, branchId: newEmployee.branchId || undefined });
       setGeneratedCredentials({ login: res.data.login, password: res.data.password });
       setNewEmployee({ fullName: '', phone: '', roleId: '', baseSalary: '', branchId: '' });
-      fetchData();
+      fetchData(true);
       toast.success("Xodim muvaffaqiyatli qo'shildi!");
       setIsEmployeeModalOpen(false);
     } catch (err) {
@@ -97,7 +97,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       onConfirm: async () => {
         try {
           await employeesApi.delete(id);
-          fetchData();
+          fetchData(true);
           toast.success("Xodim tizimdan o'chirildi.");
         } catch (err) {
           toast.error("O'chirishda xatolik yuz berdi.");
@@ -116,7 +116,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         try {
           const newPassword = Math.floor(100000 + Math.random() * 900000).toString();
           const res = await employeesApi.update(id, { password: newPassword });
-          fetchData();
+          fetchData(true);
           setSelectedEmp({ ...res.data, password: newPassword });
           setIsCredentialsModalOpen(true);
           toast.success("Parol muvaffaqiyatli yangilandi.");

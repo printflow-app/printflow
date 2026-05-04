@@ -30,14 +30,14 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [form, setForm] = useState({ name: '', address: '', phone: '', managerEmployeeId: '' });
   const [confirmDel, setConfirmDel] = useState<Branch | null>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [bRes, eRes] = await Promise.all([branchesApi.findAll(), employeesApi.findAll()]);
       setBranches(Array.isArray(bRes.data) ? bRes.data : []);
       setEmployees(Array.isArray(eRes.data) ? eRes.data : []);
     } catch { console.error('Filiallarni yuklashda xato'); }
-    finally { setLoading(false); }
+    finally { if (!silent) setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -56,13 +56,13 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       const payload = { name: form.name.trim(), address: form.address.trim() || undefined, phone: form.phone.trim() || undefined, managerEmployeeId: form.managerEmployeeId || undefined };
       if (editing) { await branchesApi.update(editing.id, payload); toast.success('Filial yangilandi'); }
       else { await branchesApi.create(payload); toast.success("Filial qo'shildi"); }
-      setModalOpen(false); fetchData();
+      setModalOpen(false); fetchData(true);
     } catch (err: any) { toast.error(err?.response?.data?.message || 'Xatolik yuz berdi'); }
   };
 
   const handleDelete = async () => {
     if (!confirmDel) return;
-    try { await branchesApi.delete(confirmDel.id); toast.success("Filial o'chirildi"); setConfirmDel(null); fetchData(); }
+    try { await branchesApi.delete(confirmDel.id); toast.success("Filial o'chirildi"); setConfirmDel(null); fetchData(true); }
     catch (err: any) { toast.error(err?.response?.data?.message || "O'chirishda xato"); }
   };
 
@@ -181,13 +181,13 @@ const HamkorlarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  const fetchVendors = async () => {
+  const fetchVendors = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const res = await vendorsApi.findAll();
       setVendors(res.data || []);
     } catch { showStatus('error', 'Hamkorlarni yuklashda xatolik!'); }
-    finally { setIsLoading(false); }
+    finally { if (!silent) setIsLoading(false); }
   };
 
   useEffect(() => { fetchVendors(); }, []);
@@ -208,7 +208,7 @@ const HamkorlarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       if (isEditing) { await vendorsApi.update(form.id, { name: form.name, phone: form.phone, specialty: form.specialty }); showStatus('success', 'Hamkor yangilandi!'); }
       else { await vendorsApi.create({ name: form.name, phone: form.phone, specialty: form.specialty }); showStatus('success', "Yangi hamkor qo'shildi!"); }
-      setIsFormOpen(false); fetchVendors();
+      setIsFormOpen(false); fetchVendors(true);
     } catch { showStatus('error', 'Saqlashda xatolik!'); }
   };
 
@@ -218,7 +218,7 @@ const HamkorlarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       await vendorsApi.pay(payVendor.id, Number(payAmount));
       showStatus('success', `${Number(payAmount).toLocaleString()} UZS to'landi!`);
-      setPayVendor(null); setPayAmount(''); fetchVendors();
+      setPayVendor(null); setPayAmount(''); fetchVendors(true);
       if (detailVendor?.id === payVendor.id) { const res = await vendorsApi.findOne(payVendor.id); setDetailData(res.data); }
     } catch { showStatus('error', "To'lashda xatolik!"); }
     finally { setIsPaying(false); }
@@ -226,7 +226,7 @@ const HamkorlarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   const handleDelete = async () => {
     if (!confirmId) return;
-    try { await vendorsApi.remove(confirmId); showStatus('success', "Hamkor o'chirildi."); setConfirmId(null); fetchVendors(); }
+    try { await vendorsApi.remove(confirmId); showStatus('success', "Hamkor o'chirildi."); setConfirmId(null); fetchVendors(true); }
     catch { showStatus('error', "O'chirishda xatolik!"); }
   };
 

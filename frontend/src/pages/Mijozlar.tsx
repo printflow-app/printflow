@@ -54,9 +54,9 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     setTimeout(() => setStatusMsg(null), 3000);
   };
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const [customersRes, topRes] = await Promise.all([
         customersApi.findAll(activeBranchId),
         customersApi.getTopCustomers(10),
@@ -66,7 +66,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     } catch (err) {
       console.error(err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -106,7 +106,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         showStatus('success', "Yangi mijoz qo'shildi!");
       }
       setIsFormOpen(false);
-      fetchData();
+      fetchData(true);
     } catch {
       showStatus('error', "Saqlashda xatolik!");
     }
@@ -118,7 +118,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       await customersApi.delete(confirmModal.id);
       toast.success("Mijoz o'chirildi!");
       setConfirmModal({ isOpen: false, id: null, name: '' });
-      fetchData();
+      fetchData(true);
     } catch {
       toast.error("O'chirishda xatolik yuz berdi!");
     }

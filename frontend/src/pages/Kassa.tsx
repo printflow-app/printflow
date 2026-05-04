@@ -21,9 +21,9 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const [transRes, ptRes, custRes, empRes, etRes] = await Promise.all([
         financeApi.getTransactions(activeBranchId ? { params: { branchId: activeBranchId } } : undefined),
         paymentTypesApi.findAll(),
@@ -39,7 +39,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     } catch (err) {
       console.error("Kassa yuklashda xato:", err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -89,7 +89,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       setIsKirimModalOpen(false);
       setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false });
       showStatus('success', "Kirim muvaffaqiyatli amalga oshirildi!");
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Kirim qo'shishda xatolik yuz berdi.");
     } finally {
@@ -109,7 +109,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       setIsChiqimModalOpen(false);
       setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false });
       showStatus('success', "Chiqim muvaffaqiyatli amalga oshirildi!");
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Chiqim qo'shishda xatolik yuz berdi.");
     } finally {

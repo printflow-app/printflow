@@ -26,9 +26,9 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [showGenPass, setShowGenPass] = useState(false);
   const [showSelectedPass, setShowSelectedPass] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const [empRes, roleRes] = await Promise.all([
         employeesApi.findAll(),
         rolesApi.findAll()
@@ -53,7 +53,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     } catch (err) {
       console.error("Xatolik:", err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -67,7 +67,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       const res = await employeesApi.create({ ...newEmployee, baseSalary: Number(newEmployee.baseSalary) || 0 });
       setGeneratedCredentials({ login: res.data.login, password: res.data.password });
       setNewEmployee({ fullName: '', phone: '', roleId: '', baseSalary: '' });
-      fetchData();
+      fetchData(true);
       toast.success("Admin muvaffaqiyatli qo'shildi!");
       setIsEmployeeModalOpen(false);
     } catch (err) {
@@ -89,7 +89,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       onConfirm: async () => {
         try {
           await employeesApi.delete(id);
-          fetchData();
+          fetchData(true);
           toast.success("Foydalanuvchi tizimdan o'chirildi.");
         } catch (err) {
           toast.error("O'chirishda xatolik yuz berdi.");
@@ -107,7 +107,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       onConfirm: async () => {
         try {
           const res = await employeesApi.update(id, { password: Math.floor(100000 + Math.random() * 900000).toString() });
-          fetchData();
+          fetchData(true);
           setSelectedEmp(res.data);
           setIsCredentialsModalOpen(true);
           toast.success("Parol muvaffaqiyatli yangilandi.");

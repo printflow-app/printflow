@@ -30,9 +30,9 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  const fetchData = async () => {
+  const fetchData = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const [roleRes, ptRes, etRes, kcRes, svcRes, empRes] = await Promise.all([
         rolesApi.findAll(),
         paymentTypesApi.findAll(),
@@ -72,7 +72,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     } catch (err) {
       console.error("Sozlamalarni yuklashda xato:", err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -162,7 +162,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       await rolesApi.create(newRole);
       setIsRoleModalOpen(false);
       setNewRole(initialRoleForm);
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Lavozim yaratishda xato!");
     }
@@ -189,7 +189,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       await rolesApi.update(editingRoleId, data);
       setEditingRoleId(null);
       setEditRoleData(null);
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "O'zgarishlarni saqlashda xato!");
     }
@@ -204,7 +204,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       onConfirm: async () => {
         try {
           await rolesApi.delete(id);
-          fetchData();
+          fetchData(true);
           showStatus('success', "Lavozim o'chirildi.");
         } catch (err) {
           showStatus('error', "O'chirishda xato! Avval shu lavozim xodimlarini boshqa lavozimga o'tkazing.");
@@ -224,7 +224,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       await paymentTypesApi.create({ name: newPT });
       setNewPT('');
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "To'lov turini qo'shishda xato!");
     }
@@ -235,7 +235,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       await paymentTypesApi.update(id, { name: editPTName });
       setEditingPTId(null);
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Tahrirlashda xato!");
     }
@@ -252,7 +252,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       await expenseTypesApi.create({ name: newET });
       setNewET('');
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Xarajat turini qo'shishda xato!");
     }
@@ -263,7 +263,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       await expenseTypesApi.update(id, { name: editETName });
       setEditingETId(null);
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Tahrirlashda xato!");
     }
@@ -278,7 +278,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       await tasksApi.updateColumn(id, { title: editColTitle });
       setEditingColId(null);
-      fetchData();
+      fetchData(true);
     } catch (err) {
       showStatus('error', "Bosqichni tahrirlashda xato!");
     }

@@ -98,11 +98,25 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    if (this.bot) {
-      this.bot.launch()
-        .then(() => console.log('🚀 Telegram Bot ishga tushdi'))
-        .catch(err => console.error('Bot ishga tushmadi:', err));
+    if (!this.bot) return;
+
+    // Error handler — prevents polling from silently dying on unhandled handler exceptions
+    this.bot.catch((err: any, ctx: any) => {
+      console.error('❌ Telegram bot handler xatosi:', err?.message || err);
+    });
+
+    try {
+      // Delete any existing webhook so long-polling works cleanly
+      await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+      console.log('🔗 Webhook tozalandi');
+    } catch (e: any) {
+      console.warn('Webhook o\'chirishda xato (davom etiladi):', e?.message);
     }
+
+    this.bot.launch({ dropPendingUpdates: true })
+      .catch(err => console.error('Bot ishga tushmadi:', err?.message || err));
+
+    console.log('🚀 Telegram Bot polling boshlandi');
   }
 
   onModuleDestroy() {
@@ -118,48 +132,57 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.use(async (ctx: any, next) => {
       const chatId = ctx.chat?.id?.toString();
       if (!chatId) return next();
-      const session = await this.prisma.botSession.findUnique({
-        where: { chatId },
-        include: { tenant: true },
-      });
-      if (session) {
-        ctx.tenantId    = session.tenantId   || null;
-        ctx.tenant      = session.tenant     || null;
-        ctx.botSession  = session;
-        ctx.employeeId  = session.employeeId || null;
+      try {
+        const session = await this.prisma.botSession.findUnique({
+          where: { chatId },
+          include: { tenant: true },
+        });
+        if (session) {
+          ctx.tenantId    = session.tenantId   || null;
+          ctx.tenant      = session.tenant     || null;
+          ctx.botSession  = session;
+          ctx.employeeId  = session.employeeId || null;
+        }
+      } catch (err: any) {
+        console.error('Session yuklashda xato:', err?.message || err);
       }
       return next();
     });
 
     // /start komandasi
     this.bot.start(async (ctx: any) => {
-      const chatId = ctx.chat.id.toString();
+      try {
+        const chatId = ctx.chat.id.toString();
 
-      // Allaqachon ulangan foydalanuvchi
-      if (ctx.employeeId && ctx.botSession?.step === 'IDLE') {
-        const lang = L(ctx.botSession);
+        // Allaqachon ulangan foydalanuvchi
+        if (ctx.employeeId && ctx.botSession?.step === 'IDLE') {
+          const lang = L(ctx.botSession);
+          return ctx.reply(
+            lang.alreadyLinked(ctx.tenant?.name || 'Workspace'),
+            { parse_mode: 'Markdown', ...logoutKeyboard(lang) },
+          );
+        }
+
+        // Session yangilash yoki yaratish — til tanlash bosqichiga o'tish
+        const firstTenant = await this.prisma.tenant.findFirst({ where: { isActive: true } });
+        if (!firstTenant) {
+          return ctx.reply(LANGS.uz.noWorkspace);
+        }
+
+        await this.prisma.botSession.upsert({
+          where: { chatId },
+          update: { step: 'LANG', employeeId: null, loginAttempt: null, lang: 'uz' },
+          create: { chatId, tenantId: firstTenant.id, step: 'LANG', lang: 'uz' },
+        });
+
         return ctx.reply(
-          lang.alreadyLinked(ctx.tenant?.name || 'Workspace'),
-          { parse_mode: 'Markdown', ...logoutKeyboard(lang) },
+          LANGS.uz.chooseLanguage,
+          { parse_mode: 'Markdown', ...langKeyboard() },
         );
+      } catch (err: any) {
+        console.error('/start handler xatosi:', err?.message || err);
+        return ctx.reply('❌ Xatolik yuz berdi. Iltimos qayta urinib ko\'ring.');
       }
-
-      // Session yangilash yoki yaratish — til tanlash bosqichiga o'tish
-      const firstTenant = await this.prisma.tenant.findFirst({ where: { isActive: true } });
-      if (!firstTenant) {
-        return ctx.reply(LANGS.uz.noWorkspace);
-      }
-
-      await this.prisma.botSession.upsert({
-        where: { chatId },
-        update: { step: 'LANG', employeeId: null, loginAttempt: null, lang: 'uz' },
-        create: { chatId, tenantId: firstTenant.id, step: 'LANG', lang: 'uz' },
-      });
-
-      return ctx.reply(
-        LANGS.uz.chooseLanguage,
-        { parse_mode: 'Markdown', ...langKeyboard() },
-      );
     });
 
     // =============================================
