@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell, Upload } from 'lucide-react';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell } from 'lucide-react';
 import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -17,8 +17,6 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [employees, setEmployees] = useState<any[]>([]);
   const [notifPrefs, setNotifPrefs] = useState<{ hisobotReceivers: string[]; newOrderReceivers: string[]; reminderReceivers: string[] }>({ hisobotReceivers: [], newOrderReceivers: [], reminderReceivers: [] });
   const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
-  const [clientLogos, setClientLogos] = useState<string[]>([]);
-  const [savingLogos, setSavingLogos] = useState(false);
   const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
   const [savingPrepayment, setSavingPrepayment] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,10 +58,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         }
       } catch { /* default prefs already set */ }
 
-      try {
-        const logosRes = await settingsApi.get('CLIENT_LOGOS');
-        if (Array.isArray(logosRes.data)) setClientLogos(logosRes.data);
-      } catch { /* default empty */ }
+
 
       try {
         const pctRes = await settingsApi.get('MIN_PREPAYMENT_PERCENTAGE');
@@ -101,41 +96,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 500 * 1024) { showStatus('error', "Fayl 500KB dan kichik bo'lishi kerak"); return; }
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const base64 = ev.target?.result as string;
-      const newLogos = [...clientLogos, base64];
-      setClientLogos(newLogos);
-      setSavingLogos(true);
-      try {
-        await settingsApi.set('CLIENT_LOGOS', newLogos);
-        showStatus('success', 'Logo saqlandi');
-      } catch {
-        showStatus('error', 'Saqlashda xato');
-        setClientLogos(clientLogos);
-      } finally { setSavingLogos(false); }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
 
-  const handleLogoDelete = async (index: number) => {
-    const prev = [...clientLogos];
-    const newLogos = clientLogos.filter((_, i) => i !== index);
-    setClientLogos(newLogos);
-    setSavingLogos(true);
-    try {
-      await settingsApi.set('CLIENT_LOGOS', newLogos);
-      showStatus('success', "Logo o'chirildi");
-    } catch {
-      showStatus('error', 'Saqlashda xato');
-      setClientLogos(prev);
-    } finally { setSavingLogos(false); }
-  };
 
   useEffect(() => {
     fetchData();
