@@ -256,10 +256,11 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const p = currentUser?.permissions || {};
   const tf = currentUser?.tenantFeatures || {};
 
-  const canViewFinance = isAdmin || p.canViewFinance;
+  const canViewFinanceReports = isAdmin || p.canViewFinanceReports;
   const canViewKpi = isAdmin || p.canViewKpi;
   const canViewVendors = isAdmin || p.canViewVendors;
   const canViewExpenseCharts = isAdmin || p.canViewExpenseCharts;
+  const canViewStatistics = isAdmin || p.canViewStatistics;
 
   const [branches, setBranches] = useState<any[]>([]);
   const [branchId, setBranchId] = useState('');
@@ -321,18 +322,23 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
       const calls: Promise<any>[] = [];
 
-      if (canViewFinance) {
+      if (canViewFinanceReports || canViewStatistics) {
         // Dashboard stats (for Jami Chiqim + Sof Foyda)
         calls.push(financeApi.getDashboard({ params }).then(r => setDashStats(r.data)).catch(() => {}));
 
         // Growth metrics (month-over-month comparison)
-        calls.push(reportsApi.growthMetrics({ branchId: params.branchId }).then(r => setGrowth(r.data)).catch(() => {}));
+        if (canViewStatistics) {
+          calls.push(reportsApi.growthMetrics({ branchId: params.branchId }).then(r => setGrowth(r.data)).catch(() => {}));
+        }
 
         // Services performance
-        calls.push(reportsApi.servicesPerformance(params).then(r => setServices(r.data || [])).catch(() => {}));
+        if (canViewFinanceReports) {
+          calls.push(reportsApi.servicesPerformance(params).then(r => setServices(r.data || [])).catch(() => {}));
+        }
 
         // Financial dynamics — daily for short periods, monthly for long
-        if (isShortPreset) {
+        if (canViewFinanceReports) {
+          if (isShortPreset) {
           calls.push(
             financeApi.getDinamika({ params }).then(r => {
               const raw: any[] = r.data || [];
@@ -361,10 +367,13 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               setDynamicsType('monthly');
             }).catch(() => {})
           );
+          }
         }
 
         // Payment type stats (kirim/chiqim turlari)
-        calls.push(financeApi.getStatsByPaymentType({ params }).then(r => setPaymentStats(r.data || { kirim: [], chiqim: [] })).catch(() => {}));
+        if (canViewFinanceReports) {
+          calls.push(financeApi.getStatsByPaymentType({ params }).then(r => setPaymentStats(r.data || { kirim: [], chiqim: [] })).catch(() => {}));
+        }
 
         // Expense breakdown (chiqim tahlili)
         if (canViewExpenseCharts) {
@@ -383,7 +392,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     } finally {
       setLoading(false);
     }
-  }, [getDateParams, canViewFinance, canViewKpi, canViewVendors, canViewExpenseCharts, isShortPreset]);
+  }, [getDateParams, canViewFinanceReports, canViewStatistics, canViewKpi, canViewVendors, canViewExpenseCharts, isShortPreset]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -445,10 +454,10 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       </div>
 
       {/* ── Growth Metrics + Finance Stats ── */}
-      {canViewFinance && (
+      {(canViewFinanceReports || canViewStatistics) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Month-over-month growth cards */}
-          {growth && <>
+          {canViewStatistics && growth && <>
             <GrowthCard label="Bu oy daromad" value={growth.revenue.current} previous={growth.revenue.previous}
               growth={growth.revenue.growth} icon={<DollarSign size={18} />} format={fmtFull} />
             <GrowthCard label="Yangi mijozlar" value={growth.newCustomers.current} previous={growth.newCustomers.previous}
@@ -458,7 +467,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </>}
 
           {/* Jami Chiqim + Sof Foyda from dashboard */}
-          {dashStats && (
+          {canViewFinanceReports && dashStats && (
             <>
               <div className="bg-white rounded-2xl border border-rose-100 p-5 shadow-sm flex flex-col gap-3">
                 <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
@@ -471,7 +480,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               </div>
             </>
           )}
-          {dashStats && !growth && (
+          {canViewFinanceReports && dashStats && !growth && (
             <div className="bg-slate-900 rounded-2xl p-5 shadow-lg flex flex-col gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
                 <Wallet size={18} />
@@ -486,7 +495,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Sof Foyda card (when growth is shown, show separately) ── */}
-      {canViewFinance && growth && dashStats && (
+      {canViewFinanceReports && growth && dashStats && (
         <div className="bg-slate-900 rounded-2xl p-5 shadow-lg flex items-center justify-between">
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Sof Foyda (Davr)</p>
@@ -499,7 +508,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Moliyaviy Dinamika LineChart ── */}
-      {canViewFinance && dynamics.length > 0 && (
+      {canViewFinanceReports && dynamics.length > 0 && (
         <Section title="Moliyaviy Dinamika" sub={dynamicsType === 'daily' ? 'Kunlik kirim va chiqim' : 'Oylik kirim / chiqim / hamkor xarajati'} icon={<Activity size={16} className="text-orange-500" />} span2>
           <div className="p-4" style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={1} minHeight={1}>
@@ -522,7 +531,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Kirim / Chiqim turlari ── */}
-      {canViewFinance && (paymentStats.kirim.length > 0 || paymentStats.chiqim.length > 0) && (
+      {canViewFinanceReports && (paymentStats.kirim.length > 0 || paymentStats.chiqim.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <Section title="Kirim Turlari" sub="To'lov turlari bo'yicha" icon={<TrendingUp size={16} className="text-emerald-500" />}>
             <PieWithLegend data={paymentStats.kirim} colors={['#10b981', '#3b82f6', '#FF6B00', '#6366f1', '#14b8a6', '#f59e0b']} />
@@ -534,7 +543,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Chiqim Tahlili ── */}
-      {canViewFinance && canViewExpenseCharts && expenseBreakdown.length > 0 && (
+      {canViewFinanceReports && canViewExpenseCharts && expenseBreakdown.length > 0 && (
         <Section title="Chiqim Tahlili" sub="Kategoriyalar bo'yicha xarajatlar taqsimoti" icon={<TrendingDown size={16} className="text-rose-500" />} span2>
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <div style={{ height: 220 }}>
@@ -570,10 +579,10 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Xizmat Daromadi + Hamkor Samaradorligi ── */}
-      {(canViewFinance || canViewVendors) && (
+      {(canViewFinanceReports || canViewVendors) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          {canViewFinance && pieData.length > 0 && (
+          {canViewFinanceReports && pieData.length > 0 && (
             <Section title="Xizmat Daromadi" sub="Xizmat turi bo'yicha taqsimot" icon={<ShoppingBag size={16} className="text-orange-500" />}>
               <PieWithLegend data={pieData} colors={PIE_COLORS} />
             </Section>
@@ -616,7 +625,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Xizmat Hajmi — select + stat cards ── */}
-      {canViewFinance && services.length > 0 && (
+      {canViewFinanceReports && services.length > 0 && (
         <ServiceStats services={services} />
       )}
 
@@ -671,7 +680,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </Section>
       )}
 
-      {!canViewFinance && !canViewKpi && !canViewVendors && (
+      {!canViewFinanceReports && !canViewStatistics && !canViewKpi && !canViewVendors && (
         <div className="text-center py-20 text-slate-400">
           <BarChart3 size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-black text-sm uppercase tracking-widest">Ruxsat yo'q</p>

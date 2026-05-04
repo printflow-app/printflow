@@ -41,7 +41,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         servicesApi.findAll(),
         employeesApi.findAll(),
       ]);
-      setRoles(roleRes.data || []);
+      setRoles((roleRes.data || []).filter((r: any) => r.name?.toLowerCase() !== 'admin'));
       setPaymentTypes(ptRes.data || []);
       setExpenseTypes(etRes.data || []);
       setKanbanColumns(kcRes.data || []);
@@ -298,11 +298,20 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       }
     },
     {
-      title: 'Statistika & Hisobotlar Sahifasi',
+      title: 'Statistika Sahifasi',
       color: 'sky',
       permissions: {
         canViewKpi: "Xodim samaradorligi (KPI) ni ko'rish",
+        canViewStatistics: "O'sish ko'rsatkichlari va umumiy statistikani ko'rish",
+      }
+    },
+    {
+      title: 'Hisobotlar Sahifasi',
+      color: 'orange',
+      permissions: {
+        canViewFinanceReports: "Moliyaviy hisobotlar va dinamikani ko'rish",
         canViewExpenseCharts: "Chiqim tahlil grafiklarini ko'rish",
+        canViewServiceReports: "Xizmatlar tahlili va reytingini ko'rish",
       }
     },
     {
@@ -340,7 +349,6 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       color: 'rose',
       permissions: {
         canManageAdmins: "Adminlar va rahbarlarni boshqarish",
-        canManageRoles: "Lavozimlar va ruxsatlarni boshqarish",
       }
     },
     {
@@ -372,14 +380,23 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       color: 'slate',
       permissions: {
         canViewServices: "Xizmatlar katalogini ko'rish",
-        canManageServices: "Katalogni qo'shish va tahrirlash",
+        canAddService: "Yangi xizmat qo'shish",
+        canEditService: "Xizmatni tahrirlash",
+        canDeleteService: "Xizmatni o'chirish",
+        canManageOptions: "Opsiyalar va material sarfini boshqarish",
       }
     },
     {
-      title: 'Tizim Sozlamalari & Obuna Sahifasi',
+      title: 'Tizim Sozlamalari Sahifasi',
       color: 'gray',
       permissions: {
         canViewSettings: "Tizim sozlamalariga kirish",
+        canViewRoles: "Lavozim va ruxsatlarni ko'rish",
+        canManageRoles: "Lavozim va ruxsatlarni o'zgartirish",
+        canManagePaymentTypes: "To'lov turlarini boshqarish",
+        canManageExpenseTypes: "Xarajat turlarini boshqarish",
+        canManageKanbanColumns: "Kanban bosqichlarini boshqarish",
+        canManageGeneralSettings: "Umumiy sozlamalarni (Zakolat va h.k.) o'zgartirish",
         canManageNotifications: "Telegram bot bildirishnomalarini sozlash",
         canManageBilling: "Obuna va to'lovlarni boshqarish",
       }
@@ -402,7 +419,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
       
       {/* Roles Section */}
-      {(isAdmin || p.canManageRoles) && (
+      {(isAdmin || p.canViewRoles || p.canManageRoles) && (
         <section className="space-y-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
             <div>
@@ -411,9 +428,11 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               </h3>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Sahifalar va funksiyalarga dostupni sozlash</p>
             </div>
-            <button className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2" onClick={() => setIsRoleModalOpen(true)}>
-              <Plus size={16} strokeWidth={3} /> Yangi Lavozim
-            </button>
+            {(isAdmin || p.canManageRoles) && (
+              <button className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2" onClick={() => setIsRoleModalOpen(true)}>
+                <Plus size={16} strokeWidth={3} /> Yangi Lavozim
+              </button>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -453,12 +472,16 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEditRole(role)} className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-orange-500 hover:text-white hover:shadow-md transition-all active:scale-90">
-                            <Edit3 size={14} />
-                          </button>
-                          <button onClick={() => handleDeleteRole(role.id)} className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white hover:shadow-md transition-all active:scale-90">
-                            <Trash2 size={14} />
-                          </button>
+                          {(isAdmin || p.canManageRoles) && (
+                            <>
+                              <button onClick={() => startEditRole(role)} className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-orange-500 hover:text-white hover:shadow-md transition-all active:scale-90">
+                                <Edit3 size={14} />
+                              </button>
+                              <button onClick={() => handleDeleteRole(role.id)} className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white hover:shadow-md transition-all active:scale-90">
+                                <Trash2 size={14} />
+                              </button>
+                            </>
+                          )}
                           <button onClick={() => setExpandedRoleId(isExpanded ? null : role.id)} className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${isExpanded ? 'bg-orange-600 text-white shadow-md shadow-orange-500/30' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
                             {isExpanded ? <ChevronUp size={16} strokeWidth={3} /> : <ChevronDown size={16} strokeWidth={3} />}
                           </button>
@@ -595,7 +618,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* Expense Types Section */}
-      {(isAdmin || p.canAddExpense) && (
+      {(isAdmin || p.canManageExpenseTypes) && (
         <section className="space-y-4">
            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
              <div>
@@ -664,7 +687,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* Kanban Columns Section (Editing Titles) */}
-      {(isAdmin || p.canManageColumns) && (
+      {(isAdmin || p.canManageKanbanColumns) && (
         <section className="space-y-6">
            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
              <div>
@@ -726,7 +749,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* General Settings Section */}
-      {isAdmin && (
+      {(isAdmin || p.canManageGeneralSettings) && (
         <section className="space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
             <div>
@@ -865,46 +888,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </section>
       )}
 
-      {/* Client Logos Section */}
-      {isAdmin && (
-        <section className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-              <Upload className="text-orange-400" size={28} /> Mijozlar Logolari
-            </h3>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Landing page'da "Bizga ishonch bildirganlar" qismida ko'rsatiladi</p>
-          </div>
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm">
-            <label className="block w-full border-2 border-dashed border-orange-200 rounded-2xl p-8 text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all group mb-6">
-              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={savingLogos} />
-              <Upload size={32} className="mx-auto mb-3 text-orange-300 group-hover:text-orange-500 transition-colors" />
-              <p className="text-sm font-black text-slate-400 group-hover:text-slate-600">Logo yuklash uchun bosing</p>
-              <p className="text-xs font-bold text-slate-300 mt-1">PNG, JPG, SVG • Maks 500KB</p>
-            </label>
-            {clientLogos.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {clientLogos.map((logo, i) => (
-                  <div key={i} className="relative group bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-center h-24">
-                    <img src={logo} alt={`Logo ${i + 1}`} className="max-w-full max-h-full object-contain" />
-                    <button
-                      onClick={() => handleLogoDelete(i)}
-                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-sm hover:bg-red-600"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-sm font-bold text-slate-300 py-8">Hali logolar yo'q. Yuqoridagi maydonga bosib qo'shing.</p>
-            )}
-            {savingLogos && <p className="text-center text-xs font-black text-orange-500 mt-4 animate-pulse">SAQLANMOQDA...</p>}
-          </div>
-        </section>
-      )}
-
       {/* Services Catalog Section */}
-      {(isAdmin || p.canViewServices || p.canManageServices) && (
+      {(isAdmin || p.canViewServices || p.canAddService || p.canEditService || p.canDeleteService) && (
         <ServicesCatalogSection services={services} onRefresh={fetchData} showStatus={showStatus} currentUser={currentUser} />
       )}
 
@@ -986,7 +971,10 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void; showStatus: (type: 'success' | 'error', text: string) => void; currentUser: any }> = ({ services, onRefresh, showStatus, currentUser }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
-  const canManage = isAdmin || p.canManageServices;
+  const canAdd = isAdmin || p.canAddService;
+  const canEdit = isAdmin || p.canEditService;
+  const canDelete = isAdmin || p.canDeleteService;
+  const canManageOptions = isAdmin || p.canManageOptions;
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isOptionOpen, setIsOptionOpen] = useState(false);
@@ -1131,7 +1119,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           </h3>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Pricing Engine — xizmat va opsiyalar narxlari</p>
         </div>
-        {canManage && (
+        {canAdd && (
           <button
             className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2"
             onClick={() => setIsAddOpen(true)}
@@ -1193,12 +1181,14 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                     </>
                   ) : (
                     <>
-                      {canManage && (
-                        <>
-                          <button onClick={() => { setSelectedService(svc); setNewOptionForm(f => ({ ...f, percentageMarkup: '0' })); setIsOptionOpen(true); }} className="h-9 px-4 text-xs font-black text-violet-600 bg-violet-50 border border-violet-100 rounded-xl hover:bg-violet-100 transition-all flex items-center gap-1.5"><Plus size={13}/> Optsiya</button>
-                          <button onClick={() => { setEditSvcId(svc.id); setEditSvcForm({ name: svc.name, basePrice: String(svc.basePrice), unit: svc.unit }); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-all"><Edit3 size={15}/></button>
-                          <button onClick={() => handleDeleteService(svc.id)} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={15}/></button>
-                        </>
+                      {canManageOptions && (
+                        <button onClick={() => { setSelectedService(svc); setNewOptionForm(f => ({ ...f, percentageMarkup: '0' })); setIsOptionOpen(true); }} className="h-9 px-4 text-xs font-black text-violet-600 bg-violet-50 border border-violet-100 rounded-xl hover:bg-violet-100 transition-all flex items-center gap-1.5"><Plus size={13}/> Optsiya</button>
+                      )}
+                      {canEdit && (
+                        <button onClick={() => { setEditSvcId(svc.id); setEditSvcForm({ name: svc.name, basePrice: String(svc.basePrice), unit: svc.unit }); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-all"><Edit3 size={15}/></button>
+                      )}
+                      {canDelete && (
+                        <button onClick={() => handleDeleteService(svc.id)} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={15}/></button>
                       )}
                       <button onClick={() => setExpandedId(isExpanded ? null : svc.id)} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${isExpanded ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
                         {isExpanded ? <ChevronUp size={16} strokeWidth={3}/> : <ChevronDown size={16} strokeWidth={3}/>}
@@ -1229,7 +1219,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md border ${Number(opt.percentageMarkup) >= 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
                               {opt.percentageMarkup > 0 ? '+' : ''}{opt.percentageMarkup}% ({Number(opt.priceAdd).toLocaleString()} UZS)
                             </span>
-                            {canManage && (
+                            {canManageOptions && (
                               <button onClick={() => handleDeleteOption(opt.id)} className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md bg-rose-100 text-rose-500 flex items-center justify-center transition-all">
                                 <Trash2 size={10}/>
                               </button>
@@ -1246,7 +1236,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                        <h5 className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] flex items-center gap-2">
                           <Package size={12}/> Xomashyo Sarfi (BOM)
                        </h5>
-                       {canManage && (
+                       {canManageOptions && (
                          <button onClick={() => { setSelectedService(svc); setIsBOMOpen(true); }} className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-all flex items-center gap-1">
                             <Plus size={12}/> BIRIKTIRISH
                          </button>
@@ -1267,7 +1257,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Sarfi: <span className="text-emerald-600 font-black">{sm.normPerUnit} {sm.material?.unit}</span> / {svc.unit}</p>
                                 </div>
                              </div>
-                             {canManage && (
+                             {canManageOptions && (
                                <button onClick={() => handleRemoveMaterial(sm.materialId)} className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg bg-rose-100 text-rose-500 flex items-center justify-center transition-all">
                                   <Trash2 size={12}/>
                                </button>

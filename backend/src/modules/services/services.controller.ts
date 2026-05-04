@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ServicesService } from './services.service';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 @Controller('services')
 export class ServicesController {
   constructor(private servicesService: ServicesService) {}
 
   @Get()
+  @RequirePermissions('canViewServices')
   findAll() {
     return this.servicesService.findAll();
   }
@@ -16,43 +18,51 @@ export class ServicesController {
   }
 
   @Post()
+  @RequirePermissions('canAddService')
   create(@Body() data: any) {
     return this.servicesService.create(data);
   }
 
   @Put(':id')
+  @RequirePermissions('canEditService')
   update(@Param('id') id: string, @Body() data: any) {
     return this.servicesService.update(id, data);
   }
 
   @Delete(':id')
+  @RequirePermissions('canDeleteService')
   remove(@Param('id') id: string) {
     return this.servicesService.remove(id);
   }
 
   // Opsiyalar
   @Post(':id/options')
+  @RequirePermissions('canManageOptions')
   addOption(@Param('id') serviceId: string, @Body() data: any) {
     return this.servicesService.addOption(serviceId, data);
   }
 
   @Put('options/:optionId')
+  @RequirePermissions('canManageOptions')
   updateOption(@Param('optionId') optionId: string, @Body() data: any) {
     return this.servicesService.updateOption(optionId, data);
   }
 
   @Delete('options/:optionId')
+  @RequirePermissions('canManageOptions')
   removeOption(@Param('optionId') optionId: string) {
     return this.servicesService.removeOption(optionId);
   }
 
   // BOM
   @Post(':id/materials')
+  @RequirePermissions('canManageOptions')
   addMaterial(@Param('id') serviceId: string, @Body() data: any) {
     return this.servicesService.addMaterial(serviceId, data);
   }
 
   @Delete(':id/materials/:materialId')
+  @RequirePermissions('canManageOptions')
   removeMaterial(
     @Param('id') serviceId: string,
     @Param('materialId') materialId: string,

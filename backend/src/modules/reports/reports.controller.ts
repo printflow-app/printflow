@@ -7,7 +7,7 @@ export class ReportsController {
   constructor(private reports: ReportsService) {}
 
   @Get('services-performance')
-  @RequirePermissions('canViewFinance')
+  @RequirePermissions('canViewServiceReports')
   servicesPerformance(
     @Query('start') start?: string,
     @Query('end') end?: string,
@@ -35,13 +35,13 @@ export class ReportsController {
   }
 
   @Get('growth-metrics')
-  @RequirePermissions('canViewFinance')
+  @RequirePermissions('canViewStatistics')
   growthMetrics(@Query('branchId') branchId?: string) {
     return this.reports.getGrowthMetrics(branchId);
   }
 
   @Get('monthly-dynamics')
-  @RequirePermissions('canViewFinance')
+  @RequirePermissions('canViewFinanceReports')
   monthlyDynamics(
     @Query('months') months?: string,
     @Query('branchId') branchId?: string,

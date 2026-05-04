@@ -61,11 +61,14 @@ export class AuthService {
             canManagePaymentTypes: true, canViewTasks: true, canCreateTask: true, canEditTask: true,
             canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
             canManageCustomers: true, canViewInventory: true, canManageInventory: true,
-            canViewAttendance: true, canManageAttendance: true, canViewServices: true, canManageServices: true,
-            canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true,
+            canViewAttendance: true, canManageAttendance: true, canViewServices: true,
+            canAddService: true, canEditService: true, canDeleteService: true, canManageOptions: true,
+            canViewEmployees: true, canManageEmployees: true, canViewRoles: true, canManageRoles: true, canViewSalary: true,
             canManageAdmins: true, canViewKpi: true, canManageBranches: true, canManageNotifications: true,
             canViewExpenseCharts: true, canViewSettings: true, canAssignToOtherBranches: true,
-            canManageBilling: true, canViewVendors: true,
+            canManageBilling: true, canViewVendors: true, canViewStatistics: true,
+            canViewFinanceReports: true, canViewServiceReports: true, canManageExpenseTypes: true,
+            canManageKanbanColumns: true, canManageGeneralSettings: true,
           };
           return admin;
         }
