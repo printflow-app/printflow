@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Book, ChevronRight, FileText, Settings, Users, Box, CreditCard, LayoutTemplate } from 'lucide-react';
+import { Search, Book, ChevronRight, FileText, Settings, Users, CreditCard, LayoutTemplate } from 'lucide-react';
 
 const GUIDES = [
   {

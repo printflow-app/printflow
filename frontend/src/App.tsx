@@ -6,7 +6,6 @@ import Dashboard from './pages/Dashboard';
 import ScanAttendance from './pages/ScanAttendance';
 import Landing from './pages/Landing';
 import Billing from './pages/Billing';
-import Qollanma from './pages/Qollanma';
 import CookieConsent from './components/CookieConsent';
 import { authApi } from './api';
 import logo from './assets/logo.png';
