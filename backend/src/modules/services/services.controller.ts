@@ -18,51 +18,51 @@ export class ServicesController {
   }
 
   @Post()
-  @RequirePermissions('canAddService')
+  @RequirePermissions('canManageServices')
   create(@Body() data: any) {
     return this.servicesService.create(data);
   }
 
   @Put(':id')
-  @RequirePermissions('canEditService')
+  @RequirePermissions('canManageServices')
   update(@Param('id') id: string, @Body() data: any) {
     return this.servicesService.update(id, data);
   }
 
   @Delete(':id')
-  @RequirePermissions('canDeleteService')
+  @RequirePermissions('canManageServices')
   remove(@Param('id') id: string) {
     return this.servicesService.remove(id);
   }
 
   // Opsiyalar
   @Post(':id/options')
-  @RequirePermissions('canManageOptions')
+  @RequirePermissions('canManageServices')
   addOption(@Param('id') serviceId: string, @Body() data: any) {
     return this.servicesService.addOption(serviceId, data);
   }
 
   @Put('options/:optionId')
-  @RequirePermissions('canManageOptions')
+  @RequirePermissions('canManageServices')
   updateOption(@Param('optionId') optionId: string, @Body() data: any) {
     return this.servicesService.updateOption(optionId, data);
   }
 
   @Delete('options/:optionId')
-  @RequirePermissions('canManageOptions')
+  @RequirePermissions('canManageServices')
   removeOption(@Param('optionId') optionId: string) {
     return this.servicesService.removeOption(optionId);
   }
 
   // BOM
   @Post(':id/materials')
-  @RequirePermissions('canManageOptions')
+  @RequirePermissions('canManageServices')
   addMaterial(@Param('id') serviceId: string, @Body() data: any) {
     return this.servicesService.addMaterial(serviceId, data);
   }
 
   @Delete(':id/materials/:materialId')
-  @RequirePermissions('canManageOptions')
+  @RequirePermissions('canManageServices')
   removeMaterial(
     @Param('id') serviceId: string,
     @Param('materialId') materialId: string,

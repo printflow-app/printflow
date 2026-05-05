@@ -341,10 +341,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       color: 'slate',
       permissions: {
         canViewServices: "Xizmatlar katalogini ko'rish",
-        canAddService: "Yangi xizmat qo'shish",
-        canEditService: "Xizmatni tahrirlash",
-        canDeleteService: "Xizmatni o'chirish",
-        canManageOptions: "Opsiyalar va material sarfini boshqarish",
+        canManageServices: "Xizmatlarni va opsiyalarni boshqarish",
       }
     },
     {
@@ -932,10 +929,10 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void; showStatus: (type: 'success' | 'error', text: string) => void; currentUser: any }> = ({ services, onRefresh, showStatus, currentUser }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
-  const canAdd = isAdmin || p.canAddService;
-  const canEdit = isAdmin || p.canEditService;
-  const canDelete = isAdmin || p.canDeleteService;
-  const canManageOptions = isAdmin || p.canManageOptions;
+  const canAdd = isAdmin || p.canManageServices;
+  const canEdit = isAdmin || p.canManageServices;
+  const canDelete = isAdmin || p.canManageServices;
+  const canManageOptions = isAdmin || p.canManageServices;
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isOptionOpen, setIsOptionOpen] = useState(false);
@@ -991,16 +988,20 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
     e.preventDefault();
     if (!selectedService) return;
     try {
-      await servicesApi.addOption(selectedService.id, { 
-        name: newOptionForm.name, 
-        value: newOptionForm.value, 
-        percentageMarkup: Number(newOptionForm.percentageMarkup) 
+      await servicesApi.addOption(selectedService.id, {
+        name: newOptionForm.name,
+        value: newOptionForm.value,
+        percentageMarkup: Number(newOptionForm.percentageMarkup)
       });
       showStatus('success', 'Optsiya qo\'shildi!');
       setIsOptionOpen(false);
       setNewOptionForm({ name: '', value: '', percentageMarkup: '' });
       onRefresh();
-    } catch { showStatus('error', 'Optsiya qo\'shishda xatolik!'); }
+    } catch (err: any) {
+      console.error('addOption failed:', err?.response?.status, err?.response?.data, err);
+      const msg = err?.response?.data?.message || err?.message || 'Optsiya qo\'shishda xatolik!';
+      showStatus('error', typeof msg === 'string' ? msg : JSON.stringify(msg));
+    }
   };
 
   const handleDeleteOption = async (id: string) => {

@@ -62,7 +62,7 @@ export class AuthService {
             canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
             canManageCustomers: true, canViewInventory: true, canManageInventory: true,
             canViewAttendance: true, canManageAttendance: true, canViewServices: true,
-            canAddService: true, canEditService: true, canDeleteService: true, canManageOptions: true,
+            canManageServices: true,
             canViewEmployees: true, canManageEmployees: true, canViewRoles: true, canManageRoles: true, canViewSalary: true,
             canManageAdmins: true, canViewKpi: true, canManageBranches: true, canManageNotifications: true,
             canViewExpenseCharts: true, canViewSettings: true, canAssignToOtherBranches: true,
