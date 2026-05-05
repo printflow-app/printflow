@@ -190,14 +190,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   // Drag-n-drop (Simple API based)
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
 
   const onTaskDragStart = (e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', taskId);
-    setDraggedTaskId(taskId);
+    // Add slight delay for the opacity so the drag ghost looks normal
+    setTimeout(() => setDraggedTaskId(taskId), 0);
   };
 
   const onTaskDrop = async (e: React.DragEvent, targetColumnId: string) => {
     e.preventDefault();
+    setDragOverColId(null);
     if (!draggedTaskId) return;
 
     try {
@@ -601,9 +605,19 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             return (
               <div 
                 key={col.id} 
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverColId(col.id); }}
+                onDragLeave={(e) => {
+                  // Only remove highlight if actually leaving the column
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    setDragOverColId(null);
+                  }
+                }}
                 onDrop={(e) => onTaskDrop(e, col.id)}
-                className="min-w-[280px] sm:min-w-[320px] w-[280px] sm:w-[320px] max-h-full flex flex-col bg-slate-100/50 rounded-2xl p-2.5 border border-slate-200/50 shadow-sm flex-shrink-0 snap-center"
+                className={`min-w-[280px] sm:min-w-[320px] w-[280px] sm:w-[320px] max-h-full flex flex-col rounded-2xl p-2.5 border shadow-sm flex-shrink-0 snap-center transition-all duration-300 ${
+                  dragOverColId === col.id 
+                    ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-400/50 scale-[1.02]' 
+                    : 'bg-slate-100/50 border-slate-200/50'
+                }`}
               >
                 {/* Column Header */}
                 <div className="flex justify-between items-center px-3 mb-3 mt-1 group">
@@ -624,8 +638,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       key={task.id} 
                       draggable
                       onDragStart={(e) => onTaskDragStart(e, task.id)}
+                      onDragEnd={() => { setDraggedTaskId(null); setDragOverColId(null); }}
                       onClick={() => openDetailModal(task)}
-                      className={`bg-white p-3.5 rounded-xl shadow-sm border ${getCardUrgencyClass(task)} hover:shadow-md hover:shadow-orange-500/5 transition-all cursor-pointer group animate-fade-in flex flex-col`}
+                      className={`bg-white p-3.5 rounded-xl shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-300 group animate-fade-in flex flex-col ${
+                        draggedTaskId === task.id 
+                          ? 'opacity-40 scale-95 ring-2 ring-orange-500 shadow-xl border-orange-500' 
+                          : `${getCardUrgencyClass(task)} hover:shadow-orange-500/10`
+                      }`}
                     >
                       <h4 className="font-black text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-orange-700 transition-colors uppercase tracking-tight line-clamp-2">
                         {task.orderName && <span className="text-orange-600">{task.orderName} — </span>}

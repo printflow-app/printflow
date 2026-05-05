@@ -15,6 +15,7 @@ import Admins from './Admins';
 import Billing from './Billing';
 import Filiallar from './Filiallar';
 import Hisobotlar from './Hisobotlar';
+import Qollanma from './Qollanma';
 import Modal from '../components/Modal';
 
 interface DashboardProps {
@@ -24,7 +25,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
-  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hisobotlar'>(() => {
+  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hisobotlar' | 'qollanma'>(() => {
     return (localStorage.getItem('pf_active_tab') as any) || 'kassa';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -427,8 +428,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
           </button>
           <button
-            onClick={() => window.open('/qollanma', '_blank')}
-            className="flex w-full items-center justify-center gap-2 px-3 py-2 mb-2 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-600 border border-emerald-100 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 transition-all border-dashed"
+            onClick={() => handleTabChange('qollanma')}
+            className={`flex w-full items-center justify-center gap-2 px-3 py-2 mb-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border-dashed ${
+              activeTab === 'qollanma' 
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 border-emerald-500' 
+                : 'text-emerald-600 border-emerald-100 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20'
+            }`}
           >
             O'rgatuvchi Qo'llanma
           </button>
@@ -523,6 +528,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || p.canViewVendors) && <Filiallar currentUser={currentUser} />}
               {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinance || p.canViewKpi) && <Hisobotlar currentUser={currentUser} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} />}
+              {activeTab === 'qollanma' && <Qollanma />}
               
               {/* Unauthorized message if tab is set but permission removed */}
               {!navItems.find(i => i.id === activeTab)?.show && (

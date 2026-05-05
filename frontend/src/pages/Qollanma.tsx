@@ -171,10 +171,10 @@ export default function Qollanma() {
   }, [activeGuide]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-orange-100 flex flex-col md:flex-row">
+    <div className="h-full bg-white text-slate-900 font-sans selection:bg-orange-100 flex flex-col md:flex-row rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
       
       {/* Sidebar - Navigation */}
-      <aside className="w-full md:w-80 border-r border-slate-100 bg-slate-50/50 flex flex-col h-screen sticky top-0">
+      <aside className="w-full md:w-80 border-r border-slate-100 bg-slate-50/50 flex flex-col h-full sticky top-0">
         <div className="p-6 border-b border-slate-100 bg-white">
           <div className="flex items-center gap-3 text-[#FF6B00] mb-6">
             <div className="bg-[#FF6B00]/10 p-2 rounded-xl">

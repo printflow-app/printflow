@@ -209,9 +209,8 @@ const App: React.FC = () => {
   };
 
   const isScanPage = window.location.pathname.startsWith('/attendance/scan');
-  const isGuidePage = window.location.pathname.startsWith('/qollanma');
 
-  if (loading && !isGuidePage && !isScanPage) {
+  if (loading && !isScanPage) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-slate-900 font-sans">
         <div className="relative mb-8">
@@ -286,9 +285,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {isGuidePage ? (
-        <Qollanma />
-      ) : subscriptionExpired ? (
+      {subscriptionExpired ? (
         <Billing />
       ) : isScanPage ? (
         <ScanAttendance currentUser={currentUser} />
