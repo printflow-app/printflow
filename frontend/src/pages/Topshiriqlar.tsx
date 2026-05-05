@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 interface Task {
   id: string;
@@ -120,6 +121,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [isNewColumnModalOpen, setIsNewColumnModalOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'history' | 'vendors'>('details');
+
+  // Real-time refresh — pause while user has any modal open to avoid clobbering input
+  const isAnyModalOpen =
+    isNewTaskModalOpen || isDetailModalOpen || isMoveTaskModalOpen ||
+    isOverrideModalOpen || isNewColumnModalOpen || isArxivModalOpen ||
+    confirmModal.isOpen;
+  useAutoRefresh(() => fetchData(true), {
+    intervalMs: 12000,
+    paused: isAnyModalOpen,
+  });
 
   useEffect(() => {
     if (activeTab === 'vendors' && selectedTask) {

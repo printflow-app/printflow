@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
@@ -51,6 +52,11 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const [isKirimModalOpen, setIsKirimModalOpen] = useState(false);
   const [isChiqimModalOpen, setIsChiqimModalOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  useAutoRefresh(() => fetchData(true), {
+    intervalMs: 15000,
+    paused: isKirimModalOpen || isChiqimModalOpen,
+  });
 
   // Forms
   const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false });

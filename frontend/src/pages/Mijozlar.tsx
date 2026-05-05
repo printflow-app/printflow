@@ -8,6 +8,7 @@ import { customersApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { toast } from 'react-toastify';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + ' UZS';
@@ -71,6 +72,11 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   };
 
   useEffect(() => { fetchData(); }, [activeBranchId]);
+
+  useAutoRefresh(() => fetchData(true), {
+    intervalMs: 20000,
+    paused: isFormOpen || isContactsOpen || orderHistoryModal.isOpen || confirmModal.isOpen,
+  });
 
   const filteredCustomers = customers.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

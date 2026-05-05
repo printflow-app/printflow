@@ -5,6 +5,12 @@
   "scripts": {
     "postinstall": "cd backend && npm install",
     "build": "cd backend && npm run build",
-    "start": "cd backend && npm run start:prod"
+    "start": "cd backend && npm run start:prod",
+    "dev": "concurrently -n BE,FE -c yellow,cyan \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

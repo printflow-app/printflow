@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 import NumberInput from '../components/NumberInput';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Search, Layers, Calculator, Save } from 'lucide-react';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 interface Material {
   id: string;
@@ -89,6 +90,13 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useAutoRefresh(() => fetchData(selectedMaterial?.id), {
+    intervalMs: 20000,
+    paused:
+      isAddMaterialOpen || isEditMaterialOpen || isStockOpOpen ||
+      isConfirmOpen || isBOMModalOpen || isUnlinkConfirmOpen,
+  });
 
   // Recalculate B.O.M norm
   useEffect(() => {
