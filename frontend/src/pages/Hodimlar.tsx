@@ -29,7 +29,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     fullName: '', phone: '', roleId: '', baseSalary: '', branchId: ''
   });
   const [generatedCredentials, setGeneratedCredentials] = useState<{login: string, password: string} | null>(null);
-  const [showGenPass, setShowGenPass] = useState(false);
+  const [showGenPass, setShowGenPass] = useState(true);
   const [showSelectedPass, setShowSelectedPass] = useState(false);
 
   const fetchData = async (silent = false) => {
@@ -86,7 +86,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const handleCloseModal = () => {
     setIsEmployeeModalOpen(false);
     setGeneratedCredentials(null);
-    setShowGenPass(false);
+    setShowGenPass(true);
   };
 
   const handleDeleteEmployee = (id: string) => {

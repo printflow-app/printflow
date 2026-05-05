@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Markup } from 'telegraf';
 import * as bcrypt from 'bcrypt';
+import { OvertimeService } from '../overtime/overtime.service';
 
 // =============================================
 // TELEGRAM BOT SERVICE — PrintFlow
@@ -87,7 +88,10 @@ function removeKeyboard() {
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private bot: Telegraf;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private overtimeService: OvertimeService,
+  ) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (token && token !== 'your_bot_token_here') {
       this.bot = new Telegraf(token);
@@ -214,14 +218,87 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     // =============================================
+    // KOMANDALAR
+    // =============================================
+
+    // /logout komandasi
+    this.bot.command('logout', async (ctx: any) => {
+      const chatId = ctx.chat.id.toString();
+      if (!ctx.botSession) return ctx.reply(LANGS.uz.noSession);
+      const lang = L(ctx.botSession);
+      return this.performLogout(ctx, chatId, lang);
+    });
+
+    // /update komandasi - Sessiyani yangilash va qotib qolgan qadamlarni tozalash
+    this.bot.command('update', async (ctx: any) => {
+      const chatId = ctx.chat.id.toString();
+      try {
+        let session = await this.prisma.botSession.findUnique({ where: { chatId } });
+        if (!session) {
+           return ctx.reply('Sizda faol sessiya topilmadi. Boshlash uchun /start tugmasini bosing.', removeKeyboard());
+        }
+        
+        // Agar xodim tizimga kirgan bo'lsa, xodim mavjudligini tekshiramiz
+        if (session.employeeId) {
+          const emp = await this.prisma.employee.findUnique({ where: { id: session.employeeId } });
+          if (!emp) {
+            // Agar xodim o'chirilgan bo'lsa, sessiyani tozalaymiz
+            await this.performLogout(ctx, chatId, L(session));
+            return ctx.reply('Sizning profilingiz tizimdan topilmadi yoki o\'chirilgan. Qayta kirish uchun /start bosing.');
+          }
+        }
+
+        // Sessiyani IDLE yoki LANG ga qaytaramiz (qotib qolgan bo'lsa) va yangilangan xabarni beramiz
+        await this.prisma.botSession.update({
+          where: { chatId },
+          data: { step: session.employeeId ? 'IDLE' : 'LANG', loginAttempt: null },
+        });
+
+        const lang = L(session);
+        if (session.employeeId) {
+           return ctx.reply(
+             '✅ *Bot muvaffaqiyatli yangilandi!*\n\nSiz eng so\'nggi versiyadan foydalanyapsiz.',
+             { parse_mode: 'Markdown', ...logoutKeyboard(lang) }
+           );
+        } else {
+           return ctx.reply('✅ Bot yangilandi! Davom etish uchun tilni tanlang.', { parse_mode: 'Markdown', ...langKeyboard() });
+        }
+      } catch (err) {
+        console.error('/update xatosi:', err);
+        return ctx.reply('❌ Yangilashda xatolik yuz berdi. /reset ni sinab ko\'ring.');
+      }
+    });
+
+    // /reset komandasi - Butunlay xotirani tozalash (majburiy)
+    this.bot.command('reset', async (ctx: any) => {
+      const chatId = ctx.chat.id.toString();
+      try {
+        // Avval employee bilan bog'liqlikni uzamiz
+        const session = await this.prisma.botSession.findUnique({ where: { chatId } });
+        if (session?.employeeId) {
+          await this.prisma.employee.update({
+            where: { id: session.employeeId },
+            data: { telegramId: null },
+          }).catch(() => {});
+        }
+        // Sessiyani o'chiramiz
+        await this.prisma.botSession.delete({ where: { chatId } }).catch(() => {});
+        
+        return ctx.reply('🔄 Bot xotirasi butunlay tozalandi va sessiya yopildi.\n\nBoshlash uchun /start bosing.', removeKeyboard());
+      } catch (err) {
+        return ctx.reply('🔄 Bot xotirasi tozalangan. Boshlash uchun /start bosing.', removeKeyboard());
+      }
+    });
+
+    // =============================================
     // MATN XABARLARI — qadamli oqim
     // =============================================
 
-    this.bot.on('text', async (ctx: any) => {
+    this.bot.on('text', async (ctx: any, next) => {
       const chatId = ctx.chat.id.toString();
       const text   = ctx.message.text.trim();
 
-      if (text.startsWith('/')) return;
+      if (text.startsWith('/')) return next();
 
       if (!ctx.botSession) {
         return ctx.reply(LANGS.uz.noSession);
@@ -305,6 +382,48 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         return ctx.reply(lang.wrongCredentials, { parse_mode: 'Markdown' });
       }
 
+      // OVERTIME_AWAITING — xodim ortiqcha ish izohini yuboryapti
+      if (step === 'OVERTIME_AWAITING') {
+        const session = ctx.botSession;
+        if (!session.employeeId || !session.tenantId || !session.overtimePromptDate) {
+          // Session noaniq holatda — IDLE'ga qaytaramiz
+          await this.prisma.botSession.update({
+            where: { chatId },
+            data: { step: 'IDLE', overtimePromptDate: null, overtimePromptedAt: null } as any,
+          });
+          return ctx.reply(lang.idle, logoutKeyboard(lang));
+        }
+
+        // Minute hisoblash: prompt yuborilgandan beri o'tgan minutlar emas,
+        // workEnd dan promptedAt vaqtigacha bo'lgan farq.
+        const promptedAt: Date = (session as any).overtimePromptedAt || new Date();
+        const minutes = await this.calculateOvertimeMinutes(session.tenantId, promptedAt);
+
+        try {
+          await this.overtimeService.createFromTelegram({
+            tenantId: session.tenantId,
+            employeeId: session.employeeId,
+            date: session.overtimePromptDate,
+            message: text.slice(0, 1000),
+            minutes,
+          });
+
+          await this.prisma.botSession.update({
+            where: { chatId },
+            data: { step: 'IDLE', overtimePromptDate: null, overtimePromptedAt: null } as any,
+          });
+
+          return ctx.reply(
+            "✅ *Rahmat!* Sizning izohingiz adminga yuborildi.\n" +
+            "Admin tasdiqlasa, ortiqcha ish vaqti hisoblanadi.",
+            { parse_mode: 'Markdown', ...logoutKeyboard(lang) },
+          );
+        } catch (err: any) {
+          console.error('Overtime saqlashda xato:', err?.message || err);
+          return ctx.reply('❌ Saqlashda xatolik. Iltimos qayta urinib ko\'ring.');
+        }
+      }
+
       // IDLE holatda — logout tugmasi bosilganini tekshirish
       if (step === 'IDLE') {
         if (text === LANGS.uz.btnLogout || text === LANGS.kril.btnLogout) {
@@ -314,13 +433,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    // /logout komandasi
-    this.bot.command('logout', async (ctx: any) => {
-      const chatId = ctx.chat.id.toString();
-      if (!ctx.botSession) return ctx.reply(LANGS.uz.noSession);
-      const lang = L(ctx.botSession);
-      return this.performLogout(ctx, chatId, lang);
-    });
   }
 
   private async performLogout(ctx: any, chatId: string, lang: typeof LANGS.uz) {
@@ -497,6 +609,129 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       }
     }
+  }
+
+  // =============================================
+  // ORTIQCHA ISH (OVERTIME) PROMPT — har 30 daqiqada
+  // workEnd vaqtidan 30 daqiqa o'tgandan so'ng, hali "ishda" bo'lgan xodimlarni
+  // tekshirib (yo checkOut yo'q, yo dam olish kuni qilingan checkIn) — Telegram'da
+  // izoh so'rab xabar yuboramiz. Bir kunda 1 marta yuboriladi.
+  // =============================================
+  @Cron('*/30 * * * *')
+  async handleOvertimePrompt() {
+    const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    for (const t of tenants) {
+      try {
+        const settings = await this.prisma.systemSetting.findMany({
+          where: { tenantId: t.id, key: { in: ['workEnd', 'workDays'] } },
+        });
+        const workEnd = this.parseSetting(settings, 'workEnd', { hour: 17, minute: 0 });
+        const workDays = this.parseSetting(settings, 'workDays', [1, 2, 3, 4, 5, 6]);
+
+        const isWorkDay = workDays.includes(today.getDay());
+
+        // workEnd + 30 daqiqa
+        const workEndDate = new Date(today);
+        workEndDate.setHours(workEnd.hour, workEnd.minute, 0, 0);
+        const promptThreshold = new Date(workEndDate.getTime() + 30 * 60 * 1000);
+
+        if (today < promptThreshold) continue; // Hali vaqti emas
+
+        // Xodimlar ro'yxati: telegramId mavjud bo'lganlar
+        const employees = await this.prisma.employee.findMany({
+          where: { tenantId: t.id, telegramId: { not: null } },
+        });
+
+        for (const emp of employees) {
+          if (!emp.telegramId) continue;
+
+          // Bugun uchun overtime so'rovi allaqachon mavjudmi?
+          const existingReq = await this.prisma.overtimeRequest.findFirst({
+            where: { tenantId: t.id, employeeId: emp.id, date: todayStr },
+          });
+          if (existingReq) continue;
+
+          // Bot session — xodim allaqachon prompt olganmi?
+          const session = await this.prisma.botSession.findFirst({
+            where: { chatId: emp.telegramId },
+          });
+          if (!session || session.employeeId !== emp.id) continue;
+          if ((session as any).overtimePromptDate === todayStr) continue; // Bugun yuborilgan
+
+          // Bugungi attendance recordni tekshiramiz
+          const rec = await this.prisma.attendanceRecord.findFirst({
+            where: { tenantId: t.id, employeeId: emp.id, date: todayStr },
+          });
+
+          // Prompt yuborish sharti:
+          //  • Ish kuni: rec mavjud va checkIn bor lekin checkOut == null (hali ketmagan)
+          //  • Dam olish kuni: rec mavjud (ya'ni dam olish kunida ish qilgan)
+          let shouldPrompt = false;
+          if (isWorkDay) {
+            shouldPrompt = !!(rec && rec.checkIn && !rec.checkOut);
+          } else {
+            shouldPrompt = !!(rec && rec.checkIn);
+          }
+          if (!shouldPrompt) continue;
+
+          const promptMsg =
+            `🕐 *Ortiqcha ish vaqti*\n\n` +
+            `Siz bugun (${todayStr}) ishxonada *${this.formatTime(workEndDate)}* dan keyin ham qoldingiz.\n\n` +
+            `Iltimos, qanday vazifalarni bajarganingizni qisqacha yozing — admin tasdiqlasa, ortiqcha ish vaqtingiz hisoblanadi.`;
+
+          try {
+            await this.bot.telegram.sendMessage(emp.telegramId, promptMsg, { parse_mode: 'Markdown' });
+            await this.prisma.botSession.update({
+              where: { chatId: emp.telegramId },
+              data: {
+                step: 'OVERTIME_AWAITING',
+                overtimePromptDate: todayStr,
+                overtimePromptedAt: new Date(),
+              } as any,
+            });
+          } catch (err: any) {
+            console.warn(`Overtime prompt yuborilmadi (${emp.telegramId}):`, err?.message);
+          }
+        }
+      } catch (err: any) {
+        console.error(`Overtime cron tenant ${t.id} uchun xato:`, err?.message);
+      }
+    }
+  }
+
+  /** workEnd vaqtidan promptedAt vaqtigacha o'tgan minutlar — overtime miqdori */
+  private async calculateOvertimeMinutes(tenantId: string, promptedAt: Date): Promise<number> {
+    const setting = await this.prisma.systemSetting.findFirst({
+      where: { tenantId, key: 'workEnd' },
+    });
+    let workEnd = { hour: 17, minute: 0 };
+    if (setting) {
+      try {
+        const parsed = JSON.parse(setting.value);
+        if (parsed && typeof parsed.hour === 'number') workEnd = parsed;
+      } catch {}
+    }
+    const workEndDate = new Date(promptedAt);
+    workEndDate.setHours(workEnd.hour, workEnd.minute, 0, 0);
+    const diffMs = promptedAt.getTime() - workEndDate.getTime();
+    return Math.max(0, Math.round(diffMs / 60000));
+  }
+
+  private parseSetting(settings: any[], key: string, fallback: any): any {
+    const found = settings.find((s) => s.key === key);
+    if (!found) return fallback;
+    try {
+      return JSON.parse(found.value);
+    } catch {
+      return fallback;
+    }
+  }
+
+  private formatTime(d: Date): string {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
   @Cron('0 9 * * *')

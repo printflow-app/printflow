@@ -17,7 +17,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 // kirim/chiqim turlari, chiqim kategoriyalari, xodim samaradorligi.
 // =============================================
 
-const PIE_COLORS = ['#FF6B00', '#1e293b', '#64748b', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#14b8a6'];
 const EXPENSE_COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#84cc16'];
 
 const UZ_MONTHS_SHORT = ['Yan', 'Feb', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
@@ -256,11 +255,10 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const p = currentUser?.permissions || {};
   const tf = currentUser?.tenantFeatures || {};
 
-  const canViewFinanceReports = isAdmin || p.canViewFinanceReports;
+  const canViewFinance = isAdmin || p.canViewFinance;
   const canViewKpi = isAdmin || p.canViewKpi;
   const canViewVendors = isAdmin || p.canViewVendors;
   const canViewExpenseCharts = isAdmin || p.canViewExpenseCharts;
-  const canViewStatistics = isAdmin || p.canViewStatistics;
 
   const [branches, setBranches] = useState<any[]>([]);
   const [branchId, setBranchId] = useState('');
@@ -317,28 +315,33 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
+    // Reset state to avoid stale data when filter changes
+    setDynamics([]);
+    setPaymentStats({ kirim: [], chiqim: [] });
+    setExpenseBreakdown([]);
     try {
       const params = getDateParams();
 
+      // Skip fetch if custom preset but dates not fully set
+      if (preset === 'custom' && (!params.start || !params.end)) {
+        setLoading(false);
+        return;
+      }
+
       const calls: Promise<any>[] = [];
 
-      if (canViewFinanceReports || canViewStatistics) {
+      if (canViewFinance) {
         // Dashboard stats (for Jami Chiqim + Sof Foyda)
         calls.push(financeApi.getDashboard({ params }).then(r => setDashStats(r.data)).catch(() => {}));
 
         // Growth metrics (month-over-month comparison)
-        if (canViewStatistics) {
-          calls.push(reportsApi.growthMetrics({ branchId: params.branchId }).then(r => setGrowth(r.data)).catch(() => {}));
-        }
+        calls.push(reportsApi.growthMetrics({ branchId: params.branchId }).then(r => setGrowth(r.data)).catch(() => {}));
 
         // Services performance
-        if (canViewFinanceReports) {
-          calls.push(reportsApi.servicesPerformance(params).then(r => setServices(r.data || [])).catch(() => {}));
-        }
+        calls.push(reportsApi.servicesPerformance(params).then(r => setServices(r.data || [])).catch(() => {}));
 
         // Financial dynamics — daily for short periods, monthly for long
-        if (canViewFinanceReports) {
-          if (isShortPreset) {
+        if (isShortPreset) {
           calls.push(
             financeApi.getDinamika({ params }).then(r => {
               const raw: any[] = r.data || [];
@@ -367,13 +370,10 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               setDynamicsType('monthly');
             }).catch(() => {})
           );
-          }
         }
 
         // Payment type stats (kirim/chiqim turlari)
-        if (canViewFinanceReports) {
-          calls.push(financeApi.getStatsByPaymentType({ params }).then(r => setPaymentStats(r.data || { kirim: [], chiqim: [] })).catch(() => {}));
-        }
+        calls.push(financeApi.getStatsByPaymentType({ params }).then(r => setPaymentStats(r.data || { kirim: [], chiqim: [] })).catch(() => {}));
 
         // Expense breakdown (chiqim tahlili)
         if (canViewExpenseCharts) {
@@ -392,15 +392,11 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     } finally {
       setLoading(false);
     }
-  }, [getDateParams, canViewFinanceReports, canViewStatistics, canViewKpi, canViewVendors, canViewExpenseCharts, isShortPreset]);
+  }, [getDateParams, preset, canViewFinance, canViewKpi, canViewVendors, canViewExpenseCharts, isShortPreset, branchId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   if (loading) return <LoadingSpinner fullPage />;
-
-  const pieData = services.filter(s => s.totalRevenue > 0).slice(0, 8).map((s, i) => ({
-    name: s.serviceName, value: s.totalRevenue, color: PIE_COLORS[i % PIE_COLORS.length],
-  }));
 
   return (
     <div className="space-y-5 pb-20">
@@ -454,10 +450,10 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       </div>
 
       {/* ── Growth Metrics + Finance Stats ── */}
-      {(canViewFinanceReports || canViewStatistics) && (
+      {(canViewFinance) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Month-over-month growth cards */}
-          {canViewStatistics && growth && <>
+          {canViewFinance && growth && <>
             <GrowthCard label="Bu oy daromad" value={growth.revenue.current} previous={growth.revenue.previous}
               growth={growth.revenue.growth} icon={<DollarSign size={18} />} format={fmtFull} />
             <GrowthCard label="Yangi mijozlar" value={growth.newCustomers.current} previous={growth.newCustomers.previous}
@@ -467,7 +463,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </>}
 
           {/* Jami Chiqim + Sof Foyda from dashboard */}
-          {canViewFinanceReports && dashStats && (
+          {canViewFinance && dashStats && (
             <>
               <div className="bg-white rounded-2xl border border-rose-100 p-5 shadow-sm flex flex-col gap-3">
                 <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
@@ -480,7 +476,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               </div>
             </>
           )}
-          {canViewFinanceReports && dashStats && !growth && (
+          {canViewFinance && dashStats && !growth && (
             <div className="bg-slate-900 rounded-2xl p-5 shadow-lg flex flex-col gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
                 <Wallet size={18} />
@@ -495,7 +491,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Sof Foyda card (when growth is shown, show separately) ── */}
-      {canViewFinanceReports && growth && dashStats && (
+      {canViewFinance && growth && dashStats && (
         <div className="bg-slate-900 rounded-2xl p-5 shadow-lg flex items-center justify-between">
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Sof Foyda (Davr)</p>
@@ -508,7 +504,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Moliyaviy Dinamika LineChart ── */}
-      {canViewFinanceReports && dynamics.length > 0 && (
+      {canViewFinance && dynamics.length > 0 && (
         <Section title="Moliyaviy Dinamika" sub={dynamicsType === 'daily' ? 'Kunlik kirim va chiqim' : 'Oylik kirim / chiqim / hamkor xarajati'} icon={<Activity size={16} className="text-orange-500" />} span2>
           <div className="p-4" style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={1} minHeight={1}>
@@ -531,7 +527,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Kirim / Chiqim turlari ── */}
-      {canViewFinanceReports && (paymentStats.kirim.length > 0 || paymentStats.chiqim.length > 0) && (
+      {canViewFinance && (paymentStats.kirim.length > 0 || paymentStats.chiqim.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <Section title="Kirim Turlari" sub="To'lov turlari bo'yicha" icon={<TrendingUp size={16} className="text-emerald-500" />}>
             <PieWithLegend data={paymentStats.kirim} colors={['#10b981', '#3b82f6', '#FF6B00', '#6366f1', '#14b8a6', '#f59e0b']} />
@@ -543,7 +539,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Chiqim Tahlili ── */}
-      {canViewFinanceReports && canViewExpenseCharts && expenseBreakdown.length > 0 && (
+      {canViewFinance && canViewExpenseCharts && expenseBreakdown.length > 0 && (
         <Section title="Chiqim Tahlili" sub="Kategoriyalar bo'yicha xarajatlar taqsimoti" icon={<TrendingDown size={16} className="text-rose-500" />} span2>
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <div style={{ height: 220 }}>
@@ -578,54 +574,43 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </Section>
       )}
 
-      {/* ── Xizmat Daromadi + Hamkor Samaradorligi ── */}
-      {(canViewFinanceReports || canViewVendors) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-          {canViewFinanceReports && pieData.length > 0 && (
-            <Section title="Xizmat Daromadi" sub="Xizmat turi bo'yicha taqsimot" icon={<ShoppingBag size={16} className="text-orange-500" />}>
-              <PieWithLegend data={pieData} colors={PIE_COLORS} />
-            </Section>
-          )}
-
-          {canViewVendors && vendors.length > 0 && (
-            <Section title="Hamkor Samaradorligi" sub="Subpudrat xarajati va foyda marjasi" icon={<Handshake size={16} className="text-orange-500" />}>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="text-left p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Hamkor</th>
-                      <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Xarajat</th>
-                      <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Daromad</th>
-                      <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Marja</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vendors.slice(0, 8).map((v: any) => (
-                      <tr key={v.vendorId} className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
-                        <td className="p-3">
-                          <div className="font-black text-slate-800">{v.vendorName}</div>
-                          {v.specialty && <div className="text-[10px] text-slate-400 font-bold">{v.specialty}</div>}
-                        </td>
-                        <td className="p-3 text-right font-black text-rose-500 tabular-nums">{fmt(v.totalCost)}</td>
-                        <td className="p-3 text-right font-black text-emerald-600 tabular-nums">{fmt(v.linkedRevenue)}</td>
-                        <td className="p-3 text-right">
-                          <span className={`inline-block px-2 py-0.5 rounded-md font-black text-[10px] ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'}`}>
-                            {v.marginPct >= 0 ? '+' : ''}{v.marginPct}%
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Section>
-          )}
-        </div>
+      {/* ── Hamkor Samaradorligi ── */}
+      {canViewVendors && vendors.length > 0 && (
+        <Section title="Hamkor Samaradorligi" sub="Subpudrat xarajati va foyda marjasi" icon={<Handshake size={16} className="text-orange-500" />}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="text-left p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Hamkor</th>
+                  <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Xarajat</th>
+                  <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Daromad</th>
+                  <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Marja</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vendors.slice(0, 8).map((v: any) => (
+                  <tr key={v.vendorId} className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
+                    <td className="p-3">
+                      <div className="font-black text-slate-800">{v.vendorName}</div>
+                      {v.specialty && <div className="text-[10px] text-slate-400 font-bold">{v.specialty}</div>}
+                    </td>
+                    <td className="p-3 text-right font-black text-rose-500 tabular-nums">{fmt(v.totalCost)}</td>
+                    <td className="p-3 text-right font-black text-emerald-600 tabular-nums">{fmt(v.linkedRevenue)}</td>
+                    <td className="p-3 text-right">
+                      <span className={`inline-block px-2 py-0.5 rounded-md font-black text-[10px] ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'}`}>
+                        {v.marginPct >= 0 ? '+' : ''}{v.marginPct}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Section>
       )}
 
       {/* ── Xizmat Hajmi — select + stat cards ── */}
-      {canViewFinanceReports && services.length > 0 && (
+      {canViewFinance && services.length > 0 && (
         <ServiceStats services={services} />
       )}
 
@@ -680,7 +665,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </Section>
       )}
 
-      {!canViewFinanceReports && !canViewStatistics && !canViewKpi && !canViewVendors && (
+      {!canViewFinance && !canViewKpi && !canViewVendors && (
         <div className="text-center py-20 text-slate-400">
           <BarChart3 size={40} className="mx-auto mb-3 opacity-30" />
           <p className="font-black text-sm uppercase tracking-widest">Ruxsat yo'q</p>

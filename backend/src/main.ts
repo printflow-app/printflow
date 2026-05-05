@@ -15,6 +15,12 @@ import * as cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Trust the first proxy in front of the app (Railway / Vercel edge).
+  // Without this, Express's req.ip returns the proxy address instead of the
+  // real client IP — which breaks office Wi-Fi attendance gating.
+  const httpAdapter = app.getHttpAdapter().getInstance();
+  if (typeof httpAdapter.set === 'function') httpAdapter.set('trust proxy', true);
+
   // API prefix for all routes
   app.setGlobalPrefix('api');
 

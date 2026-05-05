@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell } from 'lucide-react';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell, Wifi, QrCode } from 'lucide-react';
 import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -19,6 +19,11 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
   const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
   const [savingPrepayment, setSavingPrepayment] = useState(false);
+  // Davomat — Ofis Wi-Fi IP allowlist
+  const [officeIps, setOfficeIps] = useState<string[]>([]);
+  const [newIpEntry, setNewIpEntry] = useState('');
+  const [savingOfficeIps, setSavingOfficeIps] = useState(false);
+  const [detectedIp, setDetectedIp] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -64,6 +69,15 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         const pctRes = await settingsApi.get('MIN_PREPAYMENT_PERCENTAGE');
         if (pctRes.data?.value) setMinPrepaymentPct(Number(pctRes.data.value));
       } catch { /* default 70 */ }
+
+      try {
+        const ipRes = await settingsApi.get('OFFICE_NETWORK_IPS');
+        if (Array.isArray(ipRes.data)) {
+          setOfficeIps(ipRes.data.filter((s: any) => typeof s === 'string'));
+        } else if (typeof ipRes.data === 'string') {
+          setOfficeIps([ipRes.data]);
+        }
+      } catch { /* allowlist hali sozlanmagan */ }
     } catch (err) {
       console.error("Sozlamalarni yuklashda xato:", err);
     } finally {
@@ -80,6 +94,58 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       showStatus('error', 'Saqlashda xatolik!');
     } finally {
       setSavingPrepayment(false);
+    }
+  };
+
+  // Office IP allowlist save — settings ga JSON array sifatida yoziladi
+  const saveOfficeIps = async (next?: string[]) => {
+    const list = next ?? officeIps;
+    setSavingOfficeIps(true);
+    try {
+      // settingsApi.set body sifatida butun obyektni yuboradi —
+      // backend value ustunida JSON.stringify qiladi
+      await settingsApi.set('OFFICE_NETWORK_IPS', list as any);
+      showStatus('success', 'Ofis Wi-Fi tarmoq sozlamasi saqlandi');
+    } catch {
+      showStatus('error', 'Saqlashda xatolik');
+    } finally {
+      setSavingOfficeIps(false);
+    }
+  };
+
+  const handleAddIp = () => {
+    const trimmed = newIpEntry.trim();
+    if (!trimmed) return;
+    // Yumshoq IPv4 yoki CIDR validatsiyasi
+    const ipRe = /^\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?$/;
+    if (!ipRe.test(trimmed)) {
+      showStatus('error', 'IP yoki CIDR formati noto\'g\'ri (masalan: 192.168.1.5 yoki 192.168.1.0/24)');
+      return;
+    }
+    if (officeIps.includes(trimmed)) {
+      setNewIpEntry('');
+      return;
+    }
+    const next = [...officeIps, trimmed];
+    setOfficeIps(next);
+    setNewIpEntry('');
+    saveOfficeIps(next);
+  };
+
+  const handleRemoveIp = (ip: string) => {
+    const next = officeIps.filter(x => x !== ip);
+    setOfficeIps(next);
+    saveOfficeIps(next);
+  };
+
+  const detectMyIp = async () => {
+    try {
+      // Ochiq IP servisidan foydalanamiz (clientning chiqish IP'sini olish)
+      const res = await fetch('https://api.ipify.org?format=json');
+      const json = await res.json();
+      setDetectedIp(json.ip || null);
+    } catch {
+      showStatus('error', 'IP aniqlanmadi. Internet ulanishini tekshiring.');
     }
   };
 
@@ -746,6 +812,112 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </section>
       )}
 
+      {/* Davomat — Ofis Wi-Fi sozlamasi */}
+      {(isAdmin || p.canManageAttendance) && (
+        <section className="space-y-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                <Wifi className="text-emerald-500" size={28} /> Davomat — Ofis Wi-Fi
+              </h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                Faqat ushbu IP/CIDR ro'yxatidan QR skanerlash mumkin bo'ladi
+              </p>
+            </div>
+
+            {/* Detect IP helper */}
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
+              <QrCode className="text-emerald-600 mt-0.5" size={18} />
+              <div className="flex-1 space-y-2">
+                <p className="text-[11px] font-black text-emerald-700">
+                  Ofisdagi Wi-Fi'ga ulangan holatda "IP'ni aniqlash" tugmasini bosing — bu sizning ofisingiz tashqi IP'si.
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={detectMyIp}
+                    className="h-9 px-3 bg-white border border-emerald-200 hover:border-emerald-400 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
+                  >
+                    <Wifi size={12} /> IP'ni aniqlash
+                  </button>
+                  {detectedIp && (
+                    <>
+                      <span className="font-mono text-xs font-black text-emerald-800 bg-white px-3 py-1.5 rounded-lg border border-emerald-200">
+                        {detectedIp}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!officeIps.includes(detectedIp)) {
+                            const next = [...officeIps, detectedIp];
+                            setOfficeIps(next);
+                            saveOfficeIps(next);
+                          }
+                        }}
+                        className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
+                      >
+                        <Plus size={12} /> Ro'yxatga qo'shish
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Add manually */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newIpEntry}
+                onChange={e => setNewIpEntry(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddIp(); } }}
+                placeholder="192.168.1.5  yoki  192.168.1.0/24"
+                className="input-minimal font-mono text-sm flex-1"
+              />
+              <button
+                type="button"
+                onClick={handleAddIp}
+                disabled={savingOfficeIps}
+                className="h-12 px-5 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-60"
+              >
+                <Plus size={14} /> Qo'shish
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="space-y-2">
+              {officeIps.length === 0 ? (
+                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
+                  <p className="text-[11px] font-black text-rose-700 mb-1">⚠️ Ro'yxat bo'sh</p>
+                  <p className="text-[10px] font-bold text-rose-600">
+                    Hozir har qanday tarmoqdan QR skanerlash mumkin. Xavfsizlik uchun ofisingiz IP'sini qo'shing.
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100 bg-slate-50 rounded-2xl border border-slate-100">
+                  {officeIps.map(ip => (
+                    <li key={ip} className="flex items-center justify-between px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Wifi size={14} className="text-emerald-500" />
+                        <span className="font-mono text-sm font-black text-slate-700">{ip}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveIp(ip)}
+                        className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 border border-slate-100 hover:border-rose-200 flex items-center justify-center transition-all"
+                        title="O'chirish"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Bot Notifications Section */}
       {(isAdmin || p.canManageNotifications) && (
         <section className="space-y-6">
@@ -848,7 +1020,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
       {/* Services Catalog Section */}
       {(isAdmin || p.canViewServices || p.canAddService || p.canEditService || p.canDeleteService) && (
-        <ServicesCatalogSection services={services} onRefresh={fetchData} showStatus={showStatus} currentUser={currentUser} />
+        <ServicesCatalogSection services={services} onRefresh={() => fetchData(true)} showStatus={showStatus} currentUser={currentUser} />
       )}
 
       {/* Role Modal */}
@@ -876,7 +1048,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                        <label key={key} className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded-md">
                           <input 
                              type="checkbox" 
-                             checked={(newRole as any)[key]} 
+                             checked={!!(newRole as any)[key]} 
                              onChange={(e) => setNewRole({...newRole, [key]: e.target.checked})}
                              className="h-5 w-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                           />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Filter, CheckCircle } from 'lucide-react';
-import { financeApi, branchesApi } from '../api';
+import { TrendingUp, Filter, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { financeApi, branchesApi, tasksApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Kpi from './Kpi';
 
@@ -15,6 +15,8 @@ const formatCurrency = (amount: number) =>
 
 const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const [dashboard, setDashboard] = useState({ totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
+  const [pendingOrders, setPendingOrders] = useState(0);
+  const [overdueOrders, setOverdueOrders] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const [startDate, setStartDate] = useState('');
@@ -50,12 +52,22 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
       if (endDate) params.end = endDate;
       if (localBranchId) params.branchId = localBranchId;
 
-      const [dashRes, branchRes] = await Promise.all([
+      const [dashRes, branchRes, tasksRes] = await Promise.all([
         financeApi.getDashboard({ params }),
         branchesApi.findAll(),
+        tasksApi.findAll(localBranchId || undefined).catch(() => ({ data: [] })),
       ]);
       setDashboard(dashRes.data || { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
       setBranches(branchRes.data || []);
+
+      // Calculate pending and overdue orders from tasks
+      const allTasks: any[] = tasksRes.data || [];
+      // Pending = tasks NOT in the last column (not completed/archived)
+      const now = new Date();
+      const pending = allTasks.filter(t => !t.isArchived);
+      setPendingOrders(pending.length);
+      const overdue = pending.filter(t => t.deadlineAt && new Date(t.deadlineAt) < now);
+      setOverdueOrders(overdue.length);
     } catch (err) {
       console.error('Statistika yuklashda xato:', err);
     } finally {
@@ -105,8 +117,8 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
         </div>
       </div>
 
-      {/* KPI Cards — Kirim + Bajarilgan */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* KPI Cards — Kirim + Bajarilgan + Kutilmoqda */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125" />
           <div className="relative">
@@ -126,6 +138,30 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             </div>
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bajarilgan Buyurtmalar</p>
             <h3 className="text-xl font-black text-slate-800 tracking-tight">{dashboard.completedTasks || 0} ta</h3>
+          </div>
+        </div>
+
+        <div className={`bg-white p-4 rounded-xl border shadow-sm relative overflow-hidden group ${
+          overdueOrders > 0 ? 'border-rose-200' : 'border-amber-100'
+        }`}>
+          <div className={`absolute top-0 right-0 w-24 h-24 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125 ${
+            overdueOrders > 0 ? 'bg-rose-50' : 'bg-amber-50'
+          }`} />
+          <div className="relative">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 border shadow-sm ${
+              overdueOrders > 0
+                ? 'bg-rose-100 text-rose-600 border-rose-200'
+                : 'bg-amber-100 text-amber-600 border-amber-200'
+            }`}>
+              {overdueOrders > 0 ? <AlertCircle size={18} /> : <Clock size={18} />}
+            </div>
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bajarilishi Kutilmoqda</p>
+            <h3 className="text-xl font-black text-slate-800 tracking-tight">{pendingOrders} ta</h3>
+            {overdueOrders > 0 && (
+              <p className="text-[9px] font-black text-rose-500 mt-0.5 flex items-center gap-1">
+                <AlertCircle size={10} /> {overdueOrders} ta muddati o'tgan
+              </p>
+            )}
           </div>
         </div>
       </div>

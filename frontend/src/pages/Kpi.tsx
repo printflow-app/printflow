@@ -15,6 +15,7 @@ interface KpiRow {
   lateMinutes: number;
   presentDays: number;
   velocityScore: number;
+  pendingTasks: number;
 }
 
 interface VelocityRow {
@@ -147,7 +148,7 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sizning samaradorligingiz</p>
-                <h3 className="text-lg font-black tracking-tight">{me.fullName}</h3>
+                <h3 className="text-lg font-black tracking-tight text-white">{me.fullName}</h3>
               </div>
               <div className="flex flex-col items-center gap-1">
                 <div className="w-14 h-14 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-2xl font-black text-orange-400">
@@ -160,8 +161,9 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-[11px]">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-[11px]">
               <div><p className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Yopilgan</p><p className="font-black text-base">{me.completedTasks}</p></div>
+              <div><p className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Jarayonda</p><p className="font-black text-base text-amber-400">{me.pendingTasks}</p></div>
               <div><p className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Harakatlar</p><p className="font-black text-base">{me.totalActivity}</p></div>
               <div><p className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Avg vaqt</p><p className="font-black text-base">{me.avgVelocityHours ? `${me.avgVelocityHours}h` : '—'}</p></div>
               <div><p className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Kelgan kunlar</p><p className="font-black text-base">{me.presentDays}</p></div>
@@ -197,6 +199,7 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   <th className="text-left p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">#</th>
                   <th className="text-left p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Xodim</th>
                   <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Yopilgan</th>
+                  <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Jarayonda</th>
                   <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Muddatga rioya</th>
                   <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Daromad</th>
                   <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Kechikish</th>
@@ -219,6 +222,7 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         <div className="text-[10px] text-slate-400 font-bold">{r.roleName || '—'}</div>
                       </td>
                       <td className="p-3 text-right font-black text-emerald-600">{r.completedTasks}</td>
+                      <td className="p-3 text-right font-black text-amber-500">{r.pendingTasks}</td>
                       <td className="p-3 text-right">
                         {vel?.deadlineMeetRate != null
                           ? <span className={`font-black text-xs ${vel.deadlineMeetRate >= 80 ? 'text-emerald-600' : vel.deadlineMeetRate >= 50 ? 'text-amber-600' : 'text-rose-500'}`}>{vel.deadlineMeetRate}%</span>

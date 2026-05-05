@@ -2,17 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
+import { randomUUID } from 'crypto';
 
-// Default ish boshlanish vaqti (09:00)
 const DEFAULT_WORK_START = { hour: 9, minute: 0 };
-// Token muddati (minutlarda)
-const TOKEN_EXPIRE_MINUTES = 10;
+const DEFAULT_WORK_END = { hour: 17, minute: 0 };
+const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 
 // =============================================
 // ATTENDANCE SERVICE — Tenant-scoped
-// checkIn/checkOut public endpoint'lardan kelganda
-// tenantId employee yozuvidan olinadi.
-// Token yaratish/tekshirish authenticated context'da ishlaydi.
+// QR kod statik (admin generate qiladi va print qiladi).
+// IP allowlist orqali faqat ofis Wi-Fi'sidan skanerlashga ruxsat beradi.
 // =============================================
 
 @Injectable()
@@ -22,107 +21,176 @@ export class AttendanceService {
     private settings: SettingsService,
   ) {}
 
-  // Joriy token olish yoki yangi yaratish (authenticated — TenantContext mavjud)
-  async getOrCreateToken() {
-    const tenantId = TenantContext.getTenantId();
-    const now = new Date();
+  // ============ TOKEN MANAGEMENT (static, admin-generated) ============
 
-    // Eskirgan tokenlarni o'chirish
-    await this.prisma.attendanceToken.deleteMany({
-      where: { tenantId, expiresAt: { lt: now } },
-    });
-
-    // Yangi token yaratish
-    const expiresAt = new Date(now.getTime() + TOKEN_EXPIRE_MINUTES * 60 * 1000);
-    const token = await this.prisma.attendanceToken.create({
-      data: { tenantId, expiresAt },
-    });
-    return token;
-  }
-
-  // Joriy aktiv token
+  /**
+   * Joriy token olish; agar yo'q bo'lsa avtomatik yaratmaydi —
+   * faqat admin manual ravishda generatsiya qilishi kerak.
+   */
   async getCurrentToken() {
     const tenantId = TenantContext.getTenantId();
-    const now = new Date();
-
-    const token = await this.prisma.attendanceToken.findFirst({
-      where: { tenantId, expiresAt: { gt: now } },
-      orderBy: { createdAt: 'desc' },
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { attendanceQrToken: true },
     });
-
-    if (!token) {
-      return this.getOrCreateToken();
-    }
-    return token;
-  }
-
-  // Token validatsiya — public context, tenantId dan foydalanish
-  private async validateToken(tokenValue: string, tenantId: string): Promise<boolean> {
-    const now = new Date();
-    const token = await this.prisma.attendanceToken.findFirst({
-      where: { token: tokenValue, tenantId, expiresAt: { gt: now } },
-    });
-    return !!token;
-  }
-
-  // Bugungi sanani string formatda olish
-  private getTodayString(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  // Kechikishni hisoblash (minutlarda) — settings tenant-scoped
-  private async calculateLateMinutes(checkInTime: Date): Promise<number> {
-    const settings =
-      (await this.settings.get('workStart')) || DEFAULT_WORK_START;
-    const workDays =
-      (await this.settings.get('workDays')) || [1, 2, 3, 4, 5, 6];
-
-    const dayOfWeek = checkInTime.getDay();
-    if (!workDays.includes(dayOfWeek)) {
-      return 0; // Dam olish kuni — kechikish hisoblanmaydi
-    }
-
-    const workStart = new Date(checkInTime);
-    workStart.setHours(settings.hour, settings.minute, 0, 0);
-
-    if (checkInTime <= workStart) return 0;
-
-    return Math.round(
-      (checkInTime.getTime() - workStart.getTime()) / 60000,
-    );
+    return { token: tenant?.attendanceQrToken || null };
   }
 
   /**
-   * checkIn — PUBLIC endpoint'dan keladi.
-   * TenantContext o'rnatilmagan, shuning uchun tenantId ni
-   * employee yozuvidan olamiz (cross-tenant xavfsizlik uchun).
+   * Yangi statik token yaratish (admin chaqiradi).
+   * Eski token bekor bo'ladi — eski printlangan QR endi ishlamaydi.
    */
-  async checkIn(employeeId: string, tokenValue: string, deviceId?: string) {
-    // 1. Employee'ni platform-level (non-scoped) so'rov bilan topamiz
-    const employee = await this.prisma.employee.findUnique({
-      where: { id: employeeId },
+  async rotateToken() {
+    const tenantId = TenantContext.getTenantId();
+    const newToken = randomUUID();
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { attendanceQrToken: newToken },
     });
+    return { token: newToken };
+  }
 
-    if (!employee) {
-      throw new Error('Xodim topilmadi');
+  // ============ IP ALLOWLIST (office Wi-Fi only) ============
+
+  /**
+   * Office IP allowlist — Sozlamalar > "OFFICE_NETWORK_IPS" da saqlanadi.
+   * Format: massiv ['203.0.113.45', '192.168.1.0/24', ...]
+   * Bo'sh bo'lsa cheklov qo'llanmaydi (back-compat).
+   */
+  private async getOfficeIpAllowlist(tenantId: string): Promise<string[]> {
+    const setting = await this.prisma.systemSetting.findFirst({
+      where: { tenantId, key: 'OFFICE_NETWORK_IPS' },
+    });
+    if (!setting) return [];
+    try {
+      const parsed = JSON.parse(setting.value);
+      if (Array.isArray(parsed)) return parsed.filter((s) => typeof s === 'string' && s.trim());
+      return [];
+    } catch {
+      return [];
     }
+  }
+
+  /** IPv4 → 32-bit unsigned int (IPv6 uchun strict-equal solishtirish) */
+  private ipv4ToInt(ip: string): number | null {
+    const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!m) return null;
+    const parts = m.slice(1, 5).map(Number);
+    if (parts.some((p) => p < 0 || p > 255)) return null;
+    return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+  }
+
+  /** Mijoz IP'sini olish — Express'da req.ip; X-Forwarded-For ham hisobga olinadi */
+  private extractClientIp(rawIp: string | null | undefined, xff: string | null | undefined): string | null {
+    if (xff && typeof xff === 'string') {
+      // X-Forwarded-For: "client, proxy1, proxy2" — birinchi mijoz IP'si
+      const first = xff.split(',')[0].trim();
+      if (first) return this.normalizeIp(first);
+    }
+    if (rawIp) return this.normalizeIp(rawIp);
+    return null;
+  }
+
+  private normalizeIp(ip: string): string {
+    // ::ffff:192.168.1.1 → 192.168.1.1
+    if (ip.startsWith('::ffff:')) return ip.slice(7);
+    return ip;
+  }
+
+  private ipMatchesEntry(clientIp: string, entry: string): boolean {
+    const cleanEntry = entry.trim();
+    if (!cleanEntry) return false;
+
+    // CIDR (e.g., 192.168.1.0/24)
+    if (cleanEntry.includes('/')) {
+      const [base, prefixStr] = cleanEntry.split('/');
+      const prefix = parseInt(prefixStr, 10);
+      if (!Number.isFinite(prefix) || prefix < 0 || prefix > 32) return false;
+      const baseInt = this.ipv4ToInt(base);
+      const ipInt = this.ipv4ToInt(clientIp);
+      if (baseInt === null || ipInt === null) return false;
+      const mask = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
+      return (baseInt & mask) === (ipInt & mask);
+    }
+
+    // Plain equality (IPv4 or IPv6 string)
+    return cleanEntry === clientIp;
+  }
+
+  /**
+   * IP tekshirish: agar allowlist bo'sh bo'lsa — ruxsat (back-compat).
+   * Agar bo'sh bo'lmasa va clientIp moslashmasa — error.
+   */
+  private async assertOfficeIp(tenantId: string, clientIp: string | null) {
+    const allowlist = await this.getOfficeIpAllowlist(tenantId);
+    if (allowlist.length === 0) return; // Cheklov o'rnatilmagan
+
+    if (!clientIp) {
+      throw new Error('IP manzilingiz aniqlanmadi. Iltimos, ofis Wi-Fi\'siga ulaning.');
+    }
+
+    const ok = allowlist.some((entry) => this.ipMatchesEntry(clientIp, entry));
+    if (!ok) {
+      throw new Error('Faqat ofis Wi-Fi tarmog\'idan davomat belgilash mumkin.');
+    }
+  }
+
+  // ============ TOKEN VALIDATION ============
+
+  private async validateToken(tokenValue: string, tenantId: string): Promise<boolean> {
+    if (!tokenValue) return false;
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { attendanceQrToken: true },
+    });
+    return !!tenant?.attendanceQrToken && tenant.attendanceQrToken === tokenValue;
+  }
+
+  // ============ HELPERS ============
+
+  private getTodayString(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
+
+  /** Late-minutes calculation — settings tenant-scoped */
+  private async calculateLateMinutes(checkInTime: Date): Promise<number> {
+    const startSetting = (await this.settings.get('workStart')) || DEFAULT_WORK_START;
+    const workDays = (await this.settings.get('workDays')) || DEFAULT_WORK_DAYS;
+
+    const dayOfWeek = checkInTime.getDay();
+    if (!workDays.includes(dayOfWeek)) return 0;
+
+    const workStart = new Date(checkInTime);
+    workStart.setHours(startSetting.hour, startSetting.minute, 0, 0);
+
+    if (checkInTime <= workStart) return 0;
+    return Math.round((checkInTime.getTime() - workStart.getTime()) / 60000);
+  }
+
+  // ============ PUBLIC: SCAN ENDPOINTS ============
+
+  /**
+   * checkIn — PUBLIC endpoint'dan keladi.
+   * tenantId employee yozuvidan olinadi (cross-tenant xavfsizlik).
+   * Office IP allowlist tekshiriladi.
+   */
+  async checkIn(employeeId: string, tokenValue: string, deviceId?: string, clientIp?: string | null) {
+    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee) throw new Error('Xodim topilmadi');
 
     const tenantId = employee.tenantId;
 
-    // 2. Token ushbu tenantga tegishli ekanligini tekshiramiz
+    await this.assertOfficeIp(tenantId, clientIp ?? null);
+
     const isValid = await this.validateToken(tokenValue, tenantId);
     if (!isValid) {
-      throw new Error("QR kod eskirgan yoki noto'g'ri. Yangi kod oling.");
+      throw new Error('QR kod yaroqsiz. Admin yangi QR yaratishi kerak.');
     }
 
     const today = this.getTodayString();
     const now = new Date();
 
-    // 3. TenantContext o'rnatib, qolgan amallarni tenant-scoped qilamiz
     return TenantContext.run(
       { tenantId, userId: employeeId, userRole: '' },
       async () => {
@@ -141,7 +209,6 @@ export class AttendanceService {
           });
         }
 
-        // Birinchi skan — keldi
         return this.prisma.attendanceRecord.create({
           data: { employeeId, date: today, checkIn: now, lateMinutes, deviceId } as any,
           include: { employee: true },
@@ -150,12 +217,12 @@ export class AttendanceService {
     );
   }
 
-  // checkOut — double-scan mantiqqa asosan checkIn bilan bir xil
-  async checkOut(employeeId: string, tokenValue: string, deviceId?: string) {
-    return this.checkIn(employeeId, tokenValue, deviceId);
+  async checkOut(employeeId: string, tokenValue: string, deviceId?: string, clientIp?: string | null) {
+    return this.checkIn(employeeId, tokenValue, deviceId, clientIp);
   }
 
-  // Yozuvlar — authenticated, TenantContext mavjud
+  // ============ AUTHENTICATED: READ ENDPOINTS ============
+
   async getRecords(date?: string) {
     return this.prisma.attendanceRecord.findMany({
       where: date ? { date } : undefined,
@@ -167,7 +234,6 @@ export class AttendanceService {
   async getMonthlyRecords(year: number, month: number) {
     const monthStr = String(month).padStart(2, '0');
     const prefix = `${year}-${monthStr}`;
-
     return this.prisma.attendanceRecord.findMany({
       where: { date: { startsWith: prefix } },
       include: { employee: { include: { role: true } } },
@@ -176,8 +242,7 @@ export class AttendanceService {
   }
 
   async getTodayRecords() {
-    const today = this.getTodayString();
-    return this.getRecords(today);
+    return this.getRecords(this.getTodayString());
   }
 
   async getRecordsByEmployee(employeeId: string) {
@@ -186,5 +251,12 @@ export class AttendanceService {
       orderBy: { date: 'desc' },
       take: 30,
     });
+  }
+
+  // ============ OFFICE IP SETTINGS HELPERS (used by Sozlamalar) ============
+
+  async getOfficeIps(): Promise<string[]> {
+    const tenantId = TenantContext.getTenantId();
+    return this.getOfficeIpAllowlist(tenantId);
   }
 }

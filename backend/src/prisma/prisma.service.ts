@@ -23,6 +23,7 @@ const TENANT_SCOPED_MODELS = new Set([
   'material',
   'stockMovement',
   'attendanceRecord',
+  'overtimeRequest',
   'systemSetting',
   'botSession',
   'branch',

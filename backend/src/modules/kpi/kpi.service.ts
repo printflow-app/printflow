@@ -22,6 +22,7 @@ export interface KpiRow {
   lateMinutes: number;
   presentDays: number;
   velocityScore: number; // Yagona umumiy ball
+  pendingTasks: number; // Bajarilishi kerak bo'lgan buyurtmalar
 }
 
 @Injectable()
@@ -85,6 +86,10 @@ export class KpiService {
       where: { createdAt: { gte: from, lte: to } },
     });
 
+    const activeTasks = await this.prisma.task.findMany({
+      where: finalColumnId ? { columnId: { not: finalColumnId } } : {},
+    });
+
     const rows: KpiRow[] = employees.map((emp) => {
       const empHistories = histories.filter((h) => h.employeeId === emp.id);
       const created = empHistories.filter((h) => h.action === 'yaratildi').length;
@@ -125,6 +130,14 @@ export class KpiService {
         completed * 10 + totalActivity * 1 + speedBonus - lateMinutes * 0.1,
       );
 
+      let pendingTasks = 0;
+      activeTasks.forEach((t) => {
+        try {
+          const assignees: string[] = JSON.parse(t.assignees || '[]');
+          if (assignees.includes(emp.id)) pendingTasks++;
+        } catch {}
+      });
+
       return {
         employeeId: emp.id,
         fullName: emp.fullName,
@@ -137,6 +150,7 @@ export class KpiService {
         lateMinutes,
         presentDays,
         velocityScore,
+        pendingTasks,
       };
     });
 

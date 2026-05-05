@@ -263,7 +263,9 @@ export const inventoryApi = {
 // =============================================
 export const attendanceApi = {
   getToken: () => api.get('/attendance/token'),
-  refreshToken: () => api.post('/attendance/token/refresh'),
+  rotateToken: () => api.post('/attendance/token/rotate'),
+  // Eski nom — back-compat
+  refreshToken: () => api.post('/attendance/token/rotate'),
   checkIn: (data: { employeeId: string; token: string; deviceId?: string }) =>
     api.post('/attendance/checkin', data),
   checkOut: (data: { employeeId: string; token: string; deviceId?: string }) =>
@@ -275,6 +277,19 @@ export const attendanceApi = {
     api.get('/attendance/monthly', { params: { year, month } }),
   getByEmployee: (employeeId: string) =>
     api.get(`/attendance/records/employee/${employeeId}`),
+  getOfficeIps: () => api.get('/attendance/office-ips'),
+};
+
+// =============================================
+// ORTIQCHA ISH (Overtime) — Telegram + Admin approval
+// =============================================
+export const overtimeApi = {
+  findAll: (status?: string) =>
+    api.get('/overtime', { params: status ? { status } : {} }),
+  findPending: () => api.get('/overtime/pending'),
+  approve: (id: string) => api.post(`/overtime/${id}/approve`),
+  reject: (id: string, reason?: string) =>
+    api.post(`/overtime/${id}/reject`, { reason }),
 };
 
 // =============================================

@@ -421,7 +421,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 font-black flex items-center justify-center shadow-inner text-[10px] border border-orange-200 group-hover:bg-orange-600 group-hover:text-white transition-colors">
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
-            <div className="overflow-hidden">
+            <div className="overflow-hidden min-w-0 flex-1">
               <p className="text-[11px] font-black text-slate-800 truncate leading-tight uppercase tracking-tight">{currentUser.fullName}</p>
               <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate italic group-hover:text-orange-500">Profil Sozlamalari</p>
             </div>
