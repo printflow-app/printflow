@@ -427,6 +427,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
           </button>
           <button
+            onClick={() => window.open('/qollanma', '_blank')}
+            className="flex w-full items-center justify-center gap-2 px-3 py-2 mb-2 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-600 border border-emerald-100 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 transition-all border-dashed"
+          >
+            O'rgatuvchi Qo'llanma
+          </button>
+          <button
             onClick={onLogout}
             className="flex w-full items-center justify-center gap-2 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest text-rose-500 border border-rose-100 bg-rose-50/50 hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-500/20 transition-all border-dashed"
           >

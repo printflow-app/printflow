@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import ScanAttendance from './pages/ScanAttendance';
 import Landing from './pages/Landing';
 import Billing from './pages/Billing';
+import Qollanma from './pages/Qollanma';
 import CookieConsent from './components/CookieConsent';
 import { authApi } from './api';
 import logo from './assets/logo.png';
@@ -208,8 +209,9 @@ const App: React.FC = () => {
   };
 
   const isScanPage = window.location.pathname.startsWith('/attendance/scan');
+  const isGuidePage = window.location.pathname.startsWith('/qollanma');
 
-  if (loading) {
+  if (loading && !isGuidePage && !isScanPage) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-slate-900 font-sans">
         <div className="relative mb-8">
@@ -284,7 +286,9 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {subscriptionExpired ? (
+      {isGuidePage ? (
+        <Qollanma />
+      ) : subscriptionExpired ? (
         <Billing />
       ) : isScanPage ? (
         <ScanAttendance currentUser={currentUser} />
