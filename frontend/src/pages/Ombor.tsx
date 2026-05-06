@@ -69,9 +69,9 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const fetchData = useCallback(async (refreshSelectedId?: string) => {
     try {
       const [matRes, movRes, svcRes] = await Promise.all([
-        inventoryApi.getMaterials(),
-        inventoryApi.getMovements(),
-        servicesApi.findAll(),
+        inventoryApi.getMaterials().catch(() => ({ data: [] })),
+        inventoryApi.getMovements().catch(() => ({ data: [] })),
+        servicesApi.findAll().catch(() => ({ data: [] })),
       ]);
       const freshMaterials = matRes.data || [];
       setMaterials(freshMaterials);

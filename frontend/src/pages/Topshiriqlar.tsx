@@ -78,9 +78,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         employeesApi.findAll(),
         paymentTypesApi.findAll(),
         customersApi.findAll(),
-        tasksApi.findAll(activeBranchId),
-        servicesApi.findAll(),
-        branchesApi.findAll(),
+        tasksApi.findAll(activeBranchId).catch(() => ({ data: [] })),
+        servicesApi.findAll().catch(() => ({ data: [] })),
+        branchesApi.findAll().catch(() => ({ data: [] })),
         vendorsApi.findAll().catch(() => ({ data: [] })),
       ]);
       setColumns(colRes.data || []);

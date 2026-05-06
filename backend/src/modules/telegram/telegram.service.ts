@@ -77,7 +77,10 @@ function langKeyboard() {
 }
 
 function logoutKeyboard(lang: typeof LANGS.uz) {
-  return Markup.keyboard([[lang.btnLogout]]).resize();
+  return Markup.keyboard([
+    [Markup.button.webApp('🌐 Platformani ochish', 'https://printflow-gilt.vercel.app/')],
+    [lang.btnLogout]
+  ]).resize();
 }
 
 function removeKeyboard() {

@@ -37,12 +37,12 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       if (!silent) setIsLoading(true);
       const [roleRes, ptRes, etRes, kcRes, svcRes, empRes] = await Promise.all([
-        rolesApi.findAll(),
-        paymentTypesApi.findAll(),
-        expenseTypesApi.findAll(),
-        tasksApi.getColumns(),
-        servicesApi.findAll(),
-        employeesApi.findAll(),
+        rolesApi.findAll().catch(() => ({ data: [] })),
+        paymentTypesApi.findAll().catch(() => ({ data: [] })),
+        expenseTypesApi.findAll().catch(() => ({ data: [] })),
+        tasksApi.getColumns().catch(() => ({ data: [] })),
+        servicesApi.findAll().catch(() => ({ data: [] })),
+        employeesApi.findAll().catch(() => ({ data: [] })),
       ]);
       setRoles((roleRes.data || []).filter((r: any) => r.name?.toLowerCase() !== 'admin'));
       setPaymentTypes(ptRes.data || []);
