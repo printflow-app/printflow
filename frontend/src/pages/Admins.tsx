@@ -35,18 +35,19 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       ]);
       
       // Filter for Admins/Owners
-      const adminRoles = roleRes.data?.filter((r: any) => 
-        r.name.toLowerCase().includes('admin') || 
-        r.name.toLowerCase().includes('rahbar') ||
-        r.name.toLowerCase().includes('owner')
-      ) || [];
+      const adminRoles = roleRes.data?.filter((r: any) => {
+        const roleName = r.name.toLowerCase();
+        return roleName === 'admin' || roleName === 'superadmin' || roleName === 'rahbar' || roleName === 'owner';
+      }) || [];
       const adminRoleIds = adminRoles.map((r: any) => r.id);
 
-      const adminsList = empRes.data?.filter((emp: any) => 
-        adminRoleIds.includes(emp.roleId) || 
-        emp.login === 'admin' || 
-        emp.role?.name?.toLowerCase().includes('admin')
-      ) || [];
+      const adminsList = empRes.data?.filter((emp: any) => {
+        const empRoleName = emp.role?.name?.toLowerCase() || '';
+        return adminRoleIds.includes(emp.roleId) || 
+               emp.login === 'admin' || 
+               empRoleName === 'admin' || 
+               empRoleName === 'superadmin';
+      }) || [];
 
       setEmployees(adminsList);
       setRoles(adminRoles);

@@ -43,18 +43,19 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       setBranches(Array.isArray(branchRes.data) ? branchRes.data : []);
       
       const allRoles = roleRes.data || [];
-      const employeeRoles = allRoles.filter((r: any) => 
-        !r.name.toLowerCase().includes('admin') && 
-        !r.name.toLowerCase().includes('rahbar') &&
-        !r.name.toLowerCase().includes('owner')
-      );
+      const employeeRoles = allRoles.filter((r: any) => {
+        const roleName = r.name.toLowerCase();
+        return roleName !== 'admin' && roleName !== 'superadmin' && roleName !== 'rahbar' && roleName !== 'owner';
+      });
       const employeeRoleIds = employeeRoles.map((r: any) => r.id);
 
-      const filteredEmployees = (empRes.data || []).filter((emp: any) => 
-        employeeRoleIds.includes(emp.roleId) && 
-        emp.login !== 'admin' &&
-        !emp.role?.name?.toLowerCase().includes('admin')
-      );
+      const filteredEmployees = (empRes.data || []).filter((emp: any) => {
+        const empRoleName = emp.role?.name?.toLowerCase() || '';
+        return employeeRoleIds.includes(emp.roleId) && 
+               emp.login !== 'admin' &&
+               empRoleName !== 'admin' &&
+               empRoleName !== 'superadmin';
+      });
 
       setEmployees(filteredEmployees);
       setRoles(employeeRoles);
