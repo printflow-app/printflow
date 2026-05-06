@@ -84,7 +84,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         vendorsApi.findAll().catch(() => ({ data: [] })),
       ]);
       setColumns(colRes.data || []);
-      setEmployees(empRes.data || []);
+      const filteredEmployees = (empRes.data || []).filter((emp: any) => {
+        const roleName = emp.role?.name?.toLowerCase() || '';
+        return emp.login !== 'admin' && 
+               roleName !== 'admin' && 
+               roleName !== 'superadmin' && 
+               roleName !== 'rahbar' && 
+               roleName !== 'owner';
+      });
+      setEmployees(filteredEmployees);
       setPaymentTypes(ptRes.data || []);
       setCustomers(custRes.data || []);
       setTasks(taskRes.data || []);
@@ -311,7 +319,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     const calculatedTotal = Number(newTaskForm.totalAmount);
     const finalTotal = newTaskForm.manualTotal ? Number(newTaskForm.manualTotal) : calculatedTotal;
     
-    if (finalTotal !== calculatedTotal && !newTaskForm.justification) {
+    if (finalTotal !== calculatedTotal && calculatedTotal !== 0 && !newTaskForm.justification) {
       showStatus('error', "Narx o'zgartirilgan bo'lsa, izoh (sabab) yozish shart!");
       return;
     }
@@ -330,10 +338,20 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         assigneeIds: newTaskForm.assigneeIds,
         deadlineAt: newTaskForm.deadlineAt || null,
         branchId: newTaskForm.targetBranchId || activeBranchId || undefined,
-        items: newTaskForm.items.map(it => ({
-          ...it,
-          totalAmount: finalTotal !== calculatedTotal ? (it.totalAmount * (finalTotal / calculatedTotal)) : it.totalAmount
-        }))
+        items: newTaskForm.items.map(it => {
+          let adjustedTotal = it.totalAmount;
+          if (finalTotal !== calculatedTotal) {
+            if (calculatedTotal === 0) {
+              adjustedTotal = finalTotal / newTaskForm.items.length;
+            } else {
+              adjustedTotal = it.totalAmount * (finalTotal / calculatedTotal);
+            }
+          }
+          return {
+            ...it,
+            totalAmount: adjustedTotal
+          };
+        })
       };
 
       await tasksApi.createBulk(payload, currentUser.id);
@@ -911,7 +929,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   </div>
                </div>
                
-               {newTaskForm.manualTotal && Number(newTaskForm.manualTotal) !== Number(newTaskForm.totalAmount) && (
+               {newTaskForm.manualTotal && Number(newTaskForm.manualTotal) !== Number(newTaskForm.totalAmount) && Number(newTaskForm.totalAmount) !== 0 && (
                  <div className="animate-fade-in space-y-2">
                     <label className="block text-[10px] font-black text-rose-500 uppercase px-1">Narx o'zgargani uchun izoh (sabab) yozing *</label>
                     <textarea 

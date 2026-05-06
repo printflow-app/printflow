@@ -134,7 +134,15 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const fetchEmployees = async () => {
     try {
       const res = await employeesApi.findAll();
-      setEmployees(res.data || []);
+      const filteredEmployees = (res.data || []).filter((emp: any) => {
+        const roleName = emp.role?.name?.toLowerCase() || '';
+        return emp.login !== 'admin' && 
+               roleName !== 'admin' && 
+               roleName !== 'superadmin' && 
+               roleName !== 'rahbar' && 
+               roleName !== 'owner';
+      });
+      setEmployees(filteredEmployees);
     } catch {}
   };
 

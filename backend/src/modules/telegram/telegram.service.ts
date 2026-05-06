@@ -155,6 +155,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     // /start komandasi
     this.bot.start(async (ctx: any) => {
+      console.log('📥 /start komandasi qabul qilindi, chatId:', ctx.chat?.id);
       try {
         const chatId = ctx.chat.id.toString();
 
@@ -179,12 +180,20 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           create: { chatId, tenantId: firstTenant.id, step: 'LANG', lang: 'uz' },
         });
 
-        return ctx.reply(
-          LANGS.uz.chooseLanguage,
-          { parse_mode: 'Markdown', ...langKeyboard() },
-        );
+        console.log('✅ BotSession yaratildi/yangilandi. Til tanlash yuborilmoqda...');
+        try {
+          await ctx.reply(
+            LANGS.uz.chooseLanguage,
+            { parse_mode: 'Markdown', ...langKeyboard() },
+          );
+          console.log('✅ Til tanlash xabari Telegramga yuborildi!');
+        } catch (replyErr: any) {
+          console.error('❌ Xabar yuborishda xatolik:', replyErr?.message || replyErr);
+          // Markdownsiz jo'natib ko'ramiz
+          await ctx.reply(LANGS.uz.chooseLanguage, langKeyboard());
+        }
       } catch (err: any) {
-        console.error('/start handler xatosi:', err?.message || err);
+        console.error('❌ /start handler xatosi:', err?.message || err, err?.stack);
         return ctx.reply('❌ Xatolik yuz berdi. Iltimos qayta urinib ko\'ring.');
       }
     });
