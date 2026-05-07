@@ -53,10 +53,38 @@ export class AuthController {
       path: '/',
     });
 
+    // Token JSON'da ham qaytariladi — Telegram WebApp / iOS Safari kabi
+    // 3rd-party cookie bloklangan brauzerlarda Bearer fallback ishlashi uchun.
     return {
+      token,
       user,
       workspaceSlug: body.workspaceSlug,
     };
+  }
+
+  /**
+   * Telegram WebApp auto-login.
+   * Frontend Telegram WebApp ichida ochilganda window.Telegram.WebApp.initDataUnsafe.user.id'ni
+   * yuboradi. Bot bilan bog'langan employee bo'lsa — to'liq JWT sessiyasi yaratiladi.
+   */
+  @Public()
+  @Post('telegram')
+  @HttpCode(HttpStatus.OK)
+  async telegramAuth(
+    @Body() body: { telegramId: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { token, user, workspaceSlug } = await this.authService.telegramAuth(body.telegramId);
+
+    res.cookie('pf_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+
+    return { token, user, workspaceSlug };
   }
 
   @Public()

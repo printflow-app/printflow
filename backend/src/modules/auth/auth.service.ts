@@ -137,6 +137,82 @@ export class AuthService {
   }
 
   /**
+   * Telegram WebApp auto-login.
+   * Bot orqali employee.telegramId allaqachon bog'langan bo'lsa,
+   * shu identifikator orqali to'liq JWT auth flow'i bajariladi.
+   * Parol tekshirilmaydi — Telegram'ning o'zi shaxsni tasdiqlaydi.
+   */
+  async telegramAuth(telegramId: string) {
+    if (!telegramId) {
+      throw new UnauthorizedException('Telegram ID kerak');
+    }
+
+    // Tenant context yo'q — employee'ni telegramId orqali to'g'ridan-to'g'ri topamiz.
+    // Prisma middleware tryGetTenantId() = null bo'lsa scope qo'shmaydi.
+    const employee = await this.prisma.employee.findFirst({
+      where: { telegramId: telegramId.toString() },
+      include: { role: true },
+    });
+
+    if (!employee) {
+      throw new UnauthorizedException(
+        "Telegram hisobi tizimda bog'lanmagan. Avval botda /start orqali ro'yxatdan o'ting.",
+      );
+    }
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: employee.tenantId },
+      include: { plan: true },
+    });
+
+    if (!tenant || !tenant.isActive) {
+      throw new UnauthorizedException("Workspace faol emas");
+    }
+
+    if (tenant.trialEndsAt && new Date() > tenant.trialEndsAt) {
+      throw new UnauthorizedException('Sinov muddati tugagan. Obuna xarid qiling');
+    }
+
+    const roleObj = employee.role;
+
+    const token = this.jwt.sign(
+      {
+        sub: employee.id,
+        tenantId: tenant.id,
+        workspaceSlug: tenant.slug,
+        role: roleObj?.name,
+        isAdmin: false,
+        permissions: roleObj,
+        passwordVersion: employee.passwordVersion,
+      },
+      {
+        secret: process.env.JWT_SECRET || 'printflow_super_secret_key_2024',
+        expiresIn: '7d',
+      },
+    );
+
+    return {
+      token,
+      workspaceSlug: tenant.slug,
+      user: {
+        id: employee.id,
+        fullName: employee.fullName,
+        login: employee.login,
+        phone: employee.phone,
+        telegramId: employee.telegramId,
+        passwordVersion: employee.passwordVersion,
+        isFirstLogin: (employee as any).isFirstLogin,
+        role: roleObj,
+        permissions: roleObj,
+        baseSalary: (employee as any).baseSalary,
+        givenAmount: (employee as any).givenAmount,
+        workDebt: (employee as any).workDebt,
+        tenantFeatures: tenant.plan?.features ? JSON.parse(tenant.plan.features) : {},
+      },
+    };
+  }
+
+  /**
    * Super-Admin login (platform operations team)
    * Uses a completely separate JWT secret.
    */

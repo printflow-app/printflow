@@ -49,8 +49,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
         password,
       });
 
-      // Server sets httpOnly cookie — we just get user info
-      const { user } = res.data;
+      // Server httpOnly cookie qo'yadi, lekin Telegram WebApp / iOS Safari kabi
+      // 3rd-party cookie bloklangan brauzerlarda Bearer fallback uchun
+      // tokenni localStorage'ga ham saqlaymiz.
+      const { user, token } = res.data;
+      if (token) localStorage.setItem('pf_token', token);
       onLogin(buildUser({ ...user, workspaceSlug: slug }));
     } catch (err: any) {
       const msg = err.response?.data?.message;

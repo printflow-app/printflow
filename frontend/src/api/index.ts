@@ -76,6 +76,10 @@ export const authApi = {
     login: string;
     password?: string;
   }) => api.post('/auth/onboarding', data),
+
+  // Telegram WebApp orqali auto-login (frontend Telegram.WebApp.initDataUnsafe.user.id'ni yuboradi)
+  telegramAuth: (telegramId: string) =>
+    api.post('/auth/telegram', { telegramId }),
 };
 
 // =============================================

@@ -1,35 +1,51 @@
 import { Request } from 'express';
 
 /**
- * Extract the real client IP from an Express request.
+ * Universal client IP extractor.
  *
- * Behind Railway / Nginx the X-Forwarded-For header contains a
- * comma-separated list: "real-client, proxy1, proxy2, ...".
- * The first entry is always the original client.
+ * Checks every common proxy header in priority order so the same code
+ * works behind Cloudflare, Nginx, Railway, Vercel, or any standard
+ * load balancer. Behind multi-hop proxies the real client is always
+ * the FIRST entry in X-Forwarded-For.
  *
- * We also guard against Express giving us an array when multiple
- * XFF headers are present (RFC 7230 §3.2.2 allows header folding).
+ * Priority:
+ *   1. cf-connecting-ip   (Cloudflare)
+ *   2. x-real-ip          (Nginx / generic proxies)
+ *   3. x-forwarded-for    (RFC 7239, comma-separated chain)
+ *   4. socket remoteAddress / req.ip   (direct connection fallback)
  */
-export function getClientIp(req: Request): string | null {
-  const xff = req.headers['x-forwarded-for'];
+export function getClientIp(req: Request): string {
+  // Helper — strip IPv6-mapped IPv4 prefix and trim
+  const clean = (ip: string): string => {
+    const t = ip.trim();
+    return t.startsWith('::ffff:') ? t.slice(7) : t;
+  };
 
-  let candidate: string | null = null;
-
-  if (xff) {
-    const raw = Array.isArray(xff) ? xff[0] : xff;
-    const first = raw.split(',')[0].trim();
-    if (first) candidate = first;
+  // 1. Cloudflare
+  const cfIp = req.headers['cf-connecting-ip'];
+  if (cfIp) {
+    const v = Array.isArray(cfIp) ? cfIp[0] : cfIp;
+    if (v) return clean(v);
   }
 
-  if (!candidate) {
-    candidate =
-      req.ip ||
-      (req.socket as any)?.remoteAddress ||
-      null;
+  // 2. Nginx / generic proxy "real" header
+  const realIp = req.headers['x-real-ip'];
+  if (realIp) {
+    const v = Array.isArray(realIp) ? realIp[0] : realIp;
+    if (v) return clean(v);
   }
 
-  if (!candidate) return null;
+  // 3. X-Forwarded-For (true client = first entry)
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (forwardedFor) {
+    const raw = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+    const first = raw.split(',')[0];
+    if (first && first.trim()) return clean(first);
+  }
 
-  // Strip IPv6-mapped IPv4 prefix (::ffff:192.168.1.1 → 192.168.1.1)
-  return candidate.startsWith('::ffff:') ? candidate.slice(7) : candidate;
+  // 4. Direct socket fallback
+  const fallback = req.socket?.remoteAddress || req.ip;
+  if (fallback) return clean(fallback);
+
+  return 'Unknown IP';
 }

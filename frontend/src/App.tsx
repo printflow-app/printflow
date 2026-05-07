@@ -79,6 +79,8 @@ function saveSession(user: User) {
 function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem('pf_session_expired');
+  // Bearer fallback uchun saqlangan tokenni ham tozalaymiz
+  localStorage.removeItem('pf_token');
 }
 
 const App: React.FC = () => {
@@ -116,6 +118,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       try {
+        // 1. Birinchi navbatda standart cookie/Bearer asosida sessiyani tekshiramiz
         const res = await authApi.me();
         const user = res.data;
 
@@ -123,7 +126,7 @@ const App: React.FC = () => {
           setCurrentUser(user);
           saveSession(user);
           setShowLanding(false);
-          
+
           if (user.isFirstLogin) {
             setOnboardingForm({
               tenantName: user.tenantName || '',
@@ -135,10 +138,37 @@ const App: React.FC = () => {
             });
             setShowOnboarding(true);
           }
-        } else {
-          clearSession();
-          setCurrentUser(null);
+          return;
         }
+
+        // 2. Telegram WebApp ichida ochilgan bo'lsa — auto-login urinish
+        const tg = (window as any)?.Telegram?.WebApp;
+        const tgUserId = tg?.initDataUnsafe?.user?.id;
+        if (tgUserId) {
+          try {
+            tg.ready?.();
+            tg.expand?.();
+            const tgRes = await authApi.telegramAuth(String(tgUserId));
+            const data = tgRes.data;
+            if (data?.token) {
+              // iOS Safari / Telegram WebView 3rd-party cookie'ni bloklashi mumkin —
+              // shu sababli Bearer fallback uchun tokenni localStorage'da ham saqlaymiz.
+              localStorage.setItem('pf_token', data.token);
+            }
+            if (data?.user) {
+              const fullUser = { ...data.user, workspaceSlug: data.workspaceSlug };
+              setCurrentUser(fullUser as any);
+              saveSession(fullUser as any);
+              setShowLanding(false);
+              return;
+            }
+          } catch {
+            // Telegram orqali kirish muvaffaqiyatsiz — odatdagi Login sahifasi ko'rsatiladi
+          }
+        }
+
+        clearSession();
+        setCurrentUser(null);
       } catch {
         clearSession();
         setCurrentUser(null);
