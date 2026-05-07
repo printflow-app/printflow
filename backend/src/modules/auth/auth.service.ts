@@ -69,6 +69,7 @@ export class AuthService {
             canManageBilling: true, canViewVendors: true, canViewStatistics: true,
             canViewFinanceReports: true, canViewServiceReports: true, canManageExpenseTypes: true,
             canManageKanbanColumns: true, canManageGeneralSettings: true,
+            canViewAllTasks: true, canViewOwnTasks: false,
           };
           return admin;
         }

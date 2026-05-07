@@ -1,14 +1,35 @@
-import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { TasksService } from './tasks.service';
 
 @Controller('tasks')
 export class TasksController {
   constructor(private tasksService: TasksService) {}
 
+  /**
+   * Resolves the effective view mode from the JWT payload.
+   *   'all'  — Admin or tasks:view_all  → return every non-archived task
+   *   'own'  — tasks:view_own only      → filter by assignees contains userId
+   *   fallback 'all' preserves current behaviour for roles without explicit flags
+   */
+  private resolveViewMode(req: Request): { viewMode: 'all' | 'own'; currentUserId?: string } {
+    const user = (req as any)?.user;
+    if (!user) return { viewMode: 'all' };
+
+    const isAdmin = user.isAdmin || user.role?.toLowerCase() === 'admin';
+    const perms = user.permissions || {};
+
+    if (isAdmin || perms.canViewAllTasks) return { viewMode: 'all' };
+    if (perms.canViewOwnTasks) return { viewMode: 'own', currentUserId: user.sub };
+
+    return { viewMode: 'all' }; // default: keep existing open behaviour
+  }
+
   // Kanban Column Endpoints — MUST be before :id routes!
   @Get('columns')
-  getColumns() {
-    return this.tasksService.getColumns();
+  getColumns(@Req() req: Request) {
+    const { viewMode, currentUserId } = this.resolveViewMode(req);
+    return this.tasksService.getColumns(viewMode, currentUserId);
   }
 
   @Post('columns')
@@ -27,10 +48,16 @@ export class TasksController {
     return this.tasksService.removeColumn(id);
   }
 
+  @Post('backfill-ids')
+  backfillIds() {
+    return this.tasksService.backfillDisplayIds();
+  }
+
   // Task Endpoints
   @Get()
-  findAll(@Query('branchId') branchId?: string) {
-    return this.tasksService.findAll(branchId);
+  findAll(@Query('branchId') branchId?: string, @Req() req?: any) {
+    const { viewMode, currentUserId } = this.resolveViewMode(req);
+    return this.tasksService.findAll(branchId, viewMode, currentUserId);
   }
 
   @Get('archived')
@@ -67,5 +94,24 @@ export class TasksController {
   @Post(':id/view')
   logView(@Param('id') id: string, @Body() body: { employeeId: string }) {
     return this.tasksService.logView(id, body.employeeId);
+  }
+
+  // ── Task Expense Endpoints (Tannarx xarajatlari) ──────────────────────────
+  @Get(':taskId/expenses')
+  getExpenses(@Param('taskId') taskId: string) {
+    return this.tasksService.getExpenses(taskId);
+  }
+
+  @Post(':taskId/expenses')
+  createExpense(
+    @Param('taskId') taskId: string,
+    @Body() body: { expenseName: string; amount: number },
+  ) {
+    return this.tasksService.createExpense(taskId, body);
+  }
+
+  @Delete(':taskId/expenses/:expenseId')
+  deleteExpense(@Param('expenseId') expenseId: string) {
+    return this.tasksService.deleteExpense(expenseId);
   }
 }

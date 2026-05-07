@@ -173,7 +173,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const initialRoleForm = {
     name: '',
     canViewFinance: false, canAddIncome: false, canAddExpense: false, canViewTotalBalance: false, canManagePaymentTypes: false,
-    canViewTasks: false, canCreateTask: false, canEditTask: false, canDeleteTask: false, canMoveTask: false, canManageColumns: false,
+    canViewTasks: false, canViewAllTasks: false, canViewOwnTasks: false, canCreateTask: false, canEditTask: false, canDeleteTask: false, canMoveTask: false, canManageColumns: false,
     canViewCustomers: false, canManageCustomers: false,
     canViewEmployees: false, canManageEmployees: false, canManageRoles: false, canViewSalary: false, canManageAdmins: false,
     canManageBranches: false, canViewKpi: false, canViewExpenseCharts: false, canViewSettings: false, canAssignToOtherBranches: false,
@@ -346,6 +346,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       color: 'orange',
       permissions: {
         canViewTasks: "Buyurtmalar va topshiriqlarni ko'rish",
+        canViewAllTasks: "Barcha buyurtmalarni ko'rish (RBAC)",
+        canViewOwnTasks: "Faqat o'ziga biriktirilgan buyurtmalarni ko'rish",
         canCreateTask: "Yangi buyurtma yaratish",
         canEditTask: "Buyurtmani tahrirlash",
         canDeleteTask: "Buyurtmani o'chirish",

@@ -160,11 +160,24 @@ export const tasksApi = {
   getArchived: () => api.get('/tasks/archived'),
   logView: (id: string, employeeId: string) =>
     api.post(`/tasks/${id}/view`, { employeeId }),
+  backfillIds: () => api.post('/tasks/backfill-ids'),
 
   getColumns: () => api.get('/tasks/columns'),
   createColumn: (data: any) => api.post('/tasks/columns', data),
   updateColumn: (id: string, data: any) => api.put(`/tasks/columns/${id}`, data),
   deleteColumn: (id: string) => api.post(`/tasks/columns/${id}/delete`),
+};
+
+// =============================================
+// TASK EXPENSES — Tannarx xarajatlari (Costing)
+// =============================================
+export const taskExpensesApi = {
+  list: (taskId: string) =>
+    api.get(`/tasks/${taskId}/expenses`),
+  create: (taskId: string, data: { expenseName: string; amount: number }) =>
+    api.post(`/tasks/${taskId}/expenses`, data),
+  remove: (taskId: string, expenseId: string) =>
+    api.delete(`/tasks/${taskId}/expenses/${expenseId}`),
 };
 
 // =============================================

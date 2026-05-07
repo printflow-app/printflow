@@ -88,6 +88,7 @@ model Tenant {
   branches           Branch[]
   promoCode          PromoCode?     // Tenant'ning o'z referral kodı
   promoCodeUsages    PromoCodeUsage[] // Bu tenant boshqa kodni ishlatgan holatlari
+  taskExpenses       TaskExpense[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -478,6 +479,10 @@ model Role {
   canManageKanbanColumns   Boolean @default(false)
   canManageGeneralSettings Boolean @default(false)
 
+  // Kanban ko'rinish ruxsatlari (tasks:view_all / tasks:view_own)
+  canViewAllTasks Boolean @default(false) // Barcha topshiriqlarni ko'rish
+  canViewOwnTasks Boolean @default(false) // Faqat o'ziga biriktirilgan topshiriqlarni ko'rish
+
   employees Employee[]
 
   @@unique([tenantId, name])
@@ -699,9 +704,10 @@ model KanbanColumn {
 }
 
 model Task {
-  id       String @id @default(uuid())
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  displayId String? // e.g. YC-10001 — human-readable per-customer sequence
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   orderName   String? // Buyurtma nomi (Masalan: Mega Meva)
   title       String
@@ -744,10 +750,12 @@ model Task {
   histories      TaskHistory[]
   stockMovements StockMovement[]
   vendorCosts    OrderVendorCost[]
+  expenses       TaskExpense[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([tenantId, displayId])
   @@index([tenantId])
   @@index([tenantId, isArchived])
 }
@@ -782,4 +790,25 @@ model TaskHistory {
   createdAt DateTime @default(now())
 
   @@index([tenantId])
+}
+
+// =============================================
+// TASK EXPENSE — Buyurtma tannarxi xarajatlari
+// Dynamic costing: yo'l kira, material, mehnat va boshqalar
+// =============================================
+model TaskExpense {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  expenseName String // Xarajat turi: "Yo'l kira", "Qog'oz", "Mehnat haqi"
+  amount      Float  // UZS
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([taskId])
 }

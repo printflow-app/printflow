@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart3, TrendingUp, TrendingDown, Users, ShoppingBag,
   Minus, RefreshCw, Building2, Calendar, ChevronDown, Award,
-  Handshake, Activity, DollarSign, Wallet,
+  Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2,
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, PieChart, Pie, Cell,
 } from 'recharts';
-import { reportsApi, financeApi, branchesApi } from '../api';
+import { reportsApi, financeApi, branchesApi, tasksApi, taskExpensesApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 // =============================================
@@ -279,6 +279,15 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [expenseBreakdown, setExpenseBreakdown] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Tannarx Kalkulyatori
+  const [costingQuery, setCostingQuery] = useState('');
+  const [costingTask, setCostingTask] = useState<any>(null);
+  const [costingExpenses, setCostingExpenses] = useState<any[]>([]);
+  const [isSearchingCosting, setIsSearchingCosting] = useState(false);
+  const [costingError, setCostingError] = useState('');
+  const [expenseForm, setExpenseForm] = useState({ expenseName: '', amount: '' });
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+
   useEffect(() => {
     branchesApi.findAll().then(r => setBranches(r.data || [])).catch(() => {});
   }, []);
@@ -396,6 +405,61 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   }, [getDateParams, preset, canViewFinance, canViewKpi, canViewVendors, canViewExpenseCharts, isShortPreset, branchId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const handleAddCostingExpense = async () => {
+    if (!costingTask || !expenseForm.expenseName.trim() || !expenseForm.amount) return;
+    setIsAddingExpense(true);
+    try {
+      await taskExpensesApi.create(costingTask.id, {
+        expenseName: expenseForm.expenseName.trim(),
+        amount: Number(expenseForm.amount),
+      });
+      setExpenseForm({ expenseName: '', amount: '' });
+      const expRes = await taskExpensesApi.list(costingTask.id);
+      setCostingExpenses(expRes.data || []);
+    } catch { /* silent */ } finally {
+      setIsAddingExpense(false);
+    }
+  };
+
+  const handleDeleteCostingExpense = async (expenseId: string) => {
+    if (!costingTask) return;
+    try {
+      await taskExpensesApi.remove(costingTask.id, expenseId);
+      const expRes = await taskExpensesApi.list(costingTask.id);
+      setCostingExpenses(expRes.data || []);
+    } catch { /* silent */ }
+  };
+
+  const handleCostingSearch = async () => {
+    const q = costingQuery.trim();
+    if (!q) return;
+    setIsSearchingCosting(true);
+    setCostingTask(null);
+    setCostingExpenses([]);
+    setCostingError('');
+    try {
+      const res = await tasksApi.findAll();
+      const all: any[] = res.data || [];
+      const found = all.find(
+        (t: any) =>
+          t.displayId?.toLowerCase() === q.toLowerCase() ||
+          t.orderName?.toLowerCase().includes(q.toLowerCase()) ||
+          t.title?.toLowerCase().includes(q.toLowerCase()),
+      );
+      if (!found) {
+        setCostingError(`"${q}" bo'yicha buyurtma topilmadi`);
+      } else {
+        setCostingTask(found);
+        const expRes = await taskExpensesApi.list(found.id);
+        setCostingExpenses(expRes.data || []);
+      }
+    } catch {
+      setCostingError('Xatolik yuz berdi');
+    } finally {
+      setIsSearchingCosting(false);
+    }
+  };
 
   if (loading) return <LoadingSpinner fullPage />;
 
@@ -665,6 +729,221 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </div>
         </Section>
       )}
+
+      {/* ── Tannarx Kalkulyatori ────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-orange-100 bg-orange-50/40 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+              <Package size={16} className="text-orange-500" /> Tannarx Kalkulyatori
+            </h3>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              Buyurtma ID, nomi yoki mijoz bo'yicha tannarx va foyda tahlili
+            </p>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Search bar */}
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Buyurtma ID (YC-10001), nomi yoki mijoz ismini kiriting..."
+                value={costingQuery}
+                onChange={e => setCostingQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCostingSearch()}
+                className="w-full h-11 pl-10 pr-4 text-sm font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all placeholder:font-sans placeholder:text-slate-400 placeholder:text-xs"
+              />
+            </div>
+            <button
+              onClick={handleCostingSearch}
+              disabled={isSearchingCosting || !costingQuery.trim()}
+              className="h-11 px-7 bg-orange-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest disabled:opacity-40 hover:bg-orange-700 transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-orange-500/20"
+            >
+              {isSearchingCosting ? '...' : 'QIDIRISH'}
+            </button>
+          </div>
+
+          {/* Error */}
+          {costingError && (
+            <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
+              <span className="text-rose-500 font-black text-sm">✕</span>
+              <p className="text-sm font-bold text-rose-600">{costingError}</p>
+            </div>
+          )}
+
+          {/* Result — profitability dashboard */}
+          {costingTask && (() => {
+            const totalCost = costingExpenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
+            const revenue = Number(costingTask.totalAmount) || 0;
+            const netProfit = revenue - totalCost;
+            const qty = Number(costingTask.quantity) || 1;
+            const unitCost = totalCost / qty;
+            const unitProfit = netProfit / qty;
+            const margin = revenue > 0 ? (netProfit / revenue * 100) : 0;
+
+            return (
+              <div className="space-y-4 animate-fade-in">
+
+                {/* Task identity strip */}
+                <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+                  <span className="text-[11px] font-black font-mono bg-white border border-orange-300 text-orange-600 px-3 py-1 rounded-lg tracking-widest shrink-0">
+                    {costingTask.displayId || `#${costingTask.id.slice(-6).toUpperCase()}`}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-800 truncate uppercase tracking-tight">
+                      {costingTask.orderName ? `${costingTask.orderName} — ` : ''}{costingTask.title}
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                      {costingTask.customerName || 'Mijoz ko\'rsatilmagan'} · {qty} dona
+                    </p>
+                  </div>
+                </div>
+
+                {/* Main metrics grid */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden">
+
+                  {/* Revenue + Cost */}
+                  <div className="grid grid-cols-2 divide-x divide-slate-200 border-b border-slate-200">
+                    <div className="p-4">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
+                      <p className="text-xl font-black text-slate-800 font-mono tabular-nums">{revenue.toLocaleString()}</p>
+                      <p className="text-[9px] font-bold text-slate-400 mt-0.5">UZS</p>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
+                      <p className="text-xl font-black text-slate-700 font-mono tabular-nums">{totalCost.toLocaleString()}</p>
+                      <p className="text-[9px] font-bold text-slate-400 mt-0.5">UZS · {costingExpenses.length} ta moddа</p>
+                    </div>
+                  </div>
+
+                  {/* Net profit hero */}
+                  <div className="p-5 border-b border-slate-200">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Sof Foyda</p>
+                    <div className="flex items-baseline gap-4">
+                      <p className={`text-3xl font-black font-mono tracking-tight ${netProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
+                        {netProfit.toLocaleString()} <span className="text-sm font-bold">UZS</span>
+                      </p>
+                      {revenue > 0 && (
+                        <span className={`text-[11px] font-black px-3 py-1 rounded-lg ${netProfit >= 0 ? 'bg-orange-50 text-orange-600 border border-orange-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
+                          {netProfit >= 0 ? '+' : ''}{margin.toFixed(1)}% marja
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Unit metrics */}
+                  <div className="grid grid-cols-2 divide-x divide-slate-200">
+                    <div className="p-4">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
+                      <p className="text-lg font-black text-slate-700 font-mono tabular-nums">
+                        {unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </p>
+                      <p className="text-[9px] font-bold text-slate-400 mt-0.5">{qty} dona asosida</p>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
+                      <p className={`text-lg font-black font-mono tabular-nums ${unitProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
+                        {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </p>
+                      <p className="text-[9px] font-bold text-slate-400 mt-0.5">UZS / dona</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Add expense form */}
+                <div className="border border-orange-200 rounded-xl overflow-hidden">
+                  <div className="bg-orange-50 px-4 py-2.5 border-b border-orange-200">
+                    <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest">Xarajat qo'shish</p>
+                  </div>
+                  <div className="p-4 flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="Xarajat nomi (Qog'oz, Bo'yoq...)"
+                      value={expenseForm.expenseName}
+                      onChange={e => setExpenseForm(f => ({ ...f, expenseName: e.target.value }))}
+                      onKeyDown={e => e.key === 'Enter' && handleAddCostingExpense()}
+                      className="flex-1 h-10 px-3 text-xs font-bold bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Summa (UZS)"
+                      value={expenseForm.amount}
+                      onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value }))}
+                      onKeyDown={e => e.key === 'Enter' && handleAddCostingExpense()}
+                      className="w-36 h-10 px-3 text-xs font-bold font-mono bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                    />
+                    <button
+                      onClick={handleAddCostingExpense}
+                      disabled={isAddingExpense || !expenseForm.expenseName.trim() || !expenseForm.amount}
+                      className="h-10 px-4 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-40 hover:bg-orange-700 transition-all active:scale-95 flex items-center gap-1.5 shadow-sm shadow-orange-500/20"
+                    >
+                      <Plus size={13} strokeWidth={3} /> QO'SH
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expense breakdown table */}
+                {costingExpenses.length > 0 && (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Xarajatlar ro'yxati</p>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {costingExpenses.map((exp: any) => (
+                        <div key={exp.id} className="flex items-center justify-between px-4 py-3 hover:bg-orange-50/40 transition-colors group">
+                          <div>
+                            <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{exp.expenseName}</p>
+                            <p className="text-[9px] text-slate-400 font-bold mt-0.5">
+                              {new Date(exp.createdAt).toLocaleDateString('uz-UZ')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-black text-slate-700 font-mono tabular-nums">
+                              {Number(exp.amount).toLocaleString()} UZS
+                            </span>
+                            <button
+                              onClick={() => handleDeleteCostingExpense(exp.id)}
+                              className="w-7 h-7 rounded-lg bg-rose-50 text-rose-300 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {/* Total row */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-orange-50">
+                        <span className="text-[9px] font-black text-orange-600 uppercase tracking-widest">Jami Xarajat</span>
+                        <span className="text-sm font-black text-slate-800 font-mono tabular-nums">
+                          {totalCost.toLocaleString()} UZS
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {costingExpenses.length === 0 && (
+                  <p className="text-center text-[11px] font-bold text-slate-400 py-4">
+                    Xarajat yo'q — yuqorida qo'shing
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Empty state */}
+          {!costingTask && !costingError && !isSearchingCosting && (
+            <div className="py-10 flex flex-col items-center justify-center gap-2 opacity-40">
+              <Package size={32} className="text-orange-400" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Buyurtma ID yoki nomini kiriting
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {!canViewFinance && !canViewKpi && !canViewVendors && (
         <div className="text-center py-20 text-slate-400">

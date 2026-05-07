@@ -230,7 +230,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Package size={20} className="text-emerald-500" /> Ombor Boshqaruvi
+            <Package size={20} className="text-orange-500" /> Ombor Boshqaruvi
           </h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
             Xomashyo va materiallar nazorati
@@ -239,7 +239,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         { (isAdmin || currentUser.permissions?.canManageInventory) && (
           <button
             onClick={() => setIsAddMaterialOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
           >
             <Plus size={16} strokeWidth={3} /> Material Qo'shish
           </button>
@@ -250,7 +250,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {[
           { label: 'Jami Materiallar', value: materials.length, icon: Package, color: 'indigo', bg: 'bg-orange-50/50', border: 'border-orange-100', text: 'text-orange-600' },
-          { label: 'Faol (yetarli)', value: materials.filter(m => !isLow(m) && !isCritical(m)).length, icon: TrendingUp, color: 'emerald', bg: 'bg-emerald-50/50', border: 'border-emerald-100', text: 'text-emerald-600' },
+          { label: 'Faol (yetarli)', value: materials.filter(m => !isLow(m) && !isCritical(m)).length, icon: TrendingUp, color: 'orange', bg: 'bg-orange-50/50', border: 'border-orange-100', text: 'text-orange-600' },
           { label: 'Band (Reserved)', value: materials.reduce((acc, m) => acc + (m.reservedStock > 0 ? 1 : 0), 0), icon: ArrowDownCircle, color: 'sky', bg: 'bg-sky-50/50', border: 'border-sky-100', text: 'text-sky-600' },
           { label: 'Kam qolgan', value: lowCount, icon: TrendingDown, color: 'amber', bg: 'bg-amber-50/50', border: 'border-amber-100', text: 'text-amber-600' },
         ].map(stat => (
@@ -270,7 +270,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl w-fit">
         <button
           onClick={() => setActiveTab('materials')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'materials' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'materials' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
         >
           <BarChart2 size={14} /> Materiallar
         </button>
@@ -290,7 +290,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               <Package size={48} className="text-slate-200" />
               <p className="text-slate-300 font-black uppercase tracking-widest text-xs">Hozircha materiallar yo'q</p>
               {isAdmin && (
-                <button onClick={() => setIsAddMaterialOpen(true)} className="text-xs font-black text-emerald-500 border-b-2 border-emerald-200 pb-0.5 hover:border-emerald-500 transition-colors">
+                <button onClick={() => setIsAddMaterialOpen(true)} className="text-xs font-black text-orange-500 border-b-2 border-orange-200 pb-0.5 hover:border-orange-500 transition-colors">
                   + Birinchi materialni qo'shing
                 </button>
               )}
@@ -304,13 +304,13 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   <div
                     key={mat.id}
                     className={`bg-white rounded-3xl border-2 shadow-sm p-5 transition-all hover:shadow-md group ${
-                      isCrit ? 'border-rose-200 bg-rose-50/30' : isLowStock ? 'border-amber-200 bg-amber-50/20' : 'border-slate-100 hover:border-emerald-200'
+                      isCrit ? 'border-rose-200 bg-rose-50/30' : isLowStock ? 'border-amber-200 bg-amber-50/20' : 'border-slate-100 hover:border-orange-200'
                     }`}
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-sm ${
-                          isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-emerald-500'
+                          isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-orange-500'
                         }`}>
                           {mat.name.charAt(0).toUpperCase()}
                         </div>
@@ -367,7 +367,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         </div>
                         <div>
                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Sotuvda mavjud:</p>
-                          <p className="text-sm font-black text-emerald-600 tabular-nums">
+                          <p className="text-sm font-black text-orange-600 tabular-nums">
                             {formatStock(Math.max(0, mat.currentStock - (mat.reservedStock || 0)), mat.unit)}
                           </p>
                         </div>
@@ -377,7 +377,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         <div className="pt-1">
                           <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
                              <div
-                               className={`h-full rounded-full transition-all ${isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                               className={`h-full rounded-full transition-all ${isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-orange-500'}`}
                                style={{ width: `${Math.min(100, (mat.currentStock / (mat.minStock * 2)) * 100)}%` }}
                              />
                           </div>
@@ -389,7 +389,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     <div className="flex gap-2 pt-3 border-t border-slate-100">
                       <button
                         onClick={() => openStockOp(mat, 'kirim')}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-emerald-50 hover:bg-emerald-500 hover:text-white text-emerald-600 text-[10px] font-black uppercase rounded-xl border border-emerald-100 hover:border-emerald-500 transition-all"
+                        className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 text-[10px] font-black uppercase rounded-xl border border-orange-100 hover:border-orange-500 transition-all"
                       >
                         <ArrowUpCircle size={13} /> Kirim
                       </button>
@@ -489,8 +489,8 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               <NumberInput 
                 value={newMaterialForm.currentStock} 
                 onChange={val => setNewMaterialForm(f => ({ ...f, currentStock: val || '' }))} 
-                className="input-minimal font-black text-emerald-600" 
-                placeholder="0" 
+                className="input-minimal font-black text-orange-600"
+                placeholder="0"
                 allowDecimal={true}
               />
             </div>
@@ -507,7 +507,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" onClick={() => setIsAddMaterialOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-8 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-emerald-700 transition-all">Qo'shish</button>
+            <button type="submit" className="h-12 flex-2 px-8 bg-orange-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-orange-700 transition-all">Qo'shish</button>
           </div>
         </form>
       </Modal>
@@ -737,10 +737,10 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
             {/* Currently Linked Services */}
             <div className="flex flex-col">
-               <h5 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
+               <h5 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
                  <CheckCircle2 size={14}/> Biriktirilgan Xizmatlar
                </h5>
-               <div className="overflow-y-auto max-h-[300px] border-2 border-emerald-50 rounded-3xl bg-emerald-50/20 p-2 flex flex-col gap-1.5 custom-scroll">
+               <div className="overflow-y-auto max-h-[300px] border-2 border-orange-50 rounded-3xl bg-orange-50/20 p-2 flex flex-col gap-1.5 custom-scroll">
                   {(!selectedMaterial?.bom || (selectedMaterial.bom as any[]).length === 0) ? (
                     <div className="py-20 text-center opacity-30 flex flex-col items-center">
                        <Layers size={32} className="mb-2" />
@@ -748,10 +748,10 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     </div>
                   ) : (
                     (selectedMaterial.bom as any[]).map(b => (
-                      <div key={b.id} className="bg-white p-3 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between group">
+                      <div key={b.id} className="bg-white p-3 rounded-2xl border border-orange-100 shadow-sm flex items-center justify-between group">
                          <div>
                             <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{b.service?.name}</p>
-                            <p className="text-[10px] font-black text-emerald-600">Norma: {b.normPerUnit} {selectedMaterial?.unit}</p>
+                            <p className="text-[10px] font-black text-orange-600">Norma: {b.normPerUnit} {selectedMaterial?.unit}</p>
                          </div>
                          <button 
                            onClick={() => askUnlink(b.serviceId)}

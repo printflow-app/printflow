@@ -5,7 +5,7 @@ import {
   Users, AlertTriangle, ExternalLink, Package, Building2,
   Archive, ArchiveRestore, Handshake, AlertOctagon
 } from 'lucide-react';
-import { tasksApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi } from '../api';
+import { tasksApi, taskExpensesApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi } from '../api';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
@@ -29,6 +29,8 @@ interface Task {
   paymentTypeId?: string;
   paymentType?: { name: string };
   histories?: any[];
+  displayId?: string;
+  quantity?: number;
   assignees: string; // JSON string in DB
   deadlineAt?: string | null;
   createdAt?: string;
@@ -65,10 +67,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [vendorCostForm, setVendorCostForm] = useState({ vendorId: '', amount: '', description: '' });
   const [isAddingVendorCost, setIsAddingVendorCost] = useState(false);
 
+  // Sprint 5: Costing & profitability
+  const [taskExpenses, setTaskExpenses] = useState<any[]>([]);
+  const [expenseForm, setExpenseForm] = useState({ expenseName: '', amount: '' });
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+
   // Sprint 2: Archived orders view
   const [isArxivModalOpen, setIsArxivModalOpen] = useState(false);
   const [arxivTasks, setArxivTasks] = useState<any[]>([]);
   const [isArxivLoading, setIsArxivLoading] = useState(false);
+
+  // Kanban search
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchData = async (silent = false) => {
     try {
@@ -129,7 +139,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [isNewColumnModalOpen, setIsNewColumnModalOpen] = useState(false);
   const [isNewOptionModalOpen, setIsNewOptionModalOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
-  const [activeTab, setActiveTab] = useState<'details' | 'history' | 'vendors'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'history' | 'vendors' | 'costing'>('details');
 
   // Real-time refresh — pause while user has any modal open to avoid clobbering input
   const isAnyModalOpen =
@@ -144,6 +154,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   useEffect(() => {
     if (activeTab === 'vendors' && selectedTask) {
       loadVendorCosts(selectedTask.id);
+    }
+    if (activeTab === 'costing' && selectedTask) {
+      loadTaskExpenses(selectedTask.id);
     }
   }, [activeTab, selectedTask?.id]);
 
@@ -563,6 +576,44 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     }
   };
 
+  const loadTaskExpenses = async (taskId: string) => {
+    try {
+      const res = await taskExpensesApi.list(taskId);
+      setTaskExpenses(res.data || []);
+    } catch {
+      setTaskExpenses([]);
+    }
+  };
+
+  const handleAddExpense = async () => {
+    if (!selectedTask || !expenseForm.expenseName.trim() || !expenseForm.amount) return;
+    setIsAddingExpense(true);
+    try {
+      await taskExpensesApi.create(selectedTask.id, {
+        expenseName: expenseForm.expenseName.trim(),
+        amount: Number(expenseForm.amount),
+      });
+      setExpenseForm({ expenseName: '', amount: '' });
+      await loadTaskExpenses(selectedTask.id);
+      showStatus('success', "Xarajat qo'shildi!");
+    } catch {
+      showStatus('error', "Xarajat qo'shishda xato!");
+    } finally {
+      setIsAddingExpense(false);
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (!selectedTask) return;
+    try {
+      await taskExpensesApi.remove(selectedTask.id, expenseId);
+      await loadTaskExpenses(selectedTask.id);
+      showStatus('success', "Xarajat o'chirildi.");
+    } catch {
+      showStatus('error', "O'chirishda xato!");
+    }
+  };
+
   const handleAddServiceOption = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentOrderService.serviceId || !newOptionForm.name || !newOptionForm.value) return;
@@ -591,6 +642,19 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
   };
 
+  // Client-side search: filter by displayId, title, orderName, or customerName
+  const filteredTasks = searchTerm.trim()
+    ? tasks.filter(t => {
+        const q = searchTerm.toLowerCase();
+        return (
+          t.displayId?.toLowerCase().includes(q) ||
+          t.title.toLowerCase().includes(q) ||
+          t.orderName?.toLowerCase().includes(q) ||
+          t.customerName?.toLowerCase().includes(q)
+        );
+      })
+    : tasks;
+
   return (
     <div className="space-y-4 sm:space-y-6 flex flex-col h-full animate-fade-in">
 
@@ -608,6 +672,25 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           <h2 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">Xizmatlar & Kanban</h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">Ish jarayonini boshqarish</p>
         </div>
+
+        {/* Search input */}
+        <div className="relative flex-1 min-w-0 max-w-xs">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="ID, nomi yoki mijoz..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full h-9 pl-8 pr-3 text-[11px] font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 focus:bg-white transition-all placeholder:text-slate-300"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors text-xs font-black"
+            >✕</button>
+          )}
+        </div>
+
         <div className="flex flex-row flex-wrap items-center gap-2">
           <button onClick={openArxivModal} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-violet-400 hover:text-violet-500 transition-all flex items-center gap-1.5 whitespace-nowrap">
             <Archive size={12} /> ARXIV
@@ -638,7 +721,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           columns.map(col => {
             const now_s = new Date();
             const myId = currentUser?.id;
-            const colTasks = tasks
+            const colTasks = filteredTasks
               .filter(t => t.columnId === col.id)
               .sort((a, b) => {
                 const aIsMine = myId ? parseJson(a.assignees).includes(myId) : false;
@@ -701,13 +784,23 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                               : `bg-white ${getCardUrgencyClass(task)} hover:shadow-orange-500/10`
                           }`}
                       >
-                        {isMyTask && (
-                          <div className="flex items-center gap-1 mb-2 -mt-0.5">
+                        {/* displayId badge + "my task" badge row — always shown */}
+                        <div className="flex items-center gap-1.5 mb-2 -mt-0.5 flex-wrap">
+                          {task.displayId ? (
+                            <span className="text-[8px] font-black font-mono bg-violet-50 text-violet-600 border border-violet-200 px-2 py-0.5 rounded-md tracking-widest uppercase">
+                              {task.displayId}
+                            </span>
+                          ) : (
+                            <span className="text-[8px] font-black font-mono bg-slate-50 text-slate-400 border border-slate-200 px-2 py-0.5 rounded-md tracking-widest">
+                              #{task.id.slice(-6).toUpperCase()}
+                            </span>
+                          )}
+                          {isMyTask && (
                             <span className="text-[8px] font-black bg-sky-500 text-white px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
                               <Users size={7} /> Mening taskım
                             </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                         <h4 className="font-black text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-orange-700 transition-colors uppercase tracking-tight line-clamp-2">
                           {task.orderName && <span className="text-orange-600">{task.orderName} — </span>}
                           {task.title}
@@ -1188,6 +1281,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               <button onClick={() => setActiveTab('details')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'details' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TAFSILOTLAR</button>
               <button onClick={() => setActiveTab('history')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TARIXI</button>
               <button onClick={() => setActiveTab('vendors')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'vendors' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>HAMKORLAR</button>
+              <button onClick={() => setActiveTab('costing')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'costing' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-400 hover:text-slate-600'}`}>TANNARX</button>
             </div>
 
             {activeTab === 'details' ? (
@@ -1294,7 +1388,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   ))
                 )}
               </div>
-            ) : (
+            ) : activeTab === 'vendors' ? (
               <div className="space-y-5 animate-fade-in">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
                   <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
@@ -1368,6 +1462,126 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ══ TANNARX VA MOLIYA TAB ══════════════════════════════════════ */
+              <div className="space-y-5 animate-fade-in">
+
+                {/* ── Dashboard Calculator ── */}
+                {(() => {
+                  const totalCost = taskExpenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
+                  const revenue = Number(selectedTask.totalAmount) || 0;
+                  const netProfit = revenue - totalCost;
+                  const qty = Number(selectedTask.quantity) || 1;
+                  const unitCost = totalCost / qty;
+                  const unitProfit = netProfit / qty;
+                  const margin = revenue > 0 ? (netProfit / revenue * 100) : 0;
+                  return (
+                    <div className="bg-stone-50 border border-stone-200 rounded-2xl overflow-hidden">
+                      {/* Revenue + Cost */}
+                      <div className="grid grid-cols-2 divide-x divide-stone-200 border-b border-stone-200">
+                        <div className="p-4">
+                          <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
+                          <p className="text-sm font-black text-stone-800 font-mono">{revenue.toLocaleString()} UZS</p>
+                        </div>
+                        <div className="p-4">
+                          <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
+                          <p className="text-sm font-black text-stone-700 font-mono">{totalCost.toLocaleString()} UZS</p>
+                        </div>
+                      </div>
+                      {/* Net Profit hero */}
+                      <div className="p-4 border-b border-stone-200">
+                        <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">Sof Foyda</p>
+                        <div className="flex items-baseline gap-3">
+                          <p className={`text-2xl font-black font-mono tracking-tight ${netProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                            {netProfit.toLocaleString()} UZS
+                          </p>
+                          {revenue > 0 && (
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${netProfit >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
+                              {netProfit >= 0 ? '+' : ''}{margin.toFixed(1)}% marja
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Unit metrics */}
+                      <div className="grid grid-cols-2 divide-x divide-stone-200">
+                        <div className="p-4">
+                          <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
+                          <p className="text-[13px] font-black text-stone-700 font-mono">{unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} UZS</p>
+                          <p className="text-[8px] text-stone-400 font-bold mt-0.5">{qty} dona asosida</p>
+                        </div>
+                        <div className="p-4">
+                          <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
+                          <p className={`text-[13px] font-black font-mono ${unitProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                            {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} UZS
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── Add Expense Form ── */}
+                <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-3">
+                  <p className="text-[8px] font-black text-stone-500 uppercase tracking-widest">Xarajat Qo'shish</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Xarajat turi (Yo'l kira...)"
+                      value={expenseForm.expenseName}
+                      onChange={e => setExpenseForm(f => ({ ...f, expenseName: e.target.value }))}
+                      className="input-minimal bg-white border border-stone-200 text-[11px] h-10 rounded-xl px-3 focus:border-stone-400 focus:outline-none"
+                    />
+                    <CurrencyInput
+                      value={expenseForm.amount}
+                      onChange={(uzs) => setExpenseForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
+                      colorClass="text-stone-700"
+                      placeholder="Summa"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddExpense}
+                    disabled={isAddingExpense || !expenseForm.expenseName.trim() || !expenseForm.amount}
+                    className="w-full h-10 bg-stone-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-900 transition-all active:scale-95"
+                  >
+                    {isAddingExpense ? 'QOSHILMOQDA...' : "+ XARAJAT QO'SHISH"}
+                  </button>
+                </div>
+
+                {/* ── Expense List ── */}
+                {taskExpenses.length === 0 ? (
+                  <div className="py-10 flex items-center justify-center">
+                    <p className="text-[10px] font-black uppercase text-stone-300 tracking-widest">Hali xarajat qo'shilmagan</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {taskExpenses.map((exp: any) => (
+                      <div key={exp.id} className="flex items-center justify-between bg-white border border-stone-200 rounded-xl px-4 py-3 hover:border-stone-300 transition-colors">
+                        <div>
+                          <p className="text-[11px] font-black text-stone-800 uppercase tracking-tight">{exp.expenseName}</p>
+                          <p className="text-[9px] text-stone-400 font-bold mt-0.5">{new Date(exp.createdAt).toLocaleDateString('uz-UZ')}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-black text-stone-700 font-mono">{Number(exp.amount).toLocaleString()} UZS</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExpense(exp.id)}
+                            className="text-stone-300 hover:text-rose-500 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center pt-3 px-1 border-t border-stone-200 mt-2">
+                      <span className="text-[9px] font-black text-stone-500 uppercase tracking-widest">Jami xarajat</span>
+                      <span className="text-sm font-black text-stone-800 font-mono">
+                        {taskExpenses.reduce((s: number, e: any) => s + Number(e.amount), 0).toLocaleString()} UZS
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>

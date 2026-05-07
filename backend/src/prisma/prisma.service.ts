@@ -17,6 +17,7 @@ const TENANT_SCOPED_MODELS = new Set([
   'kanbanColumn',
   'task',
   'taskHistory',
+  'taskExpense',
   'service',
   'serviceOption',
   'serviceMaterial',

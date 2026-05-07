@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
+import { buildDisplayId } from './task-id.util';
 
 @Injectable()
 export class TasksService {
@@ -11,12 +12,19 @@ export class TasksService {
     private telegramService: TelegramService,
   ) {}
 
-  async findAll(branchId?: string) {
+  async findAll(branchId?: string, viewMode: 'all' | 'own' = 'all', currentUserId?: string) {
+    const where: any = {
+      isArchived: false,
+      ...(branchId ? { branchId } : {}),
+    };
+
+    // tasks:view_own — only return tasks where the current employee is an assignee
+    if (viewMode === 'own' && currentUserId) {
+      where.assignees = { contains: currentUserId };
+    }
+
     return this.prisma.task.findMany({
-      where: {
-        isArchived: false,
-        ...(branchId ? { branchId } : {}),
-      } as any,
+      where,
       include: {
         column: true,
         customer: true,
@@ -59,8 +67,23 @@ export class TasksService {
         finalCustomerId = customer.id;
       }
 
+      // Resolve the name to use for initials (fetch from DB if only ID was supplied)
+      let effectiveName = customerName;
+      if (!effectiveName && finalCustomerId) {
+        const c = await tx.customer.findUnique({
+          where: { id: finalCustomerId },
+          select: { name: true },
+        });
+        effectiveName = c?.name ?? null;
+      }
+      const existingTaskCount = finalCustomerId
+        ? await (tx.task.count as any)({ where: { customerId: finalCustomerId } })
+        : 0;
+      const displayId = buildDisplayId(effectiveName || 'XX', existingTaskCount);
+
       const createdTask = await tx.task.create({
         data: {
+          displayId,
           orderName,
           title,
           description,
@@ -154,6 +177,21 @@ export class TasksService {
         finalCustomerId = customer.id;
       }
 
+      // Resolve display-name for initials once before the loop
+      let effectiveBulkName = customerName;
+      if (!effectiveBulkName && finalCustomerId) {
+        const c = await tx.customer.findUnique({
+          where: { id: finalCustomerId },
+          select: { name: true },
+        });
+        effectiveBulkName = c?.name ?? null;
+      }
+      // Snapshot the count BEFORE inserting any tasks so each item in the
+      // batch gets a deterministic, non-colliding sequence number.
+      const baseTaskCount = finalCustomerId
+        ? await (tx.task.count as any)({ where: { customerId: finalCustomerId } })
+        : 0;
+
       const createdTasks = [];
       let totalOrderAmount = 0;
 
@@ -163,12 +201,15 @@ export class TasksService {
         totalOrderAmount += Number(totalAmount || 0);
 
         // Distribute deposit: the last item gets the remainder if any
-        const depositForThisTask = (i === items.length - 1) 
-          ? (perTaskDepositFloor + remainder) 
+        const depositForThisTask = (i === items.length - 1)
+          ? (perTaskDepositFloor + remainder)
           : perTaskDepositFloor;
+
+        const displayId = buildDisplayId(effectiveBulkName || 'XX', baseTaskCount + i);
 
         const task = await tx.task.create({
           data: {
+            displayId,
             orderName,
             title,
             description,
@@ -335,13 +376,16 @@ export class TasksService {
   // DELETE o'chirildi — faqat arxivlash mumkin (audit trail saqlanadi)
   // async remove() — DISABLED intentionally (use archive() instead)
 
-  async getColumns() {
+  async getColumns(viewMode: 'all' | 'own' = 'all', currentUserId?: string) {
+    const taskWhere: any = { isArchived: false };
+    if (viewMode === 'own' && currentUserId) {
+      taskWhere.assignees = { contains: currentUserId };
+    }
+
     return this.prisma.kanbanColumn.findMany({
       orderBy: { orderIdx: 'asc' },
       include: {
-        tasks: {
-          where: { isArchived: false } as any,
-        },
+        tasks: { where: taskWhere },
       },
     });
   }
@@ -371,6 +415,65 @@ export class TasksService {
 
   async removeColumn(id: string) {
     return this.prisma.kanbanColumn.delete({ where: { id } });
+  }
+
+  // =============================================
+  // TASK EXPENSE CRUD (Tannarx xarajatlari)
+  // =============================================
+
+  async getExpenses(taskId: string) {
+    return (this.prisma as any).taskExpense.findMany({
+      where: { taskId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async createExpense(taskId: string, data: { expenseName: string; amount: number }) {
+    return (this.prisma as any).taskExpense.create({
+      data: {
+        taskId,
+        expenseName: data.expenseName,
+        amount: Number(data.amount),
+      },
+    });
+  }
+
+  async deleteExpense(expenseId: string) {
+    return (this.prisma as any).taskExpense.delete({
+      where: { id: expenseId },
+    });
+  }
+
+  // =============================================
+  // BACKFILL — Generate displayIds for old tasks
+  // =============================================
+  async backfillDisplayIds() {
+    const tasks = await (this.prisma as any).task.findMany({
+      where: { displayId: null },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, tenantId: true, customerName: true },
+    });
+
+    // Per-tenant counter: start from existing displayId count
+    const tenantCounters: Record<string, number> = {};
+    let updated = 0;
+
+    for (const task of tasks) {
+      if (tenantCounters[task.tenantId] === undefined) {
+        tenantCounters[task.tenantId] = await (this.prisma as any).task.count({
+          where: { tenantId: task.tenantId, displayId: { not: null } },
+        });
+      }
+      const count = tenantCounters[task.tenantId];
+      const displayId = buildDisplayId(task.customerName || 'XX', count);
+      try {
+        await (this.prisma as any).task.update({ where: { id: task.id }, data: { displayId } });
+        tenantCounters[task.tenantId]++;
+        updated++;
+      } catch { /* skip if unique collision */ }
+    }
+
+    return { updated, total: tasks.length };
   }
 
   // =============================================
