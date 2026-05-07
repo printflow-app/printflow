@@ -14,6 +14,7 @@ const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + ' UZS';
 
 const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
+  const canViewFinance = !!(currentUser?.permissions?.canViewFinance || currentUser?.role?.name?.toLowerCase() === 'admin');
   const [dashboard, setDashboard] = useState({ totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
   const [pendingOrders, setPendingOrders] = useState(0);
   const [overdueOrders, setOverdueOrders] = useState(0);
@@ -53,7 +54,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
       if (localBranchId) params.branchId = localBranchId;
 
       const [dashRes, branchRes, tasksRes] = await Promise.all([
-        financeApi.getDashboard({ params }),
+        canViewFinance ? financeApi.getDashboard({ params }) : Promise.resolve({ data: { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 } }),
         branchesApi.findAll(),
         tasksApi.findAll(localBranchId || undefined).catch(() => ({ data: [] })),
       ]);
@@ -77,13 +78,13 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
 
   useEffect(() => { fetchData(); }, [startDate, endDate, localBranchId, activeBranchId]);
 
-  if (isLoading) return <LoadingSpinner fullPage />;
-
   return (
     <div className="space-y-4 sm:space-y-6">
+      {isLoading && <LoadingSpinner fullPage />}
+      {isLoading ? null : (<>
 
       {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">
             <Filter size={18} className="text-[#FF6B00]" /> Filtrlar
@@ -91,7 +92,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1">Sana bo'yicha tahlil</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 border-t xl:border-t-0 border-slate-100 pt-3 xl:pt-0">
+        <div className="flex flex-wrap items-center gap-3 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0">
           <div className="flex bg-slate-100 p-0.5 rounded-lg w-full sm:w-auto shadow-inner">
             {(['all', 'today', 'week', 'month'] as const).map((f) => (
               <button
@@ -119,6 +120,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
 
       {/* KPI Cards — Kirim + Bajarilgan + Kutilmoqda */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {canViewFinance && (
         <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125" />
           <div className="relative">
@@ -129,6 +131,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             <h3 className="text-xl font-black text-slate-800 tracking-tight">{formatCurrency(dashboard.totalKirim)}</h3>
           </div>
         </div>
+        )}
 
         <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125" />
@@ -168,6 +171,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
 
       {/* Employee KPI / Samaradorlik */}
       <Kpi currentUser={currentUser} />
+    </>)}
     </div>
   );
 };

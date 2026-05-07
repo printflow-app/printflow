@@ -118,9 +118,9 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   return (
     <div className="space-y-6 pb-20">
       {/* Filter tabs */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+          <h2 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             <TrendingUp className="text-orange-600" size={22} /> Samaradorlik
           </h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Xodimlar samaradorligi va ish tezligi</p>
@@ -161,7 +161,7 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-[11px]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-[11px]">
               <div><p className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Yopilgan</p><p className="font-black text-base">{me.completedTasks}</p></div>
               <div><p className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Jarayonda</p><p className="font-black text-base text-amber-400">{me.pendingTasks}</p></div>
               <div><p className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Harakatlar</p><p className="font-black text-base">{me.totalActivity}</p></div>
@@ -175,7 +175,7 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
       {/* Summary cards */}
       {canViewAll && rows.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <StatCard icon={<Trophy size={18} />} label="Lider" value={rows[0]?.fullName?.split(' ')[0] || '—'} hint={`${rows[0]?.velocityScore || 0} ball`} />
           <StatCard icon={<Activity size={18} />} label="Jami harakatlar" value={rows.reduce((s, r) => s + r.totalActivity, 0)} />
           <StatCard icon={<Calendar size={18} />} label="Bajarilgan" value={rows.reduce((s, r) => s + r.completedTasks, 0)} />

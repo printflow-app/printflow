@@ -17,10 +17,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  // Trick to prevent browser autofill until user focuses
-  const [slugReady, setSlugReady] = useState(false);
-  const [userReady, setUserReady] = useState(false);
-  const [passReady, setPassReady] = useState(false);
 
   useEffect(() => {
     // Check forced-logout flag
@@ -118,8 +114,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                   id="workspace-slug"
                   type="text"
                   value={workspaceSlug}
-                  readOnly={!slugReady}
-                  onFocus={() => { setSlugReady(true); }}
                   onChange={(e) => setWorkspaceSlug(e.target.value.toLowerCase())}
                   className="w-full h-12 bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
                   placeholder="sizning-workspace"
@@ -142,8 +136,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                   id="username"
                   type="text"
                   value={username}
-                  readOnly={!userReady}
-                  onFocus={() => { setUserReady(true); setUsername(''); }}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full h-12 bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
                   placeholder="loginni kiriting"
@@ -166,8 +158,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  readOnly={!passReady}
-                  onFocus={() => { setPassReady(true); setPassword(''); }}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full h-12 bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-12 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
                   placeholder="•••••••••"

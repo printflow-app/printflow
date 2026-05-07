@@ -107,27 +107,47 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     if (!this.bot) return;
 
-    // Error handler — prevents polling from silently dying on unhandled handler exceptions
     this.bot.catch((err: any, ctx: any) => {
       console.error('❌ Telegram bot handler xatosi:', err?.message || err);
     });
 
-    try {
-      // Delete any existing webhook so long-polling works cleanly
-      await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
-      console.log('🔗 Webhook tozalandi');
-    } catch (e: any) {
-      console.warn('Webhook o\'chirishda xato (davom etiladi):', e?.message);
+    const backendUrl = process.env.BACKEND_URL;
+
+    if (backendUrl) {
+      const webhookUrl = `${backendUrl}/api/telegram/webhook`;
+      const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+      try {
+        await this.bot.telegram.setWebhook(webhookUrl, {
+          secret_token: secret,
+          drop_pending_updates: true,
+        });
+        console.log(`🔗 Telegram Webhook o'rnatildi: ${webhookUrl}`);
+      } catch (e: any) {
+        console.error('Webhook o\'rnatishda xato:', e?.message);
+      }
+    } else {
+      // Local development — polling rejimi
+      try {
+        await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+        console.log('🔗 Webhook tozalandi (polling rejimi)');
+      } catch (e: any) {
+        console.warn('Webhook o\'chirishda xato:', e?.message);
+      }
+      this.bot.launch({ dropPendingUpdates: true })
+        .catch(err => console.error('Bot ishga tushmadi:', err?.message || err));
+      console.log('🚀 Telegram Bot polling boshlandi');
     }
-
-    this.bot.launch({ dropPendingUpdates: true })
-      .catch(err => console.error('Bot ishga tushmadi:', err?.message || err));
-
-    console.log('🚀 Telegram Bot polling boshlandi');
   }
 
   onModuleDestroy() {
-    if (this.bot) this.bot.stop();
+    if (this.bot && !process.env.BACKEND_URL) {
+      this.bot.stop();
+    }
+  }
+
+  async handleUpdate(body: any) {
+    if (!this.bot) return;
+    await this.bot.handleUpdate(body);
   }
 
   // =============================================

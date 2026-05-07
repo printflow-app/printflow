@@ -111,16 +111,16 @@ export default function Billing() {
   if (loading) return <LoadingSpinner fullPage />;
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-7xl mx-auto p-4 md:p-6">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       {/* Current Status Header */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-           <div className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center shadow-lg ${status?.status === 'EXPIRED' ? 'bg-rose-100 text-rose-600 shadow-rose-200/50' : 'bg-orange-100 text-[#FF6B00] shadow-orange-200/50'}`}>
-              <ShieldCheck size={32} />
+      <div className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex items-center gap-3">
+           <div className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center shadow-sm ${status?.status === 'EXPIRED' ? 'bg-rose-100 text-rose-600' : 'bg-orange-100 text-[#FF6B00]'}`}>
+              <ShieldCheck size={22} />
            </div>
            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Joriy Holat</p>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Joriy Holat</p>
+              <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
                 {status?.plan?.displayName || 'Tarif tanlanmagan'} 
                 <span className={`text-[10px] px-3 py-1 rounded-full border ${status?.status === 'TRIAL' ? 'bg-orange-50 text-orange-600 border-orange-200' : status?.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
                    {status?.status === 'TRIAL' ? 'SINOV MUDDATI' : status?.status === 'ACTIVE' ? 'FAOLLASHTIRILGAN' : 'MUDDAT TUGAGAN'}
@@ -136,44 +136,44 @@ export default function Billing() {
         </div>
         
         {status?.status !== 'ACTIVE' && (
-           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center gap-4">
+           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3 w-full sm:w-auto">
               <div className="text-right">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Xizmat cheklangan</p>
-                 <p className="text-xs font-bold text-slate-600">Davom ettirish uchun to'lov qiling</p>
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Xizmat cheklangan</p>
+                 <p className="text-[11px] font-bold text-slate-600">Davom ettirish uchun to'lov qiling</p>
               </div>
-              <ArrowRight className="text-slate-300 animate-pulse-slow" size={20} />
+              <ArrowRight className="text-slate-300" size={18} />
            </div>
         )}
       </div>
 
       {step === 'plans' ? (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-4 sm:space-y-6 animate-fade-in">
           {/* Referral & Cashback Card */}
           {myPromo && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 border border-violet-200 rounded-3xl p-6 flex items-center gap-5">
-                <div className="w-14 h-14 bg-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-600/20 shrink-0">
-                  <Tag size={24} className="text-white" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
+              <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 border border-violet-200 rounded-2xl p-4 flex items-center gap-4">
+                <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center shadow-md shadow-violet-600/20 shrink-0">
+                  <Tag size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-1">Sizning Referral Kodingiz</p>
-                  <div className="flex items-center gap-3">
-                    <p className="text-2xl font-black text-violet-900 tracking-widest font-mono">{myPromo.code}</p>
-                    <button onClick={() => { navigator.clipboard.writeText(myPromo.code); toast.success('Kod nusxalandi!'); }} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-violet-400 hover:text-violet-600 border border-violet-200 transition-all">
-                      <Copy size={14} />
+                  <p className="text-[9px] font-black text-violet-500 uppercase tracking-widest mb-1">Sizning Referral Kodingiz</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-black text-violet-900 tracking-widest font-mono">{myPromo.code}</p>
+                    <button onClick={() => { navigator.clipboard.writeText(myPromo.code); toast.success('Kod nusxalandi!'); }} className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-violet-400 hover:text-violet-600 border border-violet-200 transition-all">
+                      <Copy size={12} />
                     </button>
                   </div>
-                  <p className="text-[10px] text-violet-500 mt-1">Do'stlaringizga bering — ular 10% chegirma, siz cashback olasiz!</p>
+                  <p className="text-[9px] text-violet-500 mt-0.5">Do'stlaringizga bering — ular 10% chegirma, siz cashback olasiz!</p>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-3xl p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shrink-0">
-                    <Gift size={18} className="text-white" />
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                    <Gift size={16} className="text-white" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Cashback Balansi</p>
-                    <p className="text-2xl font-black text-emerald-900">{myPromo.cashbackBalance?.toLocaleString() || 0} <span className="text-sm text-emerald-600">UZS</span></p>
+                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Cashback Balansi</p>
+                    <p className="text-lg font-black text-emerald-900">{myPromo.cashbackBalance?.toLocaleString() || 0} <span className="text-xs text-emerald-600">UZS</span></p>
                   </div>
                 </div>
                 <div className="flex gap-4 text-xs font-bold text-emerald-700">
@@ -210,15 +210,15 @@ export default function Billing() {
           </div>
 
           {/* Pricing Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
             {plans.map(plan => {
               const features = parseFeatures(plan.features);
               const price = getPrice(plan);
-              
+
               return (
-                <div 
-                  key={plan.id} 
-                  className={`relative bg-white border rounded-2xl p-8 flex flex-col transition-all duration-300 hover:shadow-xl ${plan.isPopular ? 'border-[#FF6B00] shadow-xl shadow-orange-500/10' : 'border-slate-200 shadow-sm'}`}
+                <div
+                  key={plan.id}
+                  className={`relative bg-white border rounded-2xl p-5 sm:p-8 flex flex-col transition-all duration-300 hover:shadow-xl ${plan.isPopular ? 'border-[#FF6B00] shadow-xl shadow-orange-500/10' : 'border-slate-200 shadow-sm'}`}
                 >
                   {plan.isPopular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF6B00] text-white text-[9px] font-black uppercase tracking-widest px-4 py-1 rounded-full shadow-lg">
@@ -227,13 +227,13 @@ export default function Billing() {
                   )}
                   
                   <div className="mb-2">
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight">{plan.displayName}</h3>
+                    <h3 className="text-base sm:text-xl font-black text-slate-900 tracking-tight">{plan.displayName}</h3>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{plan.description}</p>
                   </div>
 
-                  <div className="mb-6">
+                  <div className="mb-4 sm:mb-6">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-slate-900 tabular-nums">{price.toLocaleString().replace(/,/g, ' ')}</span>
+                      <span className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums">{price.toLocaleString().replace(/,/g, ' ')}</span>
                       <span className="text-sm font-black text-slate-400">UZS</span>
                     </div>
                     <div className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-tight">
@@ -241,7 +241,7 @@ export default function Billing() {
                     </div>
                   </div>
 
-                  <ul className="space-y-3 mb-8 flex-1">
+                  <ul className="space-y-2 mb-4 sm:mb-6 flex-1">
                     {(() => {
                       const allFeatures: Array<{ ids: string[]; label: string }> = [
                         { ids: ['kanban'], label: 'Kanban (Buyurtmalar)' },
@@ -288,9 +288,9 @@ export default function Billing() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 animate-fade-in">
            {/* Payment Details */}
-           <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-sm space-y-8">
+           <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-sm space-y-6 sm:space-y-8">
               <button onClick={() => setStep('plans')} className="text-[10px] font-black text-[#FF6B00] uppercase tracking-widest hover:translate-x-[-4px] transition-transform flex items-center gap-2 mb-4">← Tariflarga qaytish</button>
               
               <div>
@@ -323,10 +323,10 @@ export default function Billing() {
            </div>
 
            {/* Confirmation Form */}
-           <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-sm flex flex-col">
-              <div className="mb-10 text-center lg:text-left">
+           <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-sm flex flex-col">
+              <div className="mb-6 sm:mb-10 text-center lg:text-left">
                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Yuborish shakli</p>
-                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Tasdiqlash so'rovi</h2>
+                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Tasdiqlash so'rovi</h2>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6 flex-1">

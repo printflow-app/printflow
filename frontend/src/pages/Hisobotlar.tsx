@@ -255,10 +255,11 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const p = currentUser?.permissions || {};
   const tf = currentUser?.tenantFeatures || {};
 
-  const canViewFinance = isAdmin || p.canViewFinance;
+  const canViewFinance = isAdmin || p.canViewFinance || p.canViewFinanceReports;
   const canViewKpi = isAdmin || p.canViewKpi;
   const canViewVendors = isAdmin || p.canViewVendors;
   const canViewExpenseCharts = isAdmin || p.canViewExpenseCharts;
+  const canViewServiceStats = isAdmin || p.canViewFinance || p.canViewServiceReports;
 
   const [branches, setBranches] = useState<any[]>([]);
   const [branchId, setBranchId] = useState('');
@@ -402,14 +403,14 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     <div className="space-y-5 pb-20">
 
       {/* ── Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <BarChart3 className="text-orange-600" size={24} /> Hisobotlar & Tahlil
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+            <BarChart3 className="text-orange-600" size={22} /> Hisobotlar & Tahlil
           </h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
         </div>
-        <button onClick={fetchAll} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm">
+        <button onClick={fetchAll} className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm">
           <RefreshCw size={14} /> Yangilash
         </button>
       </div>
@@ -610,7 +611,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Xizmat Hajmi — select + stat cards ── */}
-      {canViewFinance && services.length > 0 && (
+      {(canViewFinance || canViewServiceStats) && services.length > 0 && (
         <ServiceStats services={services} />
       )}
 

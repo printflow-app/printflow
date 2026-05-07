@@ -229,7 +229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const p = currentUser.permissions || currentUser.role || {};
 
   useEffect(() => {
-    if (activeTab === 'moliya' && !p.canViewFinance) {
+    if (activeTab === 'moliya' && !(p.canViewFinance || p.canViewKpi || p.canViewStatistics)) {
       if (p.canViewTasks) setActiveTab('topshiriqlar');
       else if (p.canViewCustomers) setActiveTab('mijozlar');
       else if (p.canViewEmployees) setActiveTab('hodimlar');
@@ -243,8 +243,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
   const navItems = [
     { id: 'kassa', label: 'Kassa (Tranzaksiyalar)', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
-    { id: 'moliya', label: 'Statistika', icon: TrendingUp, show: (p.canViewFinance || isAdmin) && tf.finance, sub: 'Daromad va hisobotlar' },
-    { id: 'hisobotlar', label: 'Hisobotlar', icon: BarChart3, show: isAdmin || p.canViewFinance || p.canViewKpi, sub: 'Biznes tahlil va hisobotlar' },
+    { id: 'moliya', label: 'Statistika', icon: TrendingUp, show: (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && tf.finance, sub: 'Daromad va hisobotlar' },
+    { id: 'hisobotlar', label: 'Hisobotlar', icon: BarChart3, show: isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports, sub: 'Biznes tahlil va hisobotlar' },
     { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
     { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: 'Qarzlar va hamkorlar' },
     { id: 'hodimlar', label: 'Xodimlar', icon: Users, show: (p.canViewEmployees || isAdmin) && tf.employees, sub: 'Jamoa ro\'yxati' },
@@ -490,7 +490,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-3 md:p-8 relative bg-slate-50/30 custom-scroll">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-8 relative bg-slate-50/30 custom-scroll">
           {lockedTabs.has(activeTab) ? (
             <div className="absolute inset-0 z-[50] flex items-center justify-center p-8 overflow-hidden">
               {/* Content is blurred behind */}
@@ -517,7 +517,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           ) : (
             <>
               {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'moliya' && (p.canViewFinance || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} />}
               {activeTab === 'topshiriqlar' && (p.canViewTasks || isAdmin) && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'mijozlar' && (p.canViewCustomers || isAdmin) && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
@@ -526,7 +526,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'billing' && (p.canManageBilling || isAdmin) && <Billing />}
               {activeTab === 'admins' && isAdmin && <Admins currentUser={currentUser} />}
               {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || p.canViewVendors) && <Filiallar currentUser={currentUser} />}
-              {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinance || p.canViewKpi) && <Hisobotlar currentUser={currentUser} />}
+              {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports) && <Hisobotlar currentUser={currentUser} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} />}
               {activeTab === 'qollanma' && <Qollanma />}
               

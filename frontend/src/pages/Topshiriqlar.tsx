@@ -19,7 +19,7 @@ interface Task {
   description: string;
   columnId: string;
   attachments: string; // JSON string in DB
-  
+
   customerId?: string;
   customerName?: string;
   customerPhone?: string;
@@ -79,18 +79,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         paymentTypesApi.findAll(),
         customersApi.findAll(),
         tasksApi.findAll(activeBranchId).catch(() => ({ data: [] })),
-        servicesApi.findAll().catch(() => ({ data: [] })),
+        (p.canViewServices || currentUser.role?.name?.toLowerCase() === 'admin') ? servicesApi.findAll().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
         branchesApi.findAll().catch(() => ({ data: [] })),
-        vendorsApi.findAll().catch(() => ({ data: [] })),
+        (p.canViewVendors || currentUser.role?.name?.toLowerCase() === 'admin') ? vendorsApi.findAll().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ]);
       setColumns(colRes.data || []);
       const filteredEmployees = (empRes.data || []).filter((emp: any) => {
         const roleName = emp.role?.name?.toLowerCase() || '';
-        return emp.login !== 'admin' && 
-               roleName !== 'admin' && 
-               roleName !== 'superadmin' && 
-               roleName !== 'rahbar' && 
-               roleName !== 'owner';
+        return emp.login !== 'admin' &&
+          roleName !== 'admin' &&
+          roleName !== 'superadmin' &&
+          roleName !== 'rahbar' &&
+          roleName !== 'owner';
       });
       setEmployees(filteredEmployees);
       setPaymentTypes(ptRes.data || []);
@@ -127,6 +127,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [isMoveTaskModalOpen, setIsMoveTaskModalOpen] = useState(false);
   const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
   const [isNewColumnModalOpen, setIsNewColumnModalOpen] = useState(false);
+  const [isNewOptionModalOpen, setIsNewOptionModalOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'history' | 'vendors'>('details');
 
@@ -134,7 +135,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const isAnyModalOpen =
     isNewTaskModalOpen || isDetailModalOpen || isMoveTaskModalOpen ||
     isOverrideModalOpen || isNewColumnModalOpen || isArxivModalOpen ||
-    confirmModal.isOpen;
+    confirmModal.isOpen || isNewOptionModalOpen;
   useAutoRefresh(() => fetchData(true), {
     intervalMs: 12000,
     paused: isAnyModalOpen,
@@ -149,9 +150,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   // Overrides form
   const [overrides, setOverrides] = useState<any[]>([]); // {materialId, name, unit, quantity}
 
-  const [newTaskForm, setNewTaskForm] = useState({ 
+  const [newTaskForm, setNewTaskForm] = useState({
     orderName: '', title: '', description: '', assigneeIds: [] as string[], columnId: '',
-    customerId: '', customerName: '', customerPhone: '', 
+    customerId: '', customerName: '', customerPhone: '',
     totalAmount: '', depositAmount: '', paymentTypeId: '',
     items: [] as any[],
     manualTotal: '',
@@ -167,6 +168,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [moveForm, setMoveForm] = useState({ columnId: '', assigneeIds: [] as string[], note: '' });
   const [empSearchTerm, setEmpSearchTerm] = useState('');
   const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
+  const [newOptionForm, setNewOptionForm] = useState({ name: '', value: '', priceAdd: '' });
+  const [isSavingOption, setIsSavingOption] = useState(false);
+  const [arxivPage, setArxivPage] = useState(1);
+  const ARXIV_PAGE_SIZE = 10;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -224,13 +229,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   };
 
   const openNewTaskModal = (initialColId?: string) => {
-    setNewTaskForm({ 
-       orderName: '', title: '', description: '', assigneeIds: [], 
-       columnId: initialColId || (columns[0]?.id || ''),
-       customerId: '', customerName: '', customerPhone: '',
-       totalAmount: '', depositAmount: '', paymentTypeId: paymentTypes[0]?.id || '',
-       items: [], manualTotal: '', justification: '', deadlineAt: '',
-       targetBranchId: activeBranchId || (branches.length > 0 ? branches[0].id : '')
+    setNewTaskForm({
+      orderName: '', title: '', description: '', assigneeIds: [],
+      columnId: initialColId || (columns[0]?.id || ''),
+      customerId: '', customerName: '', customerPhone: '',
+      totalAmount: '', depositAmount: '', paymentTypeId: paymentTypes[0]?.id || '',
+      items: [], manualTotal: '', justification: '', deadlineAt: '',
+      targetBranchId: activeBranchId || (branches.length > 0 ? branches[0].id : '')
     });
     setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0 });
     setSelectedServiceOptions([]);
@@ -258,10 +263,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     const qty = Number(form.quantity) || 1;
     const coeff = Number(form.coefficient) || 1;
     const opts = svc.options || [];
-    const optionsTotal = opts
-      .filter((o: any) => (form.selectedOptionIds || []).includes(o.id))
-      .reduce((sum: number, o: any) => sum + Number(o.priceAdd), 0);
-    const baseTotal = Number(svc.basePrice) + optionsTotal;
+    const selectedOpts = opts.filter((o: any) => (form.selectedOptionIds || []).includes(o.id));
+    const optionsTotal = selectedOpts.reduce((sum: number, o: any) => sum + Number(o.priceAdd), 0);
+    const baseTotal = selectedOpts.length > 0 ? optionsTotal : Number(svc.basePrice);
     const total = Math.round(baseTotal * qty * coeff);
     setPriceBreakdown({ basePrice: svc.basePrice, optionsTotal, baseTotal, quantity: qty, coefficient: coeff, total });
     setCurrentOrderService(f => ({ ...f, ...overrides, totalAmount: total }));
@@ -283,7 +287,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       description: `${svc?.name} (${currentOrderService.quantity} ${svc?.unit || 'dona'})`,
       optionsSummary: selectedServiceOptions.filter(o => currentOrderService.selectedOptionIds.includes(o.id)).map(o => `${o.name}: ${o.value}`).join(', ')
     };
-    
+
     setNewTaskForm(f => {
       const newItems = [...f.items, newItem];
       const newTotal = newItems.reduce((sum, it) => sum + it.totalAmount, 0);
@@ -318,7 +322,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     // Check if justification is needed for price override
     const calculatedTotal = Number(newTaskForm.totalAmount);
     const finalTotal = newTaskForm.manualTotal ? Number(newTaskForm.manualTotal) : calculatedTotal;
-    
+
     if (finalTotal !== calculatedTotal && calculatedTotal !== 0 && !newTaskForm.justification) {
       showStatus('error', "Narx o'zgartirilgan bo'lsa, izoh (sabab) yozish shart!");
       return;
@@ -355,7 +359,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       };
 
       await tasksApi.createBulk(payload, currentUser.id);
-      
+
       setIsNewTaskModalOpen(false);
       showStatus('success', "Buyurtma yaratildi (Guruhli)!");
       fetchData(true);
@@ -367,13 +371,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const handleArchiveTask = async () => {
     if (!confirmModal.id) return;
     try {
-        await tasksApi.archive(confirmModal.id);
-        setIsDetailModalOpen(false);
-        setConfirmModal({ ...confirmModal, isOpen: false });
-        showStatus('success', "Buyurtma arxivlandi.");
-        fetchData(true);
+      await tasksApi.archive(confirmModal.id);
+      setIsDetailModalOpen(false);
+      setConfirmModal({ ...confirmModal, isOpen: false });
+      showStatus('success', "Buyurtma arxivlandi.");
+      fetchData(true);
     } catch (err) {
-        showStatus('error', "Arxivlashda xato!");
+      showStatus('error', "Arxivlashda xato!");
     }
   };
 
@@ -416,12 +420,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const handleRemoveColumn = async () => {
     if (!confirmModal.id) return;
     try {
-        await tasksApi.deleteColumn(confirmModal.id);
-        setConfirmModal({ ...confirmModal, isOpen: false });
-        showStatus('success', "Bosqich o'chirildi.");
-        fetchData(true);
+      await tasksApi.deleteColumn(confirmModal.id);
+      setConfirmModal({ ...confirmModal, isOpen: false });
+      showStatus('success', "Bosqich o'chirildi.");
+      fetchData(true);
     } catch (err) {
-        showStatus('error', "O'chirishda xato!");
+      showStatus('error', "O'chirishda xato!");
     }
   };
 
@@ -446,9 +450,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   const openMoveModal = (task: Task) => {
     setSelectedTask(task);
-    setMoveForm({ 
-      columnId: task.columnId, 
-      assigneeIds: parseJson(task.assignees), 
+    setMoveForm({
+      columnId: task.columnId,
+      assigneeIds: parseJson(task.assignees),
       note: ''
     });
     setIsMoveTaskModalOpen(true);
@@ -459,8 +463,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     if (!selectedTask || !moveForm.columnId) return;
 
     try {
-      await tasksApi.update(selectedTask.id, { 
-        columnId: moveForm.columnId, 
+      await tasksApi.update(selectedTask.id, {
+        columnId: moveForm.columnId,
         assignees: JSON.stringify(moveForm.assigneeIds),
         historyNote: moveForm.note
       }, currentUser.id);
@@ -509,6 +513,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const openArxivModal = async () => {
     setIsArxivModalOpen(true);
     setIsArxivLoading(true);
+    setArxivPage(1);
     try {
       const res = await tasksApi.getArchived();
       setArxivTasks(res.data || []);
@@ -558,47 +563,73 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     }
   };
 
+  const handleAddServiceOption = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentOrderService.serviceId || !newOptionForm.name || !newOptionForm.value) return;
+    setIsSavingOption(true);
+    try {
+      await servicesApi.addOption(currentOrderService.serviceId, {
+        name: newOptionForm.name,
+        value: newOptionForm.value,
+        priceAdd: Number(newOptionForm.priceAdd) || 0,
+      });
+      const svcRes = await servicesApi.findAll();
+      setServices(svcRes.data || []);
+      const updatedSvc = (svcRes.data || []).find((s: any) => s.id === currentOrderService.serviceId);
+      if (updatedSvc) setSelectedServiceOptions(updatedSvc.options || []);
+      setNewOptionForm({ name: '', value: '', priceAdd: '' });
+      setIsNewOptionModalOpen(false);
+      showStatus('success', "Yangi opsiya qo'shildi!");
+    } catch {
+      showStatus('error', "Opsiya qo'shishda xatolik!");
+    } finally {
+      setIsSavingOption(false);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
   };
 
-  if (isLoading) return <LoadingSpinner fullPage />;
-
   return (
     <div className="space-y-4 sm:space-y-6 flex flex-col h-full animate-fade-in">
-      
+
       {/* Global Status Notification */}
       {statusMessage && (
         <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-          {statusMessage.type === 'success' ? <CheckCircle2 size={20}/> : <AlertTriangle size={20}/>}
+          {statusMessage.type === 'success' ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />}
           <span className="font-bold text-sm tracking-tight">{statusMessage.text}</span>
         </div>
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 z-10 mx-1 sm:mx-0">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 z-10 mx-1 sm:mx-0">
         <div>
-          <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">Xizmatlar & Kanban</h2>
+          <h2 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">Xizmatlar & Kanban</h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">Ish jarayonini boshqarish</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-          <button onClick={openArxivModal} className="flex-1 border-2 border-slate-200 h-10 px-4 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-violet-400 hover:text-violet-500 transition-all flex items-center justify-center gap-1.5">
-            <Archive size={12}/> ARXIV
+        <div className="flex flex-row flex-wrap items-center gap-2">
+          <button onClick={openArxivModal} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-violet-400 hover:text-violet-500 transition-all flex items-center gap-1.5 whitespace-nowrap">
+            <Archive size={12} /> ARXIV
           </button>
           {p.canManageColumns && (
-            <button onClick={() => setIsNewColumnModalOpen(true)} className="flex-1 border-2 border-dashed border-slate-200 h-10 px-4 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all">
+            <button onClick={() => setIsNewColumnModalOpen(true)} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
               + BOSQICH
             </button>
           )}
-          <button onClick={() => openNewTaskModal()} className="flex-1 flex items-center justify-center gap-2 h-10 px-6 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all hover:-translate-y-0.5">
-            <Plus size={14} strokeWidth={3} /> BUYURTMA
+          <button onClick={() => openNewTaskModal()} className="flex items-center gap-1.5 h-9 px-4 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all whitespace-nowrap">
+            <Plus size={13} strokeWidth={3} /> BUYURTMA
           </button>
         </div>
       </div>
 
       {/* Kanban Board Container */}
       <div className="flex-1 flex gap-4 sm:gap-6 overflow-x-auto pb-8 items-start snap-x custom-scroll px-1 sm:px-0" style={{ minHeight: '65vh' }}>
-        {columns.length === 0 ? (
+        {isLoading ? (
+          <div className="w-full flex items-center justify-center" style={{ minHeight: '60vh' }}>
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : columns.length === 0 ? (
           <div className="w-full h-96 flex flex-col items-center justify-center text-slate-400/50">
             <ClipboardList size={48} className="mb-4" />
             <p className="font-black uppercase tracking-widest text-xs italic">Bosqichlar mavjud emas</p>
@@ -606,9 +637,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         ) : (
           columns.map(col => {
             const now_s = new Date();
+            const myId = currentUser?.id;
             const colTasks = tasks
               .filter(t => t.columnId === col.id)
               .sort((a, b) => {
+                const aIsMine = myId ? parseJson(a.assignees).includes(myId) : false;
+                const bIsMine = myId ? parseJson(b.assignees).includes(myId) : false;
+                if (aIsMine !== bIsMine) return aIsMine ? -1 : 1;
                 const urgency = (t: Task) => {
                   const dl = t.deadlineAt ? new Date(t.deadlineAt) : null;
                   const cr = t.createdAt ? new Date(t.createdAt) : null;
@@ -621,8 +656,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 return urgency(a) - urgency(b);
               });
             return (
-              <div 
-                key={col.id} 
+              <div
+                key={col.id}
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverColId(col.id); }}
                 onDragLeave={(e) => {
                   // Only remove highlight if actually leaving the column
@@ -631,11 +666,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   }
                 }}
                 onDrop={(e) => onTaskDrop(e, col.id)}
-                className={`min-w-[280px] sm:min-w-[320px] w-[280px] sm:w-[320px] max-h-full flex flex-col rounded-2xl p-2.5 border shadow-sm flex-shrink-0 snap-center transition-all duration-300 ${
-                  dragOverColId === col.id 
-                    ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-400/50 scale-[1.02]' 
+                className={`min-w-[88vw] sm:min-w-[320px] w-[88vw] sm:w-[320px] max-h-full flex flex-col rounded-2xl p-2.5 border shadow-sm flex-shrink-0 snap-center transition-all duration-300 ${dragOverColId === col.id
+                    ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-400/50 scale-[1.02]'
                     : 'bg-slate-100/50 border-slate-200/50'
-                }`}
+                  }`}
               >
                 {/* Column Header */}
                 <div className="flex justify-between items-center px-3 mb-3 mt-1 group">
@@ -645,108 +679,119 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <span className="bg-white text-slate-500 text-[9px] font-black px-1.5 py-0.5 rounded-md border border-slate-200/50 shadow-sm">{colTasks.length}</span>
                   </div>
                   {p.canManageColumns && (
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'column', id: col.id, title: col.title })} className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={12}/></button>
+                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'column', id: col.id, title: col.title })} className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={12} /></button>
                   )}
                 </div>
 
                 {/* Column Tasks Scrollable Area */}
                 <div className="flex flex-col gap-3 sm:gap-4 flex-1 overflow-y-auto px-1 pb-4 custom-scroll max-h-[70vh]">
-                  {colTasks.map(task => (
-                     <div 
-                      key={task.id} 
-                      draggable
-                      onDragStart={(e) => onTaskDragStart(e, task.id)}
-                      onDragEnd={() => { setDraggedTaskId(null); setDragOverColId(null); }}
-                      onClick={() => openDetailModal(task)}
-                      className={`bg-white p-3.5 rounded-xl shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-300 group animate-fade-in flex flex-col ${
-                        draggedTaskId === task.id 
-                          ? 'opacity-40 scale-95 ring-2 ring-orange-500 shadow-xl border-orange-500' 
-                          : `${getCardUrgencyClass(task)} hover:shadow-orange-500/10`
-                      }`}
-                    >
-                      <h4 className="font-black text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-orange-700 transition-colors uppercase tracking-tight line-clamp-2">
-                        {task.orderName && <span className="text-orange-600">{task.orderName} — </span>}
-                        {task.title}
-                      </h4>
-                      <p className="text-[10px] font-medium text-slate-500 mb-3 line-clamp-2 leading-normal italic">{task.description}</p>
-                      
-                      {/* Deadline / Age badges */}
-                      {(() => {
-                        const now = new Date();
-                        const created = task.createdAt ? new Date(task.createdAt) : null;
-                        const deadline = task.deadlineAt ? new Date(task.deadlineAt) : null;
-                        const ageHours = created ? (now.getTime() - created.getTime()) / 3600000 : 0;
-                        const isPastDeadline = deadline && now > deadline;
-                        const isDeadlineSoon = deadline && !isPastDeadline && (deadline.getTime() - now.getTime()) < 86400000;
-                        const isOld = !deadline && ageHours > 10;
-                        return (
-                          <div className="flex flex-wrap gap-1 mb-2">
-                            {isPastDeadline && (
-                              <span className="text-[8px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-md border border-red-200 uppercase flex items-center gap-1 animate-pulse">
-                                <AlertTriangle size={8}/> MUDDAT O'TDI
-                              </span>
-                            )}
-                            {isDeadlineSoon && (
-                              <span className="text-[8px] font-black bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md border border-orange-200 uppercase flex items-center gap-1">
-                                <Clock size={8}/> {deadline!.toLocaleDateString('uz-UZ')} {deadline!.toLocaleTimeString('uz-UZ', {hour:'2-digit',minute:'2-digit'})}
-                              </span>
-                            )}
-                            {!isPastDeadline && !isDeadlineSoon && deadline && (
-                              <span className="text-[8px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md border border-amber-100 uppercase flex items-center gap-1">
-                                <Clock size={8}/> {deadline.toLocaleDateString('uz-UZ')} {deadline.toLocaleTimeString('uz-UZ', {hour:'2-digit',minute:'2-digit'})}
-                              </span>
-                            )}
-                            {isOld && (
-                              <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 uppercase flex items-center gap-1 animate-pulse">
-                                <AlertTriangle size={8}/> {Math.floor(ageHours)}S KUTMOQDA
-                              </span>
-                            )}
-                            {!activeBranchId && task.branchId && (() => {
-                              const br = branches.find((b: any) => b.id === task.branchId);
-                              return br ? (
-                                <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-200 uppercase flex items-center gap-1">
-                                  <Building2 size={8}/> {br.name}
-                                </span>
-                              ) : null;
-                            })()}
+                  {colTasks.map(task => {
+                    const isMyTask = myId ? parseJson(task.assignees).includes(myId) : false;
+                    return (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => onTaskDragStart(e, task.id)}
+                        onDragEnd={() => { setDraggedTaskId(null); setDragOverColId(null); }}
+                        onClick={() => openDetailModal(task)}
+                        className={`p-3.5 rounded-xl shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-300 group animate-fade-in flex flex-col ${draggedTaskId === task.id
+                            ? 'opacity-40 scale-95 ring-2 ring-orange-500 shadow-xl border-orange-500 bg-white'
+                            : isMyTask
+                              ? 'bg-sky-50/60 border-sky-300 ring-1 ring-sky-200 hover:border-sky-400 hover:shadow-sky-500/10'
+                              : `bg-white ${getCardUrgencyClass(task)} hover:shadow-orange-500/10`
+                          }`}
+                      >
+                        {isMyTask && (
+                          <div className="flex items-center gap-1 mb-2 -mt-0.5">
+                            <span className="text-[8px] font-black bg-sky-500 text-white px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
+                              <Users size={7} /> Mening taskım
+                            </span>
                           </div>
-                        );
-                      })()}
+                        )}
+                        <h4 className="font-black text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-orange-700 transition-colors uppercase tracking-tight line-clamp-2">
+                          {task.orderName && <span className="text-orange-600">{task.orderName} — </span>}
+                          {task.title}
+                        </h4>
+                        <p className="text-[10px] font-medium text-slate-500 mb-3 line-clamp-2 leading-normal italic">{task.description}</p>
 
-                      <div className="flex flex-wrap gap-1 mb-3">
-                         {task.totalAmount > 0 && (
-                           <span className="text-[8px] font-black bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md border border-emerald-100 uppercase tracking-tighter flex items-center gap-1">
-                             <Wallet size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.totalAmount)}
-                           </span>
-                         )}
-                         {task.remainingAmount > 0 && (
-                           <span className="text-[8px] font-black bg-rose-50 text-rose-600 px-2 py-1 rounded-md border border-rose-100 uppercase tracking-tighter flex items-center gap-1">
-                             <AlertCircle size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.remainingAmount)}
-                           </span>
-                         )}
-                      </div>
+                        {/* Deadline / Age badges */}
+                        {(() => {
+                          const now = new Date();
+                          const created = task.createdAt ? new Date(task.createdAt) : null;
+                          const deadline = task.deadlineAt ? new Date(task.deadlineAt) : null;
+                          const ageHours = created ? (now.getTime() - created.getTime()) / 3600000 : 0;
+                          const isPastDeadline = deadline && now > deadline;
+                          const isDeadlineSoon = deadline && !isPastDeadline && (deadline.getTime() - now.getTime()) < 86400000;
+                          const isOld = !deadline && ageHours > 10;
+                          return (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {isPastDeadline && (
+                                <span className="text-[8px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-md border border-red-200 uppercase flex items-center gap-1 animate-pulse">
+                                  <AlertTriangle size={8} /> MUDDAT O'TDI
+                                </span>
+                              )}
+                              {isDeadlineSoon && (
+                                <span className="text-[8px] font-black bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md border border-orange-200 uppercase flex items-center gap-1">
+                                  <Clock size={8} /> {deadline!.toLocaleDateString('uz-UZ')} {deadline!.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                              {!isPastDeadline && !isDeadlineSoon && deadline && (
+                                <span className="text-[8px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md border border-amber-100 uppercase flex items-center gap-1">
+                                  <Clock size={8} /> {deadline.toLocaleDateString('uz-UZ')} {deadline.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                              {isOld && (
+                                <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 uppercase flex items-center gap-1 animate-pulse">
+                                  <AlertTriangle size={8} /> {Math.floor(ageHours)}S KUTMOQDA
+                                </span>
+                              )}
+                              {!activeBranchId && task.branchId && (() => {
+                                const br = branches.find((b: any) => b.id === task.branchId);
+                                return br ? (
+                                  <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-200 uppercase flex items-center gap-1">
+                                    <Building2 size={8} /> {br.name}
+                                  </span>
+                                ) : null;
+                              })()}
+                            </div>
+                          );
+                        })()}
 
-                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-50 mt-auto">
-                        <div className="flex -space-x-1.5 overflow-hidden">
-                          {parseJson(task.assignees).map((id: string) => {
-                            const emp = employees.find(e => e.id === id);
-                            return (
-                              <div key={id} title={emp?.fullName} className="w-5 h-5 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[9px] font-black text-orange-500 shadow-sm">
-                                {emp?.fullName?.charAt(0).toUpperCase() || '?'}
-                              </div>
-                            );
-                          })}
-                          {parseJson(task.assignees).length === 0 && (
-                            <span className="text-[9px] font-bold text-slate-300 italic">—</span>
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {task.totalAmount > 0 && (
+                            <span className="text-[8px] font-black bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md border border-emerald-100 uppercase tracking-tighter flex items-center gap-1">
+                              <Wallet size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.totalAmount)}
+                            </span>
+                          )}
+                          {task.remainingAmount > 0 && (
+                            <span className="text-[8px] font-black bg-rose-50 text-rose-600 px-2 py-1 rounded-md border border-rose-100 uppercase tracking-tighter flex items-center gap-1">
+                              <AlertCircle size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.remainingAmount)}
+                            </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                           <Users size={10} className="text-slate-300" />
-                           <span className="text-[9px] font-black text-slate-400">{parseJson(task.assignees).length}</span>
+
+                        <div className="flex items-center justify-between pt-2.5 border-t border-slate-50 mt-auto">
+                          <div className="flex -space-x-1.5 overflow-hidden">
+                            {parseJson(task.assignees).map((id: string) => {
+                              const emp = employees.find(e => e.id === id);
+                              return (
+                                <div key={id} title={emp?.fullName} className="w-5 h-5 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[9px] font-black text-orange-500 shadow-sm">
+                                  {emp?.fullName?.charAt(0).toUpperCase() || '?'}
+                                </div>
+                              );
+                            })}
+                            {parseJson(task.assignees).length === 0 && (
+                              <span className="text-[9px] font-bold text-slate-300 italic">—</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                            <Users size={10} className="text-slate-300" />
+                            <span className="text-[9px] font-black text-slate-400">{parseJson(task.assignees).length}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -763,30 +808,30 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       </div>
 
       {/* MODAL: NEW TASK */}
-       <Modal 
-        isOpen={isNewTaskModalOpen} 
-        onClose={() => setIsNewTaskModalOpen(false)} 
+      <Modal
+        isOpen={isNewTaskModalOpen}
+        onClose={() => setIsNewTaskModalOpen(false)}
         title="Yangi Buyurtma"
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleAddTask} className="flex flex-col gap-6">
           {/* Order Details */}
           <div className="bg-white p-5 rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
-             <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Buyurtma Nomi (Masalan: Mega Meva)</label>
-                <input 
-                  type="text"
-                  placeholder="Buyurtma nomini kiriting..."
-                  value={newTaskForm.orderName}
-                  onChange={e => setNewTaskForm(f => ({ ...f, orderName: e.target.value }))}
-                  className="input-minimal font-black text-slate-700 h-12 border-2"
-                />
-             </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Buyurtma Nomi (Masalan: Mega Meva)</label>
+              <input
+                type="text"
+                placeholder="Buyurtma nomini kiriting..."
+                value={newTaskForm.orderName}
+                onChange={e => setNewTaskForm(f => ({ ...f, orderName: e.target.value }))}
+                className="input-minimal font-black text-slate-700 h-12 border-2"
+              />
+            </div>
           </div>
           {/* Customer Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-inner">
             <div className="md:col-span-2">
-              <SearchableSelect 
+              <SearchableSelect
                 label="Mijozni tanlang"
                 placeholder="Mijoz ismini yozing yoki tanlang..."
                 options={customers.map(c => ({ id: c.id, label: c.name, subLabel: c.phone || 'Tel yo\'q', value: c }))}
@@ -795,8 +840,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               />
               {!newTaskForm.customerId && (
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 animate-fade-in">
-                   <input type="text" placeholder="Yangi mijoz ismi..." value={newTaskForm.customerName} onChange={e => setNewTaskForm(f => ({ ...f, customerName: e.target.value }))} className="input-minimal bg-white border-2" />
-                   <input type="text" placeholder="Telefon raqami..." value={newTaskForm.customerPhone} onChange={e => setNewTaskForm(f => ({ ...f, customerPhone: e.target.value }))} className="input-minimal bg-white border-2" />
+                  <input type="text" placeholder="Yangi mijoz ismi..." value={newTaskForm.customerName} onChange={e => setNewTaskForm(f => ({ ...f, customerName: e.target.value }))} className="input-minimal bg-white border-2" />
+                  <input type="text" placeholder="Telefon raqami..." value={newTaskForm.customerPhone} onChange={e => setNewTaskForm(f => ({ ...f, customerPhone: e.target.value }))} className="input-minimal bg-white border-2" />
                 </div>
               )}
             </div>
@@ -805,9 +850,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {/* Service Items List */}
           <div className="space-y-4">
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-              <Layers size={13}/> Buyurtma Tarkibi ({newTaskForm.items.length})
+              <Layers size={13} /> Buyurtma Tarkibi ({newTaskForm.items.length})
             </h4>
-            
+
             {newTaskForm.items.length > 0 && (
               <div className="space-y-2">
                 {newTaskForm.items.map((it, idx) => (
@@ -822,7 +867,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <div className="flex items-center gap-4">
                       <span className="text-sm font-black text-slate-800">{it.totalAmount.toLocaleString()} UZS</span>
                       <button type="button" onClick={() => removeItemFromOrder(idx)} className="text-slate-300 hover:text-rose-500 transition-colors">
-                        <Trash2 size={16}/>
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
@@ -833,10 +878,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             {/* Add Item Form */}
             <div className="bg-orange-50/50 border border-orange-100 rounded-3xl p-5 space-y-4">
               <h4 className="text-[9px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2 mb-2">
-                <Plus size={13}/> Xizmat Qo'shish
+                <Plus size={13} /> Xizmat Qo'shish
               </h4>
 
-              <SearchableSelect 
+              <SearchableSelect
                 placeholder="Xizmatni tanlang..."
                 options={services.map(s => ({ id: s.id, label: s.name, subLabel: `${Number(s.basePrice).toLocaleString()} UZS/${s.unit}`, value: s }))}
                 value={currentOrderService.serviceId}
@@ -845,9 +890,20 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
               {currentOrderService.serviceId && (
                 <div className="space-y-4 animate-fade-in">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest">
+                      Opsiyalar: {selectedServiceOptions.length === 0 && <span className="text-slate-300 font-bold normal-case">(mavjud emas)</span>}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { const svc = services.find(s => s.id === currentOrderService.serviceId); setNewOptionForm({ name: '', value: '', priceAdd: svc ? String(svc.basePrice) : '' }); setIsNewOptionModalOpen(true); }}
+                      className="text-[8px] font-black bg-orange-100 text-orange-600 px-2 py-1 rounded-lg hover:bg-orange-200 transition-all flex items-center gap-1"
+                    >
+                      <Plus size={9} /> YANGI OPSIYA
+                    </button>
+                  </div>
                   {selectedServiceOptions.length > 0 && (
                     <div>
-                      <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest mb-2">Opsiyalar:</p>
                       <div className="flex flex-wrap gap-2">
                         {selectedServiceOptions.map((opt: any) => {
                           const active = currentOrderService.selectedOptionIds.includes(opt.id);
@@ -856,13 +912,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                               key={opt.id}
                               type="button"
                               onClick={() => toggleOption(opt.id)}
-                              className={`px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-2 border-2 transition-all ${
-                                active ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-500/20' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
-                              }`}
+                              className={`px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-2 border-2 transition-all ${active ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-500/20' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
+                                }`}
                             >
-                              {active && <CheckCircle2 size={12}/>}
+                              {active && <CheckCircle2 size={12} />}
                               <span>{opt.name}: {opt.value}</span>
-                              <span className={`font-black ${active ? 'text-orange-200' : 'text-orange-500'}`}>+{Number(opt.priceAdd).toLocaleString()}</span>
+                              <span className={`font-black ${active ? 'text-orange-200' : 'text-orange-500'}`}>{Number(opt.priceAdd).toLocaleString()} UZS</span>
                             </button>
                           );
                         })}
@@ -892,15 +947,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   </div>
 
                   {priceBreakdown && (
-                    <div className="bg-white border-2 border-orange-100 rounded-2xl p-4 flex justify-between items-center">
+                    <div className="bg-white border-2 border-orange-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Xizmat summasi</p>
                         <span className="text-lg font-black text-orange-700">{priceBreakdown.total.toLocaleString()} UZS</span>
                       </div>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={addItemToOrder}
-                        className="h-10 px-6 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
+                        className="w-full sm:w-auto h-11 px-6 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
                       >
                         RO'YXATGA QO'SHISH
                       </button>
@@ -912,35 +967,35 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
-            <div className="md:col-span-2 p-5 bg-emerald-50/50 border border-emerald-100 rounded-3xl space-y-4">
-               <div className="flex justify-between items-end">
-                  <div>
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Hisoblangan jami narx</p>
-                    <span className="text-2xl font-black text-slate-800">{Number(newTaskForm.totalAmount).toLocaleString()} UZS</span>
-                  </div>
-                  <div className="w-64">
-                    <label className="block text-[10px] font-black text-emerald-600 uppercase mb-2">Manual o'zgartirish</label>
-                    <CurrencyInput
-                      value={newTaskForm.manualTotal}
-                      onChange={(uzs) => setNewTaskForm(f => ({ ...f, manualTotal: uzs ? String(uzs) : "" }))}
-                      colorClass="text-emerald-600"
-                      className="input-minimal font-black border-2 border-emerald-100 bg-white"
-                    />
-                  </div>
-               </div>
-               
-               {newTaskForm.manualTotal && Number(newTaskForm.manualTotal) !== Number(newTaskForm.totalAmount) && Number(newTaskForm.totalAmount) !== 0 && (
-                 <div className="animate-fade-in space-y-2">
-                    <label className="block text-[10px] font-black text-rose-500 uppercase px-1">Narx o'zgargani uchun izoh (sabab) yozing *</label>
-                    <textarea 
-                      required
-                      value={newTaskForm.justification}
-                      onChange={e => setNewTaskForm(f => ({ ...f, justification: e.target.value }))}
-                      className="input-minimal min-h-[60px] border-2 border-rose-100 bg-white" 
-                      placeholder="Chegirma qilindi / Mijoz bilan kelishilgan..."
-                    />
-                 </div>
-               )}
+            <div className="md:col-span-2 p-4 sm:p-5 bg-emerald-50/50 border border-emerald-100 rounded-3xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3">
+                <div>
+                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Hisoblangan jami narx</p>
+                  <span className="text-2xl font-black text-slate-800">{Number(newTaskForm.totalAmount).toLocaleString()} UZS</span>
+                </div>
+                <div className="w-full sm:w-64">
+                  <label className="block text-[10px] font-black text-emerald-600 uppercase mb-2">Manual o'zgartirish</label>
+                  <CurrencyInput
+                    value={newTaskForm.manualTotal}
+                    onChange={(uzs) => setNewTaskForm(f => ({ ...f, manualTotal: uzs ? String(uzs) : "" }))}
+                    colorClass="text-emerald-600"
+                    className="input-minimal font-black border-2 border-emerald-100 bg-white"
+                  />
+                </div>
+              </div>
+
+              {newTaskForm.manualTotal && Number(newTaskForm.manualTotal) !== Number(newTaskForm.totalAmount) && Number(newTaskForm.totalAmount) !== 0 && (
+                <div className="animate-fade-in space-y-2">
+                  <label className="block text-[10px] font-black text-rose-500 uppercase px-1">Narx o'zgargani uchun izoh (sabab) yozing *</label>
+                  <textarea
+                    required
+                    value={newTaskForm.justification}
+                    onChange={e => setNewTaskForm(f => ({ ...f, justification: e.target.value }))}
+                    className="input-minimal min-h-[60px] border-2 border-rose-100 bg-white"
+                    placeholder="Chegirma qilindi / Mijoz bilan kelishilgan..."
+                  />
+                </div>
+              )}
             </div>
 
             <div>
@@ -961,7 +1016,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 <div className="md:col-span-2 animate-fade-in">
                   <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex flex-col gap-3">
                     <div className="flex items-start gap-3">
-                      <AlertOctagon className="text-amber-500 mt-0.5 shrink-0" size={18}/>
+                      <AlertOctagon className="text-amber-500 mt-0.5 shrink-0" size={18} />
                       <div>
                         <p className="text-xs font-black text-amber-800 uppercase tracking-tight">Zakolat kam!</p>
                         <p className="text-[11px] font-bold text-amber-700 mt-0.5">
@@ -986,8 +1041,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">To'lov Turi (Zakolat uchun)</label>
               <select value={newTaskForm.paymentTypeId} onChange={(e) => setNewTaskForm({ ...newTaskForm, paymentTypeId: e.target.value })} className="select-minimal h-12 font-black">
-                  <option value="">Tanlang...</option>
-                  {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
+                <option value="">Tanlang...</option>
+                {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
               </select>
             </div>
 
@@ -999,9 +1054,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
               {(currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin' || p.canAssignToOtherBranches) && (
                 <div className="mb-3">
-                  <select 
-                    value={newTaskForm.targetBranchId} 
-                    onChange={(e) => setNewTaskForm(f => ({ ...f, targetBranchId: e.target.value, assigneeIds: [] }))} 
+                  <select
+                    value={newTaskForm.targetBranchId}
+                    onChange={(e) => setNewTaskForm(f => ({ ...f, targetBranchId: e.target.value, assigneeIds: [] }))}
                     className="select-minimal h-10 font-black text-orange-600 border-orange-200"
                   >
                     <option value="">Barcha filiallar / Filialsiz</option>
@@ -1011,12 +1066,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               )}
 
               <div className="relative">
-                <div 
+                <div
                   onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
                   className="w-full min-h-[50px] p-3 rounded-2xl bg-slate-50 border-2 border-slate-100 flex flex-wrap gap-2 cursor-pointer hover:border-p-sky-300 transition-all mb-2"
                 >
                   {newTaskForm.assigneeIds.length === 0 ? (
-                    <span className="text-sm font-bold text-slate-400 flex items-center gap-2 px-1"><UserPlus size={16}/> Mas'ullarni tanlash...</span>
+                    <span className="text-sm font-bold text-slate-400 flex items-center gap-2 px-1"><UserPlus size={16} /> Mas'ullarni tanlash...</span>
                   ) : (
                     newTaskForm.assigneeIds.map(id => {
                       const emp = employees.find(e => e.id === id);
@@ -1034,10 +1089,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 animate-slide-up max-h-[300px] flex flex-col">
                     <div className="relative mb-4">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         autoFocus
-                        placeholder="Qidirish..." 
+                        placeholder="Qidirish..."
                         value={empSearchTerm}
                         onChange={(e) => setEmpSearchTerm(e.target.value)}
                         className="w-full pl-9 h-10 text-xs font-bold bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-sky-500 transition-all"
@@ -1051,7 +1106,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                           const active = newTaskForm.assigneeIds.includes(emp.id);
                           const busy = isEmployeeBusy(emp.id);
                           return (
-                            <button 
+                            <button
                               key={emp.id}
                               type="button"
                               onClick={() => toggleAssigneeForNewTask(emp.id)}
@@ -1062,19 +1117,19 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                                 <p className="text-[10px] font-bold opacity-60">{emp.role?.name || 'Xodim'}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                                 {busy && <span className="text-[8px] font-black bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
-                                 {active && <CheckCircle2 size={16} className="text-sky-500" />}
+                                {busy && <span className="text-[8px] font-black bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
+                                {active && <CheckCircle2 size={16} className="text-sky-500" />}
                               </div>
                             </button>
                           )
-                      })}
+                        })}
                     </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-6 border-t border-slate-100">
             {/* Deadline field */}
             <div className="flex-1">
@@ -1089,15 +1144,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               />
             </div>
             <div className="flex flex-col sm:flex-row gap-3 flex-[2] items-end">
-              <button type="button" className="btn-outline h-14 flex-1 rounded-2xl uppercase tracking-widest font-black" onClick={() => setIsNewTaskModalOpen(false)}>Bekor qilish</button>
+              <button type="button" className="btn-outline h-24 flex-1 rounded-2xl uppercase tracking-widest font-black text-[10px] px-6" onClick={() => setIsNewTaskModalOpen(false)}>Bekor qilish</button>
               {(() => {
                 const finalTotal = newTaskForm.manualTotal ? Number(newTaskForm.manualTotal) : Number(newTaskForm.totalAmount);
                 const deposit = Number(newTaskForm.depositAmount);
                 const pct = finalTotal > 0 ? Math.round((deposit / finalTotal) * 100) : 100;
                 const blocked = finalTotal > 0 && pct < minPrepaymentPct && !prepaymentWarningAccepted;
                 return (
-                  <button type="submit" disabled={blocked} className={`h-14 flex-[2] rounded-2xl uppercase tracking-widest font-black shadow-xl active:scale-95 transition-all ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20'}`}>
-                    Buyurtmani Yakunlash
+                  <button type="submit" disabled={blocked} className={`h-30 flex-[2] rounded-2xl uppercase tracking-widest font-black shadow-xl active:scale-95 transition-all text-[10px] px-8 ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20'}`}>
+                    Buyurtma Qo'shish
                   </button>
                 );
               })()}
@@ -1108,232 +1163,232 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
       {/* MODAL: TASK DETAILS (REFACTORED) */}
       {selectedTask && (
-        <Modal 
-           isOpen={isDetailModalOpen} 
-           onClose={() => setIsDetailModalOpen(false)} 
-           title={selectedTask.title}
-           maxWidth="max-w-3xl"
-           footer={
-             <div className="flex justify-between items-center w-full">
-                <div className="flex flex-col">
-                   <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5 px-0.5">Qolgan qarz</p>
-                   <span className="text-sm font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-xl border border-rose-100">{formatCurrency(selectedTask.remainingAmount)}</span>
-                </div>
-                <button 
-                  onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} 
-                  className="btn-primary flex items-center gap-3 h-12 px-10 text-[12px] font-black uppercase tracking-widest bg-gradient-to-r from-orange-500 to-orange-700 border-none shadow-xl shadow-orange-500/20 active:scale-95"
-                >
-                  BOSQICHNI O'ZGARTIRISH <ArrowRight size={18}/>
-                </button>
-             </div>
-           }
+        <Modal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          title={selectedTask.title}
+          maxWidth="max-w-3xl"
+          footer={
+            <div className="flex justify-between items-center w-full">
+              <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5 px-0.5">Qolgan qarz</p>
+                <span className="text-sm font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-xl border border-rose-100">{formatCurrency(selectedTask.remainingAmount)}</span>
+              </div>
+              <button
+                onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }}
+                className="btn-primary flex items-center gap-3 h-14 px-8 sm:px-12 text-[10px] sm:text-[12px] font-black uppercase tracking-widest bg-gradient-to-r from-orange-500 to-orange-700 border-none shadow-xl shadow-orange-500/20 active:scale-95"
+              >
+                BOSQICHNI O'ZGARTIRISH <ArrowRight size={18} />
+              </button>
+            </div>
+          }
         >
           <div className="flex flex-col h-full">
-             <div className="flex bg-slate-100/50 p-1 rounded-2xl mb-6">
-                <button onClick={() => setActiveTab('details')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'details' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TAFSILOTLAR</button>
-                <button onClick={() => setActiveTab('history')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TARIXI</button>
-                <button onClick={() => setActiveTab('vendors')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'vendors' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>HAMKORLAR</button>
-             </div>
-             
-             {activeTab === 'details' ? (
-                <div className="space-y-6 animate-fade-in">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-sky-200 transition-all">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Mijoz</p>
-                        <p className="font-black text-slate-800 text-sm">{selectedTask.customerName || "Noma'lum"}</p>
-                        <p className="text-[11px] font-bold text-sky-500 mt-1.5">{selectedTask.customerPhone || 'Tel kiritilmagan'}</p>
-                     </div>
-                     <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div className="flex justify-between items-center mb-2">
-                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mas'ul Jamoa</p>
-                           <button onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} className="text-[10px] font-black text-sky-600 hover:text-sky-700 transition-colors uppercase">Tahrirlash</button>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                           {parseJson(selectedTask.assignees).map((id: string) => (
-                              <span key={id} className="bg-white px-3 py-1 rounded-lg border border-slate-200 text-[10px] font-black text-slate-600 shadow-sm">{employees.find(e => e.id === id)?.fullName || 'Xodim'}</span>
-                           ))}
-                        </div>
-                     </div>
-                  </div>
+            <div className="flex bg-slate-100/50 p-1 rounded-2xl mb-6">
+              <button onClick={() => setActiveTab('details')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'details' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TAFSILOTLAR</button>
+              <button onClick={() => setActiveTab('history')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TARIXI</button>
+              <button onClick={() => setActiveTab('vendors')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'vendors' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>HAMKORLAR</button>
+            </div>
 
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                     <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2 flex items-center gap-2"><ClipboardList size={14}/> BATAFSIL IZOH</h4>
-                     <p className="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">{selectedTask.description || "Izox kiritilmagan..."}</p>
+            {activeTab === 'details' ? (
+              <div className="space-y-6 animate-fade-in">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-sky-200 transition-all">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Mijoz</p>
+                    <p className="font-black text-slate-800 text-sm">{selectedTask.customerName || "Noma'lum"}</p>
+                    <p className="text-[11px] font-bold text-sky-500 mt-1.5">{selectedTask.customerPhone || 'Tel kiritilmagan'}</p>
                   </div>
-
-                  <div>
-                     <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Plus size={14}/> RASMLAR ({parseJson(selectedTask.attachments).length})</h4>
-                        <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black text-sky-600 uppercase border-b-2 border-sky-200 pb-0.5 hover:border-sky-500 transition-colors">+ YUKLASH</button>
-                        <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} />
-                     </div>
-                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {parseJson(selectedTask.attachments).map((src: string, i: number) => (
-                           <a key={i} href={src} target="_blank" rel="noreferrer" className="aspect-square rounded-2xl border-2 border-slate-100 overflow-hidden shadow-sm hover:shadow-md hover:border-sky-300 transition-all group relative">
-                              <img src={src} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="task file" />
-                              <div className="absolute inset-0 bg-sky-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                 <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white"><ExternalLink size={20}/></div>
-                              </div>
-                           </a>
-                        ))}
-                     </div>
-                  </div>
-                  
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                     <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 font-sans"><Package size={14}/> XLMASHYO SARFI (TAXMINIY)</h4>
-                        <button onClick={() => setIsOverrideModalOpen(true)} className="text-[10px] font-black text-violet-600 hover:text-violet-700 transition-colors uppercase">Sarfni tahrirlash</button>
-                     </div>
-                     {overrides.length === 0 ? (
-                       <p className="text-[10px] font-bold text-slate-300 italic">Xomashyo sarfi belgilanmagan</p>
-                     ) : (
-                       <div className="grid grid-cols-2 gap-3">
-                          {overrides.map(ov => (
-                            <div key={ov.materialId} className="bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
-                               <div className="w-8 h-8 rounded-lg bg-violet-50 text-violet-500 flex items-center justify-center border border-violet-100">
-                                  <Package size={14}/>
-                               </div>
-                               <div>
-                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5 line-clamp-1">{ov.name}</p>
-                                  <p className="text-xs font-black text-slate-800">{ov.quantity} {ov.unit}</p>
-                               </div>
-                            </div>
-                          ))}
-                       </div>
-                     )}
-                  </div>
-                  
-                  <div className="flex justify-end pt-2">
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'task', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-black text-amber-400 hover:text-amber-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Archive size={14}/> Buyurtmani arxivlash</button>
-                  </div>
-                </div>
-             ) : activeTab === 'history' ? (
-                <div className="space-y-4 animate-fade-in custom-scroll max-h-[50vh]">
-                   {(!selectedTask.histories || selectedTask.histories.length === 0) ? (
-                     <div className="py-20 flex flex-col items-center justify-center opacity-20">
-                        <ClipboardList size={40} className="mb-4" />
-                        <p className="font-black uppercase text-xs">Tarixiy ma'lumotlar mavjud emas</p>
-                     </div>
-                   ) : (
-                     selectedTask.histories.map((h: any, i: number) => (
-                        <div key={i} className="flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 items-start hover:bg-white hover:shadow-sm transition-all">
-                           <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm font-black text-slate-400 text-xs">
-                              {h.employee?.fullName?.charAt(0) || 'T'}
-                           </div>
-                           <div className="flex-1">
-                              <div className="flex justify-between items-center mb-1">
-                                 <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{h.employee?.fullName || 'Tizim'}</p>
-                                 <p className="text-[9px] font-black text-slate-300">
-                                    {new Date(h.createdAt).toLocaleDateString('uz-UZ')} {new Date(h.createdAt).toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'})}
-                                 </p>
-                              </div>
-                              <p className="text-[9px] font-black text-sky-500 mb-2 uppercase tracking-widest">{h.action}</p>
-                              <p className="text-xs font-semibold text-slate-500 leading-relaxed italic">{h.details}</p>
-                              {h.note && (
-                                <div className="mt-3 p-3 bg-white/80 rounded-xl border border-slate-200/60 shadow-inner">
-                                   <p className="text-xs font-bold text-slate-500 italic">"{h.note}"</p>
-                                </div>
-                              )}
-                           </div>
-                        </div>
-                     ))
-                   )}
-                </div>
-             ) : (
-                <div className="space-y-5 animate-fade-in">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
-                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
-                      <Handshake size={13}/> Hamkor xarajati qo'shish
-                    </h4>
-                    <select
-                      value={vendorCostForm.vendorId}
-                      onChange={e => setVendorCostForm(f => ({ ...f, vendorId: e.target.value }))}
-                      className="select-minimal font-black text-slate-700"
-                    >
-                      <option value="">Hamkorni tanlang...</option>
-                      {vendors.map(v => (
-                        <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mas'ul Jamoa</p>
+                      <button onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} className="text-[10px] font-black text-sky-600 hover:text-sky-700 transition-colors uppercase">Tahrirlash</button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {parseJson(selectedTask.assignees).map((id: string) => (
+                        <span key={id} className="bg-white px-3 py-1 rounded-lg border border-slate-200 text-[10px] font-black text-slate-600 shadow-sm">{employees.find(e => e.id === id)?.fullName || 'Xodim'}</span>
                       ))}
-                    </select>
-                    <div className="space-y-2">
-                      <CurrencyInput
-                        value={vendorCostForm.amount}
-                        onChange={(uzs) => setVendorCostForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
-                        colorClass="text-emerald-600"
-                        placeholder="Summa"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Izoh (ixtiyoriy)"
-                        value={vendorCostForm.description}
-                        onChange={e => setVendorCostForm(f => ({ ...f, description: e.target.value }))}
-                        className="input-minimal"
-                      />
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAddVendorCost}
-                      disabled={isAddingVendorCost || !vendorCostForm.vendorId || !vendorCostForm.amount}
-                      className="w-full h-10 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
-                    >
-                      {isAddingVendorCost ? 'QOSHILMOQDA...' : "QO'SHISH"}
-                    </button>
                   </div>
+                </div>
 
-                  {vendorCosts.length === 0 ? (
-                    <div className="py-16 flex flex-col items-center justify-center opacity-20">
-                      <Handshake size={36} className="mb-3"/>
-                      <p className="text-[10px] font-black uppercase">Hamkor xarajati yo'q</p>
-                    </div>
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2 flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
+                  <p className="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">{selectedTask.description || "Izox kiritilmagan..."}</p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Plus size={14} /> RASMLAR ({parseJson(selectedTask.attachments).length})</h4>
+                    <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black text-sky-600 uppercase border-b-2 border-sky-200 pb-0.5 hover:border-sky-500 transition-colors">+ YUKLASH</button>
+                    <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} />
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {parseJson(selectedTask.attachments).map((src: string, i: number) => (
+                      <a key={i} href={src} target="_blank" rel="noreferrer" className="aspect-square rounded-2xl border-2 border-slate-100 overflow-hidden shadow-sm hover:shadow-md hover:border-sky-300 transition-all group relative">
+                        <img src={src} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="task file" />
+                        <div className="absolute inset-0 bg-sky-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white"><ExternalLink size={20} /></div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
+                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 font-sans"><Package size={14} /> XLMASHYO SARFI (TAXMINIY)</h4>
+                    <button onClick={() => setIsOverrideModalOpen(true)} className="text-[10px] font-black text-violet-600 hover:text-violet-700 transition-colors uppercase">Sarfni tahrirlash</button>
+                  </div>
+                  {overrides.length === 0 ? (
+                    <p className="text-[10px] font-bold text-slate-300 italic">Xomashyo sarfi belgilanmagan</p>
                   ) : (
-                    <div className="space-y-2">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        Jami: {formatCurrency(vendorCosts.reduce((s: number, c: any) => s + c.amount, 0))}
-                      </p>
-                      {vendorCosts.map((cost: any) => (
-                        <div key={cost.id} className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center border border-orange-100">
-                              <Handshake size={15}/>
-                            </div>
-                            <div>
-                              <p className="text-xs font-black text-slate-800 uppercase">{cost.vendor?.name || 'Hamkor'}</p>
-                              {cost.description && <p className="text-[10px] font-bold text-slate-400 italic">{cost.description}</p>}
-                            </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {overrides.map(ov => (
+                        <div key={ov.materialId} className="bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-violet-50 text-violet-500 flex items-center justify-center border border-violet-100">
+                            <Package size={14} />
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-black text-emerald-600">{Number(cost.amount).toLocaleString()} UZS</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveVendorCost(cost.id)}
-                              className="text-slate-300 hover:text-rose-500 transition-colors"
-                            >
-                              <Trash2 size={14}/>
-                            </button>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5 line-clamp-1">{ov.name}</p>
+                            <p className="text-xs font-black text-slate-800">{ov.quantity} {ov.unit}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-             )}
+
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => setConfirmModal({ isOpen: true, type: 'task', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-black text-amber-400 hover:text-amber-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Archive size={14} /> Buyurtmani arxivlash</button>
+                </div>
+              </div>
+            ) : activeTab === 'history' ? (
+              <div className="space-y-4 animate-fade-in custom-scroll max-h-[50vh]">
+                {(!selectedTask.histories || selectedTask.histories.length === 0) ? (
+                  <div className="py-20 flex flex-col items-center justify-center opacity-20">
+                    <ClipboardList size={40} className="mb-4" />
+                    <p className="font-black uppercase text-xs">Tarixiy ma'lumotlar mavjud emas</p>
+                  </div>
+                ) : (
+                  selectedTask.histories.map((h: any, i: number) => (
+                    <div key={i} className="flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 items-start hover:bg-white hover:shadow-sm transition-all">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm font-black text-slate-400 text-xs">
+                        {h.employee?.fullName?.charAt(0) || 'T'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{h.employee?.fullName || 'Tizim'}</p>
+                          <p className="text-[9px] font-black text-slate-300">
+                            {new Date(h.createdAt).toLocaleDateString('uz-UZ')} {new Date(h.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        <p className="text-[9px] font-black text-sky-500 mb-2 uppercase tracking-widest">{h.action}</p>
+                        <p className="text-xs font-semibold text-slate-500 leading-relaxed italic">{h.details}</p>
+                        {h.note && (
+                          <div className="mt-3 p-3 bg-white/80 rounded-xl border border-slate-200/60 shadow-inner">
+                            <p className="text-xs font-bold text-slate-500 italic">"{h.note}"</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="space-y-5 animate-fade-in">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <Handshake size={13} /> Hamkor xarajati qo'shish
+                  </h4>
+                  <select
+                    value={vendorCostForm.vendorId}
+                    onChange={e => setVendorCostForm(f => ({ ...f, vendorId: e.target.value }))}
+                    className="select-minimal font-black text-slate-700"
+                  >
+                    <option value="">Hamkorni tanlang...</option>
+                    {vendors.map(v => (
+                      <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
+                    ))}
+                  </select>
+                  <div className="space-y-2">
+                    <CurrencyInput
+                      value={vendorCostForm.amount}
+                      onChange={(uzs) => setVendorCostForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
+                      colorClass="text-emerald-600"
+                      placeholder="Summa"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Izoh (ixtiyoriy)"
+                      value={vendorCostForm.description}
+                      onChange={e => setVendorCostForm(f => ({ ...f, description: e.target.value }))}
+                      className="input-minimal"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddVendorCost}
+                    disabled={isAddingVendorCost || !vendorCostForm.vendorId || !vendorCostForm.amount}
+                    className="w-full h-10 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
+                  >
+                    {isAddingVendorCost ? 'QOSHILMOQDA...' : "QO'SHISH"}
+                  </button>
+                </div>
+
+                {vendorCosts.length === 0 ? (
+                  <div className="py-16 flex flex-col items-center justify-center opacity-20">
+                    <Handshake size={36} className="mb-3" />
+                    <p className="text-[10px] font-black uppercase">Hamkor xarajati yo'q</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">
+                      Jami: {formatCurrency(vendorCosts.reduce((s: number, c: any) => s + c.amount, 0))}
+                    </p>
+                    {vendorCosts.map((cost: any) => (
+                      <div key={cost.id} className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center border border-orange-100">
+                            <Handshake size={15} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-slate-800 uppercase">{cost.vendor?.name || 'Hamkor'}</p>
+                            {cost.description && <p className="text-[10px] font-bold text-slate-400 italic">{cost.description}</p>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-black text-emerald-600">{Number(cost.amount).toLocaleString()} UZS</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveVendorCost(cost.id)}
+                            className="text-slate-300 hover:text-rose-500 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </Modal>
       )}
 
       {/* MODAL: EDIT/MOVE TASK */}
-      <Modal 
-        isOpen={isMoveTaskModalOpen} 
-        onClose={() => setIsMoveTaskModalOpen(false)} 
+      <Modal
+        isOpen={isMoveTaskModalOpen}
+        onClose={() => setIsMoveTaskModalOpen(false)}
         title="Buyurtmani Tahrirlash & Ko'chirish"
       >
         <form onSubmit={handleMoveTask} className="space-y-6">
           <div className="bg-sky-50 p-4 rounded-2xl border border-sky-100 flex items-center gap-3">
-             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-sky-500 shadow-sm shadow-sky-500/10"><Users size={20}/></div>
-             <div>
-                <p className="text-[9px] font-black text-sky-400 uppercase tracking-widest mb-0.5">Tanlangan task</p>
-                <p className="text-sm font-black text-sky-900 truncate max-w-[200px]">{selectedTask?.title}</p>
-             </div>
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-sky-500 shadow-sm shadow-sky-500/10"><Users size={20} /></div>
+            <div>
+              <p className="text-[9px] font-black text-sky-400 uppercase tracking-widest mb-0.5">Tanlangan task</p>
+              <p className="text-sm font-black text-sky-900 truncate max-w-[200px]">{selectedTask?.title}</p>
+            </div>
           </div>
 
           <div>
@@ -1345,16 +1400,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
           <div className="relative">
             <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 px-1 border-b border-slate-100 pb-2 flex justify-between">
-               Mas'ul Jamoani Yangilash
-               <span className="text-sky-500">{moveForm.assigneeIds.length} ta tanlandi</span>
+              Mas'ul Jamoani Yangilash
+              <span className="text-sky-500">{moveForm.assigneeIds.length} ta tanlandi</span>
             </label>
-            
-            <div 
+
+            <div
               onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
               className="w-full min-h-[50px] p-3 rounded-2xl bg-slate-50 border-2 border-slate-100 flex flex-wrap gap-2 cursor-pointer hover:border-sky-300 transition-all mb-2"
             >
               {moveForm.assigneeIds.length === 0 ? (
-                <span className="text-sm font-bold text-slate-400 flex items-center gap-2 px-1"><UserPlus size={16}/> Mas'ullarni tanlash...</span>
+                <span className="text-sm font-bold text-slate-400 flex items-center gap-2 px-1"><UserPlus size={16} /> Mas'ullarni tanlash...</span>
               ) : (
                 moveForm.assigneeIds.map(id => {
                   const emp = employees.find(e => e.id === id);
@@ -1372,10 +1427,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               <div className="absolute z-50 bottom-full left-0 right-0 mb-2 bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 animate-slide-up max-h-[250px] flex flex-col">
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     autoFocus
-                    placeholder="Qidirish..." 
+                    placeholder="Qidirish..."
                     value={empSearchTerm}
                     onChange={(e) => setEmpSearchTerm(e.target.value)}
                     className="w-full pl-9 h-10 text-xs font-bold bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-sky-500 transition-all"
@@ -1388,7 +1443,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       const active = moveForm.assigneeIds.includes(emp.id);
                       const busy = isEmployeeBusy(emp.id) && !parseJson(selectedTask?.assignees || "[]").includes(emp.id);
                       return (
-                        <button 
+                        <button
                           key={emp.id}
                           type="button"
                           onClick={() => toggleAssigneeForMove(emp.id)}
@@ -1399,12 +1454,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                             <p className="text-[10px] font-bold opacity-60">{emp.role?.name || 'Xodim'}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                             {busy && <span className="text-[8px] font-black bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
-                             {active && <CheckCircle2 size={16} className="text-sky-500" />}
+                            {busy && <span className="text-[8px] font-black bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
+                            {active && <CheckCircle2 size={16} className="text-sky-500" />}
                           </div>
                         </button>
                       )
-                  })}
+                    })}
                 </div>
               </div>
             )}
@@ -1414,45 +1469,45 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">O'zgarish Haqida Izoh (History)</label>
             <textarea required value={moveForm.note} onChange={(e) => setMoveForm({ ...moveForm, note: e.target.value })} className="input-minimal" placeholder="Nima ish qilindi? Masalan: Dizayn tasdiqlandi..." />
           </div>
-          
-          <div className="flex gap-3 pt-4 border-t border-slate-100">
-             <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px]" onClick={() => setIsMoveTaskModalOpen(false)}>BEKOR</button>
-             <button type="submit" className="btn-primary h-12 flex-2 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-sky-500/20">O'ZGARTIRISHNI SAQLASH</button>
+
+          <div className="flex gap-3 pt-4 border-t border-slate-100 items-end justify-end">
+            <button type="button" className="btn-outline h-14 flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px] px-8" onClick={() => setIsMoveTaskModalOpen(false)}>BEKOR</button>
+            <button type="submit" className="btn-primary h-14 flex-[2] rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-sky-500/20 px-10">O'ZGARTIRISHNI SAQLASH</button>
           </div>
         </form>
       </Modal>
 
       {/* MODAL: NEW COLUMN */}
-      <Modal 
-        isOpen={isNewColumnModalOpen} 
-        onClose={() => setIsNewColumnModalOpen(false)} 
+      <Modal
+        isOpen={isNewColumnModalOpen}
+        onClose={() => setIsNewColumnModalOpen(false)}
         title="Yangi Bosqich Qoshish"
         type="warning"
       >
         <form onSubmit={handleAddColumn} className="space-y-5">
           <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Ustun Nomi</label>
-            <input 
-              type="text" 
-              required 
+            <input
+              type="text"
+              required
               autoFocus
-              value={newColumnTitle} 
-              onChange={(e) => setNewColumnTitle(e.target.value)} 
-              className="input-minimal h-12 text-sm font-black uppercase tracking-wider" 
-              placeholder="Masalan: PECHATDA..." 
+              value={newColumnTitle}
+              onChange={(e) => setNewColumnTitle(e.target.value)}
+              className="input-minimal h-12 text-sm font-black uppercase tracking-wider"
+              placeholder="Masalan: PECHATDA..."
             />
           </div>
-          <div className="flex gap-3 pt-2">
-             <button type="button" className="btn-outline h-12 flex-1 rounded-xl uppercase font-black text-[10px] tracking-widest" onClick={() => setIsNewColumnModalOpen(false)}>BEKOR</button>
-             <button type="submit" className="btn-primary h-12 flex-1 rounded-xl uppercase font-black text-[10px] tracking-widest shadow-amber-500/10 bg-amber-500 hover:bg-amber-600">YARATISH</button>
+          <div className="flex gap-3 pt-2 items-end justify-end">
+            <button type="button" className="btn-outline h-14 flex-1 rounded-xl uppercase font-black text-[10px] tracking-widest px-8" onClick={() => setIsNewColumnModalOpen(false)}>BEKOR</button>
+            <button type="submit" className="btn-primary h-14 flex-1 rounded-xl uppercase font-black text-[10px] tracking-widest shadow-amber-500/10 bg-amber-500 hover:bg-amber-600 px-10">YARATISH</button>
           </div>
         </form>
       </Modal>
 
       {/* MODAL: CONFIRM DELETE */}
-      <Modal 
-        isOpen={confirmModal.isOpen} 
-        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} 
+      <Modal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
         title={confirmModal.type === 'task' ? "Buyurtmani arxivlash" : "Bosqichni o'chirish"}
         type="danger"
       >
@@ -1469,17 +1524,17 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               </p>
             </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button 
-              type="button" 
-              className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" 
+          <div className="flex gap-3 pt-2 items-end justify-end">
+            <button
+              type="button"
+              className="btn-outline h-14 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest px-8"
               onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
             >
               Bekor qilish
             </button>
             <button
               type="button"
-              className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all"
+              className="h-14 flex-1 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all px-10"
               onClick={confirmModal.type === 'task' ? handleArchiveTask : handleRemoveColumn}
             >
               {confirmModal.type === 'task' ? 'Ha, arxivlash' : "Ha, o'chirilsin"}
@@ -1487,7 +1542,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </div>
         </div>
       </Modal>
-      
+
       {/* MODAL: ARXIVLANGAN BUYURTMALAR */}
       <Modal
         isOpen={isArxivModalOpen}
@@ -1498,101 +1553,208 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         <div>
           {isArxivLoading ? (
             <div className="py-20 flex flex-col items-center justify-center opacity-30">
-              <div className="animate-spin w-8 h-8 border-2 border-orange-500 rounded-full border-t-transparent mb-3"/>
+              <div className="animate-spin w-8 h-8 border-2 border-orange-500 rounded-full border-t-transparent mb-3" />
               <p className="text-[10px] font-black uppercase">Yuklanmoqda...</p>
             </div>
           ) : arxivTasks.length === 0 ? (
             <div className="py-20 flex flex-col items-center justify-center opacity-20">
-              <ArchiveRestore size={40} className="mb-4"/>
+              <ArchiveRestore size={40} className="mb-4" />
               <p className="text-[10px] font-black uppercase">Arxivlangan buyurtmalar yo'q</p>
             </div>
-          ) : (
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scroll">
-              {arxivTasks.map((task: any) => (
-                <div key={task.id} className="flex items-start justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all">
-                  <div className="flex-1 pr-4">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      {task.orderName && <span className="text-orange-600 font-black text-xs">{task.orderName} —</span>}
-                      <span className="text-xs font-black text-slate-800 uppercase">{task.title}</span>
-                    </div>
-                    <p className="text-[10px] font-bold text-slate-400 italic line-clamp-1">{task.description}</p>
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      {task.totalAmount > 0 && (
-                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{Number(task.totalAmount).toLocaleString()} UZS</span>
-                      )}
-                      {task.customerName && (
-                        <span className="text-[9px] font-black text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">{task.customerName}</span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-[9px] font-black text-slate-300 uppercase shrink-0">
-                    {task.createdAt ? new Date(task.createdAt).toLocaleDateString('uz-UZ') : '—'}
-                  </span>
+          ) : (() => {
+            const totalPages = Math.ceil(arxivTasks.length / ARXIV_PAGE_SIZE);
+            const paginated = arxivTasks.slice((arxivPage - 1) * ARXIV_PAGE_SIZE, arxivPage * ARXIV_PAGE_SIZE);
+            return (
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Jami: <span className="text-slate-600">{arxivTasks.length}</span> ta
+                  </p>
+                  <p className="text-[10px] font-black text-slate-400">
+                    {arxivPage}/{totalPages} sahifa
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="space-y-2 mb-4">
+                  {paginated.map((task: any) => (
+                    <div key={task.id} className="flex items-start justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all">
+                      <div className="flex-1 pr-3 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          {task.orderName && <span className="text-orange-600 font-black text-xs shrink-0">{task.orderName} —</span>}
+                          <span className="text-xs font-black text-slate-800 uppercase truncate">{task.title}</span>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 italic line-clamp-1">{task.description}</p>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {task.totalAmount > 0 && (
+                            <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{Number(task.totalAmount).toLocaleString()} UZS</span>
+                          )}
+                          {task.customerName && (
+                            <span className="text-[9px] font-black text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">{task.customerName}</span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-black text-slate-300 uppercase shrink-0 mt-0.5">
+                        {task.createdAt ? new Date(task.createdAt).toLocaleDateString('uz-UZ') : '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      onClick={() => setArxivPage(p => Math.max(1, p - 1))}
+                      disabled={arxivPage === 1}
+                      className="h-8 px-4 rounded-xl border border-slate-200 text-[10px] font-black text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      ← OLDINGI
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(pg => (
+                        <button
+                          key={pg}
+                          onClick={() => setArxivPage(pg)}
+                          className={`w-8 h-8 rounded-xl text-[10px] font-black transition-all ${pg === arxivPage
+                              ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                              : 'border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500'
+                            }`}
+                        >
+                          {pg}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setArxivPage(p => Math.min(totalPages, p + 1))}
+                      disabled={arxivPage === totalPages}
+                      className="h-8 px-4 rounded-xl border border-slate-200 text-[10px] font-black text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      KEYINGI →
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </Modal>
 
+      {/* MODAL: YANGI OPSIYA QO'SHISH */}
+      <Modal
+        isOpen={isNewOptionModalOpen}
+        onClose={() => setIsNewOptionModalOpen(false)}
+        title="Yangi Opsiya Qo'shish"
+        type="warning"
+        maxWidth="max-w-sm"
+      >
+        <form onSubmit={handleAddServiceOption} className="space-y-4">
+          <div className="bg-orange-50 p-3 rounded-2xl border border-orange-100">
+            <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest">
+              Xizmat: {services.find(s => s.id === currentOrderService.serviceId)?.name || '—'}
+            </p>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Opsiya Nomi *</label>
+            <input
+              type="text"
+              required
+              autoFocus
+              placeholder="Masalan: Rangi, O'lchami..."
+              value={newOptionForm.name}
+              onChange={e => setNewOptionForm(f => ({ ...f, name: e.target.value }))}
+              className="input-minimal h-11 font-black border-2"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qiymat *</label>
+            <input
+              type="text"
+              required
+              placeholder="Masalan: Qizil, A4, Laminate..."
+              value={newOptionForm.value}
+              onChange={e => setNewOptionForm(f => ({ ...f, value: e.target.value }))}
+              className="input-minimal h-11 font-black border-2"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Opsiya Narxi (UZS)</label>
+            <input
+              type="number"
+              min="0"
+              placeholder="0"
+              value={newOptionForm.priceAdd}
+              onChange={e => setNewOptionForm(f => ({ ...f, priceAdd: e.target.value }))}
+              className="input-minimal h-11 font-black border-2 text-orange-600"
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={() => setIsNewOptionModalOpen(false)} className="btn-outline h-11 flex-1 rounded-xl uppercase font-black text-[10px] tracking-widest">BEKOR</button>
+            <button
+              type="submit"
+              disabled={isSavingOption}
+              className="h-11 flex-[2] bg-orange-500 text-white rounded-xl uppercase font-black text-[10px] tracking-widest shadow-lg shadow-orange-500/20 disabled:opacity-50 active:scale-95 transition-all"
+            >
+              {isSavingOption ? 'SAQLANMOQDA...' : "QO'SHISH"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       {/* MODAL: EDIT MATERIAL CONSUMPTION OVERRIDES */}
-      <Modal 
-        isOpen={isOverrideModalOpen} 
-        onClose={() => setIsOverrideModalOpen(false)} 
+      <Modal
+        isOpen={isOverrideModalOpen}
+        onClose={() => setIsOverrideModalOpen(false)}
         title="Material Sarfini Tahrirlash"
       >
         <div className="space-y-6">
-           <div className="bg-violet-50 p-4 rounded-2xl border border-violet-100 mb-4">
-              <p className="text-[11px] font-black text-violet-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                 <AlertTriangle size={14}/> Diqqat!
-              </p>
-              <p className="text-[10px] font-bold text-violet-700 leading-relaxed uppercase">
-                 Bu yerda kiritgan o'zgarishlaringiz faqat ushbu buyurtma uchun amal qiladi. 
-                 Siz bu yerda bo'yoq yoki qog'oz miqdorini buyurtma dizayniga qarab ko'paytirishingiz yoki kamaytirishingiz mumkin.
-              </p>
-           </div>
+          <div className="bg-violet-50 p-4 rounded-2xl border border-violet-100 mb-4">
+            <p className="text-[11px] font-black text-violet-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+              <AlertTriangle size={14} /> Diqqat!
+            </p>
+            <p className="text-[10px] font-bold text-violet-700 leading-relaxed uppercase">
+              Bu yerda kiritgan o'zgarishlaringiz faqat ushbu buyurtma uchun amal qiladi.
+              Siz bu yerda bo'yoq yoki qog'oz miqdorini buyurtma dizayniga qarab ko'paytirishingiz yoki kamaytirishingiz mumkin.
+            </p>
+          </div>
 
-           <div className="space-y-4">
-              {overrides.map((ov, idx) => (
-                <div key={ov.materialId} className="flex flex-col gap-2 p-4 bg-white border-2 border-slate-100 rounded-3xl shadow-sm">
-                   <div className="flex justify-between items-center px-1">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ov.name}</p>
-                      <p className="text-[9px] font-black text-slate-300 uppercase">{ov.unit}</p>
-                   </div>
-                   <div className="relative">
-                      <input 
-                        type="number" 
-                        step="0.0001"
-                        value={ov.quantity}
-                        onChange={(e) => {
-                          const newOv = [...overrides];
-                          newOv[idx].quantity = e.target.value;
-                          setOverrides(newOv);
-                        }}
-                        className="input-minimal h-14 bg-slate-50 border-2 border-slate-100 focus:border-violet-500 font-black text-violet-600 text-xl"
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">MIQDOR</div>
-                   </div>
+          <div className="space-y-4">
+            {overrides.map((ov, idx) => (
+              <div key={ov.materialId} className="flex flex-col gap-2 p-4 bg-white border-2 border-slate-100 rounded-3xl shadow-sm">
+                <div className="flex justify-between items-center px-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ov.name}</p>
+                  <p className="text-[9px] font-black text-slate-300 uppercase">{ov.unit}</p>
                 </div>
-              ))}
-
-              {overrides.length === 0 && (
-                <div className="py-10 text-center opacity-30">
-                   <Package size={32} className="mx-auto mb-2"/>
-                   <p className="text-[10px] font-black uppercase">Bu xizmatga xomashyo biriktirilmagan</p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={ov.quantity}
+                    onChange={(e) => {
+                      const newOv = [...overrides];
+                      newOv[idx].quantity = e.target.value;
+                      setOverrides(newOv);
+                    }}
+                    className="input-minimal h-14 bg-slate-50 border-2 border-slate-100 focus:border-violet-500 font-black text-violet-600 text-xl"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">MIQDOR</div>
                 </div>
-              )}
-           </div>
+              </div>
+            ))}
 
-           <div className="flex gap-3 pt-6 border-t border-slate-100">
-              <button onClick={() => setIsOverrideModalOpen(false)} className="btn-outline h-14 flex-1 rounded-2xl uppercase font-black text-[10px] tracking-widest">Bekor Berish</button>
-              <button 
-                onClick={handleSaveOverrides}
-                className="h-14 flex-[2] bg-violet-600 text-white rounded-2xl uppercase font-black text-[10px] tracking-widest shadow-xl shadow-violet-500/20 active:scale-95 transition-all"
-              >
-                SAQLASH VA QO'LLASH
-              </button>
-           </div>
+            {overrides.length === 0 && (
+              <div className="py-10 text-center opacity-30">
+                <Package size={32} className="mx-auto mb-2" />
+                <p className="text-[10px] font-black uppercase">Bu xizmatga xomashyo biriktirilmagan</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-6 border-t border-slate-100">
+            <button onClick={() => setIsOverrideModalOpen(false)} className="btn-outline h-14 flex-1 rounded-2xl uppercase font-black text-[10px] tracking-widest">Bekor Berish</button>
+            <button
+              onClick={handleSaveOverrides}
+              className="h-14 flex-[2] bg-violet-600 text-white rounded-2xl uppercase font-black text-[10px] tracking-widest shadow-xl shadow-violet-500/20 active:scale-95 transition-all"
+            >
+              SAQLASH VA QO'LLASH
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

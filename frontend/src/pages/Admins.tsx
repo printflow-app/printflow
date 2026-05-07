@@ -128,17 +128,17 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-10 animate-fade-in relative">
+    <div className="space-y-10 animate-fade-in relative">
       <div className="space-y-6 animate-fade-in">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-              <ShieldCheck className="text-orange-600" size={24} /> Tizim Ma'murlari
+            <h3 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+              <ShieldCheck className="text-orange-600" size={22} /> Tizim Ma'murlari
             </h3>
             <p className="text-[9px] font-black text-slate-400 mt-0.5 uppercase tracking-widest">Asoschilar va raxbarlar uchun maxsus saxifa</p>
           </div>
           {(isAdmin || p.canManageAdmins) && (
-             <button className="flex items-center gap-2 h-10 px-8 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all hover:-translate-y-0.5" onClick={() => setIsEmployeeModalOpen(true)}>
+             <button className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-6 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all" onClick={() => setIsEmployeeModalOpen(true)}>
                <UserPlus size={16} strokeWidth={2.5} /> Yangi Ma'mur Qo'shish
              </button>
           )}

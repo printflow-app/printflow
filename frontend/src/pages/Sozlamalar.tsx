@@ -445,15 +445,15 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       {/* Roles Section */}
       {(isAdmin || p.canViewRoles || p.canManageRoles) && (
         <section className="space-y-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
             <div>
-              <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-                 <Shield className="text-orange-600" size={24} /> Lavozimlar & Ruxsatlar
+              <h3 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                 <Shield className="text-orange-600" size={22} /> Lavozimlar & Ruxsatlar
               </h3>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Sahifalar va funksiyalarga dostupni sozlash</p>
             </div>
             {(isAdmin || p.canManageRoles) && (
-              <button className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2" onClick={() => setIsRoleModalOpen(true)}>
+              <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-6 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all" onClick={() => setIsRoleModalOpen(true)}>
                 <Plus size={16} strokeWidth={3} /> Yangi Lavozim
               </button>
             )}
@@ -1246,16 +1246,16 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   return (
     <section className="space-y-4">
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
         <div>
-          <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Layers className="text-orange-600" size={24} /> Xizmatlar Katalogi
+          <h3 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+            <Layers className="text-orange-600" size={20} /> Xizmatlar Katalogi
           </h3>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Pricing Engine — xizmat va opsiyalar narxlari</p>
         </div>
         {canAdd && (
           <button
-            className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-8 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 flex items-center gap-2"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-5 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all"
             onClick={() => setIsAddOpen(true)}
           >
             <Plus size={16} strokeWidth={3} /> Yangi Xizmat
@@ -1276,20 +1276,20 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           return (
             <div key={svc.id} className={`bg-white rounded-3xl border shadow-sm overflow-hidden transition-all ${isEditing ? 'border-orange-400 ring-4 ring-orange-50' : 'border-slate-200 hover:shadow-md hover:border-slate-300'}`}>
               {/* Service header */}
-              <div className="flex items-center justify-between p-6 cursor-pointer" onClick={() => !isEditing && setExpandedId(isExpanded ? null : svc.id)}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-100 text-orange-700 rounded-2xl flex items-center justify-center font-black text-lg border border-orange-200">
+              <div className="flex items-center justify-between p-3 sm:p-5 cursor-pointer" onClick={() => !isEditing && setExpandedId(isExpanded ? null : svc.id)}>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 bg-orange-100 text-orange-700 rounded-xl flex items-center justify-center font-black text-sm sm:text-base border border-orange-200 shrink-0">
                     {svc.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     {isEditing ? (
-                      <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
-                        <input type="text" value={editSvcForm.name} onChange={e => setEditSvcForm({ ...editSvcForm, name: e.target.value })} className="h-9 px-3 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white" />
+                      <div className="flex flex-wrap items-center gap-2" onClick={e => e.stopPropagation()}>
+                        <input type="text" value={editSvcForm.name} onChange={e => setEditSvcForm({ ...editSvcForm, name: e.target.value })} className="h-9 px-3 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white min-w-0 w-32" />
                         <CurrencyInput
                           value={editSvcForm.basePrice}
                           onChange={(uzs) => setEditSvcForm({ ...editSvcForm, basePrice: uzs ? String(uzs) : '' })}
                           colorClass="text-violet-600"
-                          className="h-9 px-3 w-44 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white"
+                          className="h-9 px-3 w-36 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white"
                         />
                         <select value={editSvcForm.unit} onChange={e => setEditSvcForm({ ...editSvcForm, unit: e.target.value })} className="h-9 px-3 text-sm font-black border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white">
                           {['dona', 'metr', 'sm', 'm2', 'kg', 'litr', 'soat', 'rulon', 'varaq'].map(u => <option key={u} value={u}>{u}</option>)}
@@ -1297,7 +1297,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                       </div>
                     ) : (
                       <>
-                        <h4 className="font-black text-lg text-slate-800 uppercase tracking-tight">{svc.name}</h4>
+                        <h4 className="font-black text-sm sm:text-base text-slate-800 uppercase tracking-tight">{svc.name}</h4>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-sm font-black text-violet-600">{Number(svc.basePrice).toLocaleString('uz-UZ')} UZS</span>
                           <span className="text-[9px] font-black text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">/ {svc.unit}</span>
@@ -1307,16 +1307,16 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
                   {isEditing ? (
                     <>
-                      <button onClick={() => handleUpdateService(svc.id)} className="h-9 px-5 bg-emerald-500 text-white text-xs font-black rounded-xl flex items-center gap-1.5 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"><Save size={14}/> SAQLASH</button>
-                      <button onClick={() => setEditSvcId(null)} className="h-9 px-5 bg-slate-100 text-slate-500 text-xs font-black rounded-xl hover:bg-slate-200">BEKOR</button>
+                      <button onClick={() => handleUpdateService(svc.id)} className="h-8 px-3 bg-emerald-500 text-white text-[10px] font-black rounded-lg flex items-center gap-1 hover:bg-emerald-600 shadow-md shadow-emerald-500/20"><Save size={12}/> SAQLASH</button>
+                      <button onClick={() => setEditSvcId(null)} className="h-8 px-3 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg hover:bg-slate-200">BEKOR</button>
                     </>
                   ) : (
                     <>
                       {canManageOptions && (
-                        <button onClick={() => { setSelectedService(svc); setNewOptionForm(f => ({ ...f, percentageMarkup: '0' })); setIsOptionOpen(true); }} className="h-9 px-4 text-xs font-black text-violet-600 bg-violet-50 border border-violet-100 rounded-xl hover:bg-violet-100 transition-all flex items-center gap-1.5"><Plus size={13}/> Optsiya</button>
+                        <button onClick={() => { setSelectedService(svc); setNewOptionForm(f => ({ ...f, percentageMarkup: '0' })); setIsOptionOpen(true); }} className="h-8 px-2 sm:px-3 text-[10px] font-black text-violet-600 bg-violet-50 border border-violet-100 rounded-lg hover:bg-violet-100 transition-all flex items-center gap-1"><Plus size={11}/> <span className="hidden sm:inline">Optsiya</span></button>
                       )}
                       {canEdit && (
                         <button onClick={() => { setEditSvcId(svc.id); setEditSvcForm({ name: svc.name, basePrice: String(svc.basePrice), unit: svc.unit }); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-all"><Edit3 size={15}/></button>

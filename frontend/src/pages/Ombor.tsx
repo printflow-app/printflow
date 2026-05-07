@@ -227,19 +227,19 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Package size={22} className="text-emerald-500" /> Ombor Boshqaruvi
+          <h2 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+            <Package size={20} className="text-emerald-500" /> Ombor Boshqaruvi
           </h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-            Xomashyo va materiallar nazorati (Reserva & BOM)
+            Xomashyo va materiallar nazorati
           </p>
         </div>
         { (isAdmin || currentUser.permissions?.canManageInventory) && (
           <button
             onClick={() => setIsAddMaterialOpen(true)}
-            className="flex items-center gap-2 h-10 px-8 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all"
           >
             <Plus size={16} strokeWidth={3} /> Material Qo'shish
           </button>
@@ -247,7 +247,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {[
           { label: 'Jami Materiallar', value: materials.length, icon: Package, color: 'indigo', bg: 'bg-orange-50/50', border: 'border-orange-100', text: 'text-orange-600' },
           { label: 'Faol (yetarli)', value: materials.filter(m => !isLow(m) && !isCritical(m)).length, icon: TrendingUp, color: 'emerald', bg: 'bg-emerald-50/50', border: 'border-emerald-100', text: 'text-emerald-600' },
@@ -296,7 +296,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
               {materials.map(mat => {
                 const isLowStock = isLow(mat);
                 const isCrit = isCritical(mat);

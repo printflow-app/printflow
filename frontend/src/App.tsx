@@ -57,6 +57,16 @@ export interface User {
     canAssignToOtherBranches: boolean;
     canManageBilling: boolean;
     canManageNotifications: boolean;
+    // Granular ruxsatlar
+    canViewStatistics: boolean;
+    canViewFinanceReports: boolean;
+    canViewServiceReports: boolean;
+    canViewVendors: boolean;
+    canManageAdmins: boolean;
+    canViewRoles: boolean;
+    canManageExpenseTypes: boolean;
+    canManageKanbanColumns: boolean;
+    canManageGeneralSettings: boolean;
   };
 }
 
@@ -359,6 +369,16 @@ export function buildUser(emp: any): User {
       canAssignToOtherBranches: role.canAssignToOtherBranches ?? false,
       canManageBilling: role.canManageBilling ?? false,
       canManageNotifications: role.canManageNotifications ?? false,
+      // Granular ruxsatlar
+      canViewStatistics: role.canViewStatistics ?? false,
+      canViewFinanceReports: role.canViewFinanceReports ?? false,
+      canViewServiceReports: role.canViewServiceReports ?? false,
+      canViewVendors: role.canViewVendors ?? false,
+      canManageAdmins: role.canManageAdmins ?? false,
+      canViewRoles: role.canViewRoles ?? false,
+      canManageExpenseTypes: role.canManageExpenseTypes ?? false,
+      canManageKanbanColumns: role.canManageKanbanColumns ?? false,
+      canManageGeneralSettings: role.canManageGeneralSettings ?? false,
     },
   };
 }

@@ -307,16 +307,16 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+          <h2 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             <QrCode size={22} className="text-orange-500" /> Davomat Tizimi
           </h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
             Ofis Wi-Fi orqali QR-skanerlash
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center flex-wrap gap-2 sm:gap-3">
           <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200">
             <Calendar size={14} className="text-slate-400" />
             <input

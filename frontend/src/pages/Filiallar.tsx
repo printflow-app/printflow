@@ -437,9 +437,9 @@ const Filiallar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   return (
     <div className="space-y-5 pb-20">
       {/* Page header */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+          <h2 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             <Building2 className="text-orange-600" size={22} /> Hamkorlar va Filiallar
           </h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Subpudratchilar va multi-filial boshqaruvi</p>

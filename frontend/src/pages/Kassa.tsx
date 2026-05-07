@@ -128,10 +128,10 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  if (isLoading) return <LoadingSpinner fullPage />;
-
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in relative">
+      {isLoading && <LoadingSpinner fullPage />}
+      {isLoading ? null : (<>
       
       {/* Global Status Notification */}
       {statusMessage && (
@@ -373,6 +373,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         </form>
       </Modal>
 
+    </>)}
     </div>
   );
 };

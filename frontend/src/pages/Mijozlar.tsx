@@ -222,12 +222,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       )}
 
       {/* Header */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight">Mijozlar Bazasi</h2>
+          <h2 className="text-base sm:text-xl font-black text-slate-800 tracking-tight">Mijozlar Bazasi</h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
           <div className="flex bg-slate-100 p-0.5 rounded-lg shadow-inner">
             <button onClick={() => setActiveView('all')} className={`px-3 py-1.5 text-[10px] font-black rounded-md transition-all ${activeView === 'all' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500'}`}>
               Barchasi
@@ -237,7 +237,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             </button>
           </div>
           {activeView === 'all' && (
-            <div className="relative flex-1 md:w-64">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
               <input
                 type="text"
@@ -251,7 +251,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           {canManage && (
             <button
               onClick={openAdd}
-              className="flex items-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all hover:-translate-y-0.5"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all"
             >
               <Plus size={13} strokeWidth={3}/> MIJOZ QO'SHISH
             </button>
@@ -260,7 +260,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
           <p className="text-[8px] font-black text-slate-400 uppercase mb-1 tracking-widest">Jami Mijozlar</p>
           <h4 className="text-lg font-black text-slate-800">{customers.length}</h4>
