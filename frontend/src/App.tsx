@@ -145,14 +145,12 @@ const App: React.FC = () => {
         const tg = (window as any)?.Telegram?.WebApp;
         const tgUserId = tg?.initDataUnsafe?.user?.id;
         if (tgUserId) {
+          tg.ready?.();
+          tg.expand?.();
           try {
-            tg.ready?.();
-            tg.expand?.();
             const tgRes = await authApi.telegramAuth(String(tgUserId));
             const data = tgRes.data;
             if (data?.token) {
-              // iOS Safari / Telegram WebView 3rd-party cookie'ni bloklashi mumkin —
-              // shu sababli Bearer fallback uchun tokenni localStorage'da ham saqlaymiz.
               localStorage.setItem('pf_token', data.token);
             }
             if (data?.user) {
@@ -163,8 +161,12 @@ const App: React.FC = () => {
               return;
             }
           } catch {
-            // Telegram orqali kirish muvaffaqiyatsiz — odatdagi Login sahifasi ko'rsatiladi
+            // Telegram bog'lanmagan — Login sahifasini ko'rsatamiz (Landing emas)
           }
+          clearSession();
+          setCurrentUser(null);
+          setShowLanding(false); // Telegram WebApp ichida Landing yo'q, to'g'ridan Login
+          return;
         }
 
         clearSession();
@@ -244,7 +246,7 @@ const App: React.FC = () => {
     try { await authApi.logout(); } catch { }
     clearSession();
     setCurrentUser(null);
-    setShowLanding(true);
+    setShowLanding(false); // Login sahifasiga qaytish
   };
 
   const isScanPage = window.location.pathname.startsWith('/attendance/scan');

@@ -30,6 +30,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Global branch filter (multiBranch feature)
   const [activeBranchId, setActiveBranchId] = useState<string>(() => localStorage.getItem('pf_active_branch') || '');
@@ -438,13 +439,43 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             O'rgatuvchi Qo'llanma
           </button>
           <button
-            onClick={onLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="flex w-full items-center justify-center gap-2 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest text-rose-500 border border-rose-100 bg-rose-50/50 hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-500/20 transition-all border-dashed"
           >
             <LogOut size={12} strokeWidth={3} /> Chiqish
           </button>
         </div>
       </aside>
+
+      {/* Logout confirmation modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogOut size={24} className="text-rose-500" strokeWidth={2.5} />
+              </div>
+              <h3 className="text-base font-black text-slate-800 uppercase tracking-tight mb-1">Chiqishni tasdiqlang</h3>
+              <p className="text-[11px] text-slate-500 font-semibold">Tizimdan chiqmoqchimisiz? Barcha ochiq ma'lumotlar yopiladi.</p>
+            </div>
+            <div className="flex border-t border-slate-100">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-4 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
+              >
+                Bekor qilish
+              </button>
+              <div className="w-px bg-slate-100" />
+              <button
+                onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
+                className="flex-1 py-4 text-[11px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-50 transition-colors"
+              >
+                Ha, chiqish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 flex flex-col h-[calc(100vh-3rem)] md:h-screen overflow-hidden">
         <header className="hidden md:flex h-16 px-6 items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md z-10">
