@@ -253,6 +253,71 @@ export class AttendanceService {
     });
   }
 
+  // ============ SELF SERVICE — employee marks own attendance ============
+
+  /**
+   * selfCheckIn / selfCheckOut — JWT-authenticated.
+   * No QR token required (JWT proves identity), but IP allowlist enforced.
+   * One toggle: first call = check-in, second call = check-out.
+   */
+  async selfMark(employeeId: string, clientIp: string | null) {
+    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee) throw new Error('Xodim topilmadi');
+
+    const tenantId = employee.tenantId;
+    await this.assertOfficeIp(tenantId, clientIp);
+
+    const today = this.getTodayString();
+    const now = new Date();
+
+    return TenantContext.run(
+      { tenantId, userId: employeeId, userRole: '' },
+      async () => {
+        const existing = await this.prisma.attendanceRecord.findFirst({
+          where: { employeeId, date: today },
+        });
+
+        if (!existing) {
+          // First mark of the day → check-in
+          const lateMinutes = await this.calculateLateMinutes(now);
+          const created = await this.prisma.attendanceRecord.create({
+            data: { employeeId, date: today, checkIn: now, lateMinutes } as any,
+            include: { employee: true },
+          });
+          return { ...created, action: 'checkin' };
+        }
+
+        if (!existing.checkOut) {
+          // Already checked in → check out
+          const updated = await this.prisma.attendanceRecord.update({
+            where: { id: existing.id },
+            data: { checkOut: now },
+            include: { employee: true },
+          });
+          return { ...updated, action: 'checkout' };
+        }
+
+        // Already checked out — nothing to do
+        return { ...existing, action: 'done' };
+      },
+    );
+  }
+
+  async getMyToday(employeeId: string) {
+    const today = this.getTodayString();
+    return this.prisma.attendanceRecord.findFirst({
+      where: { employeeId, date: today },
+    });
+  }
+
+  async getMyRecords(employeeId: string) {
+    return this.prisma.attendanceRecord.findMany({
+      where: { employeeId },
+      orderBy: { date: 'desc' },
+      take: 30,
+    });
+  }
+
   // ============ OFFICE IP SETTINGS HELPERS (used by Sozlamalar) ============
 
   async getOfficeIps(): Promise<string[]> {

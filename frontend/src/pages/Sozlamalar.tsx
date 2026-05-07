@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell, Wifi, QrCode } from 'lucide-react';
-import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi } from '../api';
+import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi, attendanceApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CurrencyInput from '../components/CurrencyInput';
@@ -24,6 +24,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [newIpEntry, setNewIpEntry] = useState('');
   const [savingOfficeIps, setSavingOfficeIps] = useState(false);
   const [detectedIp, setDetectedIp] = useState<string | null>(null);
+  const [isDetecting, setIsDetecting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -139,13 +140,17 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   };
 
   const detectMyIp = async () => {
+    setIsDetecting(true);
+    setDetectedIp(null);
     try {
-      // Ochiq IP servisidan foydalanamiz (clientning chiqish IP'sini olish)
-      const res = await fetch('https://api.ipify.org?format=json');
-      const json = await res.json();
-      setDetectedIp(json.ip || null);
+      // Backend orqali aniqlaymiz — xuddi shu IP attendance check paytida ishlatiladi.
+      // ipify.org'dan farqli ravishda proxy/Railway ortidagi haqiqiy IP qaytadi.
+      const res = await attendanceApi.detectMyIp();
+      setDetectedIp(res.data?.ip || null);
     } catch {
       showStatus('error', 'IP aniqlanmadi. Internet ulanishini tekshiring.');
+    } finally {
+      setIsDetecting(false);
     }
   };
 
@@ -178,7 +183,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     canViewEmployees: false, canManageEmployees: false, canManageRoles: false, canViewSalary: false, canManageAdmins: false,
     canManageBranches: false, canViewKpi: false, canViewExpenseCharts: false, canViewSettings: false, canAssignToOtherBranches: false,
     canManageBilling: false, canManageNotifications: false,
-    canViewVendors: false, canViewInventory: false, canManageInventory: false, canViewAttendance: false, canManageAttendance: false,
+    canViewVendors: false, canViewInventory: false, canManageInventory: false, canViewAttendance: false, canViewAllAttendance: false, canManageAttendance: false,
     canViewServices: false, canManageServices: false,
   };
   const [newRole, setNewRole] = useState(initialRoleForm);
@@ -392,7 +397,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       title: 'Davomat Sahifasi',
       color: 'teal',
       permissions: {
-        canViewAttendance: "Davomat ma'lumotlarini ko'rish",
+        canViewAttendance: "Davomat sahifasiga kirish (faqat o'zinikini ko'radi)",
+        canViewAllAttendance: "Boshqa xodimlarning davomatini ham ko'rish",
         canManageAttendance: "Davomat kirim/chiqimini boshqarish",
       }
     },
@@ -838,28 +844,35 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   <button
                     type="button"
                     onClick={detectMyIp}
-                    className="h-9 px-3 bg-white border border-emerald-200 hover:border-emerald-400 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
+                    disabled={isDetecting}
+                    className="h-9 px-3 bg-white border border-emerald-200 hover:border-emerald-400 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5 disabled:opacity-60"
                   >
-                    <Wifi size={12} /> IP'ni aniqlash
+                    <Wifi size={12} className={isDetecting ? 'animate-pulse' : ''} />
+                    {isDetecting ? 'Aniqlanmoqda...' : (detectedIp ? 'Qayta aniqlash' : "IP'ni aniqlash")}
                   </button>
                   {detectedIp && (
                     <>
                       <span className="font-mono text-xs font-black text-emerald-800 bg-white px-3 py-1.5 rounded-lg border border-emerald-200">
                         {detectedIp}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!officeIps.includes(detectedIp)) {
+                      {officeIps.includes(detectedIp) ? (
+                        <span className="h-9 px-3 bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5">
+                          ✓ Allaqachon qo'shilgan
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
                             const next = [...officeIps, detectedIp];
                             setOfficeIps(next);
+                            setDetectedIp(null);
                             saveOfficeIps(next);
-                          }
-                        }}
-                        className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
-                      >
-                        <Plus size={12} /> Ro'yxatga qo'shish
-                      </button>
+                          }}
+                          className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
+                        >
+                          <Plus size={12} /> Ro'yxatga qo'shish
+                        </button>
+                      )}
                     </>
                   )}
                 </div>

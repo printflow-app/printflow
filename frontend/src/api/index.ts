@@ -291,6 +291,13 @@ export const attendanceApi = {
   getByEmployee: (employeeId: string) =>
     api.get(`/attendance/records/employee/${employeeId}`),
   getOfficeIps: () => api.get('/attendance/office-ips'),
+  // Returns the IP as seen by the backend (same proxy path as attendance checks)
+  detectMyIp: () => api.get('/attendance/detect-ip'),
+
+  // Self-service (auth-based, no QR token)
+  getMyToday: () => api.get('/attendance/my-today'),
+  getMyRecords: () => api.get('/attendance/my-records'),
+  selfMark: () => api.post('/attendance/self-mark'),
 };
 
 // =============================================
