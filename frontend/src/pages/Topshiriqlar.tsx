@@ -178,7 +178,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   });
   const [selectedServiceOptions, setSelectedServiceOptions] = useState<any[]>([]);
   const [priceBreakdown, setPriceBreakdown] = useState<any>(null);
-  const [moveForm, setMoveForm] = useState({ columnId: '', assigneeIds: [] as string[], note: '' });
+  const [moveForm, setMoveForm] = useState({ columnId: '', assigneeIds: [] as string[], note: '', newFiles: [] as { name: string; url: string }[] });
+  const moveFileInputRef = useRef<HTMLInputElement>(null);
   const [empSearchTerm, setEmpSearchTerm] = useState('');
   const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
   const [newOptionForm, setNewOptionForm] = useState({ name: '', value: '', priceAdd: '' });
@@ -278,7 +279,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     const opts = svc.options || [];
     const selectedOpts = opts.filter((o: any) => (form.selectedOptionIds || []).includes(o.id));
     const optionsTotal = selectedOpts.reduce((sum: number, o: any) => sum + Number(o.priceAdd), 0);
-    const baseTotal = selectedOpts.length > 0 ? optionsTotal : Number(svc.basePrice);
+    const baseTotal = Number(svc.basePrice) + optionsTotal;
     const total = Math.round(baseTotal * qty * coeff);
     setPriceBreakdown({ basePrice: svc.basePrice, optionsTotal, baseTotal, quantity: qty, coefficient: coeff, total });
     setCurrentOrderService(f => ({ ...f, ...overrides, totalAmount: total }));
@@ -415,6 +416,30 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     reader.readAsDataURL(file);
   };
 
+  // Normalizes old (plain base64 string) and new ({name,url} object) attachment formats
+  const parseAttachmentItem = (item: any): { name: string; url: string; isImage: boolean } => {
+    if (typeof item === 'string') {
+      const isImage = item.startsWith('data:image') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(item);
+      return { name: 'Rasm', url: item, isImage };
+    }
+    const name = item.name || 'Fayl';
+    const url = item.url || '';
+    const isImage = url.startsWith('data:image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+    return { name, url, isImage };
+  };
+
+  const handleMoveFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMoveForm(f => ({ ...f, newFiles: [...f.newFiles, { name: file.name, url: reader.result as string }] }));
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
   const handleAddColumn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newColumnTitle) {
@@ -463,11 +488,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   const openMoveModal = (task: Task) => {
     setSelectedTask(task);
-    setMoveForm({
-      columnId: task.columnId,
-      assigneeIds: parseJson(task.assignees),
-      note: ''
-    });
+    setMoveForm({ columnId: task.columnId, assigneeIds: parseJson(task.assignees), note: '', newFiles: [] });
     setIsMoveTaskModalOpen(true);
   };
 
@@ -476,10 +497,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     if (!selectedTask || !moveForm.columnId) return;
 
     try {
+      const currentAttachments = parseJson(selectedTask.attachments);
+      const updatedAttachments = moveForm.newFiles.length > 0
+        ? [...currentAttachments, ...moveForm.newFiles]
+        : currentAttachments;
+
       await tasksApi.update(selectedTask.id, {
         columnId: moveForm.columnId,
         assignees: JSON.stringify(moveForm.assigneeIds),
-        historyNote: moveForm.note
+        historyNote: moveForm.note,
+        ...(moveForm.newFiles.length > 0 && { attachments: JSON.stringify(updatedAttachments) }),
       }, currentUser.id);
       setIsMoveTaskModalOpen(false);
       showStatus('success', "Buyurtma ko'chirildi.");
@@ -989,7 +1016,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     </p>
                     <button
                       type="button"
-                      onClick={() => { const svc = services.find(s => s.id === currentOrderService.serviceId); setNewOptionForm({ name: '', value: '', priceAdd: svc ? String(svc.basePrice) : '' }); setIsNewOptionModalOpen(true); }}
+                      onClick={() => { setNewOptionForm({ name: '', value: '', priceAdd: '' }); setIsNewOptionModalOpen(true); }}
                       className="text-[8px] font-black bg-orange-100 text-orange-600 px-2 py-1 rounded-lg hover:bg-orange-200 transition-all flex items-center gap-1"
                     >
                       <Plus size={9} /> YANGI OPSIYA
@@ -1291,8 +1318,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <div className="flex bg-slate-100/50 p-1 rounded-2xl mb-6">
               <button onClick={() => setActiveTab('details')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'details' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TAFSILOTLAR</button>
               <button onClick={() => setActiveTab('history')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TARIXI</button>
-              <button onClick={() => setActiveTab('vendors')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'vendors' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>HAMKORLAR</button>
-              <button onClick={() => setActiveTab('costing')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'costing' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-400 hover:text-slate-600'}`}>TANNARX</button>
             </div>
 
             {activeTab === 'details' ? (
@@ -1317,26 +1342,46 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 </div>
 
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2 flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
-                  <p className="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">{selectedTask.description || "Izox kiritilmagan..."}</p>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Plus size={14} /> RASMLAR ({parseJson(selectedTask.attachments).length})</h4>
-                    <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black text-sky-600 uppercase border-b-2 border-sky-200 pb-0.5 hover:border-sky-500 transition-colors">+ YUKLASH</button>
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
+                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
+                    <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black text-sky-500 uppercase hover:text-sky-700 transition-colors flex items-center gap-1">
+                      <Plus size={11} /> Fayl yuklash
+                    </button>
                     <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} />
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {parseJson(selectedTask.attachments).map((src: string, i: number) => (
-                      <a key={i} href={src} target="_blank" rel="noreferrer" className="aspect-square rounded-2xl border-2 border-slate-100 overflow-hidden shadow-sm hover:shadow-md hover:border-sky-300 transition-all group relative">
-                        <img src={src} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="task file" />
-                        <div className="absolute inset-0 bg-sky-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white"><ExternalLink size={20} /></div>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
+                  <p className="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed mb-4">{selectedTask.description || "Izox kiritilmagan..."}</p>
+
+                  {/* Attached files */}
+                  {parseJson(selectedTask.attachments).length > 0 && (
+                    <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Yuklangan fayllar ({parseJson(selectedTask.attachments).length})</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {parseJson(selectedTask.attachments).map((raw: any, i: number) => {
+                          const att = parseAttachmentItem(raw);
+                          return att.isImage ? (
+                            <a key={i} href={att.url} target="_blank" rel="noreferrer" download={att.name}
+                              className="aspect-video rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-sky-300 transition-all group relative">
+                              <img src={att.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={att.name} />
+                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <ExternalLink size={16} className="text-white" />
+                              </div>
+                            </a>
+                          ) : (
+                            <a key={i} href={att.url} download={att.name}
+                              className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-sm transition-all group">
+                              <div className="w-9 h-9 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-black text-slate-700 truncate">{att.name}</p>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase">Yuklab olish</p>
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
@@ -1695,6 +1740,41 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <textarea required value={moveForm.note} onChange={(e) => setMoveForm({ ...moveForm, note: e.target.value })} className="input-minimal" placeholder="Nima ish qilindi? Masalan: Dizayn tasdiqlandi..." />
           </div>
 
+          {/* Design file upload */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase px-1">Design Fayllar (ixtiyoriy)</label>
+              {moveForm.newFiles.length > 0 && (
+                <span className="text-[9px] font-black text-orange-500">{moveForm.newFiles.length} ta fayl tanlandi</span>
+              )}
+            </div>
+            <div
+              onClick={() => moveFileInputRef.current?.click()}
+              className="border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all min-h-[80px]"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fayl yuklash uchun bosing</p>
+              <p className="text-[9px] text-slate-300 font-bold">PDF, AI, PSD, PNG, JPG va boshqalar</p>
+            </div>
+            <input type="file" hidden multiple ref={moveFileInputRef} onChange={handleMoveFileSelect} />
+
+            {moveForm.newFiles.length > 0 && (
+              <div className="mt-3 space-y-1.5">
+                {moveForm.newFiles.map((f, i) => (
+                  <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <span className="text-[10px] font-black text-slate-700 truncate">{f.name}</span>
+                    </div>
+                    <button type="button" onClick={() => setMoveForm(fm => ({ ...fm, newFiles: fm.newFiles.filter((_, j) => j !== i) }))} className="text-slate-300 hover:text-rose-500 transition-colors ml-2 shrink-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-4 border-t border-slate-100 items-end justify-end">
             <button type="button" className="btn-outline h-14 flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px] px-8" onClick={() => setIsMoveTaskModalOpen(false)}>BEKOR</button>
             <button type="submit" className="btn-primary h-14 flex-[2] rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-sky-500/20 px-10">O'ZGARTIRISHNI SAQLASH</button>
@@ -1899,7 +1979,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Opsiya Narxi (UZS)</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qo'shimcha narx (asosiy narxga qo'shiladi, UZS)</label>
             <input
               type="number"
               min="0"
