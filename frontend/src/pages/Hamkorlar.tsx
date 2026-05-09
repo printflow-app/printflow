@@ -11,9 +11,8 @@ const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('uz-UZ').format(Math.abs(amount)).replace(/,/g, ' ') + ' UZS';
 
 const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
-  const isAdmin =
-    currentUser.role?.name?.toLowerCase() === 'admin' ||
-    currentUser.login === 'admin';
+  const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
+  const canManageVendors = isAdmin || !!(currentUser.permissions?.canManageVendors);
 
   const [vendors, setVendors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -174,7 +173,7 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               className="w-full pl-9 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-400 transition-all"
             />
           </div>
-          {isAdmin && (
+          {canManageVendors && (
             <button
               onClick={openAdd}
               className="flex items-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all hover:-translate-y-0.5"
@@ -237,7 +236,7 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                       )}
                     </div>
                   </div>
-                  {isAdmin && (
+                  {canManageVendors && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {(v.balance || 0) < 0 && (
                         <button
@@ -374,7 +373,7 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <p className={`text-sm font-black ${(detailData.balance || 0) < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                   {(detailData.balance || 0) < 0 ? '–' : '+'}{formatCurrency(detailData.balance || 0)}
                 </p>
-                {(detailData.balance || 0) < 0 && isAdmin && (
+                {(detailData.balance || 0) < 0 && canManageVendors && (
                   <button
                     onClick={() => { setPayVendor(detailData); setPayAmount(String(Math.abs(detailData.balance))); }}
                     className="mt-2 w-full h-7 bg-emerald-500 text-white text-[9px] font-black uppercase rounded-lg tracking-widest active:scale-95 transition-all"

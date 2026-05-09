@@ -446,8 +446,9 @@ model Role {
   canManageInventory  Boolean @default(false)
 
   // Davomat ruxsatlari
-  canViewAttendance   Boolean @default(false)
-  canManageAttendance Boolean @default(false)
+  canViewAttendance    Boolean @default(false)
+  canViewAllAttendance Boolean @default(false)
+  canManageAttendance  Boolean @default(false)
 
   // Xizmatlar Katalogi ruxsatlari
   canViewServices    Boolean @default(false)
@@ -472,12 +473,42 @@ model Role {
 
   // Yangi qo'shilgan granular ruxsatlar
   canViewStatistics        Boolean @default(false)
-  canViewFinanceReports    Boolean @default(false)
-  canViewServiceReports    Boolean @default(false)
+  canViewFinanceReports    Boolean @default(false)  // Moliyaviy Dinamika grafigi
+  canViewServiceReports    Boolean @default(false)  // Xizmat Hajmi & O'rtacha Chek
   canViewRoles             Boolean @default(false)
   canManageExpenseTypes    Boolean @default(false)
   canManageKanbanColumns   Boolean @default(false)
   canManageGeneralSettings Boolean @default(false)
+
+  // Hisobotlar saxifasi — har bo'lim uchun alohida ruxsat
+  canViewGrowthCards    Boolean @default(false)  // O'sish ko'rsatkichlari kartochkalari
+  canViewIncomeByType   Boolean @default(false)  // Kirim Turlari doira diagrammasi
+  canViewExpenseByType  Boolean @default(false)  // Chiqim Turlari doira diagrammasi
+  canViewCostCalculator Boolean @default(false)  // Tannarx Kalkulyatori
+
+  // Mijozlar sahifasi — granular
+  canAddCustomer    Boolean @default(false)
+  canEditCustomer   Boolean @default(false)
+  canDeleteCustomer Boolean @default(false)
+
+  // Xodimlar sahifasi — granular
+  canAddEmployee           Boolean @default(false)
+  canEditEmployee          Boolean @default(false)
+  canDeleteEmployee        Boolean @default(false)
+  canResetEmployeePassword Boolean @default(false)
+
+  // Ombor sahifasi — granular
+  canAddInventoryItem  Boolean @default(false)  // Yangi material nomi qo'shish
+  canReceiveInventory  Boolean @default(false)  // Kirim kiritish
+  canUseInventory      Boolean @default(false)  // Sarflanish/chiqim kiritish
+  canWriteOffInventory Boolean @default(false)  // Brak — hisobdan chiqarish
+
+  // Hamkorlar va Filiallar
+  canManageVendors Boolean @default(false)  // Hamkorlarni CRUD + to'lov
+  canViewBranches  Boolean @default(false)  // Filiallar ro'yxatini ko'rish
+
+  // Obuna
+  canViewBillingStatus Boolean @default(false)  // Obuna holati ko'rish (manage siz)
 
   // Kanban ko'rinish ruxsatlari (tasks:view_all / tasks:view_own)
   canViewAllTasks Boolean @default(false) // Barcha topshiriqlarni ko'rish

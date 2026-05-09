@@ -14,7 +14,8 @@ const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + ' UZS';
 
 const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
-  const canViewFinance = !!(currentUser?.permissions?.canViewFinance || currentUser?.role?.name?.toLowerCase() === 'admin');
+  const isAdminRole    = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
+  const canViewFinance = !!(currentUser?.permissions?.canViewFinance || currentUser?.permissions?.canViewStatistics || isAdminRole);
   const [dashboard, setDashboard] = useState({ totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
   const [pendingOrders, setPendingOrders] = useState(0);
   const [overdueOrders, setOverdueOrders] = useState(0);

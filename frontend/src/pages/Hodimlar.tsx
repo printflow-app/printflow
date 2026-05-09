@@ -14,6 +14,11 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.role?.name?.toLowerCase() === 'superadmin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
 
+  const canAdd           = isAdmin || p.canAddEmployee || p.canManageEmployees;
+  const canEdit          = isAdmin || p.canEditEmployee || p.canManageEmployees;
+  const canDelete        = isAdmin || p.canDeleteEmployee || p.canManageEmployees;
+  const canResetPassword = isAdmin || p.canResetEmployeePassword || p.canManageEmployees;
+
   const [roles, setRoles] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -144,7 +149,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <h3 className="text-base sm:text-xl font-black text-slate-800 tracking-tight">Jamoa A'zolari</h3>
             <p className="text-[9px] font-black text-slate-400 mt-0.5 uppercase tracking-widest">Tizimga kirish huquqiga ega barcha xodimlar</p>
           </div>
-          {(isAdmin || p.canManageEmployees) && (
+          {canAdd && (
              <button className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all" onClick={() => setIsEmployeeModalOpen(true)}>
                <UserPlus size={16} strokeWidth={2.5} /> Yangi Xodim
              </button>
@@ -179,7 +184,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     <td className="px-5 font-mono font-bold text-[11px] text-slate-500">
                       <div className="flex items-center gap-1.5">
                         {emp.login}
-                        {isAdmin && (
+                        {canResetPassword && (
                           <button onClick={() => openCredentialsModal(emp)} className="text-slate-300 hover:text-sky-500 transition-colors p-1" title="Ma'lumotlarni ko'rish">
                             <Eye size={12} strokeWidth={2.5} />
                           </button>
@@ -200,20 +205,20 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     {(isAdmin || p.canViewSalary) && <td className="px-5 font-black text-xs text-slate-700 tabular-nums">{formatCurrency(emp.baseSalary)}</td>}
                     <td className="text-right pr-6">
                       <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {isAdmin && (
+                        {canResetPassword && (
                           <button onClick={() => handleRegeneratePassword(emp.id)} className="w-7 h-7 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 flex items-center justify-center border border-transparent hover:border-amber-100 shadow-sm" title="Parolni yangilash">
                             <RefreshCw size={12} strokeWidth={3} />
                           </button>
                         )}
-                        {(isAdmin || p.canManageEmployees) && (
-                          <button 
-                            onClick={() => handleDeleteEmployee(emp.id)} 
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteEmployee(emp.id)}
                             disabled={emp.login === 'admin'}
                             className={`w-7 h-7 rounded-lg flex items-center justify-center border border-transparent transition-all shadow-sm ${
-                              emp.login === 'admin' 
-                                ? 'text-slate-200 cursor-not-allowed' 
+                              emp.login === 'admin'
+                                ? 'text-slate-200 cursor-not-allowed'
                                 : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-100'
-                            }`} 
+                            }`}
                             title={emp.login === 'admin' ? "Asosiy adminni o'chirib bo'lmaydi" : "O'chirish"}
                           >
                             <Trash2 size={12} strokeWidth={3} />

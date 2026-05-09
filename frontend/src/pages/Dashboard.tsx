@@ -252,8 +252,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     { id: 'admins', label: 'Ma\'muriyat', icon: ShieldCheck, show: isAdmin, sub: 'Raxbarlar boshqaruvi' },
     { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
     { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
-    { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: p.canManageBilling || isAdmin, sub: 'Tarif va obuna holati' },
-    { id: 'filiallar', label: 'Hamkorlar va Filiallar', icon: Handshake, show: isAdmin || p.canManageBranches || p.canViewVendors, sub: 'Subpudratchi va yetkazuvchilar' },
+    { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: p.canManageBilling || p.canViewBillingStatus || isAdmin, sub: 'Tarif va obuna holati' },
+    { id: 'filiallar', label: 'Hamkorlar va Filiallar', icon: Handshake, show: isAdmin || p.canManageBranches || p.canViewVendors || p.canViewBranches, sub: 'Subpudratchi va yetkazuvchilar' },
     { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Lavozim va To\'lovlar' },
   ];
 
@@ -554,9 +554,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'mijozlar' && (p.canViewCustomers || isAdmin) && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'ombor' && (p.canViewInventory || isAdmin) && <Ombor currentUser={currentUser} />}
               {activeTab === 'davomat' && (p.canViewAttendance || isAdmin) && <Davomat currentUser={currentUser} />}
-              {activeTab === 'billing' && (p.canManageBilling || isAdmin) && <Billing />}
+              {activeTab === 'billing' && (p.canManageBilling || p.canViewBillingStatus || isAdmin) && <Billing />}
               {activeTab === 'admins' && isAdmin && <Admins currentUser={currentUser} />}
-              {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || p.canViewVendors) && <Filiallar currentUser={currentUser} />}
+              {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || p.canViewVendors || p.canViewBranches) && <Filiallar currentUser={currentUser} />}
               {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports) && <Hisobotlar currentUser={currentUser} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} />}
               {activeTab === 'qollanma' && <Qollanma />}

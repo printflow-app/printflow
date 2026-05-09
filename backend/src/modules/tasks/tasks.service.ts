@@ -76,10 +76,12 @@ export class TasksService {
         });
         effectiveName = c?.name ?? null;
       }
-      const existingTaskCount = finalCustomerId
-        ? await (tx.task.count as any)({ where: { customerId: finalCustomerId } })
-        : 0;
-      const displayId = buildDisplayId(effectiveName || 'XX', existingTaskCount);
+      const maxTask = await (tx.task.findFirst as any)({
+        orderBy: { displayId: 'desc' },
+        select: { displayId: true },
+      });
+      const nextSeq = maxTask ? parseInt(maxTask.displayId.replace('ID', ''), 10) + 1 : 10001;
+      const displayId = `ID${nextSeq}`;
 
       const createdTask = await tx.task.create({
         data: {
@@ -100,7 +102,7 @@ export class TasksService {
           serviceId: data.serviceId,
           quantity: Number(data.quantity || 1),
           coefficient: Number(data.coefficient || 1.0),
-          deadlineAt: deadlineAt ? new Date(deadlineAt) : null,
+          deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
         } as any
       });
 
@@ -186,11 +188,12 @@ export class TasksService {
         });
         effectiveBulkName = c?.name ?? null;
       }
-      // Snapshot the count BEFORE inserting any tasks so each item in the
-      // batch gets a deterministic, non-colliding sequence number.
-      const baseTaskCount = finalCustomerId
-        ? await (tx.task.count as any)({ where: { customerId: finalCustomerId } })
-        : 0;
+      // Find the current max displayId across the entire tenant to avoid collisions.
+      const maxBulkTask = await (tx.task.findFirst as any)({
+        orderBy: { displayId: 'desc' },
+        select: { displayId: true },
+      });
+      let nextBulkSeq = maxBulkTask ? parseInt(maxBulkTask.displayId.replace('ID', ''), 10) + 1 : 10001;
 
       const createdTasks = [];
       let totalOrderAmount = 0;
@@ -205,7 +208,7 @@ export class TasksService {
           ? (perTaskDepositFloor + remainder)
           : perTaskDepositFloor;
 
-        const displayId = buildDisplayId(effectiveBulkName || 'XX', baseTaskCount + i);
+        const displayId = `ID${nextBulkSeq++}`;
 
         const task = await tx.task.create({
           data: {
@@ -227,7 +230,7 @@ export class TasksService {
             coefficient: Number(coefficient || 1.0),
             assignees: JSON.stringify(assigneeIds || []),
             attachments: "[]",
-            deadlineAt: deadlineAt ? new Date(deadlineAt) : null,
+            deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
           } as any
         });
 

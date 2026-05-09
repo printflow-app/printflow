@@ -71,6 +71,11 @@ export class AuthService {
             canManageKanbanColumns: true, canManageGeneralSettings: true,
             canViewAllTasks: true, canViewOwnTasks: false,
             canViewAllAttendance: true,
+            canViewGrowthCards: true, canViewIncomeByType: true, canViewExpenseByType: true, canViewCostCalculator: true,
+            canAddCustomer: true, canEditCustomer: true, canDeleteCustomer: true,
+            canAddEmployee: true, canEditEmployee: true, canDeleteEmployee: true, canResetEmployeePassword: true,
+            canAddInventoryItem: true, canReceiveInventory: true, canUseInventory: true, canWriteOffInventory: true,
+            canManageVendors: true, canViewBranches: true, canViewBillingStatus: true,
           };
           return admin;
         }

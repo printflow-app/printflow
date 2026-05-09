@@ -283,9 +283,9 @@ export const attendanceApi = {
   rotateToken: () => api.post('/attendance/token/rotate'),
   // Eski nom — back-compat
   refreshToken: () => api.post('/attendance/token/rotate'),
-  checkIn: (data: { employeeId: string; token: string; deviceId?: string }) =>
+  checkIn: (data: { employeeId: string; token: string; deviceId?: string; lat?: number; lng?: number }) =>
     api.post('/attendance/checkin', data),
-  checkOut: (data: { employeeId: string; token: string; deviceId?: string }) =>
+  checkOut: (data: { employeeId: string; token: string; deviceId?: string; lat?: number; lng?: number }) =>
     api.post('/attendance/checkout', data),
   getTodayRecords: () => api.get('/attendance/records/today'),
   getRecords: (date?: string) =>
@@ -294,14 +294,11 @@ export const attendanceApi = {
     api.get('/attendance/monthly', { params: { year, month } }),
   getByEmployee: (employeeId: string) =>
     api.get(`/attendance/records/employee/${employeeId}`),
-  getOfficeIps: () => api.get('/attendance/office-ips'),
-  // Returns the IP as seen by the backend (same proxy path as attendance checks)
-  detectMyIp: () => api.get('/attendance/detect-ip'),
 
-  // Self-service (auth-based, no QR token)
+  // Self-service (auth-based, no QR token) — GPS required
   getMyToday: () => api.get('/attendance/my-today'),
   getMyRecords: () => api.get('/attendance/my-records'),
-  selfMark: () => api.post('/attendance/self-mark'),
+  selfMark: (data: { lat: number; lng: number }) => api.post('/attendance/self-mark', data),
 
   // Admin: qo'lda davomat kiritish (qurilmasiz xodimlar uchun)
   manualMark: (data: { employeeId: string; date: string; checkIn?: string; checkOut?: string }) =>

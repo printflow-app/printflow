@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Tag, Layers, Package, Bell, Wifi, QrCode } from 'lucide-react';
-import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi, attendanceApi } from '../api';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, Bell, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Handshake, Tag, FileText, ShieldCheck, Receipt } from 'lucide-react';
+import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CurrencyInput from '../components/CurrencyInput';
@@ -19,12 +19,12 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
   const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
   const [savingPrepayment, setSavingPrepayment] = useState(false);
-  // Davomat — Ofis Wi-Fi IP allowlist
-  const [officeIps, setOfficeIps] = useState<string[]>([]);
-  const [newIpEntry, setNewIpEntry] = useState('');
-  const [savingOfficeIps, setSavingOfficeIps] = useState(false);
-  const [detectedIp, setDetectedIp] = useState<string | null>(null);
-  const [isDetecting, setIsDetecting] = useState(false);
+  // Davomat — GPS Geofencing
+  const [officeLat, setOfficeLat] = useState('');
+  const [officeLng, setOfficeLng] = useState('');
+  const [officeRadius, setOfficeRadius] = useState('50');
+  const [savingGeo, setSavingGeo] = useState(false);
+  const [detectingGps, setDetectingGps] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -72,13 +72,15 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       } catch { /* default 70 */ }
 
       try {
-        const ipRes = await settingsApi.get('OFFICE_NETWORK_IPS');
-        if (Array.isArray(ipRes.data)) {
-          setOfficeIps(ipRes.data.filter((s: any) => typeof s === 'string'));
-        } else if (typeof ipRes.data === 'string') {
-          setOfficeIps([ipRes.data]);
-        }
-      } catch { /* allowlist hali sozlanmagan */ }
+        const [latRes, lngRes, radiusRes] = await Promise.all([
+          settingsApi.get('OFFICE_LAT'),
+          settingsApi.get('OFFICE_LNG'),
+          settingsApi.get('OFFICE_RADIUS'),
+        ]);
+        if (latRes.data !== null && latRes.data !== undefined) setOfficeLat(String(latRes.data));
+        if (lngRes.data !== null && lngRes.data !== undefined) setOfficeLng(String(lngRes.data));
+        if (radiusRes.data !== null && radiusRes.data !== undefined) setOfficeRadius(String(radiusRes.data));
+      } catch { /* GPS sozlanmagan */ }
     } catch (err) {
       console.error("Sozlamalarni yuklashda xato:", err);
     } finally {
@@ -98,60 +100,53 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   };
 
-  // Office IP allowlist save — settings ga JSON array sifatida yoziladi
-  const saveOfficeIps = async (next?: string[]) => {
-    const list = next ?? officeIps;
-    setSavingOfficeIps(true);
+  // GPS Geofencing sozlamalarini saqlash
+  const saveGeoSettings = async () => {
+    const lat = parseFloat(officeLat);
+    const lng = parseFloat(officeLng);
+    const radius = parseInt(officeRadius, 10);
+    if (isNaN(lat) || isNaN(lng)) {
+      showStatus('error', 'Kenglik va uzunlik to\'g\'ri formatda kiriting');
+      return;
+    }
+    if (isNaN(radius) || radius < 10) {
+      showStatus('error', 'Radius kamida 10 metr bo\'lishi kerak');
+      return;
+    }
+    setSavingGeo(true);
     try {
-      // settingsApi.set body sifatida butun obyektni yuboradi —
-      // backend value ustunida JSON.stringify qiladi
-      await settingsApi.set('OFFICE_NETWORK_IPS', list as any);
-      showStatus('success', 'Ofis Wi-Fi tarmoq sozlamasi saqlandi');
+      await Promise.all([
+        settingsApi.set('OFFICE_LAT', lat as any),
+        settingsApi.set('OFFICE_LNG', lng as any),
+        settingsApi.set('OFFICE_RADIUS', radius as any),
+      ]);
+      showStatus('success', 'GPS geofencing sozlamalari saqlandi');
     } catch {
       showStatus('error', 'Saqlashda xatolik');
     } finally {
-      setSavingOfficeIps(false);
+      setSavingGeo(false);
     }
   };
 
-  const handleAddIp = () => {
-    const trimmed = newIpEntry.trim();
-    if (!trimmed) return;
-    // Yumshoq IPv4 yoki CIDR validatsiyasi
-    const ipRe = /^\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?$/;
-    if (!ipRe.test(trimmed)) {
-      showStatus('error', 'IP yoki CIDR formati noto\'g\'ri (masalan: 192.168.1.5 yoki 192.168.1.0/24)');
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      showStatus('error', 'Brauzeringiz geolokatsiyani qo\'llab-quvvatlamaydi');
       return;
     }
-    if (officeIps.includes(trimmed)) {
-      setNewIpEntry('');
-      return;
-    }
-    const next = [...officeIps, trimmed];
-    setOfficeIps(next);
-    setNewIpEntry('');
-    saveOfficeIps(next);
-  };
-
-  const handleRemoveIp = (ip: string) => {
-    const next = officeIps.filter(x => x !== ip);
-    setOfficeIps(next);
-    saveOfficeIps(next);
-  };
-
-  const detectMyIp = async () => {
-    setIsDetecting(true);
-    setDetectedIp(null);
-    try {
-      // Backend orqali aniqlaymiz — xuddi shu IP attendance check paytida ishlatiladi.
-      // ipify.org'dan farqli ravishda proxy/Railway ortidagi haqiqiy IP qaytadi.
-      const res = await attendanceApi.detectMyIp();
-      setDetectedIp(res.data?.ip || null);
-    } catch {
-      showStatus('error', 'IP aniqlanmadi. Internet ulanishini tekshiring.');
-    } finally {
-      setIsDetecting(false);
-    }
+    setDetectingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setOfficeLat(String(pos.coords.latitude));
+        setOfficeLng(String(pos.coords.longitude));
+        setDetectingGps(false);
+      },
+      (err) => {
+        if (err.code === 1) showStatus('error', 'Iltimos, brauzerdan lokatsiyaga ruxsat bering');
+        else showStatus('error', 'Joylashuv aniqlanmadi. Qayta urinib ko\'ring');
+        setDetectingGps(false);
+      },
+      { timeout: 10000, maximumAge: 0 },
+    );
   };
 
   const saveNotifPrefs = async (next: typeof notifPrefs) => {
@@ -185,6 +180,13 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     canManageBilling: false, canManageNotifications: false,
     canViewVendors: false, canViewInventory: false, canManageInventory: false, canViewAttendance: false, canViewAllAttendance: false, canManageAttendance: false,
     canViewServices: false, canManageServices: false,
+    canViewStatistics: false, canViewFinanceReports: false, canViewServiceReports: false,
+    canViewRoles: false, canManageExpenseTypes: false, canManageKanbanColumns: false, canManageGeneralSettings: false,
+    canViewGrowthCards: false, canViewIncomeByType: false, canViewExpenseByType: false, canViewCostCalculator: false,
+    canAddCustomer: false, canEditCustomer: false, canDeleteCustomer: false,
+    canAddEmployee: false, canEditEmployee: false, canDeleteEmployee: false, canResetEmployeePassword: false,
+    canAddInventoryItem: false, canReceiveInventory: false, canUseInventory: false, canWriteOffInventory: false,
+    canManageVendors: false, canViewBranches: false, canViewBillingStatus: false,
   };
   const [newRole, setNewRole] = useState(initialRoleForm);
 
@@ -316,121 +318,161 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   };
 
-  // Permissions grouped by page — each group = one sidebar page
-  const permissionGroups = [
+  // Permissions grouped by page — har bo'lim uchun alohida ruxsat + Lucide icon
+  const permissionGroups: {
+    title: string; color: string; icon: React.ReactNode;
+    permissions: Record<string, { label: string; detail: string }>;
+  }[] = [
     {
       title: 'Kassa (Tranzaksiyalar) Sahifasi',
       color: 'emerald',
+      icon: <Wallet size={15} />,
       permissions: {
-        canViewFinance: "Kassa va moliyani ko'rish",
-        canAddIncome: "Kirim qo'shish",
-        canAddExpense: "Chiqim qo'shish",
-        canViewTotalBalance: "Umumiy kassa balansini ko'rish",
-        canManagePaymentTypes: "To'lov turlarini boshqarish",
+        canViewFinance:        { label: "Sahifaga kirish — tranzaksiyalar ro'yxati",  detail: "Menyu'da 'Kassa' bo'limi ko'rinadi. Kirim va chiqim tranzaksiyalari sanasi, summasi, turi bilan ro'yxati ko'rsatiladi. Sana bo'yicha filtrlash va qidirish ishlaydi." },
+        canViewTotalBalance:   { label: "Umumiy kassa balansini ko'rish",             detail: "Sahifa yuqorisidagi 'Jami Balans' kartochkasi ko'rinadi. Ruxsat yo'q bo'lsa summa '★★★★★' bilan yashiriladi va faqat o'z tranzaksiyalarini ko'rish mumkin bo'ladi." },
+        canAddIncome:          { label: "Kirim (tushum) qo'shish",                   detail: "'+ Kirim' tugmasi faol bo'ladi. Mijozdan to'lov qabul qilish, buyurtma bilan bog'lash, to'lov turini tanlash — bularning barchasi kiritiladi." },
+        canAddExpense:         { label: "Chiqim (xarajat) qo'shish",                 detail: "'+ Chiqim' tugmasi faol bo'ladi. Xarajat turi, summa, izoh va to'lov usuli bilan chiqim kiritish. Xodim maoshi uchun esa alohida 'Maosh' turi mavjud." },
+        canManagePaymentTypes: { label: "To'lov turlarini boshqarish (Sozlamalar)",  detail: "Sozlamalar sahifasining 'To'lov Turlari' bo'limida Naqd, Karta, Bank o'tkazmasi, Click, Payme kabi turlarni qo'shish va o'chirish imkoni." },
       }
     },
     {
       title: 'Statistika Sahifasi',
       color: 'sky',
+      icon: <BarChart2 size={15} />,
       permissions: {
-        canViewKpi: "Xodim samaradorligi (KPI) ni ko'rish",
-        canViewStatistics: "O'sish ko'rsatkichlari va umumiy statistikani ko'rish",
+        canViewStatistics: { label: "Statistika sahifasiga kirish — dashboard",    detail: "Menyu'da 'Statistika' ko'rinadi. Jami kirim summasi, bajarilgan buyurtmalar soni, kutilayotgan buyurtmalar (muddati o'tganlar bilan) va davr filtri — bularning barchasi ko'rsatiladi." },
+        canViewKpi:        { label: "Xodimlar samaradorligi liderboard (KPI)",     detail: "Xodimlar liderboard jadvali: bajarilgan buyurtmalar, muddatga rioya foizi, o'rtacha bajarish soati, daromad ulushi va samaradorlik reytingi ko'rsatiladi. Ruxsat yo'q bo'lsa faqat o'z KPI kartochkasi ko'rinadi." },
       }
     },
     {
       title: 'Hisobotlar Sahifasi',
       color: 'orange',
+      icon: <BarChart3 size={15} />,
       permissions: {
-        canViewFinanceReports: "Moliyaviy hisobotlar va dinamikani ko'rish",
-        canViewExpenseCharts: "Chiqim tahlil grafiklarini ko'rish",
-        canViewServiceReports: "Xizmatlar tahlili va reytingini ko'rish",
+        canViewGrowthCards:    { label: "O'sish ko'rsatkichlari kartochkalari",     detail: "Bu oy daromad, yangi mijozlar soni, bajarilgan buyurtmalar — har biri o'tgan oy bilan foizli taqqoslab ko'rsatiladi. Sof foyda jami kartochkasi ham shu bo'limda." },
+        canViewFinanceReports: { label: "Moliyaviy Dinamika grafigi",               detail: "Kunlik (qisqa davr) yoki oylik (uzun davr) kirim / chiqim / hamkor xarajati / sof foyda trend chiziqlari. Davr filtri orqali '1 oy' — '1 yil' oralig'ini ko'rish mumkin." },
+        canViewIncomeByType:   { label: "Kirim Turlari diagrammasi",               detail: "Naqd, Karta, Click, Payme, Bank o'tkazmasi kabi to'lov usullari bo'yicha tushum foizi va summasi — doira (pie) diagramma va yonma-yon ro'yxat." },
+        canViewExpenseByType:  { label: "Chiqim Turlari diagrammasi",              detail: "Har xil xarajat kategoriyalari bo'yicha chiqimlar ulushi — doira diagramma. Qaysi turdagi xarajat ko'p ekanligi vizual ko'rinadi." },
+        canViewExpenseCharts:  { label: "Chiqim Tahlili (kategoriyalar bo'yicha)", detail: "Har bir xarajat kategoriyasi bo'yicha aniq summa va umumiy chiqimdagi ulushi. Eng ko'p sarflangan yo'nalishlarni tezda aniqlash." },
+        canViewServiceReports: { label: "Xizmat Hajmi & O'rtacha Chek",            detail: "Xizmat tanlash orqali: buyurtmalar soni, jami daromad, o'rtacha chek va barcha daromaddagi ulushi ko'rsatiladi. Xizmatlar daromad bo'yicha reytingi ham ko'rinadi." },
+        canViewCostCalculator: { label: "Tannarx Kalkulyatori",                    detail: "Buyurtma ID yoki nomi bo'yicha qidirish. Xarajat qatorlarini qo'shish, 1 donaga tannarx va sof foyda/marja foizini real vaqtda hisoblash." },
       }
     },
     {
       title: 'Xizmatlar (Kanban) Sahifasi',
-      color: 'orange',
+      color: 'amber',
+      icon: <LayoutGrid size={15} />,
       permissions: {
-        canViewTasks: "Buyurtmalar va topshiriqlarni ko'rish",
-        canViewAllTasks: "Barcha buyurtmalarni ko'rish (RBAC)",
-        canViewOwnTasks: "Faqat o'ziga biriktirilgan buyurtmalarni ko'rish",
-        canCreateTask: "Yangi buyurtma yaratish",
-        canEditTask: "Buyurtmani tahrirlash",
-        canDeleteTask: "Buyurtmani o'chirish",
-        canMoveTask: "Bosqichdan bosqichga o'tkazish",
-        canManageColumns: "Kanban bosqichlarini boshqarish",
-        canAssignToOtherBranches: "Boshqa filial xodimlariga buyurtma berish",
+        canViewTasks:             { label: "Kanban sahifasiga kirish",                         detail: "Menyu'da 'Xizmatlar' bo'limi ko'rinadi. Buyurtmalar kanban doskasiniga umumiy kirish imkoni." },
+        canViewAllTasks:          { label: "Barcha buyurtmalarni ko'rish",                     detail: "Barcha xodimga biriktirilgan buyurtmalar ko'rinadi. Bu ruxsat yo'q bo'lsa xodim faqat o'ziga biriktirilgan buyurtmalarni ko'ra oladi." },
+        canViewOwnTasks:          { label: "Faqat o'ziga biriktirilgan buyurtmalarni ko'rish", detail: "Boshqa xodimlarning buyurtmalari yashiriladi. Faqat o'z ismiga biriktirilgan kartochkalar ko'rinadi." },
+        canCreateTask:            { label: "Yangi buyurtma yaratish",                          detail: "'+ Yangi Buyurtma' tugmasi ko'rinadi va ishlaydi. Ruxsat yo'q bo'lsa bu tugma umuman ko'rinmaydi." },
+        canEditTask:              { label: "Buyurtma ma'lumotlarini tahrirlash",               detail: "Buyurtma kartochkasida 'Tahrirlash' tugmasi ko'rinadi. Mijoz, xizmat, narx, izoh, deadline va boshqa maydonlarni o'zgartirish mumkin." },
+        canDeleteTask:            { label: "Buyurtmani o'chirish yoki arxivlash",              detail: "'O'chirish' va 'Arxivlash' tugmalari ko'rinadi. Ruxsat yo'q bo'lsa bu tugmalar umuman ko'rinmaydi." },
+        canMoveTask:              { label: "Buyurtmani bosqichdan bosqichga ko'chirish",       detail: "'Bosqichni o'zgartirish' tugmasi faol bo'ladi. Buyurtmani keyingi yoki oldingi kanban ustuniga ko'chirish va izoh qoldirish mumkin." },
+        canManageColumns:         { label: "Kanban ustunlarini (bosqichlarni) boshqarish",    detail: "Yangi bosqich (ustun) qo'shish, mavjudini nomini o'zgartirish va tartibini belgilash imkoni." },
+        canAssignToOtherBranches: { label: "Boshqa filial xodimlariga buyurtma berish",       detail: "Buyurtma yaratish yoki tahrirlashda o'z filialidan tashqaridagi xodimlarni mas'ul qilib tayinlash imkoni paydo bo'ladi." },
       }
     },
     {
       title: 'Mijozlar Bazasi Sahifasi',
       color: 'violet',
+      icon: <Users size={15} />,
       permissions: {
-        canViewCustomers: "Mijozlar ro'yxatini ko'rish",
-        canManageCustomers: "Mijozlarni qo'shish va tahrirlash",
+        canViewCustomers:   { label: "Mijozlar ro'yxatini ko'rish",               detail: "Menyu'da 'Mijozlar' bo'limi ko'rinadi. Mijozlar jadvali: ism, telefon, jami buyurtmalar, qarz holati va oxirgi aloqa ko'rsatiladi." },
+        canAddCustomer:     { label: "Yangi mijoz qo'shish",                      detail: "'+ Yangi Mijoz' tugmasi ko'rinadi. Ism, telefon, manzil va qo'shimcha kontaktlar bilan yangi mijoz kartochkasi yaratish imkoni." },
+        canEditCustomer:    { label: "Mijoz ma'lumotlarini tahrirlash",            detail: "Har bir mijoz qatorida 'Tahrirlash' tugmasi ko'rinadi. Ism, telefon, manzil, telegram va boshqa ma'lumotlarni o'zgartirish mumkin." },
+        canDeleteCustomer:  { label: "Mijozni tizimdan o'chirish",                 detail: "Mijoz qatorida 'O'chirish' tugmasi ko'rinadi. Mijozni tizimdan butunlay o'chirish — bu amalni ortga qaytarish mumkin emas." },
+        canManageCustomers: { label: "Kontaktlar, buyurtmalar va to'lovlar tarixi", detail: "Mijoz detali modalida: barcha buyurtmalar ro'yxati, to'lov tarixi, qarz holati va kontakt raqamlarini ko'rish va boshqarish imkoni." },
       }
     },
     {
       title: 'Xodimlar Sahifasi',
       color: 'indigo',
+      icon: <UserCheck size={15} />,
       permissions: {
-        canViewEmployees: "Xodimlar ro'yxatini ko'rish",
-        canManageEmployees: "Xodimlarni qo'shish va tahrirlash",
-        canViewSalary: "Xodim maoshlarini ko'rish",
+        canViewEmployees:        { label: "Xodimlar ro'yxatini ko'rish",         detail: "Menyu'da 'Xodimlar' bo'limi ko'rinadi. Xodimlar jadvali: ism, lavozim, telefon, filial, login va holat ma'lumotlari." },
+        canAddEmployee:          { label: "Yangi xodim qo'shish",                detail: "'+ Yangi Xodim' tugmasi ko'rinadi. Ism, telefon, lavozim, filial va boshlang'ich maosh kiritib yangi xodim yaratish. Tizim avtomatik login va parol generatsiya qiladi." },
+        canEditEmployee:         { label: "Xodim ma'lumotlarini tahrirlash",     detail: "Xodim qatorida 'Tahrirlash' tugmasi ko'rinadi. Ism, telefon, lavozim, filial va boshqa ma'lumotlarni o'zgartirish mumkin." },
+        canDeleteEmployee:       { label: "Xodim hisobini o'chirish",            detail: "Xodim qatorida 'O'chirish' tugmasi ko'rinadi. Xodim tizimdan chiqariladi va uning hisobiga kirish bloklanadi." },
+        canResetEmployeePassword:{ label: "Login va parol yangilash",            detail: "'Yangi parol' tugmasi ko'rinadi. Xodim parolini qayta generatsiya qilish va yangi login ma'lumotlarini ko'rish imkoni." },
+        canViewSalary:           { label: "Xodim maosh summalarini ko'rish",     detail: "Xodimlar jadvalida va profilida boshlang'ich maosh, berilgan avans va qarz summasi ko'rinadi. Ruxsat yo'q bo'lsa bu raqamlar yashiriladi." },
       }
     },
     {
       title: "Ma'muriyat (Adminlar) Sahifasi",
       color: 'rose',
+      icon: <ShieldCheck size={15} />,
       permissions: {
-        canManageAdmins: "Adminlar va rahbarlarni boshqarish",
+        canManageAdmins: { label: "Workspace admin hisoblarini boshqarish", detail: "Menyu'da 'Ma'muriyat' bo'limi ko'rinadi. Admin hisobi yaratish, login/parolni ko'rish, yangi parol generatsiya qilish va admin hisobini o'chirish imkoni. Bu sahifa juda yuqori darajali ruxsat." },
       }
     },
     {
       title: 'Ombor Sahifasi',
       color: 'amber',
+      icon: <Package size={15} />,
       permissions: {
-        canViewInventory: "Ombor va materiallarni ko'rish",
-        canManageInventory: "Ombor zaxirasini boshqarish",
+        canViewInventory:    { label: "Ombor sahifasiga kirish — materiallar ro'yxati", detail: "Menyu'da 'Ombor' ko'rinadi. Materiallar/xom ashyo nomlari, joriy zaxira miqdori, minimum chegara va holat (yetarli/kam/kritik) ko'rsatiladi." },
+        canAddInventoryItem: { label: "Yangi material nomi qo'shish",                   detail: "'+ Material Qo'shish' tugmasi ko'rinadi. Yangi xom ashyo yoki material nomini, o'lchov birligini va minimum zaxira chegarasini kiritish." },
+        canReceiveInventory: { label: "Kirim — yangi zaxira qabul qilish",              detail: "Har bir material kartasida 'Kirim' tugmasi ko'rinadi. Yangi kelgan material miqdorini kiritish, narx va izoh bilan yozib qo'yish." },
+        canUseInventory:     { label: "Chiqim — sarflanish kiritish",                   detail: "Material kartasida 'Chiqim' tugmasi ko'rinadi. Ishlab chiqarishga sarflangan material miqdorini kiritish va xarajat sifatida qayd etish." },
+        canWriteOffInventory:{ label: "Brak — yaroqsiz materiallarni hisobdan chiqarish", detail: "Material kartasida 'Brak' tugmasi ko'rinadi. Yaroqsiz yoki yo'qolgan materiallarni hisobdan o'chirish. Sabab va miqdor ko'rsatiladi." },
+        canManageInventory:  { label: "Material ma'lumotlarini tahrirlash va o'chirish", detail: "Material nomini, o'lchov birligini va minimum zaxira miqdorini o'zgartirish. Keraksiz materialni ro'yxatdan o'chirish imkoni." },
       }
     },
     {
       title: 'Davomat Sahifasi',
       color: 'teal',
+      icon: <Clock size={15} />,
       permissions: {
-        canViewAttendance: "Davomat sahifasiga kirish (faqat o'zinikini ko'radi)",
-        canViewAllAttendance: "Boshqa xodimlarning davomatini ham ko'rish",
-        canManageAttendance: "Davomat kirim/chiqimini boshqarish",
+        canViewAttendance:    { label: "Sahifaga kirish — o'z davomatini ko'rish va belgilash", detail: "Menyu'da 'Davomat' ko'rinadi. Xodim o'z keldi/ketti vaqtini QR kod yoki 'Keldim' tugmasi bilan belgilaydi. Faqat o'z tarixi ko'rinadi." },
+        canViewAllAttendance: { label: "Barcha xodimlar davomatini ko'rish",                   detail: "Barcha xodimlarning kunlik davomat jadvali, oylik matritsa ko'rinishi, kech qolish daqiqalari statistikasi va xodim bo'yicha filtrlash." },
+        canManageAttendance:  { label: "Qo'lda davomat kiritish va tizim sozlamalari",        detail: "Qurilmasiz xodimlar uchun admin keldi/ketti vaqtini qo'lda kiritadi. Ofis Wi-Fi IP manzillar allowlist (ruxsat etilgan tarmoqlar) sozlamasi." },
+      }
+    },
+    {
+      title: 'Obuna va To\'lov Sahifasi',
+      color: 'purple',
+      icon: <Receipt size={15} />,
+      permissions: {
+        canViewBillingStatus: { label: "Obuna holati va muddatini ko'rish",    detail: "Menyu'da 'Obuna' ko'rinadi. Joriy tarif nomi, obuna muddati, qolgan kunlar va holat (faol/sinov/muddati o'tgan) kartochkasi ko'rsatiladi." },
+        canManageBilling:     { label: "To'lov yuborish va obuna yangilash",   detail: "Tarif tanlash, to'lov cheki yuborish, promo kod kiritish va cashback balansini qo'llash. To'lov tasdiqlanib obuna yangilanadi." },
       }
     },
     {
       title: 'Hamkorlar va Filiallar Sahifasi',
       color: 'cyan',
+      icon: <Building2 size={15} />,
       permissions: {
-        canViewVendors: "Hamkorlar va subpudratchilarni ko'rish",
-        canManageBranches: "Filiallarni qo'shish va tahrirlash",
+        canViewVendors:    { label: "Hamkorlar ro'yxatini ko'rish",               detail: "Hamkorlar (subpudratchilar) kartochkalari ko'rinadi: ism, mutaxassislik, telefon, joriy qarz holati va jami buyurtmalar soni. Hamkor detalini ochish mumkin." },
+        canManageVendors:  { label: "Hamkorlarni qo'shish, tahrirlash, o'chirish va to'lov", detail: "'+ Hamkor' tugmasi ko'rinadi. Yangi hamkor yaratish. Mavjud hamkor ma'lumotlarini o'zgartirish. Hamkorga to'lov kiritish (qarzni kamaytirish). Hamkorni o'chirish." },
+        canViewBranches:   { label: "Filiallar ro'yxatini ko'rish",               detail: "Filiallar yorlig'i ko'rinadi. Barcha filiallar ro'yxati: nomi, manzili, telefon raqami va mas'ul menejer ismi." },
+        canManageBranches: { label: "Filiallarni qo'shish va boshqarish",         detail: "'+ Yangi Filial' tugmasi ko'rinadi. Filial yaratish, manzil va mas'ul menejerini belgilash. Mavjud filialni tahrirlash va o'chirish." },
       }
     },
     {
-      title: 'Xizmatlar Katalogi',
+      title: 'Xizmatlar Katalogi (Sozlamalar ichida)',
       color: 'slate',
+      icon: <Layers size={15} />,
       permissions: {
-        canViewServices: "Xizmatlar katalogini ko'rish",
-        canManageServices: "Xizmatlarni va opsiyalarni boshqarish",
+        canViewServices:   { label: "Xizmatlar katalogini ko'rish",            detail: "Sozlamalarda 'Xizmatlar' bo'limi ko'rinadi. Bosma xizmatlar: nomi, birlik, asosiy narx, opsiyalar va material normasi (BOM) ko'rsatiladi." },
+        canManageServices: { label: "Xizmat va opsiyalarni qo'shish, tahrirlash, o'chirish", detail: "Yangi xizmat qo'shish va narxini belgilash. Opsiyalar (qo'shimcha parametrlar) yaratish. Material normalarini bog'lash va o'zgartirish. Xizmatni o'chirish." },
       }
     },
     {
       title: 'Tizim Sozlamalari Sahifasi',
       color: 'gray',
+      icon: <Settings size={15} />,
       permissions: {
-        canViewSettings: "Tizim sozlamalariga kirish",
-        canViewRoles: "Lavozim va ruxsatlarni ko'rish",
-        canManageRoles: "Lavozim va ruxsatlarni o'zgartirish",
-        canManagePaymentTypes: "To'lov turlarini boshqarish",
-        canManageExpenseTypes: "Xarajat turlarini boshqarish",
-        canManageKanbanColumns: "Kanban bosqichlarini boshqarish",
-        canManageGeneralSettings: "Umumiy sozlamalarni (Zakolat va h.k.) o'zgartirish",
-        canManageNotifications: "Telegram bot bildirishnomalarini sozlash",
-        canManageBilling: "Obuna va to'lovlarni boshqarish",
+        canViewSettings:          { label: "Sozlamalar sahifasiga kirish",                       detail: "Menyu'da 'Sozlamalar' bo'limi ko'rinadi. Lavozimlar, to'lov turlari, xarajat kategoriyalari, kanban bosqichlari va boshqa tizim sozlamalariga umumiy kirish." },
+        canViewRoles:             { label: "Lavozimlar va ruxsatlarni ko'rish (faqat o'qish)",  detail: "Barcha lavozimlar va ularga biriktirilgan ruxsatlarni ko'rish mumkin. Tahrirlash tugmalari ko'rinmaydi — faqat ma'lumotni o'qish." },
+        canManageRoles:           { label: "Lavozim yaratish, ruxsatlarni tahrirlash, o'chirish", detail: "'Yangi Lavozim' tugmasi faol. Har bir ruxsatni alohida yoqish/o'chirish. Lavozimni o'chirish (bog'liq xodimlar bo'lmasa)." },
+        canManagePaymentTypes:    { label: "To'lov turlarini qo'shish va o'chirish",             detail: "Sozlamalar > To'lov Turlari bo'limida Click, Uzcard, Humo, Naqd va boshqalarni qo'shish, nomini o'zgartirish va o'chirish." },
+        canManageExpenseTypes:    { label: "Xarajat kategoriyalarini qo'shish va o'chirish",    detail: "Sozlamalar > Xarajat Turlari bo'limida Xom ashyo, Ijara, Kommunal, Transport va boshqa xarajat turlarini boshqarish." },
+        canManageKanbanColumns:   { label: "Kanban bosqichlarini tahrirlash",                   detail: "Sozlamalar > Bosqichlar bo'limida buyurtma jarayoni bosqichlari (Yangi → Tayyor) nomini o'zgartirish va tartibini belgilash." },
+        canManageGeneralSettings: { label: "Umumiy tizim parametrlarini o'zgartirish",         detail: "Minimal zakolat foizi, ish boshlanish vaqti va kun tartibiga oid sozlamalar. Bu parametrlar barcha filiallar uchun amal qiladi." },
+        canManageNotifications:   { label: "Telegram bot bildirishnomalarini sozlash",          detail: "Yangi buyurtma, kechikish, hisob-kitob kabi hodisalar uchun Telegram bot orqali kim xabar olishini yoqish/o'chirish." },
+        canManageBilling:         { label: "Obuna va to'lovlarni boshqarish (Sozlamalar)",      detail: "Obuna holatini ko'rish va to'lov tasdiqlash. Bu ruxsat 'Obuna va To'lov' sahifasi ruxsatidan farqli — u Sozlamalar ichida amalga oshiriladi." },
       }
     },
   ];
@@ -525,39 +567,60 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   {/* Permissions grid (expanded or editing) */}
                   {(isExpanded || isEditing) && (
                     <div className="px-8 pb-8 border-t border-slate-100 pt-8 animate-slide-up">
-                      <div className="space-y-10">
+                      <div className="space-y-8">
                         {permissionGroups.map(group => (
                           <div key={group.title}>
-                            <h5 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-${group.color}-600 flex items-center gap-2.5`}>
-                              <div className={`w-3 h-3 rounded-md bg-${group.color}-500 shadow-sm shadow-${group.color}-500/20`}></div>
-                              {group.title}
-                            </h5>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {Object.entries(group.permissions).map(([key, label]) => (
-                                <div key={key} className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${
-                                  isEditing 
-                                    ? 'bg-white cursor-pointer hover:border-orange-400 hover:shadow-md border-slate-200' 
-                                    : 'bg-slate-50 border-slate-50 opacity-80'
-                                }`}
-                                onClick={() => {
-                                  if (isEditing) {
-                                    setEditRoleData({ ...editRoleData, [key]: !editRoleData[key] });
-                                  }
-                                }}>
-                                   <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{label}</span>
-                                   {isEditing ? (
-                                     <div className={`w-10 h-6 rounded-full relative transition-all cursor-pointer ${editRoleData[key] ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                                       <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${editRoleData[key] ? 'left-5' : 'left-1'}`}></div>
-                                     </div>
-                                   ) : (
-                                     dataSource[key] ? (
-                                       <div className="w-6 h-6 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center"><Check size={14} strokeWidth={4}/></div>
-                                     ) : (
-                                       <div className="w-6 h-6 bg-slate-200/50 text-slate-300 rounded-lg flex items-center justify-center"><X size={12} strokeWidth={4}/></div>
-                                     )
-                                   )}
-                                </div>
-                              ))}
+                            <div className="flex items-center gap-2.5 mb-4">
+                              <span className={`text-${group.color}-600 flex-shrink-0`}>{group.icon}</span>
+                              <h5 className={`text-[11px] font-black uppercase tracking-[0.25em] text-${group.color}-700`}>
+                                {group.title}
+                              </h5>
+                              <div className="flex-1 h-px bg-slate-100" />
+                              <span className="text-[9px] font-black text-slate-300 uppercase">
+                                {Object.keys(group.permissions).filter(k => dataSource[k]).length}/{Object.keys(group.permissions).length}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                              {Object.entries(group.permissions).map(([key, perm]) => {
+                                const isOn = isEditing ? !!editRoleData[key] : !!dataSource[key];
+                                return (
+                                  <div
+                                    key={key}
+                                    className={`flex items-start gap-3 p-4 rounded-2xl border transition-all duration-200 ${
+                                      isEditing
+                                        ? `cursor-pointer ${isOn ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-400' : 'bg-white border-slate-200 hover:border-orange-300 hover:shadow-sm'}`
+                                        : isOn ? 'bg-emerald-50/60 border-emerald-100' : 'bg-slate-50/50 border-slate-100 opacity-60'
+                                    }`}
+                                    onClick={() => isEditing && setEditRoleData({ ...editRoleData, [key]: !editRoleData[key] })}
+                                  >
+                                    {/* Toggle or status indicator */}
+                                    <div className="shrink-0 mt-0.5">
+                                      {isEditing ? (
+                                        <div className={`w-10 h-6 rounded-full relative transition-all ${isOn ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${isOn ? 'left-5' : 'left-1'}`} />
+                                        </div>
+                                      ) : isOn ? (
+                                        <div className="w-6 h-6 bg-emerald-500 text-white rounded-lg flex items-center justify-center shadow-sm shadow-emerald-500/30">
+                                          <Check size={13} strokeWidth={3} />
+                                        </div>
+                                      ) : (
+                                        <div className="w-6 h-6 bg-slate-200/60 text-slate-300 rounded-lg flex items-center justify-center">
+                                          <X size={12} strokeWidth={3} />
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Label + detail */}
+                                    <div className="min-w-0 flex-1">
+                                      <p className={`text-[11px] font-black uppercase tracking-tight leading-tight ${isOn ? 'text-slate-800' : 'text-slate-500'}`}>
+                                        {perm.label}
+                                      </p>
+                                      <p className="text-[10px] font-medium text-slate-400 mt-1 leading-snug normal-case tracking-normal">
+                                        {perm.detail}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}
@@ -820,114 +883,102 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </section>
       )}
 
-      {/* Davomat — Ofis Wi-Fi sozlamasi */}
+      {/* Davomat — GPS Geofencing */}
       {(isAdmin || p.canManageAttendance) && (
         <section className="space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
             <div>
               <h3 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                <Wifi className="text-emerald-500" size={28} /> Davomat — Ofis Wi-Fi
+                <MapPin className="text-emerald-500" size={28} /> Davomat va Geofencing
               </h3>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                Faqat ushbu IP/CIDR ro'yxatidan QR skanerlash mumkin bo'ladi
+                Xodimlar faqat ofis hududi (radius)da davomat belgilashi mumkin
               </p>
             </div>
 
-            {/* Detect IP helper */}
+            {/* Auto-detect helper */}
             <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
-              <QrCode className="text-emerald-600 mt-0.5" size={18} />
+              <Navigation className="text-emerald-600 mt-0.5 flex-shrink-0" size={18} />
               <div className="flex-1 space-y-2">
                 <p className="text-[11px] font-black text-emerald-700">
-                  Ofisdagi Wi-Fi'ga ulangan holatda "IP'ni aniqlash" tugmasini bosing — bu sizning ofisingiz tashqi IP'si.
+                  Ofisda turganda "Hozirgi joylashuvimni aniqlash" tugmasini bosing — koordinatalar avtomatik to'ldiriladi.
                 </p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={detectMyIp}
-                    disabled={isDetecting}
-                    className="h-9 px-3 bg-white border border-emerald-200 hover:border-emerald-400 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5 disabled:opacity-60"
-                  >
-                    <Wifi size={12} className={isDetecting ? 'animate-pulse' : ''} />
-                    {isDetecting ? 'Aniqlanmoqda...' : (detectedIp ? 'Qayta aniqlash' : "IP'ni aniqlash")}
-                  </button>
-                  {detectedIp && (
-                    <>
-                      <span className="font-mono text-xs font-black text-emerald-800 bg-white px-3 py-1.5 rounded-lg border border-emerald-200">
-                        {detectedIp}
-                      </span>
-                      {officeIps.includes(detectedIp) ? (
-                        <span className="h-9 px-3 bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5">
-                          ✓ Allaqachon qo'shilgan
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = [...officeIps, detectedIp];
-                            setOfficeIps(next);
-                            setDetectedIp(null);
-                            saveOfficeIps(next);
-                          }}
-                          className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
-                        >
-                          <Plus size={12} /> Ro'yxatga qo'shish
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={handleDetectLocation}
+                  disabled={detectingGps}
+                  className="h-9 px-4 bg-white border border-emerald-200 hover:border-emerald-400 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5 disabled:opacity-60"
+                >
+                  <Navigation size={12} className={detectingGps ? 'animate-pulse' : ''} />
+                  {detectingGps ? 'Aniqlanmoqda...' : 'Hozirgi joylashuvimni aniqlash'}
+                </button>
               </div>
             </div>
 
-            {/* Add manually */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newIpEntry}
-                onChange={e => setNewIpEntry(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddIp(); } }}
-                placeholder="192.168.1.5  yoki  192.168.1.0/24"
-                className="input-minimal font-mono text-sm flex-1"
-              />
-              <button
-                type="button"
-                onClick={handleAddIp}
-                disabled={savingOfficeIps}
-                className="h-12 px-5 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-60"
-              >
-                <Plus size={14} /> Qo'shish
-              </button>
+            {/* Coordinate inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  Kenglik (Latitude)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={officeLat}
+                  onChange={e => setOfficeLat(e.target.value)}
+                  placeholder="41.299496"
+                  className="input-minimal font-mono text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  Uzunlik (Longitude)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={officeLng}
+                  onChange={e => setOfficeLng(e.target.value)}
+                  placeholder="69.240073"
+                  className="input-minimal font-mono text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  Radius (metr)
+                </label>
+                <input
+                  type="number"
+                  min="10"
+                  max="5000"
+                  value={officeRadius}
+                  onChange={e => setOfficeRadius(e.target.value)}
+                  placeholder="50"
+                  className="input-minimal font-mono text-sm"
+                />
+              </div>
             </div>
 
-            {/* List */}
-            <div className="space-y-2">
-              {officeIps.length === 0 ? (
-                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
-                  <p className="text-[11px] font-black text-rose-700 mb-1">⚠️ Ro'yxat bo'sh</p>
-                  <p className="text-[10px] font-bold text-rose-600">
-                    Hozir har qanday tarmoqdan QR skanerlash mumkin. Xavfsizlik uchun ofisingiz IP'sini qo'shing.
-                  </p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-slate-100 bg-slate-50 rounded-2xl border border-slate-100">
-                  {officeIps.map(ip => (
-                    <li key={ip} className="flex items-center justify-between px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Wifi size={14} className="text-emerald-500" />
-                        <span className="font-mono text-sm font-black text-slate-700">{ip}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveIp(ip)}
-                        className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 border border-slate-100 hover:border-rose-200 flex items-center justify-center transition-all"
-                        title="O'chirish"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            {(!officeLat || !officeLng) && (
+              <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
+                <p className="text-[11px] font-black text-rose-700 mb-1 flex items-center gap-1.5">
+                  <AlertCircle size={13} /> GPS sozlanmagan
+                </p>
+                <p className="text-[10px] font-bold text-rose-600">
+                  Koordinatalar kiritilmasa xodimlar davomat belgilolmaydi.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={saveGeoSettings}
+                disabled={savingGeo}
+                className="h-11 px-6 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-60"
+              >
+                <Save size={14} /> {savingGeo ? 'Saqlanmoqda...' : 'Saqlash'}
+              </button>
             </div>
           </div>
         </section>
@@ -1051,27 +1102,27 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               <input type="text" required value={newRole.name} onChange={(e) => setNewRole({...newRole, name: e.target.value})} className="w-full h-16 text-2xl font-black bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 outline-none focus:bg-white focus:border-orange-500 transition-all shadow-inner placeholder:text-slate-200" placeholder="Manager..." />
            </div>
            
-           <div className="space-y-10">
+           <div className="space-y-8">
              {permissionGroups.map(group => (
-               <div key={group.title} className="space-y-4">
-                 <h4 className={`text-[11px] font-black uppercase tracking-[0.4em] border-b pb-4 text-${group.color}-600 border-${group.color}-200 flex items-center gap-3`}>
-                    <div className={`w-3 h-3 rounded-full bg-${group.color}-500 shadow-sm shadow-${group.color}-500/30`}></div>
-                    {group.title}
+               <div key={group.title} className="space-y-3">
+                 <h4 className={`text-[11px] font-black uppercase tracking-[0.3em] flex items-center gap-2 border-b pb-3 text-${group.color}-700 border-${group.color}-100`}>
+                   <span>{group.icon}</span>{group.title}
                  </h4>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border">
-                    {Object.entries(group.permissions).map(([key, label]) => (
-                       <label key={key} className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded-md">
-                          <input 
-                             type="checkbox" 
-                             checked={!!(newRole as any)[key]} 
-                             onChange={(e) => setNewRole({...newRole, [key]: e.target.checked})}
-                             className="h-5 w-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                          />
-                          <span className="text-[12px] font-black uppercase tracking-tight text-slate-800">
-                             {label}
-                          </span>
-                       </label>
-                    ))}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                   {Object.entries(group.permissions).map(([key, perm]) => (
+                     <label key={key} className="flex items-start gap-3 cursor-pointer p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all">
+                       <input
+                         type="checkbox"
+                         checked={!!(newRole as any)[key]}
+                         onChange={(e) => setNewRole({...newRole, [key]: e.target.checked})}
+                         className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 shrink-0"
+                       />
+                       <div>
+                         <span className="text-[11px] font-black uppercase tracking-tight text-slate-800 block">{perm.label}</span>
+                         <span className="text-[10px] font-medium text-slate-400 leading-snug normal-case">{perm.detail}</span>
+                       </div>
+                     </label>
+                   ))}
                  </div>
                </div>
              ))}

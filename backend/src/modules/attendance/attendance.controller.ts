@@ -15,13 +15,12 @@ import { AttendanceService } from './attendance.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequireFeature } from '../../common/decorators/feature.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { getClientIp } from '../../common/utils/get-client-ip';
 
 // =============================================
 // ATTENDANCE CONTROLLER
 // checkIn / checkOut = @Public() — QR skanerlash uchun
 // (xodimning telefoni JWT cookie'ga ega emas)
-// IP qatorini getClientIp orqali olib, service'ga yuboramiz.
+// GPS koordinatalari body'dan olinadi va service'ga uzatiladi.
 // =============================================
 
 @UseGuards(JwtAuthGuard)
@@ -48,32 +47,22 @@ export class AttendanceController {
     return this.attendanceService.rotateToken();
   }
 
-  // Backend ko'rgan haqiqiy client IP — Sozlamalar'dagi IP detection uchun.
-  // Xuddi shu IP attendance check paytida ham ishlatiladi, shuning uchun
-  // ipify.org'dan farqli emas — bu yo'l yanada ishonchli.
-  @Public()
-  @Get('detect-ip')
-  detectMyIp(@Req() req: Request) {
-    const ip = getClientIp(req);
-    return { ip };
-  }
-
-  // ⚠️ PUBLIC — QR kod orqali skanerlash
+  // ⚠️ PUBLIC — QR kod orqali skanerlash (GPS koordinatalari bilan)
   @Public()
   @Post('checkin')
   async checkIn(
-    @Body() body: { employeeId: string; token: string; deviceId?: string },
-    @Req() req: Request,
+    @Body() body: { employeeId: string; token: string; deviceId?: string; lat?: number; lng?: number },
   ) {
     try {
-      const clientIp = getClientIp(req);
       return await this.attendanceService.checkIn(
         body.employeeId,
         body.token,
         body.deviceId,
-        clientIp,
+        body.lat,
+        body.lng,
       );
     } catch (err: any) {
+      if (err?.status) throw err;
       throw new HttpException(err.message || 'Xatolik', HttpStatus.BAD_REQUEST);
     }
   }
@@ -81,18 +70,18 @@ export class AttendanceController {
   @Public()
   @Post('checkout')
   async checkOut(
-    @Body() body: { employeeId: string; token: string; deviceId?: string },
-    @Req() req: Request,
+    @Body() body: { employeeId: string; token: string; deviceId?: string; lat?: number; lng?: number },
   ) {
     try {
-      const clientIp = getClientIp(req);
       return await this.attendanceService.checkOut(
         body.employeeId,
         body.token,
         body.deviceId,
-        clientIp,
+        body.lat,
+        body.lng,
       );
     } catch (err: any) {
+      if (err?.status) throw err;
       throw new HttpException(err.message || 'Xatolik', HttpStatus.BAD_REQUEST);
     }
   }
@@ -121,12 +110,6 @@ export class AttendanceController {
   @Get('records/employee/:employeeId')
   getByEmployee(@Param('employeeId') employeeId: string) {
     return this.attendanceService.getRecordsByEmployee(employeeId);
-  }
-
-  // Ofis IP allowlist holati (debug/UI ko'rsatish uchun)
-  @Get('office-ips')
-  getOfficeIps() {
-    return this.attendanceService.getOfficeIps();
   }
 
   // ============ SELF SERVICE — JWT-authenticated employee actions ============
@@ -159,15 +142,18 @@ export class AttendanceController {
     }
   }
 
-  // Keldim/Ketdim tugmasi — bitta endpoint, ichkarida toggle
+  // Keldim/Ketdim tugmasi — bitta endpoint, ichkarida toggle (GPS bilan)
   @Post('self-mark')
-  async selfMark(@Req() req: Request) {
+  async selfMark(
+    @Body() body: { lat: number; lng: number },
+    @Req() req: Request,
+  ) {
     const employeeId = (req as any)?.user?.sub;
     if (!employeeId) throw new HttpException('Auth talab qilinadi', HttpStatus.UNAUTHORIZED);
     try {
-      const clientIp = getClientIp(req);
-      return await this.attendanceService.selfMark(employeeId, clientIp);
+      return await this.attendanceService.selfMark(employeeId, body.lat, body.lng);
     } catch (err: any) {
+      if (err?.status) throw err;
       throw new HttpException(err.message || 'Xatolik', HttpStatus.BAD_REQUEST);
     }
   }

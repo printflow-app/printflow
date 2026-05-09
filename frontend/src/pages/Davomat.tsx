@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Clock, UserCheck, Calendar, CheckCircle2, AlertCircle,
-  LogIn, LogOut, Users, Wifi, AlarmClock, ThumbsUp, ThumbsDown, Activity,
+  LogIn, LogOut, Users, MapPin, AlarmClock, ThumbsUp, ThumbsDown, Activity,
 } from 'lucide-react';
 import { attendanceApi, employeesApi, settingsApi, overtimeApi } from '../api';
 import Modal from '../components/Modal';
@@ -98,15 +98,35 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const handleSelfMark = async () => {
     if (isMarking) return;
     setIsMarking(true);
+
+    const getPosition = (): Promise<GeolocationPosition> =>
+      new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 0 }),
+      );
+
+    let position: GeolocationPosition;
     try {
-      const res = await attendanceApi.selfMark();
+      position = await getPosition();
+    } catch (geoErr: any) {
+      if (geoErr?.code === 1) {
+        showStatus('error', 'Iltimos, brauzerdan lokatsiyaga ruxsat bering');
+      } else {
+        showStatus('error', 'Joylashuv aniqlanmadi. Qayta urinib ko\'ring');
+      }
+      setIsMarking(false);
+      return;
+    }
+
+    try {
+      const { latitude: lat, longitude: lng } = position.coords;
+      const res = await attendanceApi.selfMark({ lat, lng });
       const action = res.data?.action;
       if (action === 'checkin') showStatus('success', 'Keldim ✓ Davomat belgilandi');
       else if (action === 'checkout') showStatus('success', 'Ketdim ✓ Yaxshi kun bo\'lsin');
       else if (action === 'done') showStatus('error', 'Bugun davomat tugatilgan');
       await Promise.all([fetchMyToday(), fetchMyRecords()]);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Xatolik. Ofis Wi-Fi tekshiring.';
+      const msg = err?.response?.data?.message || 'Xatolik yuz berdi';
       showStatus('error', msg);
     } finally {
       setIsMarking(false);
@@ -298,7 +318,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <Activity size={22} className="text-orange-500" /> Davomat
           </h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-            Ofis Wi-Fi orqali kelish va ketish
+            GPS geofencing orqali kelish va ketish
           </p>
         </div>
         {canManage && canViewAll && (
@@ -360,7 +380,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               )}
             </button>
             <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-              <Wifi size={11} /> Faqat ofis Wi-Fi'sidan
+              <MapPin size={11} /> GPS orqali ofis hududi tekshiriladi
             </div>
           </div>
 

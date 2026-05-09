@@ -19,8 +19,9 @@ const formatCurrency = (amount: number) =>
 
 // ─── FILIALLAR TAB ───────────────────────────────────────────────────────────
 const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
-  const isAdmin = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
+  const isAdmin   = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
   const canManage = isAdmin || currentUser?.permissions?.canManageBranches;
+  const canView   = canManage || !!(currentUser?.permissions?.canViewBranches);
 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -431,8 +432,9 @@ const Filiallar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const p = currentUser?.permissions || {};
   const canViewVendors = isAdmin || p.canViewVendors;
   const canManageBranches = isAdmin || p.canManageBranches;
+  const canViewBranches = canManageBranches || !!p.canViewBranches;
 
-  const [activeTab, setActiveTab] = useState<'filiallar' | 'hamkorlar'>(canManageBranches ? 'filiallar' : 'hamkorlar');
+  const [activeTab, setActiveTab] = useState<'filiallar' | 'hamkorlar'>(canViewBranches ? 'filiallar' : 'hamkorlar');
 
   return (
     <div className="space-y-5 pb-20">
@@ -445,7 +447,7 @@ const Filiallar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Subpudratchilar va multi-filial boshqaruvi</p>
         </div>
         <div className="flex bg-slate-100 p-0.5 rounded-xl shadow-inner w-fit">
-          {canManageBranches && (
+          {canViewBranches && (
             <button onClick={() => setActiveTab('filiallar')} className={`flex items-center gap-2 px-5 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'filiallar' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}>
               <Building2 size={14} /> Filiallar
             </button>
@@ -458,7 +460,7 @@ const Filiallar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </div>
       </div>
 
-      {activeTab === 'filiallar' && canManageBranches && <FiliallarTab currentUser={currentUser} />}
+      {activeTab === 'filiallar' && canViewBranches && <FiliallarTab currentUser={currentUser} />}
       {activeTab === 'hamkorlar' && canViewVendors && <HamkorlarTab currentUser={currentUser} />}
     </div>
   );

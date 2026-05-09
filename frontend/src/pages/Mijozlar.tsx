@@ -18,7 +18,11 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const isAdmin =
     currentUser.role?.name?.toLowerCase() === 'admin' ||
     currentUser.login === 'admin';
-  const canManage = p.canManageCustomers || isAdmin;
+  const canAdd             = p.canAddCustomer || p.canManageCustomers || isAdmin;
+  const canEdit            = p.canEditCustomer || p.canManageCustomers || isAdmin;
+  const canDelete          = p.canDeleteCustomer || p.canManageCustomers || isAdmin;
+  const canManageContacts  = p.canManageCustomers || isAdmin;
+  const canManage          = canAdd || canEdit || canDelete || canManageContacts;
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [topCustomers, setTopCustomers] = useState<any[]>([]);
@@ -248,7 +252,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               />
             </div>
           )}
-          {canManage && (
+          {canAdd && (
             <button
               onClick={openAdd}
               className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all"
@@ -383,20 +387,26 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                               <button onClick={() => openOrderHistory(c)} className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-400 hover:bg-orange-500 hover:text-white transition-all shadow-sm" title="Buyurtmalar tarixi">
                                 <ClipboardList size={13}/>
                               </button>
-                              {canManage && (
+                              {(canManageContacts || canEdit || canDelete) && (
                                 <>
-                                  <button onClick={e => openContacts(c, e)} className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-400 hover:bg-sky-500 hover:text-white transition-all shadow-sm relative" title="Kontaktlar">
-                                    <UserPlus size={13}/>
-                                    {contactCount > 0 && (
-                                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-sky-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">{contactCount}</span>
-                                    )}
-                                  </button>
-                                  <button onClick={e => openEdit(c, e)} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-violet-500 hover:text-white transition-all shadow-sm" title="Tahrirlash">
-                                    <Edit3 size={13}/>
-                                  </button>
-                                  <button onClick={() => setConfirmModal({ isOpen: true, id: c.id, name: c.name })} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
-                                    <Trash2 size={13}/>
-                                  </button>
+                                  {canManageContacts && (
+                                    <button onClick={e => openContacts(c, e)} className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-400 hover:bg-sky-500 hover:text-white transition-all shadow-sm relative" title="Kontaktlar">
+                                      <UserPlus size={13}/>
+                                      {contactCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-sky-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">{contactCount}</span>
+                                      )}
+                                    </button>
+                                  )}
+                                  {canEdit && (
+                                    <button onClick={e => openEdit(c, e)} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-violet-500 hover:text-white transition-all shadow-sm" title="Tahrirlash">
+                                      <Edit3 size={13}/>
+                                    </button>
+                                  )}
+                                  {canDelete && (
+                                    <button onClick={() => setConfirmModal({ isOpen: true, id: c.id, name: c.name })} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                                      <Trash2 size={13}/>
+                                    </button>
+                                  )}
                                 </>
                               )}
                             </div>

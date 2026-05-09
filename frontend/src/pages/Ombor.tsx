@@ -32,7 +32,13 @@ interface Movement {
 }
 
 const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
-  const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
+  const isAdmin    = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
+  const p          = currentUser.permissions || {};
+  const canAddItem  = isAdmin || p.canAddInventoryItem  || p.canManageInventory;
+  const canEditItem = isAdmin || p.canManageInventory;
+  const canReceive  = isAdmin || p.canReceiveInventory  || p.canManageInventory;
+  const canUse      = isAdmin || p.canUseInventory      || p.canManageInventory;
+  const canWriteOff = isAdmin || p.canWriteOffInventory || p.canManageInventory;
 
   const [materials, setMaterials] = useState<Material[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -236,7 +242,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             Xomashyo va materiallar nazorati
           </p>
         </div>
-        { (isAdmin || currentUser.permissions?.canManageInventory) && (
+        {canAddItem && (
           <button
             onClick={() => setIsAddMaterialOpen(true)}
             className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
@@ -289,7 +295,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <div className="bg-white rounded-3xl border border-slate-200 py-24 flex flex-col items-center justify-center gap-4">
               <Package size={48} className="text-slate-200" />
               <p className="text-slate-300 font-black uppercase tracking-widest text-xs">Hozircha materiallar yo'q</p>
-              {isAdmin && (
+              {canAddItem && (
                 <button onClick={() => setIsAddMaterialOpen(true)} className="text-xs font-black text-orange-500 border-b-2 border-orange-200 pb-0.5 hover:border-orange-500 transition-colors">
                   + Birinchi materialni qo'shing
                 </button>
@@ -319,7 +325,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                           <p className="text-[10px] font-bold text-slate-400 uppercase">{mat.unit}</p>
                         </div>
                       </div>
-                      { (isAdmin || currentUser.permissions?.canManageInventory) && (
+                      {canEditItem && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => openBOMModal(mat)}
@@ -386,26 +392,34 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex gap-2 pt-3 border-t border-slate-100">
-                      <button
-                        onClick={() => openStockOp(mat, 'kirim')}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 text-[10px] font-black uppercase rounded-xl border border-orange-100 hover:border-orange-500 transition-all"
-                      >
-                        <ArrowUpCircle size={13} /> Kirim
-                      </button>
-                      <button
-                        onClick={() => openStockOp(mat, 'chiqim')}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-sky-50 hover:bg-sky-500 hover:text-white text-sky-600 text-[10px] font-black uppercase rounded-xl border border-sky-100 hover:border-sky-500 transition-all"
-                      >
-                        <ArrowDownCircle size={13} /> Chiqim
-                      </button>
-                      <button
-                        onClick={() => openStockOp(mat, 'brak')}
-                        className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 text-[10px] font-black uppercase rounded-xl border border-rose-100 hover:border-rose-500 transition-all"
-                      >
-                        <X size={13} /> Brak
-                      </button>
-                    </div>
+                    {(canReceive || canUse || canWriteOff) && (
+                      <div className="flex gap-2 pt-3 border-t border-slate-100">
+                        {canReceive && (
+                          <button
+                            onClick={() => openStockOp(mat, 'kirim')}
+                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 text-[10px] font-black uppercase rounded-xl border border-orange-100 hover:border-orange-500 transition-all"
+                          >
+                            <ArrowUpCircle size={13} /> Kirim
+                          </button>
+                        )}
+                        {canUse && (
+                          <button
+                            onClick={() => openStockOp(mat, 'chiqim')}
+                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-sky-50 hover:bg-sky-500 hover:text-white text-sky-600 text-[10px] font-black uppercase rounded-xl border border-sky-100 hover:border-sky-500 transition-all"
+                          >
+                            <ArrowDownCircle size={13} /> Chiqim
+                          </button>
+                        )}
+                        {canWriteOff && (
+                          <button
+                            onClick={() => openStockOp(mat, 'brak')}
+                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 text-[10px] font-black uppercase rounded-xl border border-rose-100 hover:border-rose-500 transition-all"
+                          >
+                            <X size={13} /> Brak
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

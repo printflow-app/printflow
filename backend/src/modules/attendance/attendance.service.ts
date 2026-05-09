@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
@@ -11,7 +11,7 @@ const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 // =============================================
 // ATTENDANCE SERVICE — Tenant-scoped
 // QR kod statik (admin generate qiladi va print qiladi).
-// IP allowlist orqali faqat ofis Wi-Fi'sidan skanerlashga ruxsat beradi.
+// GPS Geofencing orqali faqat ofis hududidan davomat belgilash mumkin.
 // =============================================
 
 @Injectable()
@@ -50,88 +50,49 @@ export class AttendanceService {
     return { token: newToken };
   }
 
-  // ============ IP ALLOWLIST (office Wi-Fi only) ============
+  // ============ GPS GEOFENCING ============
 
-  /**
-   * Office IP allowlist — Sozlamalar > "OFFICE_NETWORK_IPS" da saqlanadi.
-   * Format: massiv ['203.0.113.45', '192.168.1.0/24', ...]
-   * Bo'sh bo'lsa cheklov qo'llanmaydi (back-compat).
-   */
-  private async getOfficeIpAllowlist(tenantId: string): Promise<string[]> {
-    const setting = await this.prisma.systemSetting.findFirst({
-      where: { tenantId, key: 'OFFICE_NETWORK_IPS' },
-    });
-    if (!setting) return [];
-    try {
-      const parsed = JSON.parse(setting.value);
-      if (Array.isArray(parsed)) return parsed.filter((s) => typeof s === 'string' && s.trim());
-      return [];
-    } catch {
-      return [];
+  /** Haversine formula — ikkita GPS koordinata orasidagi masofani metrda qaytaradi */
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371000; // Yer radiusi (metr)
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  /** Ofis GPS koordinatalari va radiusini settings'dan olish */
+  private async getOfficeLocation(tenantId: string): Promise<{ lat: number; lng: number; radius: number } | null> {
+    const [latRow, lngRow, radiusRow] = await Promise.all([
+      this.prisma.systemSetting.findFirst({ where: { tenantId, key: 'OFFICE_LAT' } }),
+      this.prisma.systemSetting.findFirst({ where: { tenantId, key: 'OFFICE_LNG' } }),
+      this.prisma.systemSetting.findFirst({ where: { tenantId, key: 'OFFICE_RADIUS' } }),
+    ]);
+    const lat = latRow ? parseFloat(latRow.value) : NaN;
+    const lng = lngRow ? parseFloat(lngRow.value) : NaN;
+    if (isNaN(lat) || isNaN(lng)) return null;
+    const radius = radiusRow ? parseInt(radiusRow.value, 10) : 50;
+    return { lat, lng, radius: isNaN(radius) ? 50 : radius };
+  }
+
+  /** GPS tekshiruv: ofis hududi sozlanmagan bo'lsa — error; masofa oshsa — 403 */
+  private async assertOfficeLocation(tenantId: string, lat: number, lng: number): Promise<void> {
+    const office = await this.getOfficeLocation(tenantId);
+    if (!office) {
+      throw new Error(
+        "Ofis joylashuvi sozlanmagan. Admin Sozlamalar > Davomat bo'limida GPS koordinatlarini kiriting.",
+      );
     }
-  }
-
-  /** IPv4 → 32-bit unsigned int (IPv6 uchun strict-equal solishtirish) */
-  private ipv4ToInt(ip: string): number | null {
-    const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-    if (!m) return null;
-    const parts = m.slice(1, 5).map(Number);
-    if (parts.some((p) => p < 0 || p > 255)) return null;
-    return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
-  }
-
-  /** Mijoz IP'sini olish — Express'da req.ip; X-Forwarded-For ham hisobga olinadi */
-  private extractClientIp(rawIp: string | null | undefined, xff: string | null | undefined): string | null {
-    if (xff && typeof xff === 'string') {
-      // X-Forwarded-For: "client, proxy1, proxy2" — birinchi mijoz IP'si
-      const first = xff.split(',')[0].trim();
-      if (first) return this.normalizeIp(first);
-    }
-    if (rawIp) return this.normalizeIp(rawIp);
-    return null;
-  }
-
-  private normalizeIp(ip: string): string {
-    // ::ffff:192.168.1.1 → 192.168.1.1
-    if (ip.startsWith('::ffff:')) return ip.slice(7);
-    return ip;
-  }
-
-  private ipMatchesEntry(clientIp: string, entry: string): boolean {
-    const cleanEntry = entry.trim();
-    if (!cleanEntry) return false;
-
-    // CIDR (e.g., 192.168.1.0/24)
-    if (cleanEntry.includes('/')) {
-      const [base, prefixStr] = cleanEntry.split('/');
-      const prefix = parseInt(prefixStr, 10);
-      if (!Number.isFinite(prefix) || prefix < 0 || prefix > 32) return false;
-      const baseInt = this.ipv4ToInt(base);
-      const ipInt = this.ipv4ToInt(clientIp);
-      if (baseInt === null || ipInt === null) return false;
-      const mask = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
-      return (baseInt & mask) === (ipInt & mask);
-    }
-
-    // Plain equality (IPv4 or IPv6 string)
-    return cleanEntry === clientIp;
-  }
-
-  /**
-   * IP tekshirish: agar allowlist bo'sh bo'lsa — ruxsat (back-compat).
-   * Agar bo'sh bo'lmasa va clientIp moslashmasa — error.
-   */
-  private async assertOfficeIp(tenantId: string, clientIp: string | null) {
-    const allowlist = await this.getOfficeIpAllowlist(tenantId);
-    if (allowlist.length === 0) return; // Cheklov o'rnatilmagan
-
-    if (!clientIp) {
-      throw new Error('IP manzilingiz aniqlanmadi. Iltimos, ofis Wi-Fi\'siga ulaning.');
-    }
-
-    const ok = allowlist.some((entry) => this.ipMatchesEntry(clientIp, entry));
-    if (!ok) {
-      throw new Error('Faqat ofis Wi-Fi tarmog\'idan davomat belgilash mumkin.');
+    const distance = this.calculateDistance(lat, lng, office.lat, office.lng);
+    if (distance > office.radius) {
+      throw new ForbiddenException(
+        `Xato: Siz ofis hududida emassiz! Masofa: ${Math.round(distance)} m (ruxsat: ${office.radius} m)`,
+      );
     }
   }
 
@@ -173,15 +134,17 @@ export class AttendanceService {
   /**
    * checkIn — PUBLIC endpoint'dan keladi.
    * tenantId employee yozuvidan olinadi (cross-tenant xavfsizlik).
-   * Office IP allowlist tekshiriladi.
+   * GPS Geofencing tekshiriladi.
    */
-  async checkIn(employeeId: string, tokenValue: string, deviceId?: string, clientIp?: string | null) {
+  async checkIn(employeeId: string, tokenValue: string, deviceId?: string, lat?: number, lng?: number) {
     const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
     if (!employee) throw new Error('Xodim topilmadi');
 
     const tenantId = employee.tenantId;
 
-    await this.assertOfficeIp(tenantId, clientIp ?? null);
+    if (lat !== undefined && lng !== undefined) {
+      await this.assertOfficeLocation(tenantId, lat, lng);
+    }
 
     const isValid = await this.validateToken(tokenValue, tenantId);
     if (!isValid) {
@@ -217,8 +180,8 @@ export class AttendanceService {
     );
   }
 
-  async checkOut(employeeId: string, tokenValue: string, deviceId?: string, clientIp?: string | null) {
-    return this.checkIn(employeeId, tokenValue, deviceId, clientIp);
+  async checkOut(employeeId: string, tokenValue: string, deviceId?: string, lat?: number, lng?: number) {
+    return this.checkIn(employeeId, tokenValue, deviceId, lat, lng);
   }
 
   // ============ AUTHENTICATED: READ ENDPOINTS ============
@@ -257,15 +220,15 @@ export class AttendanceService {
 
   /**
    * selfCheckIn / selfCheckOut — JWT-authenticated.
-   * No QR token required (JWT proves identity), but IP allowlist enforced.
+   * No QR token required (JWT proves identity). GPS Geofencing enforced.
    * One toggle: first call = check-in, second call = check-out.
    */
-  async selfMark(employeeId: string, clientIp: string | null) {
+  async selfMark(employeeId: string, lat: number, lng: number) {
     const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
     if (!employee) throw new Error('Xodim topilmadi');
 
     const tenantId = employee.tenantId;
-    await this.assertOfficeIp(tenantId, clientIp);
+    await this.assertOfficeLocation(tenantId, lat, lng);
 
     const today = this.getTodayString();
     const now = new Date();
@@ -382,10 +345,4 @@ export class AttendanceService {
     });
   }
 
-  // ============ OFFICE IP SETTINGS HELPERS (used by Sozlamalar) ============
-
-  async getOfficeIps(): Promise<string[]> {
-    const tenantId = TenantContext.getTenantId();
-    return this.getOfficeIpAllowlist(tenantId);
-  }
 }
