@@ -258,35 +258,37 @@ function Layout({ onLogout, children }: { onLogout: () => void, children: React.
   ];
   return (
     <div className="admin-container">
-      <div className="sidebar" style={{ borderRight: '1px solid var(--border)', boxShadow: '4px 0 24px rgba(0,0,0,0.02)' }}>
-        <div className="sidebar-header" style={{ borderBottom: '1px solid var(--border)' }}>
-          <img src={logo} alt="PF" style={{ height: 32, width: 'auto', marginRight: 12, filter: 'drop-shadow(0 4px 6px rgba(255,107,0,0.2))' }} />
-          Print<span style={{ color: 'var(--primary)' }}>Flow</span>
+      <div className="sidebar" style={{ borderRight: '1px solid #f1f5f9', boxShadow: '4px 0 32px rgba(0,0,0,0.03)' }}>
+        <div className="sidebar-header" style={{ borderBottom: '1px solid #f1f5f9', padding: '20px 24px' }}>
+          <img src={logo} alt="PF" style={{ height: 30, width: 'auto', marginRight: 10, filter: 'drop-shadow(0 4px 8px rgba(255,107,0,0.25))' }} />
+          <span style={{ fontWeight: 900, letterSpacing: '-0.5px' }}>Print<span style={{ color: '#FF6B00' }}>Flow</span></span>
         </div>
-        <div className="sidebar-nav">
-          <div style={{ padding: '0 16px 12px 28px', fontSize: '9px', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '2px', textTransform: 'uppercase' }}>Boshqaruv</div>
+        <div className="sidebar-nav" style={{ padding: '12px 0' }}>
+          <div style={{ padding: '6px 24px 10px', fontSize: '8px', fontWeight: 900, color: '#cbd5e1', letterSpacing: '2px', textTransform: 'uppercase' }}>Boshqaruv Paneli</div>
           {navItems.map(n => (
-            <a key={n.path} href={n.path} className={`nav-item ${location.pathname === n.path ? 'active' : ''}`}>
+            <a key={n.path} href={n.path}
+              className={`nav-item ${location.pathname === n.path ? 'active' : ''}`}
+              style={{ margin: '0 10px', borderRadius: 10, padding: '10px 14px', fontSize: '12px', fontWeight: 700 }}>
               {n.icon}
-              <span style={{ marginTop: '1px' }}>{n.label}</span>
+              <span>{n.label}</span>
             </a>
           ))}
         </div>
-        <div style={{ padding: '24px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
-           <p style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '1px' }}>v2.4.0 CORE</p>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', marginTop: 'auto' }}>
+          <p style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>v2.5.0 · Super Admin</p>
         </div>
       </div>
       <div className="main-content">
-        <div className="topbar" style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 40 }}>
-          <div className="page-title" style={{ letterSpacing: '-0.5px' }}>
-            {navItems.find(n => n.path === location.pathname)?.label || 'Boshqaruv Paneli'}
+        <div className="topbar" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 40, borderBottom: '1px solid #f1f5f9', padding: '0 28px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span className="page-title" style={{ letterSpacing: '-0.5px', fontSize: '0.95rem', fontWeight: 900 }}>
+              {navItems.find(n => n.path === location.pathname)?.label || 'Boshqaruv Paneli'}
+            </span>
+            <span style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>PrintFlow Super Admin</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ width: '1px', height: '24px', background: 'var(--border)' }} />
-            <button className="logout-btn" onClick={onLogout} style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800 }}>
-              <LogOut size={14} strokeWidth={3} /> Chiqish
-            </button>
-          </div>
+          <button className="logout-btn" onClick={onLogout} style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <LogOut size={13} strokeWidth={2.5} /> Chiqish
+          </button>
         </div>
         <div className="content-area">{children}</div>
       </div>
@@ -294,107 +296,175 @@ function Layout({ onLogout, children }: { onLogout: () => void, children: React.
   );
 }
 
+const STATUS_COLORS: Record<string, string> = { TRIAL: '#3b82f6', ACTIVE: '#10b981', EXPIRED: '#ef4444', PENDING_PAYMENT: '#f59e0b' };
+const STATUS_LABELS: Record<string, string> = { TRIAL: 'Trial', ACTIVE: 'Faol', EXPIRED: 'Tugagan', PENDING_PAYMENT: "To'lov" };
+
+const getAttPct = (t: any) =>
+  t._count?.employees ? Math.min(100, Math.round(((t.attendanceTodayCount || 0) / t._count.employees) * 100)) : 0;
+
+const getActiveModules = (t: any) =>
+  [(t._count?.employees || 0) > 0, ((t.activeTasksCount ?? t._count?.tasks) || 0) > 0, (t._count?.customers || 0) > 0, (t.attendanceTodayCount || 0) > 0].filter(Boolean).length;
+
 function Dashboard() {
   const [stats, setStats] = useState<any>({});
-  useEffect(() => { tenantsApi.getStats().then(r => setStats(r.data)).catch(console.error); }, []);
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
 
-  const cards = [
-    { label: 'Jami Workspacelar', value: stats.totalTenants || 0 },
-    { label: 'Faol', value: stats.activeTenants || 0 },
-    { label: 'Yangi So\'rovlar (Leads)', value: stats.totalLeads || 0 },
-    { label: "Kutilayotgan to'lovlar", value: stats.pendingPayments || 0 },
-    { label: 'Jami daromad (UZS)', value: (stats.totalRevenue || 0).toLocaleString() },
-    { label: 'Jami xodimlar', value: stats.totalEmployees || 0 },
+  useEffect(() => {
+    tenantsApi.getStats().then(r => setStats(r.data)).catch(console.error);
+    tenantsApi.findAll().then(r => setWorkspaces(r.data)).catch(console.error);
+  }, []);
+
+  const kpis = [
+    { label: 'Jami Workspacelar', value: stats.totalTenants ?? 0, sub: `${stats.activeTenants ?? 0} faol`, accent: '#3b82f6' },
+    { label: "Jami Daromad (UZS)", value: (stats.totalRevenue ?? 0).toLocaleString(), sub: 'tasdiqlangan to\'lovlar', accent: '#10b981' },
+    { label: 'Jami Xodimlar', value: stats.totalEmployees ?? 0, sub: 'barcha workspacelarda', accent: '#8b5cf6' },
+    { label: "Kutilayotgan To'lovlar", value: stats.pendingPayments ?? 0, sub: 'tasdiqlash kerak', accent: '#f59e0b' },
+    { label: "Demo So'rovlar", value: stats.totalLeads ?? 0, sub: 'jami so\'rovlar', accent: '#06b6d4' },
+    { label: 'Trial Tugaydi', value: stats.trialsExpiringSoon ?? 0, sub: '7 kun ichida', accent: '#ef4444' },
   ];
 
+  const chartCard = (title: string, children: React.ReactNode) => (
+    <div style={{ background: '#fff', padding: '22px 24px', borderRadius: 16, border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#94a3b8', marginBottom: 18 }}>{title}</p>
+      {children}
+    </div>
+  );
+
   return (
-    <div>
-      <h2 style={{ marginBottom: 24, fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Statistika</h2>
-      <div className="stats-grid" style={{ marginBottom: 32 }}>
-        {cards.map((c, i) => (<div key={i} className="stat-card"><div className="stat-title">{c.label}</div><div className="stat-value">{c.value}</div></div>))}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* KPI strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        {kpis.map((k, i) => (
+          <div key={i} style={{ background: '#fff', borderRadius: 14, padding: '16px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', borderLeft: `3px solid ${k.accent}`, border: '1px solid #f1f5f9', borderLeftWidth: 3, borderLeftColor: k.accent, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#94a3b8' }}>{k.label}</span>
+            <span style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-1.5px', lineHeight: 1.1 }}>{k.value}</span>
+            <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>{k.sub}</span>
+          </div>
+        ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 24 }}>
-        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
-          <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800 }}>Oylik Daromad (MRR)</h3>
-          <div style={{ height: 300 }}>
-            {stats.revenueChart && stats.revenueChart.length > 0 ? (
+      {/* Charts row 1 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
+        {chartCard('Oylik Daromad (MRR)',
+          <div style={{ height: 220 }}>
+            {(stats.revenueChart?.length ?? 0) > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.revenueChart}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(val) => `${val / 1000}k`} />
-                  <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                  <Bar dataKey="amount" name="Daromad (UZS)" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', fontSize: 12, fontWeight: 700 }} />
+                  <Bar dataKey="amount" name="Daromad (UZS)" fill="#FF6B00" radius={[5, 5, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Ma'lumot yo'q</div>}
+            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e2e8f0', fontSize: 12, fontWeight: 700 }}>Ma'lumot yo'q</div>}
           </div>
-        </div>
-
-        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
-          <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800 }}>Workspace Holatlari</h3>
-          <div style={{ height: 300 }}>
-            {stats.statusDistribution && stats.statusDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={stats.statusDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {stats.statusDistribution.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Ma'lumot yo'q</div>}
-            {stats.statusDistribution && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 16 }}>
-                {stats.statusDistribution.map((s: any, i: number) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem' }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: s.color }} /> {s.name}
+        )}
+        {chartCard('Status Taqsimoti',
+          <div>
+            <div style={{ height: 180 }}>
+              {(stats.statusDistribution?.length ?? 0) > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={stats.statusDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={4} dataKey="value">
+                      {stats.statusDistribution.map((e: any, i: number) => <Cell key={i} fill={e.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', fontSize: 12, fontWeight: 700 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e2e8f0' }}>Ma'lumot yo'q</div>}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+              {(stats.statusDistribution || []).map((s: any, i: number) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+                    <span style={{ color: '#64748b' }}>{s.name}</span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <span style={{ fontWeight: 900, color: '#0f172a' }}>{s.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
-          <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800 }}>Yangi Workspacelar</h3>
-          <div style={{ height: 250 }}>
-            {stats.tenantGrowthChart && stats.tenantGrowthChart.length > 0 ? (
+      {/* Charts row 2 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        {chartCard("Workspace O'sishi",
+          <div style={{ height: 180 }}>
+            {(stats.tenantGrowthChart?.length ?? 0) > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.tenantGrowthChart}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" name="Yangi Tenantlar" stroke="#FF6B00" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', fontSize: 12, fontWeight: 700 }} />
+                  <Line type="monotone" dataKey="count" name="Yangi Tenantlar" stroke="#FF6B00" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                 </LineChart>
               </ResponsiveContainer>
-            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Ma'lumot yo'q</div>}
+            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e2e8f0', fontSize: 12, fontWeight: 700 }}>Ma'lumot yo'q</div>}
           </div>
-        </div>
-
-        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
-          <h3 style={{ marginBottom: 16, fontSize: '1.1rem', fontWeight: 800 }}>Demo So'rovlar (Leads)</h3>
-          <div style={{ height: 250 }}>
-            {stats.leadsChart && stats.leadsChart.length > 0 ? (
+        )}
+        {chartCard("Demo So'rovlar (Leads)",
+          <div style={{ height: 180 }}>
+            {(stats.leadsChart?.length ?? 0) > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.leadsChart}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" name="So'rovlar" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', fontSize: 12, fontWeight: 700 }} />
+                  <Line type="monotone" dataKey="count" name="So'rovlar" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                 </LineChart>
               </ResponsiveContainer>
-            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Ma'lumot yo'q</div>}
+            ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e2e8f0', fontSize: 12, fontWeight: 700 }}>Ma'lumot yo'q</div>}
+          </div>
+        )}
+      </div>
+
+      {/* Recent workspace activity mini-cards */}
+      {workspaces.length > 0 && (
+        <div>
+          <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#94a3b8', marginBottom: 12 }}>So'nggi Workspacelar — Bugungi Aktivlik</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {workspaces.slice(0, 6).map(w => {
+              const color = STATUS_COLORS[w.status] || '#94a3b8';
+              const attPct = getAttPct(w);
+              const modules = getActiveModules(w);
+              return (
+                <div key={w.id} style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                  <div style={{ height: 3, background: color }} />
+                  <div style={{ padding: '14px 16px 10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div>
+                        <p style={{ fontWeight: 900, fontSize: '0.85rem', color: '#0f172a', letterSpacing: '-0.2px' }}>{w.name}</p>
+                        <p style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, marginTop: 1 }}>@{w.slug}</p>
+                      </div>
+                      <span style={{ background: `${color}12`, color, fontSize: '8px', fontWeight: 900, padding: '3px 8px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: '0.5px', border: `1px solid ${color}25`, flexShrink: 0, marginLeft: 8 }}>
+                        {STATUS_LABELS[w.status] || w.status}
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: '1px solid #f8fafc', paddingTop: 10, gap: 0 }}>
+                      {[
+                        { label: 'Xodim', value: w._count?.employees ?? 0, color: '#3b82f6' },
+                        { label: 'Buyurtma', value: w.activeTasksCount ?? w._count?.tasks ?? 0, color: '#FF6B00' },
+                        { label: 'Davomat', value: `${attPct}%`, color: attPct >= 80 ? '#10b981' : attPct >= 40 ? '#f59e0b' : '#ef4444' },
+                        { label: 'Modullar', value: `${modules}/4`, color: '#8b5cf6' },
+                      ].map((m, i) => (
+                        <div key={i} style={{ textAlign: 'center', borderRight: i < 3 ? '1px solid #f8fafc' : 'none' }}>
+                          <p style={{ fontSize: '0.95rem', fontWeight: 900, color: m.color, letterSpacing: '-0.5px', lineHeight: 1 }}>{m.value}</p>
+                          <p style={{ fontSize: '7px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.3px', marginTop: 3 }}>{m.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -762,13 +832,184 @@ function Payments() {
   );
 }
 
+function TenantDetailsModal({ tenant, plans, onClose, onSaved, toast }: {
+  tenant: any; plans: any[]; onClose: () => void; onSaved: () => void; toast: (msg: string, kind?: 'success' | 'error' | 'info') => void;
+}) {
+  const statusColor = STATUS_COLORS[tenant.status] || '#94a3b8';
+  const statusLabel = STATUS_LABELS[tenant.status] || tenant.status;
+  const curExpDate = tenant.status === 'TRIAL'
+    ? (tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toISOString().slice(0, 10) : '')
+    : (tenant.subscriptionEndsAt ? new Date(tenant.subscriptionEndsAt).toISOString().slice(0, 10) : '');
+
+  const [newEndDate, setNewEndDate] = useState(curExpDate);
+  const [newStatus, setNewStatus] = useState(tenant.status);
+  const [newPlanId, setNewPlanId] = useState(tenant.planId || '');
+  const [saving, setSaving] = useState(false);
+
+  const addMonths = (months: number) => {
+    const base = newEndDate ? new Date(newEndDate) : new Date();
+    if (base < new Date()) base.setTime(Date.now());
+    base.setMonth(base.getMonth() + months);
+    setNewEndDate(base.toISOString().slice(0, 10));
+    if (newStatus !== 'ACTIVE') setNewStatus('ACTIVE');
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const updateData: any = { status: newStatus, planId: newPlanId || null };
+      if (newStatus === 'TRIAL') {
+        updateData.trialEndsAt = newEndDate ? new Date(newEndDate).toISOString() : null;
+      } else {
+        updateData.subscriptionEndsAt = newEndDate ? new Date(newEndDate).toISOString() : null;
+      }
+      await tenantsApi.update(tenant.id, updateData);
+      toast('Workspace yangilandi!', 'success');
+      onSaved();
+    } catch (e: any) {
+      toast(e?.response?.data?.message || 'Xatolik yuz berdi', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const infoBox = (label: string, value: React.ReactNode) => (
+    <div style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 14px' }}>
+      <p style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', marginBottom: 4 }}>{label}</p>
+      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>{value}</div>
+    </div>
+  );
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+          <div>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.5px' }}>{tenant.name}</h2>
+            <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700, marginTop: 3 }}>@{tenant.slug}</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ background: `${statusColor}12`, color: statusColor, fontSize: '9px', fontWeight: 900, padding: '5px 12px', borderRadius: 8, textTransform: 'uppercase', border: `1px solid ${statusColor}25` }}>
+              {statusLabel}
+            </span>
+            <button className="modal-close" onClick={onClose}><X size={22} /></button>
+          </div>
+        </div>
+
+        {/* Quick stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+          {[
+            { label: "To'langan (UZS)", value: (tenant.totalPaid || 0).toLocaleString() },
+            { label: 'Xodimlar', value: tenant._count?.employees ?? '—' },
+            { label: 'Mijozlar', value: tenant._count?.customers ?? '—' },
+            { label: 'Yaratilgan', value: new Date(tenant.createdAt).toLocaleDateString('uz-UZ') },
+          ].map((item, i) => (
+            <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+              <p style={{ fontSize: '7px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', marginBottom: 4 }}>{item.label}</p>
+              <p style={{ fontWeight: 900, fontSize: '1rem', color: '#0f172a' }}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ===== SUBSCRIPTION MANAGEMENT ===== */}
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 20px', marginBottom: 20, background: '#fafafa' }}>
+          <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#94a3b8', marginBottom: 14 }}>Obuna Boshqaruvi</p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+            {/* Status */}
+            <div>
+              <label style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', display: 'block', marginBottom: 6 }}>Status</label>
+              <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
+                style={{ width: '100%', height: 40, border: '1px solid #e2e8f0', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: '12px', fontWeight: 700, background: '#fff', outline: 'none', cursor: 'pointer' }}>
+                <option value="ACTIVE">✅ Faol (ACTIVE)</option>
+                <option value="TRIAL">🔵 Trial</option>
+                <option value="EXPIRED">❌ Muddati tugagan</option>
+                <option value="PENDING_PAYMENT">⏳ To'lov kutilmoqda</option>
+              </select>
+            </div>
+
+            {/* Plan */}
+            <div>
+              <label style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', display: 'block', marginBottom: 6 }}>Tarif</label>
+              <select value={newPlanId} onChange={e => setNewPlanId(e.target.value)}
+                style={{ width: '100%', height: 40, border: '1px solid #e2e8f0', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: '12px', fontWeight: 700, background: '#fff', outline: 'none', cursor: 'pointer' }}>
+                <option value="">— Tarifisiz —</option>
+                {plans.map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Date */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', display: 'block', marginBottom: 6 }}>
+              {newStatus === 'TRIAL' ? 'Trial tugash sanasi' : 'Obuna tugash sanasi'}
+            </label>
+            <input type="date" value={newEndDate} onChange={e => setNewEndDate(e.target.value)}
+              style={{ width: '100%', height: 40, border: '1px solid #e2e8f0', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 700, background: '#fff', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+
+          {/* Quick extend buttons */}
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: '9px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Tezkor uzaytirish</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[{ label: '+1 oy', months: 1 }, { label: '+3 oy', months: 3 }, { label: '+6 oy', months: 6 }, { label: '+12 oy', months: 12 }].map(btn => (
+                <button key={btn.months} onClick={() => addMonths(btn.months)}
+                  style={{ padding: '6px 14px', fontSize: '11px', fontWeight: 800, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer', color: '#FF6B00', fontFamily: 'inherit', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,107,0,0.06)'; e.currentTarget.style.borderColor = '#FF6B00'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e2e8f0'; }}>
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={handleSave} disabled={saving}
+            style={{ width: '100%', height: 42, background: saving ? '#94a3b8' : '#FF6B00', color: '#fff', border: 'none', borderRadius: 10, fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxShadow: saving ? 'none' : '0 4px 12px rgba(255,107,0,0.25)', transition: 'all 0.2s' }}>
+            {saving ? 'SAQLANMOQDA...' : '✓ SAQLASH'}
+          </button>
+        </div>
+
+        {/* Payment history */}
+        <div>
+          <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#94a3b8', marginBottom: 12 }}>To'lovlar tarixi</p>
+          {tenant.payments?.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {tenant.payments.map((p: any) => (
+                <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: 12, alignItems: 'center', background: '#f8fafc', borderRadius: 10, padding: '10px 14px', fontSize: '12px' }}>
+                  <div>
+                    <p style={{ fontWeight: 800, color: '#0f172a' }}>{p.planName} · {p.duration} oy</p>
+                    <p style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, marginTop: 1 }}>{new Date(p.createdAt).toLocaleDateString('uz-UZ')}</p>
+                  </div>
+                  <span style={{ fontWeight: 900, color: '#0f172a' }}>{(p.amount || 0).toLocaleString()} UZS</span>
+                  <span style={{ fontWeight: 700, color: p.sender ? '#64748b' : '#94a3b8', fontSize: '11px' }}>{p.sender || '—'}</span>
+                  <span style={{ display: 'flex', alignItems: 'center' }}>
+                    {p.status === 'APPROVED' ? <Check size={14} color="#10b981" /> : p.status === 'REJECTED' ? <XCircle size={14} color="#ef4444" /> : <span style={{ fontSize: '9px', fontWeight: 800, color: '#f59e0b' }}>KUTILMOQDA</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', padding: '16px 0' }}>To'lovlar tarixi mavjud emas</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Tenants() {
   const { toast, confirm } = useUI();
-  const [tenants, setTenants] = useState<any[]>([]); const [showModal, setShowModal] = useState(false);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
-  const [name, setName] = useState(''); const [selectedPlanId, setSelectedPlanId] = useState('');
-  const [loading, setLoading] = useState(false); const [generatedCreds, setGeneratedCreds] = useState<any>(null);
+  const [name, setName] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [generatedCreds, setGeneratedCreds] = useState<any>(null);
   const [selectedTenant, setSelectedTenant] = useState<any>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const load = () => { tenantsApi.findAll().then(r => setTenants(r.data)).catch(console.error); };
   useEffect(() => { load(); plansApi.findAll().then(r => setPlans(r.data)).catch(console.error); }, []);
@@ -777,7 +1018,8 @@ function Tenants() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true);
     try {
-      const slug = name.toLowerCase().replace(/[^a-z0-9]/g, ''); const pwd = generateRandomPassword();
+      const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const pwd = generateRandomPassword();
       await tenantsApi.create({ name, slug, planId: selectedPlanId || undefined, adminEmail: 'admin', adminPassword: pwd });
       setGeneratedCreds({ slug, login: 'admin', pass: pwd }); setName(''); load();
     } catch (err: any) { toast(err.response?.data?.message || 'Xatolik', 'error'); }
@@ -785,62 +1027,159 @@ function Tenants() {
   };
 
   const openDetails = async (id: string) => {
-    try {
-      const res = await tenantsApi.findOne(id);
-      setSelectedTenant(res.data);
-    } catch (err) {
-      console.error(err);
-    }
+    try { const res = await tenantsApi.findOne(id); setSelectedTenant(res.data); }
+    catch (err) { console.error(err); }
   };
+
   const toggleStatus = async (id: string, cur: boolean) => {
     const ok = await confirm({ title: 'Holatini o\'zgartirish', message: cur ? 'Workspace bloklansinmi?' : 'Workspace faollashtirilsinmi?', danger: cur });
     if (!ok) return;
     try { await tenantsApi.update(id, { isActive: !cur }); toast('Holat yangilandi', 'success'); load(); }
     catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
   };
-  const statusBadge = (t: any) => {
-    const s = t.status;
-    if (s === 'TRIAL') return <span className="badge" style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>TRIAL</span>;
-    if (s === 'ACTIVE') return <span className="badge active">FAOL</span>;
-    if (s === 'EXPIRED') return <span className="badge inactive">MUDDATI TUGAGAN</span>;
-    if (s === 'PENDING_PAYMENT') return <span className="badge" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>TO'LOV KUTILMOQDA</span>;
-    return <span className="badge">{s}</span>;
-  };
+
+  const filtered = tenants.filter(t => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || t.name.toLowerCase().includes(q) || t.slug.toLowerCase().includes(q);
+    const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const statuses = [
+    { key: 'ALL', label: 'Barchasi', color: '#64748b' },
+    { key: 'ACTIVE', label: 'Faol', color: '#10b981' },
+    { key: 'TRIAL', label: 'Trial', color: '#3b82f6' },
+    { key: 'EXPIRED', label: 'Tugagan', color: '#ef4444' },
+    { key: 'PENDING_PAYMENT', label: "To'lov", color: '#f59e0b' },
+  ];
+
   return (
     <div>
-      <div className="flex-between">
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Workspacelar</h2>
-        <button className="btn" onClick={() => setShowModal(true)}><Plus size={16} /> Yangi Qo'shish</button>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+        <div>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 900, letterSpacing: '-0.5px', color: '#0f172a', marginBottom: 4 }}>Workspacelar</h2>
+          <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700 }}>{tenants.length} ta workspace · {tenants.filter(t => t.status === 'ACTIVE').length} faol</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <input
+            placeholder="Nomi yoki slug bo'yicha..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ height: 38, padding: '0 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 600, outline: 'none', background: '#f8fafc', width: 220, fontFamily: 'inherit' }}
+          />
+          <button className="btn" onClick={() => setShowModal(true)} style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px' }}>
+            <Plus size={14} /> Yangi
+          </button>
+        </div>
       </div>
-      <div className="table-container">
-        <table>
-          <thead><tr><th>Nomi</th><th>Slug</th><th>Tarif</th><th>Holat</th><th>Yaratilgan</th><th>Amallar</th></tr></thead>
-          <tbody>
-            {tenants.map(t => (
-              <tr key={t.id}>
-                <td style={{ fontWeight: 700 }}>{t.name}</td>
-                <td style={{ color: 'var(--text-muted)' }}>{t.slug}</td>
-                <td>{t.plan?.displayName || '—'}</td>
-                <td>{statusBadge(t)}</td>
-                <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{new Date(t.createdAt).toLocaleDateString()}</td>
-                <td>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)' }} onClick={() => openDetails(t.id)}>Tafsilotlar</button>
-                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => toggleStatus(t.id, t.isActive)}>{t.isActive ? 'Bloklash' : 'Faollashtirish'}</button>
-                    <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={async () => {
-                      const ok = await confirm({ title: 'Workspace o\'chirish', message: `${t.name} workspace butunlay o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.`, confirmText: 'Ha, o\'chirilsin', danger: true });
-                      if (!ok) return;
-                      try { await tenantsApi.delete(t.id); toast('Workspace o\'chirildi', 'success'); load(); }
-                      catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
-                    }}>O'chirish</button>
+
+      {/* Status filter tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+        {statuses.map(s => (
+          <button key={s.key} onClick={() => setStatusFilter(s.key)}
+            style={{ padding: '5px 14px', borderRadius: 8, border: `1px solid ${statusFilter === s.key ? s.color : '#e2e8f0'}`, background: statusFilter === s.key ? `${s.color}10` : '#fff', color: statusFilter === s.key ? s.color : '#64748b', fontSize: '11px', fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit' }}>
+            {s.label}
+            <span style={{ marginLeft: 6, background: statusFilter === s.key ? s.color : '#e2e8f0', color: statusFilter === s.key ? '#fff' : '#94a3b8', borderRadius: 4, padding: '1px 5px', fontSize: '9px', fontWeight: 900 }}>
+              {s.key === 'ALL' ? tenants.length : tenants.filter(t => t.status === s.key).length}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Workspace cards grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
+        {filtered.map(t => {
+          const color = STATUS_COLORS[t.status] || '#94a3b8';
+          const label = STATUS_LABELS[t.status] || t.status;
+          const attPct = getAttPct(t);
+          const modules = getActiveModules(t);
+          const expDate = t.status === 'TRIAL' ? t.trialEndsAt : t.subscriptionEndsAt;
+          const isExpiringSoon = expDate && (new Date(expDate).getTime() - Date.now()) < 7 * 24 * 3600 * 1000 && new Date(expDate) > new Date();
+
+          return (
+            <div key={t.id}
+              style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'box-shadow 0.2s, transform 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.09)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'none'; }}
+            >
+              {/* Color strip */}
+              <div style={{ height: 3, background: color }} />
+
+              {/* Card header */}
+              <div style={{ padding: '15px 18px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                  <p style={{ fontWeight: 900, fontSize: '0.95rem', color: '#0f172a', letterSpacing: '-0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</p>
+                  <p style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, marginTop: 2 }}>@{t.slug} · {t.plan?.displayName || <span style={{ fontStyle: 'italic' }}>Tarifisiz</span>}</p>
+                </div>
+                <span style={{ background: `${color}12`, color, fontSize: '8px', fontWeight: 900, padding: '4px 9px', borderRadius: 7, textTransform: 'uppercase', letterSpacing: '0.5px', border: `1px solid ${color}25`, flexShrink: 0 }}>
+                  {label}
+                </span>
+              </div>
+
+              {/* Metrics strip */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: '1px solid #f8fafc', borderBottom: '1px solid #f8fafc' }}>
+                {[
+                  { label: 'Xodim', value: t._count?.employees ?? 0, c: '#3b82f6' },
+                  { label: 'Buyurtma', value: t.activeTasksCount ?? t._count?.tasks ?? 0, c: '#FF6B00' },
+                  { label: 'Davomat', value: `${attPct}%`, c: attPct >= 80 ? '#10b981' : attPct >= 40 ? '#f59e0b' : '#ef4444' },
+                  { label: 'Modullar', value: `${modules}/4`, c: '#8b5cf6' },
+                ].map((m, i) => (
+                  <div key={i} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 3 ? '1px solid #f8fafc' : 'none' }}>
+                    <p style={{ fontSize: '1.05rem', fontWeight: 900, color: m.c, letterSpacing: '-0.5px', lineHeight: 1 }}>{m.value}</p>
+                    <p style={{ fontSize: '7px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: 3 }}>{m.label}</p>
                   </div>
-                </td>
-              </tr>
-            ))}
-            {tenants.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32 }}>Ma'lumot topilmadi</td></tr>}
-          </tbody>
-        </table>
+                ))}
+              </div>
+
+              {/* Progress bar for attendance */}
+              {(t._count?.employees || 0) > 0 && (
+                <div style={{ padding: '8px 18px 0' }}>
+                  <div style={{ height: 3, background: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${attPct}%`, background: attPct >= 80 ? '#10b981' : attPct >= 40 ? '#f59e0b' : '#ef4444', borderRadius: 2, transition: 'width 0.5s ease' }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Card footer */}
+              <div style={{ padding: '10px 18px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  {expDate ? (
+                    <span style={{ fontSize: '10px', color: isExpiringSoon ? '#f59e0b' : '#94a3b8', fontWeight: 700 }}>
+                      {isExpiringSoon ? '⚠ ' : ''}{t.status === 'TRIAL' ? '⏱ Trial: ' : '📅 '}{new Date(expDate).toLocaleDateString('uz-UZ')}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>📅 {new Date(t.createdAt).toLocaleDateString('uz-UZ')}</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <button onClick={() => openDetails(t.id)}
+                    style={{ padding: '5px 11px', fontSize: '10px', fontWeight: 800, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer', color: '#64748b', fontFamily: 'inherit' }}>
+                    Tafsilot
+                  </button>
+                  <button onClick={() => toggleStatus(t.id, t.isActive)}
+                    style={{ padding: '5px 11px', fontSize: '10px', fontWeight: 800, background: t.isActive ? '#fef2f2' : '#f0fdf4', border: `1px solid ${t.isActive ? '#fca5a5' : '#86efac'}`, borderRadius: 8, cursor: 'pointer', color: t.isActive ? '#ef4444' : '#10b981', fontFamily: 'inherit' }}>
+                    {t.isActive ? 'Bloklash' : 'Faollashtirish'}
+                  </button>
+                  <button onClick={async () => {
+                    const ok = await confirm({ title: 'Workspace o\'chirish', message: `${t.name} workspace butunlay o'chirilsinmi?`, confirmText: 'Ha, o\'chirilsin', danger: true });
+                    if (!ok) return;
+                    try { await tenantsApi.delete(t.id); toast('Workspace o\'chirildi', 'success'); load(); }
+                    catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
+                  }} style={{ padding: '5px 9px', fontSize: '10px', fontWeight: 900, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, cursor: 'pointer', color: '#ef4444', fontFamily: 'inherit' }}>✕</button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
+
+      {filtered.length === 0 && (
+        <div style={{ padding: '80px 0', textAlign: 'center', color: '#cbd5e1' }}>
+          <Building2 size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.25 }} />
+          <p style={{ fontWeight: 800, fontSize: '0.85rem' }}>{search ? 'Qidiruv bo\'yicha natija topilmadi' : 'Workspacelar mavjud emas'}</p>
+        </div>
+      )}
       {showModal && !generatedCreds && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -875,50 +1214,13 @@ function Tenants() {
       )}
 
       {selectedTenant && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 600 }}>
-            <div className="modal-header"><h2>{selectedTenant.name} tafsilotlari</h2><button className="modal-close" onClick={() => setSelectedTenant(null)}><X size={24} /></button></div>
-            <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div className="stat-card" style={{ padding: 16 }}>
-                <div className="stat-title">Holat</div>
-                <div style={{ marginTop: 8 }}>{statusBadge(selectedTenant)}</div>
-              </div>
-              <div className="stat-card" style={{ padding: 16 }}>
-                <div className="stat-title">Jami To'langan (UZS)</div>
-                <div className="stat-value" style={{ fontSize: '1.2rem' }}>{(selectedTenant.totalPaid || 0).toLocaleString()}</div>
-              </div>
-              <div className="stat-card" style={{ padding: 16 }}>
-                <div className="stat-title">Aktivatsiya Sanasi</div>
-                <div className="stat-value" style={{ fontSize: '1.1rem' }}>{new Date(selectedTenant.createdAt).toLocaleDateString()}</div>
-              </div>
-              <div className="stat-card" style={{ padding: 16 }}>
-                <div className="stat-title">Tugash Sanasi</div>
-                <div className="stat-value" style={{ fontSize: '1.1rem', color: selectedTenant.status === 'EXPIRED' ? 'var(--danger)' : 'var(--text)' }}>
-                  {selectedTenant.status === 'TRIAL' && selectedTenant.trialEndsAt ? new Date(selectedTenant.trialEndsAt).toLocaleDateString() :
-                    selectedTenant.subscriptionEndsAt ? new Date(selectedTenant.subscriptionEndsAt).toLocaleDateString() : 'Noma\'lum'}
-                </div>
-              </div>
-            </div>
-            <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: 12 }}>So'nggi to'lovlar</h3>
-              {selectedTenant.payments?.length > 0 ? (
-                <table style={{ width: '100%', fontSize: '0.85rem' }}>
-                  <thead><tr><th style={{ textAlign: 'left', padding: '8px 0' }}>Sana</th><th style={{ textAlign: 'left' }}>Summa</th><th style={{ textAlign: 'left' }}>Tarif</th><th style={{ textAlign: 'right' }}>Holat</th></tr></thead>
-                  <tbody>
-                    {selectedTenant.payments.map((p: any) => (
-                      <tr key={p.id} style={{ borderTop: '1px solid var(--border)' }}>
-                        <td style={{ padding: '8px 0', color: 'var(--text-muted)' }}>{new Date(p.createdAt).toLocaleDateString()}</td>
-                        <td style={{ fontWeight: 700 }}>{p.amount.toLocaleString()}</td>
-                        <td>{p.planName} ({p.duration} oy)</td>
-                        <td style={{ textAlign: 'right' }}>{p.status === 'APPROVED' ? <Check size={14} color="var(--success)" /> : p.status === 'REJECTED' ? <XCircle size={14} color="var(--danger)" /> : 'Kutilmoqda'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>To'lovlar topilmadi</p>}
-            </div>
-          </div>
-        </div>
+        <TenantDetailsModal
+          tenant={selectedTenant}
+          plans={plans}
+          onClose={() => setSelectedTenant(null)}
+          onSaved={() => { load(); openDetails(selectedTenant.id); }}
+          toast={toast}
+        />
       )}
     </div>
   );

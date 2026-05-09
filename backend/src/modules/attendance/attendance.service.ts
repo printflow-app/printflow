@@ -73,11 +73,23 @@ export class AttendanceService {
       this.prisma.systemSetting.findFirst({ where: { tenantId, key: 'OFFICE_LNG' } }),
       this.prisma.systemSetting.findFirst({ where: { tenantId, key: 'OFFICE_RADIUS' } }),
     ]);
-    const lat = latRow ? parseFloat(latRow.value) : NaN;
-    const lng = lngRow ? parseFloat(lngRow.value) : NaN;
+    // Supports both formats: raw number "41.2995" and wrapped {"value":41.2995}
+    const parseGeoRow = (row: any): number => {
+      if (!row) return NaN;
+      try {
+        const parsed = JSON.parse(row.value);
+        if (typeof parsed === 'number') return parsed;
+        if (parsed?.value !== undefined) return parseFloat(String(parsed.value));
+        return NaN;
+      } catch {
+        return parseFloat(row.value);
+      }
+    };
+    const lat = parseGeoRow(latRow);
+    const lng = parseGeoRow(lngRow);
     if (isNaN(lat) || isNaN(lng)) return null;
-    const radius = radiusRow ? parseInt(radiusRow.value, 10) : 50;
-    return { lat, lng, radius: isNaN(radius) ? 50 : radius };
+    const radius = Math.round(parseGeoRow(radiusRow));
+    return { lat, lng, radius: isNaN(radius) || radius < 10 ? 50 : radius };
   }
 
   /** GPS tekshiruv: ofis hududi sozlanmagan bo'lsa — error; masofa oshsa — 403 */
@@ -223,13 +235,11 @@ export class AttendanceService {
    * No QR token required (JWT proves identity). GPS Geofencing enforced.
    * One toggle: first call = check-in, second call = check-out.
    */
-  async selfMark(employeeId: string, lat: number, lng: number) {
+  async selfMark(employeeId: string, lat?: number, lng?: number) {
     const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
     if (!employee) throw new Error('Xodim topilmadi');
 
     const tenantId = employee.tenantId;
-    await this.assertOfficeLocation(tenantId, lat, lng);
-
     const today = this.getTodayString();
     const now = new Date();
 
@@ -240,8 +250,17 @@ export class AttendanceService {
           where: { employeeId, date: today },
         });
 
+        const isCheckIn = !existing || !!existing.checkOut;
+
+        // GPS tekshiruvi faqat kelishda (check-in) talab qilinadi
+        if (isCheckIn && lat !== undefined && lng !== undefined) {
+          await this.assertOfficeLocation(tenantId, lat, lng);
+        } else if (isCheckIn) {
+          // Check-in uchun GPS koordinatalari majburiy
+          throw new Error('Kelish uchun GPS koordinatalari kerak');
+        }
+
         if (!existing) {
-          // First mark of the day → check-in
           const lateMinutes = await this.calculateLateMinutes(now);
           const created = await this.prisma.attendanceRecord.create({
             data: { employeeId, date: today, checkIn: now, lateMinutes } as any,
@@ -251,7 +270,7 @@ export class AttendanceService {
         }
 
         if (!existing.checkOut) {
-          // Already checked in → check out
+          // Ketish (check-out) — GPS tekshirmasdan
           const updated = await this.prisma.attendanceRecord.update({
             where: { id: existing.id },
             data: { checkOut: now },
@@ -260,7 +279,6 @@ export class AttendanceService {
           return { ...updated, action: 'checkout' };
         }
 
-        // Already checked out — nothing to do
         return { ...existing, action: 'done' };
       },
     );

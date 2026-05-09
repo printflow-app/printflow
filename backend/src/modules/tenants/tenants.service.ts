@@ -7,16 +7,36 @@ import * as bcrypt from 'bcrypt';
 export class TenantsService {
   constructor(private prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.tenant.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        plan: true,
-        _count: {
-          select: { employees: true, tasks: true, customers: true },
+  async findAll() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const [tenants, todayAtt, activeTsk] = await Promise.all([
+      this.prisma.tenant.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          plan: true,
+          _count: { select: { employees: true, tasks: true, customers: true } },
         },
-      },
-    });
+      }),
+      this.prisma.attendanceRecord.groupBy({
+        by: ['tenantId'],
+        where: { date: todayStr },
+        _count: { id: true },
+      }),
+      this.prisma.task.groupBy({
+        by: ['tenantId'],
+        where: { isArchived: false },
+        _count: { id: true },
+      }),
+    ]);
+    const attMap: Record<string, number> = {};
+    for (const a of todayAtt) attMap[a.tenantId] = a._count.id;
+    const tskMap: Record<string, number> = {};
+    for (const t of activeTsk) tskMap[t.tenantId] = t._count.id;
+    return tenants.map(t => ({
+      ...t,
+      attendanceTodayCount: attMap[t.id] ?? 0,
+      activeTasksCount: tskMap[t.id] ?? 0,
+    }));
   }
 
   async findOne(id: string) {
@@ -193,8 +213,22 @@ export class TenantsService {
     };
   }
 
-  update(id: string, data: { name?: string; planId?: string; isActive?: boolean; status?: string }) {
-    return this.prisma.tenant.update({ where: { id }, data: data as any });
+  update(id: string, data: {
+    name?: string;
+    planId?: string;
+    isActive?: boolean;
+    status?: string;
+    subscriptionEndsAt?: string | null;
+    trialEndsAt?: string | null;
+  }) {
+    const payload: any = { ...data };
+    if (data.subscriptionEndsAt !== undefined) {
+      payload.subscriptionEndsAt = data.subscriptionEndsAt ? new Date(data.subscriptionEndsAt) : null;
+    }
+    if (data.trialEndsAt !== undefined) {
+      payload.trialEndsAt = data.trialEndsAt ? new Date(data.trialEndsAt) : null;
+    }
+    return this.prisma.tenant.update({ where: { id }, data: payload });
   }
 
   remove(id: string) {

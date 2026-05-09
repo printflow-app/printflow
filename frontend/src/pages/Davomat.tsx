@@ -99,35 +99,37 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     if (isMarking) return;
     setIsMarking(true);
 
-    const getPosition = (): Promise<GeolocationPosition> =>
-      new Promise((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 0 }),
-      );
+    // Ketish (check-out) uchun GPS kerak emas
+    const isCheckout = buttonState === 'ketdim';
 
-    let position: GeolocationPosition;
-    try {
-      position = await getPosition();
-    } catch (geoErr: any) {
-      if (geoErr?.code === 1) {
-        showStatus('error', 'Iltimos, brauzerdan lokatsiyaga ruxsat bering');
-      } else {
-        showStatus('error', 'Joylashuv aniqlanmadi. Qayta urinib ko\'ring');
+    let geoData: { lat?: number; lng?: number } = {};
+
+    if (!isCheckout) {
+      const getPosition = (): Promise<GeolocationPosition> =>
+        new Promise((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 0 }),
+        );
+
+      try {
+        const pos = await getPosition();
+        geoData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      } catch (geoErr: any) {
+        if (geoErr?.code === 1) showStatus('error', 'Iltimos, brauzerdan lokatsiyaga ruxsat bering');
+        else showStatus('error', 'Joylashuv aniqlanmadi. Qayta urinib ko\'ring');
+        setIsMarking(false);
+        return;
       }
-      setIsMarking(false);
-      return;
     }
 
     try {
-      const { latitude: lat, longitude: lng } = position.coords;
-      const res = await attendanceApi.selfMark({ lat, lng });
+      const res = await attendanceApi.selfMark(geoData);
       const action = res.data?.action;
       if (action === 'checkin') showStatus('success', 'Keldim ✓ Davomat belgilandi');
       else if (action === 'checkout') showStatus('success', 'Ketdim ✓ Yaxshi kun bo\'lsin');
       else if (action === 'done') showStatus('error', 'Bugun davomat tugatilgan');
       await Promise.all([fetchMyToday(), fetchMyRecords()]);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Xatolik yuz berdi';
-      showStatus('error', msg);
+      showStatus('error', err?.response?.data?.message || 'Xatolik yuz berdi');
     } finally {
       setIsMarking(false);
     }

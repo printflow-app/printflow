@@ -79,7 +79,14 @@ export class TenantsController {
   @Put(':id')
   update(
     @Param('id') id: string,
-    @Body() body: { name?: string; planId?: string; isActive?: boolean; status?: string },
+    @Body() body: {
+      name?: string;
+      planId?: string;
+      isActive?: boolean;
+      status?: string;
+      subscriptionEndsAt?: string | null;
+      trialEndsAt?: string | null;
+    },
   ) {
     return this.tenantsService.update(id, body);
   }

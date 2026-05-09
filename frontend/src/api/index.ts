@@ -298,7 +298,7 @@ export const attendanceApi = {
   // Self-service (auth-based, no QR token) — GPS required
   getMyToday: () => api.get('/attendance/my-today'),
   getMyRecords: () => api.get('/attendance/my-records'),
-  selfMark: (data: { lat: number; lng: number }) => api.post('/attendance/self-mark', data),
+  selfMark: (data: { lat?: number; lng?: number }) => api.post('/attendance/self-mark', data),
 
   // Admin: qo'lda davomat kiritish (qurilmasiz xodimlar uchun)
   manualMark: (data: { employeeId: string; date: string; checkIn?: string; checkOut?: string }) =>

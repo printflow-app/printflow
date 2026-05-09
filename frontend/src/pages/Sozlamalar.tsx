@@ -77,9 +77,13 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           settingsApi.get('OFFICE_LNG'),
           settingsApi.get('OFFICE_RADIUS'),
         ]);
-        if (latRes.data !== null && latRes.data !== undefined) setOfficeLat(String(latRes.data));
-        if (lngRes.data !== null && lngRes.data !== undefined) setOfficeLng(String(lngRes.data));
-        if (radiusRes.data !== null && radiusRes.data !== undefined) setOfficeRadius(String(radiusRes.data));
+        const parseGeoVal = (d: any) => d?.value !== undefined ? d.value : d;
+        const latVal = parseGeoVal(latRes.data);
+        const lngVal = parseGeoVal(lngRes.data);
+        const radVal = parseGeoVal(radiusRes.data);
+        if (latVal !== null && latVal !== undefined) setOfficeLat(String(latVal));
+        if (lngVal !== null && lngVal !== undefined) setOfficeLng(String(lngVal));
+        if (radVal !== null && radVal !== undefined) setOfficeRadius(String(radVal));
       } catch { /* GPS sozlanmagan */ }
     } catch (err) {
       console.error("Sozlamalarni yuklashda xato:", err);
@@ -116,9 +120,9 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     setSavingGeo(true);
     try {
       await Promise.all([
-        settingsApi.set('OFFICE_LAT', lat as any),
-        settingsApi.set('OFFICE_LNG', lng as any),
-        settingsApi.set('OFFICE_RADIUS', radius as any),
+        settingsApi.set('OFFICE_LAT', { value: lat }),
+        settingsApi.set('OFFICE_LNG', { value: lng }),
+        settingsApi.set('OFFICE_RADIUS', { value: radius }),
       ]);
       showStatus('success', 'GPS geofencing sozlamalari saqlandi');
     } catch {
