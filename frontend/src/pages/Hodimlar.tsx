@@ -15,7 +15,6 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const p = currentUser.permissions || {};
 
   const canAdd           = isAdmin || p.canAddEmployee || p.canManageEmployees;
-  const canEdit          = isAdmin || p.canEditEmployee || p.canManageEmployees;
   const canDelete        = isAdmin || p.canDeleteEmployee || p.canManageEmployees;
   const canResetPassword = isAdmin || p.canResetEmployeePassword || p.canManageEmployees;
 

@@ -22,7 +22,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const canEdit            = p.canEditCustomer || p.canManageCustomers || isAdmin;
   const canDelete          = p.canDeleteCustomer || p.canManageCustomers || isAdmin;
   const canManageContacts  = p.canManageCustomers || isAdmin;
-  const canManage          = canAdd || canEdit || canDelete || canManageContacts;
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [topCustomers, setTopCustomers] = useState<any[]>([]);

@@ -21,7 +21,6 @@ const formatCurrency = (amount: number) =>
 const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const isAdmin   = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
   const canManage = isAdmin || currentUser?.permissions?.canManageBranches;
-  const canView   = canManage || !!(currentUser?.permissions?.canViewBranches);
 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);

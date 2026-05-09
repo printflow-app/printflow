@@ -44,6 +44,13 @@ interface Column {
 
 const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
+  const isAdmin =
+    currentUser.role?.name?.toLowerCase() === 'admin' ||
+    currentUser.login === 'admin';
+  const canCreateTask = p.canCreateTask || isAdmin;
+  const canEditTask   = p.canEditTask   || isAdmin;
+  const canMoveTask   = p.canMoveTask   || isAdmin;
+  const canDeleteTask = p.canDeleteTask || isAdmin;
 
   const [employees, setEmployees] = useState<any[]>([]);
   const [columns, setColumns] = useState<Column[]>([]);
@@ -229,7 +236,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const onTaskDrop = async (e: React.DragEvent, targetColumnId: string) => {
     e.preventDefault();
     setDragOverColId(null);
-    if (!draggedTaskId) return;
+    if (!draggedTaskId || !canMoveTask) return;
 
     try {
       await tasksApi.update(draggedTaskId, { columnId: targetColumnId }, currentUser.id);
@@ -669,9 +676,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
   };
 
+  // Restrict to own tasks when user lacks canViewAllTasks but has canViewOwnTasks
+  const visibleTasks = (isAdmin || p.canViewAllTasks)
+    ? tasks
+    : p.canViewOwnTasks
+      ? tasks.filter(t => parseJson(t.assignees).includes(currentUser.id))
+      : tasks;
+
   // Client-side search: filter by displayId, title, orderName, or customerName
   const filteredTasks = searchTerm.trim()
-    ? tasks.filter(t => {
+    ? visibleTasks.filter(t => {
         const q = searchTerm.toLowerCase();
         return (
           t.displayId?.toLowerCase().includes(q) ||
@@ -680,7 +694,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           t.customerName?.toLowerCase().includes(q)
         );
       })
-    : tasks;
+    : visibleTasks;
 
   return (
     <div className="space-y-4 sm:space-y-6 flex flex-col h-full animate-fade-in">
@@ -727,9 +741,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               + BOSQICH
             </button>
           )}
-          <button onClick={() => openNewTaskModal()} className="flex items-center gap-1.5 h-9 px-4 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all whitespace-nowrap">
-            <Plus size={13} strokeWidth={3} /> BUYURTMA
-          </button>
+          {canCreateTask && (
+            <button onClick={() => openNewTaskModal()} className="flex items-center gap-1.5 h-9 px-4 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all whitespace-nowrap">
+              <Plus size={13} strokeWidth={3} /> BUYURTMA
+            </button>
+          )}
         </div>
       </div>
 
@@ -800,11 +816,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     return (
                       <div
                         key={task.id}
-                        draggable
-                        onDragStart={(e) => onTaskDragStart(e, task.id)}
-                        onDragEnd={() => { setDraggedTaskId(null); setDragOverColId(null); }}
+                        draggable={canMoveTask}
+                        onDragStart={canMoveTask ? (e) => onTaskDragStart(e, task.id) : undefined}
+                        onDragEnd={canMoveTask ? () => { setDraggedTaskId(null); setDragOverColId(null); } : undefined}
                         onClick={() => openDetailModal(task)}
-                        className={`p-3.5 rounded-xl shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-300 group animate-fade-in flex flex-col ${draggedTaskId === task.id
+                        className={`p-3.5 rounded-xl shadow-sm border ${canMoveTask ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} hover:shadow-md transition-all duration-300 group animate-fade-in flex flex-col ${draggedTaskId === task.id
                             ? 'opacity-40 scale-95 ring-2 ring-orange-500 shadow-xl border-orange-500 bg-white'
                             : isMyTask
                               ? 'bg-sky-50/60 border-sky-300 ring-1 ring-sky-200 hover:border-sky-400 hover:shadow-sky-500/10'
@@ -1305,12 +1321,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5 px-0.5">Qolgan qarz</p>
                 <span className="text-sm font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-xl border border-rose-100">{formatCurrency(selectedTask.remainingAmount)}</span>
               </div>
-              <button
-                onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }}
-                className="btn-primary flex items-center gap-3 h-14 px-8 sm:px-12 text-[10px] sm:text-[12px] font-black uppercase tracking-widest bg-gradient-to-r from-orange-500 to-orange-700 border-none shadow-xl shadow-orange-500/20 active:scale-95"
-              >
-                BOSQICHNI O'ZGARTIRISH <ArrowRight size={18} />
-              </button>
+              {canMoveTask && (
+                <button
+                  onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }}
+                  className="btn-primary flex items-center gap-3 h-14 px-8 sm:px-12 text-[10px] sm:text-[12px] font-black uppercase tracking-widest bg-gradient-to-r from-orange-500 to-orange-700 border-none shadow-xl shadow-orange-500/20 active:scale-95"
+                >
+                  BOSQICHNI O'ZGARTIRISH <ArrowRight size={18} />
+                </button>
+              )}
             </div>
           }
         >
@@ -1331,7 +1349,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mas'ul Jamoa</p>
-                      <button onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} className="text-[10px] font-black text-sky-600 hover:text-sky-700 transition-colors uppercase">Tahrirlash</button>
+                      {canEditTask && (
+                        <button onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} className="text-[10px] font-black text-sky-600 hover:text-sky-700 transition-colors uppercase">Tahrirlash</button>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {parseJson(selectedTask.assignees).map((id: string) => (
@@ -1408,9 +1428,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   )}
                 </div>
 
-                <div className="flex justify-end pt-2">
-                  <button onClick={() => setConfirmModal({ isOpen: true, type: 'task', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-black text-amber-400 hover:text-amber-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Archive size={14} /> Buyurtmani arxivlash</button>
-                </div>
+                {canDeleteTask && (
+                  <div className="flex justify-end pt-2">
+                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'task', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-black text-amber-400 hover:text-amber-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Archive size={14} /> Buyurtmani arxivlash</button>
+                  </div>
+                )}
               </div>
             ) : activeTab === 'history' ? (
               <div className="space-y-4 animate-fade-in custom-scroll max-h-[50vh]">
