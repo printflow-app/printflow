@@ -303,6 +303,70 @@ export class AttendanceService {
     );
   }
 
+  // ============ ADMIN: MANUAL ENTRY (no IP / token required) ============
+
+  /**
+   * Admin tomonidan qo'lda davomat kiritish.
+   * QR yoki IP tekshiruvi yo'q — faqat JWT orqali autentifikatsiya kerak.
+   * Mavjud yozuv bo'lsa yangilanadi, bo'lmasa yangi yaratiladi.
+   */
+  async adminManualMark(data: {
+    employeeId: string;
+    date: string;      // "YYYY-MM-DD"
+    checkIn?: string;  // "HH:mm"
+    checkOut?: string; // "HH:mm"
+  }) {
+    const employee = await this.prisma.employee.findUnique({ where: { id: data.employeeId } });
+    if (!employee) throw new Error('Xodim topilmadi');
+
+    const tenantId = employee.tenantId;
+
+    const parseDateTime = (dateStr: string, timeStr: string): Date => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hour, minute] = timeStr.split(':').map(Number);
+      return new Date(year, month - 1, day, hour, minute, 0);
+    };
+
+    const checkInDate = data.checkIn ? parseDateTime(data.date, data.checkIn) : null;
+    const checkOutDate = data.checkOut ? parseDateTime(data.date, data.checkOut) : null;
+
+    return TenantContext.run(
+      { tenantId, userId: data.employeeId, userRole: '' },
+      async () => {
+        let lateMinutes = 0;
+        if (checkInDate) {
+          lateMinutes = await this.calculateLateMinutes(checkInDate);
+        }
+
+        const existing = await this.prisma.attendanceRecord.findFirst({
+          where: { employeeId: data.employeeId, date: data.date },
+        });
+
+        if (existing) {
+          return this.prisma.attendanceRecord.update({
+            where: { id: existing.id },
+            data: {
+              ...(checkInDate !== null && { checkIn: checkInDate, lateMinutes }),
+              ...(checkOutDate !== null && { checkOut: checkOutDate }),
+            },
+            include: { employee: { include: { role: true } } },
+          });
+        }
+
+        return this.prisma.attendanceRecord.create({
+          data: {
+            employeeId: data.employeeId,
+            date: data.date,
+            checkIn: checkInDate,
+            checkOut: checkOutDate,
+            lateMinutes,
+          } as any,
+          include: { employee: { include: { role: true } } },
+        });
+      },
+    );
+  }
+
   async getMyToday(employeeId: string) {
     const today = this.getTodayString();
     return this.prisma.attendanceRecord.findFirst({

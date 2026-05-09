@@ -147,6 +147,18 @@ export class AttendanceController {
     return this.attendanceService.getMyRecords(employeeId);
   }
 
+  // Admin: qo'lda davomat kiritish (qurilmasiz xodimlar uchun)
+  @Post('manual')
+  async adminManualMark(
+    @Body() body: { employeeId: string; date: string; checkIn?: string; checkOut?: string },
+  ) {
+    try {
+      return await this.attendanceService.adminManualMark(body);
+    } catch (err: any) {
+      throw new HttpException(err.message || 'Xatolik', HttpStatus.BAD_REQUEST);
+    }
+  }
+
   // Keldim/Ketdim tugmasi — bitta endpoint, ichkarida toggle
   @Post('self-mark')
   async selfMark(@Req() req: Request) {

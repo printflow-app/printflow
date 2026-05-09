@@ -59,6 +59,11 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [rejectingRequest, setRejectingRequest] = useState<OvertimeRequest | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
+  // Manual entry modal
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualForm, setManualForm] = useState({ employeeId: '', date: getTodayString(), checkIn: '', checkOut: '' });
+  const [manualLoading, setManualLoading] = useState(false);
+
   const [matrixDate, setMatrixDate] = useState({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
@@ -234,6 +239,30 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       fetchOvertime();
     } catch {
       showStatus('error', 'Rad etishda xatolik');
+    }
+  };
+
+  const handleManualSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualForm.employeeId) { showStatus('error', 'Xodimni tanlang'); return; }
+    if (!manualForm.date) { showStatus('error', 'Sanani kiriting'); return; }
+    if (!manualForm.checkIn && !manualForm.checkOut) { showStatus('error', 'Kamida keldi yoki ketti vaqtini kiriting'); return; }
+    setManualLoading(true);
+    try {
+      await attendanceApi.manualMark({
+        employeeId: manualForm.employeeId,
+        date: manualForm.date,
+        checkIn: manualForm.checkIn || undefined,
+        checkOut: manualForm.checkOut || undefined,
+      });
+      showStatus('success', 'Davomat muvaffaqiyatli kiritildi ✓');
+      setShowManualModal(false);
+      setManualForm({ employeeId: '', date: getTodayString(), checkIn: '', checkOut: '' });
+      await Promise.all([fetchRecords(), fetchMonthlyRecords()]);
+    } catch (err: any) {
+      showStatus('error', err?.response?.data?.message || 'Saqlashda xatolik');
+    } finally {
+      setManualLoading(false);
     }
   };
 
@@ -470,6 +499,14 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{filterDate} • {records.length} yozuv</p>
               </div>
               <div className="flex items-center gap-3">
+                {canManage && (
+                  <button
+                    onClick={() => { setManualForm(f => ({ ...f, date: filterDate, employeeId: '' })); setShowManualModal(true); }}
+                    className="flex items-center gap-1.5 h-9 px-3 bg-orange-500 hover:bg-orange-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm transition-all"
+                  >
+                    <LogIn size={12} strokeWidth={3} /> Manual kiritish
+                  </button>
+                )}
                 <div className="flex items-center gap-1 text-[9px] font-black text-emerald-600">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                   {records.filter(r => r.checkIn).length}
@@ -494,6 +531,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     <th className="px-4 py-3 text-left text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Kechikish</th>
                     <th className="px-4 py-3 text-left text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Ortiqcha</th>
                     <th className="px-4 py-3 text-left text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Holat</th>
+                    {canManage && <th className="px-4 py-3 text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]"></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -551,6 +589,25 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                             <span className="text-emerald-600 text-[8px] font-black uppercase">Tugallandi</span>
                           )}
                         </td>
+                        {canManage && (
+                          <td className="px-3 py-3">
+                            <button
+                              onClick={() => {
+                                setManualForm({
+                                  employeeId: record.employeeId,
+                                  date: record.date,
+                                  checkIn: record.checkIn ? new Date(record.checkIn).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false }) : '',
+                                  checkOut: record.checkOut ? new Date(record.checkOut).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false }) : '',
+                                });
+                                setShowManualModal(true);
+                              }}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
+                              title="Tahrirlash"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
@@ -757,6 +814,71 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </form>
         </Modal>
       )}
+
+      {/* MODAL: MANUAL ENTRY */}
+      <Modal isOpen={showManualModal} onClose={() => setShowManualModal(false)} title="Qo'lda Davomat Kiritish" maxWidth="max-w-md">
+        <form onSubmit={handleManualSave} className="space-y-4">
+          <div>
+            <label className="block text-[9px] font-black text-slate-400 uppercase mb-1.5 px-1">Xodim</label>
+            <select
+              required
+              value={manualForm.employeeId}
+              onChange={e => setManualForm(f => ({ ...f, employeeId: e.target.value }))}
+              className="input-minimal text-sm font-bold"
+            >
+              <option value="">— Xodimni tanlang —</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[9px] font-black text-slate-400 uppercase mb-1.5 px-1">Sana</label>
+            <input
+              type="date"
+              required
+              value={manualForm.date}
+              onChange={e => setManualForm(f => ({ ...f, date: e.target.value }))}
+              className="input-minimal text-sm font-bold"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[9px] font-black text-emerald-600 uppercase mb-1.5 px-1 flex items-center gap-1">
+                <LogIn size={10} /> Keldi vaqti
+              </label>
+              <input
+                type="time"
+                value={manualForm.checkIn}
+                onChange={e => setManualForm(f => ({ ...f, checkIn: e.target.value }))}
+                className="input-minimal text-sm font-bold text-center"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] font-black text-sky-600 uppercase mb-1.5 px-1 flex items-center gap-1">
+                <LogOut size={10} /> Ketti vaqti
+              </label>
+              <input
+                type="time"
+                value={manualForm.checkOut}
+                onChange={e => setManualForm(f => ({ ...f, checkOut: e.target.value }))}
+                className="input-minimal text-sm font-bold text-center"
+              />
+            </div>
+          </div>
+          <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
+            <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wide">
+              Faqat qurilmasi yo'q yoki texnik muammo yuz bergan xodimlar uchun. Barcha tahrirlar log'da saqlanadi.
+            </p>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={() => setShowManualModal(false)} className="btn-outline h-11 flex-1 rounded-xl font-black uppercase text-[9px] tracking-widest">Bekor</button>
+            <button type="submit" disabled={manualLoading} className="h-11 flex-1 rounded-xl font-black uppercase text-[9px] tracking-widest bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white shadow-md transition-all">
+              {manualLoading ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* MODAL: REJECT OVERTIME */}
       <Modal isOpen={!!rejectingRequest} onClose={() => setRejectingRequest(null)} title="So'rovni rad etish">

@@ -302,6 +302,10 @@ export const attendanceApi = {
   getMyToday: () => api.get('/attendance/my-today'),
   getMyRecords: () => api.get('/attendance/my-records'),
   selfMark: () => api.post('/attendance/self-mark'),
+
+  // Admin: qo'lda davomat kiritish (qurilmasiz xodimlar uchun)
+  manualMark: (data: { employeeId: string; date: string; checkIn?: string; checkOut?: string }) =>
+    api.post('/attendance/manual', data),
 };
 
 // =============================================
