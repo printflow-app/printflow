@@ -133,8 +133,8 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     if (!selectedMaterial) return;
     try {
       await inventoryApi.updateMaterial(selectedMaterial.id, {
-        ...editMaterialForm,
-        currentStock: Number(editMaterialForm.currentStock),
+        name: editMaterialForm.name,
+        unit: editMaterialForm.unit,
         minStock: Number(editMaterialForm.minStock),
       });
       showStatus('success', 'Material yangilandi!');

@@ -766,6 +766,92 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
+  // =============================================
+  // DAVOMAT ESLATMALARI — har 5 daqiqada
+  // Kelish: ish boshlanishiga ~10-14 daqiqa qolganida
+  // Ketish: ish tugashiga ~10-14 daqiqa qolganida
+  // =============================================
+  @Cron('*/5 * * * *')
+  async handleAttendanceReminders() {
+    if (!this.bot) return;
+
+    const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
+    const now = new Date();
+    const todayStr =
+      `${now.getFullYear()}-` +
+      `${String(now.getMonth() + 1).padStart(2, '0')}-` +
+      `${String(now.getDate()).padStart(2, '0')}`;
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    for (const t of tenants) {
+      try {
+        const settings = await this.prisma.systemSetting.findMany({
+          where: { tenantId: t.id, key: { in: ['workStart', 'workEnd', 'workDays'] } },
+        });
+        const workStart = this.parseSetting(settings, 'workStart', { hour: 9, minute: 0 });
+        const workEnd   = this.parseSetting(settings, 'workEnd',   { hour: 17, minute: 0 });
+        const workDays  = this.parseSetting(settings, 'workDays',  [1, 2, 3, 4, 5, 6]);
+
+        if (!workDays.includes(now.getDay())) continue;
+
+        const workStartMins = workStart.hour * 60 + workStart.minute;
+        const workEndMins   = workEnd.hour   * 60 + workEnd.minute;
+        const diffToStart   = workStartMins - currentMinutes;
+        const diffToEnd     = workEndMins   - currentMinutes;
+
+        // ── Kelish eslatmasi: ish boshlanishiga 10–14 daqiqa qolganida ──
+        // */5 cron bilan bu oyna bir marta ishga tushadi
+        if (diffToStart >= 10 && diffToStart < 15) {
+          const employees = await this.prisma.employee.findMany({
+            where: { tenantId: t.id, telegramId: { not: null } },
+          });
+          for (const emp of employees) {
+            if (!emp.telegramId) continue;
+            // Bugun allaqachon kelgan bo'lsa — o'tkazib yuborish
+            const alreadyIn = await this.prisma.attendanceRecord.findFirst({
+              where: { tenantId: t.id, employeeId: emp.id, date: todayStr, checkIn: { not: null } },
+            });
+            if (alreadyIn) continue;
+
+            await this.sendMessage(
+              emp.telegramId,
+              `🌅 *Xayrli tong!*\n\n` +
+              `⏰ Ish vaqti boshlanishiga *${diffToStart} daqiqa* qoldi.\n\n` +
+              `📍 *Kelganingizni belgilashni unutmang!*\n` +
+              `Platformaga kirib davomat tugmasini bosing.`,
+            );
+          }
+        }
+
+        // ── Ketish eslatmasi: ish tugashiga 10–14 daqiqa qolganida ──
+        if (diffToEnd >= 10 && diffToEnd < 15) {
+          // checkIn bor lekin checkOut yo'q bo'lgan xodimlar
+          const uncheckedOut = await this.prisma.attendanceRecord.findMany({
+            where: {
+              tenantId: t.id,
+              date: todayStr,
+              checkIn: { not: null },
+              checkOut: null,
+            },
+            include: { employee: true },
+          });
+          for (const rec of uncheckedOut) {
+            if (!rec.employee?.telegramId) continue;
+            await this.sendMessage(
+              rec.employee.telegramId,
+              `🌆 *Ish vaqti tugashiga yaqin!*\n\n` +
+              `⏰ Ish vaqti tugashiga *${diffToEnd} daqiqa* qoldi.\n\n` +
+              `🚪 *Ishdan ketganingizni belgilashni unutmang!*\n` +
+              `Platformaga kirib davomat tugmasini bosing.`,
+            );
+          }
+        }
+      } catch (err: any) {
+        console.error(`Davomat eslatmasi xatosi (tenant ${t.id}):`, err?.message);
+      }
+    }
+  }
+
   @Cron('0 9 * * *')
   async handleLowStockAlert() {
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });

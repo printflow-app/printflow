@@ -24,6 +24,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [officeLng, setOfficeLng] = useState('');
   const [officeRadius, setOfficeRadius] = useState('50');
   const [savingGeo, setSavingGeo] = useState(false);
+  const [geoEditMode, setGeoEditMode] = useState(true);
   const [detectingGps, setDetectingGps] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -84,6 +85,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         if (latVal !== null && latVal !== undefined) setOfficeLat(String(latVal));
         if (lngVal !== null && lngVal !== undefined) setOfficeLng(String(lngVal));
         if (radVal !== null && radVal !== undefined) setOfficeRadius(String(radVal));
+        if (latVal && lngVal) setGeoEditMode(false);
       } catch { /* GPS sozlanmagan */ }
     } catch (err) {
       console.error("Sozlamalarni yuklashda xato:", err);
@@ -124,6 +126,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         settingsApi.set('OFFICE_LNG', { value: lng }),
         settingsApi.set('OFFICE_RADIUS', { value: radius }),
       ]);
+      setGeoEditMode(false);
       showStatus('success', 'GPS geofencing sozlamalari saqlandi');
     } catch {
       showStatus('error', 'Saqlashda xatolik');
@@ -900,8 +903,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               </p>
             </div>
 
-            {/* Auto-detect helper */}
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
+            {/* Auto-detect helper — faqat edit modeda ko'rinadi */}
+            {geoEditMode && <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
               <Navigation className="text-emerald-600 mt-0.5 flex-shrink-0" size={18} />
               <div className="flex-1 space-y-2">
                 <p className="text-[11px] font-black text-emerald-700">
@@ -917,73 +920,112 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   {detectingGps ? 'Aniqlanmoqda...' : 'Hozirgi joylashuvimni aniqlash'}
                 </button>
               </div>
-            </div>
+            </div>}
 
-            {/* Coordinate inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                  Kenglik (Latitude)
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={officeLat}
-                  onChange={e => setOfficeLat(e.target.value)}
-                  placeholder="41.299496"
-                  className="input-minimal font-mono text-sm"
-                />
+            {/* Coordinate display / edit */}
+            {!geoEditMode ? (
+              /* ── View mode: read-only ── */
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { label: 'Kenglik (Latitude)', value: officeLat },
+                    { label: 'Uzunlik (Longitude)', value: officeLng },
+                    { label: 'Radius (metr)', value: officeRadius },
+                  ].map(f => (
+                    <div key={f.label} className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{f.label}</p>
+                      <p className="font-mono font-black text-slate-800 text-sm">{f.value || '—'}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setGeoEditMode(true)}
+                    className="h-10 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
+                  >
+                    <MapPin size={13} /> Tahrirlash
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                  Uzunlik (Longitude)
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={officeLng}
-                  onChange={e => setOfficeLng(e.target.value)}
-                  placeholder="69.240073"
-                  className="input-minimal font-mono text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                  Radius (metr)
-                </label>
-                <input
-                  type="number"
-                  min="10"
-                  max="5000"
-                  value={officeRadius}
-                  onChange={e => setOfficeRadius(e.target.value)}
-                  placeholder="50"
-                  className="input-minimal font-mono text-sm"
-                />
-              </div>
-            </div>
+            ) : (
+              /* ── Edit mode: inputs ── */
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                      Kenglik (Latitude)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={officeLat}
+                      onChange={e => setOfficeLat(e.target.value)}
+                      placeholder="41.299496"
+                      className="input-minimal font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                      Uzunlik (Longitude)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={officeLng}
+                      onChange={e => setOfficeLng(e.target.value)}
+                      placeholder="69.240073"
+                      className="input-minimal font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                      Radius (metr)
+                    </label>
+                    <input
+                      type="number"
+                      min="10"
+                      max="5000"
+                      value={officeRadius}
+                      onChange={e => setOfficeRadius(e.target.value)}
+                      placeholder="50"
+                      className="input-minimal font-mono text-sm"
+                    />
+                  </div>
+                </div>
 
-            {(!officeLat || !officeLng) && (
-              <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
-                <p className="text-[11px] font-black text-rose-700 mb-1 flex items-center gap-1.5">
-                  <AlertCircle size={13} /> GPS sozlanmagan
-                </p>
-                <p className="text-[10px] font-bold text-rose-600">
-                  Koordinatalar kiritilmasa xodimlar davomat belgilolmaydi.
-                </p>
+                {(!officeLat || !officeLng) && (
+                  <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
+                    <p className="text-[11px] font-black text-rose-700 mb-1 flex items-center gap-1.5">
+                      <AlertCircle size={13} /> GPS sozlanmagan
+                    </p>
+                    <p className="text-[10px] font-bold text-rose-600">
+                      Koordinatalar kiritilmasa xodimlar davomat belgilolmaydi.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2">
+                  {officeLat && officeLng && (
+                    <button
+                      type="button"
+                      onClick={() => setGeoEditMode(false)}
+                      className="h-11 px-5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all"
+                    >
+                      Bekor qilish
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={saveGeoSettings}
+                    disabled={savingGeo}
+                    className="h-11 px-6 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-60"
+                  >
+                    <Save size={14} /> {savingGeo ? 'Saqlanmoqda...' : 'Saqlash'}
+                  </button>
+                </div>
               </div>
             )}
-
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={saveGeoSettings}
-                disabled={savingGeo}
-                className="h-11 px-6 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-60"
-              >
-                <Save size={14} /> {savingGeo ? 'Saqlanmoqda...' : 'Saqlash'}
-              </button>
-            </div>
           </div>
         </section>
       )}
