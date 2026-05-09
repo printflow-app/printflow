@@ -1223,9 +1223,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-6 border-t border-slate-100">
+          <div className="mt-4 pt-6 border-t border-slate-100 space-y-4">
             {/* Deadline field */}
-            <div className="flex-1">
+            <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1 flex items-center gap-1.5">
                 <Clock size={11} className="text-amber-500" /> Topshiriq muddati (ixtiyoriy)
               </label>
@@ -1236,15 +1236,26 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 className="input-minimal font-black text-amber-700 border-2 border-amber-100 bg-amber-50/30 h-12"
               />
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 flex-[2] items-end">
-              <button type="button" className="btn-outline h-24 flex-1 rounded-2xl uppercase tracking-widest font-black text-[10px] px-6" onClick={() => setIsNewTaskModalOpen(false)}>Bekor qilish</button>
+            {/* Action buttons */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="btn-outline h-12 flex-1 rounded-2xl uppercase tracking-widest font-black text-[10px]"
+                onClick={() => setIsNewTaskModalOpen(false)}
+              >
+                Bekor qilish
+              </button>
               {(() => {
                 const finalTotal = newTaskForm.manualTotal ? Number(newTaskForm.manualTotal) : Number(newTaskForm.totalAmount);
                 const deposit = Number(newTaskForm.depositAmount);
                 const pct = finalTotal > 0 ? Math.round((deposit / finalTotal) * 100) : 100;
                 const blocked = finalTotal > 0 && pct < minPrepaymentPct && !prepaymentWarningAccepted;
                 return (
-                  <button type="submit" disabled={blocked} className={`h-30 flex-[2] rounded-2xl uppercase tracking-widest font-black shadow-xl active:scale-95 transition-all text-[10px] px-8 ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20'}`}>
+                  <button
+                    type="submit"
+                    disabled={blocked}
+                    className={`h-12 flex-[2] rounded-2xl uppercase tracking-widest font-black shadow-xl active:scale-95 transition-all text-[10px] ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20'}`}
+                  >
                     Buyurtma Qo'shish
                   </button>
                 );
