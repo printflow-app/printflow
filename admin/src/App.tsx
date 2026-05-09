@@ -873,13 +873,6 @@ function TenantDetailsModal({ tenant, plans, onClose, onSaved, toast }: {
     }
   };
 
-  const infoBox = (label: string, value: React.ReactNode) => (
-    <div style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 14px' }}>
-      <p style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', marginBottom: 4 }}>{label}</p>
-      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>{value}</div>
-    </div>
-  );
-
   return (
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }}>

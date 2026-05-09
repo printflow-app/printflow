@@ -302,11 +302,9 @@ export class AttendanceService {
 
     const tenantId = employee.tenantId;
 
-    const parseDateTime = (dateStr: string, timeStr: string): Date => {
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const [hour, minute] = timeStr.split(':').map(Number);
-      return new Date(year, month - 1, day, hour, minute, 0);
-    };
+    // Parse "HH:mm" as Asia/Tashkent (UTC+5) local time so storage and display are consistent
+    const parseDateTime = (dateStr: string, timeStr: string): Date =>
+      new Date(`${dateStr}T${timeStr}:00+05:00`);
 
     const checkInDate = data.checkIn ? parseDateTime(data.date, data.checkIn) : null;
     const checkOutDate = data.checkOut ? parseDateTime(data.date, data.checkOut) : null;
@@ -315,8 +313,18 @@ export class AttendanceService {
       { tenantId, userId: data.employeeId, userRole: '' },
       async () => {
         let lateMinutes = 0;
-        if (checkInDate) {
-          lateMinutes = await this.calculateLateMinutes(checkInDate);
+        if (data.checkIn) {
+          // Compare pure local-time numbers to avoid any server-TZ dependency
+          const startSetting = (await this.settings.get('workStart')) || DEFAULT_WORK_START;
+          const workDays = (await this.settings.get('workDays')) || DEFAULT_WORK_DAYS;
+          const localDate = new Date(`${data.date}T12:00:00+05:00`);
+          const dayOfWeek = localDate.getDay();
+          if (workDays.includes(dayOfWeek)) {
+            const [ciH, ciM] = data.checkIn.split(':').map(Number);
+            const checkInMins = ciH * 60 + ciM;
+            const workStartMins = startSetting.hour * 60 + startSetting.minute;
+            lateMinutes = Math.max(0, checkInMins - workStartMins);
+          }
         }
 
         const existing = await this.prisma.attendanceRecord.findFirst({
