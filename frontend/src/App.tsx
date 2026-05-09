@@ -117,8 +117,16 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
+      // Telegram WebApp'ni darhol ishga tushiramiz — auth so'rovlardan OLDIN
+      const tg = (window as any)?.Telegram?.WebApp;
+      if (tg) {
+        tg.ready?.();
+        tg.expand?.();
+      }
+
       try {
-        // 1. Birinchi navbatda standart cookie/Bearer asosida sessiyani tekshiramiz
+        // 1. Cookie yoki Bearer (localStorage) orqali sessiyani tekshiramiz.
+        //    /auth/me endi ikkala transport'ni ham qabul qiladi.
         const res = await authApi.me();
         const user = res.data;
 
@@ -141,12 +149,9 @@ const App: React.FC = () => {
           return;
         }
 
-        // 2. Telegram WebApp ichida ochilgan bo'lsa — auto-login urinish
-        const tg = (window as any)?.Telegram?.WebApp;
+        // 2. me() null qaytardi — Telegram telegramId orqali auto-login urinish
         const tgUserId = tg?.initDataUnsafe?.user?.id;
         if (tgUserId) {
-          tg.ready?.();
-          tg.expand?.();
           try {
             const tgRes = await authApi.telegramAuth(String(tgUserId));
             const data = tgRes.data;

@@ -144,7 +144,11 @@ export class AuthController {
   @Get('me')
   async me(@Req() req: Request) {
     try {
-      const token = req.cookies?.['pf_token'];
+      // Cookie-first, then Authorization Bearer (for TWA / iOS Safari where cookies are blocked)
+      const cookieToken = req.cookies?.['pf_token'];
+      const authHeader = (req.headers as any)['authorization'] as string | undefined;
+      const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = cookieToken || bearerToken;
       if (!token) return null;
 
       const payload = this.authService['jwt'].verify(token, { secret: process.env.JWT_SECRET });
