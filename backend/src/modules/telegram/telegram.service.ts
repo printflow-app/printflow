@@ -652,8 +652,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   @Cron('*/30 * * * *')
   async handleOvertimePrompt() {
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const { str: todayStr, day: todayDay, mins: currentMins } = this.tashkentNow();
 
     for (const t of tenants) {
       try {
@@ -663,14 +662,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const workEnd = this.parseSetting(settings, 'workEnd', { hour: 17, minute: 0 });
         const workDays = this.parseSetting(settings, 'workDays', [1, 2, 3, 4, 5, 6]);
 
-        const isWorkDay = workDays.includes(today.getDay());
+        const isWorkDay = workDays.includes(todayDay);
 
-        // workEnd + 30 daqiqa
-        const workEndDate = new Date(today);
-        workEndDate.setHours(workEnd.hour, workEnd.minute, 0, 0);
-        const promptThreshold = new Date(workEndDate.getTime() + 30 * 60 * 1000);
+        // workEnd + 30 daqiqa (UTC+5 minutes comparison)
+        const workEndMins = workEnd.hour * 60 + workEnd.minute;
+        const promptThresholdMins = workEndMins + 30;
+        const workEndDate = new Date(); // used only for display in formatTime
+        workEndDate.setUTCHours(workEnd.hour - 5, workEnd.minute, 0, 0); // UTC equivalent
 
-        if (today < promptThreshold) continue; // Hali vaqti emas
+        if (currentMins < promptThresholdMins) continue; // Hali vaqti emas
 
         // Xodimlar ro'yxati: telegramId mavjud bo'lganlar
         const employees = await this.prisma.employee.findMany({
@@ -746,10 +746,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         if (parsed && typeof parsed.hour === 'number') workEnd = parsed;
       } catch {}
     }
-    const workEndDate = new Date(promptedAt);
-    workEndDate.setHours(workEnd.hour, workEnd.minute, 0, 0);
-    const diffMs = promptedAt.getTime() - workEndDate.getTime();
-    return Math.max(0, Math.round(diffMs / 60000));
+    // Use UTC+5 representation of promptedAt to compare with local-time settings
+    const promptedUTC5 = new Date(promptedAt.getTime() + 5 * 60 * 60 * 1000);
+    const promptedMins = promptedUTC5.getUTCHours() * 60 + promptedUTC5.getUTCMinutes();
+    const workEndMins = workEnd.hour * 60 + workEnd.minute;
+    return Math.max(0, promptedMins - workEndMins);
   }
 
   private parseSetting(settings: any[], key: string, fallback: any): any {
@@ -766,6 +767,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
+  /** Returns current moment represented as Asia/Tashkent (UTC+5) wall-clock values */
+  private tashkentNow(): { utc5: Date; str: string; day: number; mins: number } {
+    const utc5 = new Date(Date.now() + 5 * 60 * 60 * 1000);
+    return {
+      utc5,
+      str: `${utc5.getUTCFullYear()}-${String(utc5.getUTCMonth() + 1).padStart(2, '0')}-${String(utc5.getUTCDate()).padStart(2, '0')}`,
+      day: utc5.getUTCDay(),
+      mins: utc5.getUTCHours() * 60 + utc5.getUTCMinutes(),
+    };
+  }
+
   // =============================================
   // DAVOMAT ESLATMALARI — har 5 daqiqada
   // Kelish: ish boshlanishiga ~10-14 daqiqa qolganida
@@ -776,12 +788,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (!this.bot) return;
 
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
-    const now = new Date();
-    const todayStr =
-      `${now.getFullYear()}-` +
-      `${String(now.getMonth() + 1).padStart(2, '0')}-` +
-      `${String(now.getDate()).padStart(2, '0')}`;
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const { str: todayStr, day: todayDay, mins: currentMinutes } = this.tashkentNow();
 
     for (const t of tenants) {
       try {
@@ -792,7 +799,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const workEnd   = this.parseSetting(settings, 'workEnd',   { hour: 17, minute: 0 });
         const workDays  = this.parseSetting(settings, 'workDays',  [1, 2, 3, 4, 5, 6]);
 
-        if (!workDays.includes(now.getDay())) continue;
+        if (!workDays.includes(todayDay)) continue;
 
         const workStartMins = workStart.hour * 60 + workStart.minute;
         const workEndMins   = workEnd.hour   * 60 + workEnd.minute;

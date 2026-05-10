@@ -122,8 +122,9 @@ export class AttendanceService {
   // ============ HELPERS ============
 
   private getTodayString(): string {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    // Use explicit UTC+5 (Asia/Tashkent) so the date matches what the user sees
+    const nowUTC5 = new Date(Date.now() + 5 * 60 * 60 * 1000);
+    return `${nowUTC5.getUTCFullYear()}-${String(nowUTC5.getUTCMonth() + 1).padStart(2, '0')}-${String(nowUTC5.getUTCDate()).padStart(2, '0')}`;
   }
 
   /** Late-minutes calculation — settings tenant-scoped */
@@ -131,14 +132,14 @@ export class AttendanceService {
     const startSetting = (await this.settings.get('workStart')) || DEFAULT_WORK_START;
     const workDays = (await this.settings.get('workDays')) || DEFAULT_WORK_DAYS;
 
-    const dayOfWeek = checkInTime.getDay();
+    // Convert checkIn to UTC+5 so day-of-week and clock match stored settings
+    const checkInUTC5 = new Date(checkInTime.getTime() + 5 * 60 * 60 * 1000);
+    const dayOfWeek = checkInUTC5.getUTCDay();
     if (!workDays.includes(dayOfWeek)) return 0;
 
-    const workStart = new Date(checkInTime);
-    workStart.setHours(startSetting.hour, startSetting.minute, 0, 0);
-
-    if (checkInTime <= workStart) return 0;
-    return Math.round((checkInTime.getTime() - workStart.getTime()) / 60000);
+    const checkInMins = checkInUTC5.getUTCHours() * 60 + checkInUTC5.getUTCMinutes();
+    const workStartMins = startSetting.hour * 60 + startSetting.minute;
+    return Math.max(0, checkInMins - workStartMins);
   }
 
   // ============ PUBLIC: SCAN ENDPOINTS ============
