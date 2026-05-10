@@ -938,7 +938,12 @@ function TenantDetailsModal({ tenant, plans, onClose, onSaved, toast }: {
             <label style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', display: 'block', marginBottom: 6 }}>
               {newStatus === 'TRIAL' ? 'Trial tugash sanasi' : 'Obuna tugash sanasi'}
             </label>
-            <input type="date" value={newEndDate} onChange={e => setNewEndDate(e.target.value)}
+            <input type="date" value={newEndDate} onChange={e => {
+              setNewEndDate(e.target.value);
+              if (e.target.value && new Date(e.target.value) > new Date() && newStatus !== 'ACTIVE') {
+                setNewStatus('ACTIVE');
+              }
+            }}
               style={{ width: '100%', height: 40, border: '1px solid #e2e8f0', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 700, background: '#fff', outline: 'none', boxSizing: 'border-box' }} />
           </div>
 

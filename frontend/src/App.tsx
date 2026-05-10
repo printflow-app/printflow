@@ -7,7 +7,7 @@ import ScanAttendance from './pages/ScanAttendance';
 import Landing from './pages/Landing';
 import Billing from './pages/Billing';
 import CookieConsent from './components/CookieConsent';
-import { authApi } from './api';
+import { authApi, billingApi } from './api';
 import logo from './assets/logo.png';
 
 // =============================================
@@ -213,6 +213,20 @@ const App: React.FC = () => {
       }
     } catch { }
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!subscriptionExpired) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await billingApi.getStatus();
+        const st = res.data?.status;
+        if (st === 'ACTIVE' || st === 'TRIAL') {
+          setSubscriptionExpired(false);
+        }
+      } catch { /* ignore */ }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [subscriptionExpired]);
 
   useEffect(() => {
     if (!currentUser) return;

@@ -136,12 +136,21 @@ export default function Billing() {
         </div>
         
         {status?.status !== 'ACTIVE' && (
-           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3 w-full sm:w-auto">
-              <div className="text-right">
-                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Xizmat cheklangan</p>
-                 <p className="text-[11px] font-bold text-slate-600">Davom ettirish uchun to'lov qiling</p>
+           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => window.location.reload()}
+                className="flex items-center justify-center gap-1.5 h-10 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                title="Admin muddatni uzaytirgan bo'lsa yangilang"
+              >
+                ↻ Yangilash
+              </button>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                 <div className="text-right">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Xizmat cheklangan</p>
+                    <p className="text-[11px] font-bold text-slate-600">Davom ettirish uchun to'lov qiling</p>
+                 </div>
+                 <ArrowRight className="text-slate-300" size={18} />
               </div>
-              <ArrowRight className="text-slate-300" size={18} />
            </div>
         )}
       </div>
