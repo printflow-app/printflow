@@ -38,9 +38,19 @@ export class AuthService {
       throw new UnauthorizedException('Workspace topilmadi yoki faol emas');
     }
 
-    // Check trial expiry
-    if (tenant.trialEndsAt && new Date() > tenant.trialEndsAt) {
+    // Subscription status check (based on status field, not just trialEndsAt)
+    const now = new Date();
+    if (tenant.status === 'EXPIRED') {
+      throw new UnauthorizedException('Obuna muddati tugagan. Obuna xarid qiling');
+    }
+    if (tenant.status === 'TRIAL' && tenant.trialEndsAt && now > tenant.trialEndsAt) {
       throw new UnauthorizedException('Sinov muddati tugagan. Obuna xarid qiling');
+    }
+    if (tenant.status === 'ACTIVE' && tenant.subscriptionEndsAt && now > tenant.subscriptionEndsAt) {
+      throw new UnauthorizedException('Obuna muddati tugagan. Obuna xarid qiling');
+    }
+    if (tenant.status === 'PENDING_PAYMENT') {
+      throw new UnauthorizedException("To'lov tasdiqlanishi kutilmoqda");
     }
 
     // Step 2: Temporarily set TenantContext to query this tenant's users
@@ -174,8 +184,15 @@ export class AuthService {
       throw new UnauthorizedException("Workspace faol emas");
     }
 
-    if (tenant.trialEndsAt && new Date() > tenant.trialEndsAt) {
+    const now2 = new Date();
+    if (tenant.status === 'EXPIRED') {
+      throw new UnauthorizedException('Obuna muddati tugagan. Obuna xarid qiling');
+    }
+    if (tenant.status === 'TRIAL' && tenant.trialEndsAt && now2 > tenant.trialEndsAt) {
       throw new UnauthorizedException('Sinov muddati tugagan. Obuna xarid qiling');
+    }
+    if (tenant.status === 'ACTIVE' && tenant.subscriptionEndsAt && now2 > tenant.subscriptionEndsAt) {
+      throw new UnauthorizedException('Obuna muddati tugagan. Obuna xarid qiling');
     }
 
     const roleObj = employee.role;
