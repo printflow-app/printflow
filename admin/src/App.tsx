@@ -842,7 +842,13 @@ function TenantDetailsModal({ tenant, plans, onClose, onSaved, toast }: {
     : (tenant.subscriptionEndsAt ? new Date(tenant.subscriptionEndsAt).toISOString().slice(0, 10) : '');
 
   const [newEndDate, setNewEndDate] = useState(curExpDate);
-  const [newStatus, setNewStatus] = useState(tenant.status);
+  const [newStatus, setNewStatus] = useState<string>(() => {
+    // Agar status EXPIRED lekin sana kelajakda bo'lsa — ACTIVE deb boshlash
+    if (tenant.status === 'EXPIRED' && curExpDate && new Date(curExpDate) > new Date()) {
+      return 'ACTIVE';
+    }
+    return tenant.status;
+  });
   const [newPlanId, setNewPlanId] = useState(tenant.planId || '');
   const [saving, setSaving] = useState(false);
 
@@ -857,8 +863,13 @@ function TenantDetailsModal({ tenant, plans, onClose, onSaved, toast }: {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updateData: any = { status: newStatus, planId: newPlanId || null };
-      if (newStatus === 'TRIAL') {
+      // Kelajak sana bilan EXPIRED saqlashni oldini olish
+      const effectiveStatus =
+        newStatus === 'EXPIRED' && newEndDate && new Date(newEndDate) > new Date()
+          ? 'ACTIVE'
+          : newStatus;
+      const updateData: any = { status: effectiveStatus, planId: newPlanId || null };
+      if (effectiveStatus === 'TRIAL') {
         updateData.trialEndsAt = newEndDate ? new Date(newEndDate).toISOString() : null;
       } else {
         updateData.subscriptionEndsAt = newEndDate ? new Date(newEndDate).toISOString() : null;
