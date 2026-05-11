@@ -5,8 +5,9 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ScanAttendance from './pages/ScanAttendance';
 import Landing from './pages/Landing';
-import Billing from './pages/Billing';
 import CookieConsent from './components/CookieConsent';
+
+const Billing = React.lazy(() => import('./pages/Billing'));
 import { authApi, billingApi } from './api';
 import logo from './assets/logo.png';
 
@@ -346,7 +347,9 @@ const App: React.FC = () => {
       )}
 
       {subscriptionExpired ? (
-        <Billing />
+        <React.Suspense fallback={null}>
+          <Billing />
+        </React.Suspense>
       ) : isScanPage ? (
         <ScanAttendance currentUser={currentUser} />
       ) : currentUser ? (
