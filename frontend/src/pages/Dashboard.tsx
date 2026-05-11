@@ -3,20 +3,22 @@ import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, T
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
-import Moliya from './Moliya';
-import Hodimlar from './Hodimlar';
-import Topshiriqlar from './Topshiriqlar';
-import Mijozlar from './Mijozlar';
-import Sozlamalar from './Sozlamalar';
-import Kassa from './Kassa';
-import Ombor from './Ombor';
-import Davomat from './Davomat';
-import Admins from './Admins';
-import Billing from './Billing';
-import Filiallar from './Filiallar';
-import Hisobotlar from './Hisobotlar';
-import Qollanma from './Qollanma';
 import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+const Moliya       = React.lazy(() => import('./Moliya'));
+const Hodimlar     = React.lazy(() => import('./Hodimlar'));
+const Topshiriqlar = React.lazy(() => import('./Topshiriqlar'));
+const Mijozlar     = React.lazy(() => import('./Mijozlar'));
+const Sozlamalar   = React.lazy(() => import('./Sozlamalar'));
+const Kassa        = React.lazy(() => import('./Kassa'));
+const Ombor        = React.lazy(() => import('./Ombor'));
+const Davomat      = React.lazy(() => import('./Davomat'));
+const Admins       = React.lazy(() => import('./Admins'));
+const Billing      = React.lazy(() => import('./Billing'));
+const Filiallar    = React.lazy(() => import('./Filiallar'));
+const Hisobotlar   = React.lazy(() => import('./Hisobotlar'));
+const Qollanma     = React.lazy(() => import('./Qollanma'));
 
 interface DashboardProps {
   currentUser: any;
@@ -546,7 +548,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               </div>
             </div>
           ) : (
-            <>
+            <React.Suspense fallback={<LoadingSpinner fullPage />}>
               {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} />}
@@ -560,7 +562,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports) && <Hisobotlar currentUser={currentUser} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} />}
               {activeTab === 'qollanma' && <Qollanma />}
-              
+
               {/* Unauthorized message if tab is set but permission removed */}
               {!navItems.find(i => i.id === activeTab)?.show && (
                 <div className="flex flex-col items-center justify-center h-full text-center p-10 bg-white rounded-3xl border border-slate-200">
@@ -569,7 +571,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   <p className="text-xs font-bold text-slate-400 mt-2">Ushbu bo'limni ko'rish uchun ruxsatingiz yo'q.</p>
                 </div>
               )}
-            </>
+            </React.Suspense>
           )}
         </div>
       </main>
