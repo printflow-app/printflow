@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Search, Trash2, Edit3, AlertCircle, AlertTriangle, CheckCircle2,
-  Phone, Briefcase, TrendingDown, ClipboardList, Handshake, Clock, CheckCheck, Package, DollarSign
+  Plus, Search, Trash2, Edit3, AlertCircle,
+  ClipboardList, DollarSign
 } from 'lucide-react';
-import { vendorsApi, tasksApi } from '../api';
+import { vendorsApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 

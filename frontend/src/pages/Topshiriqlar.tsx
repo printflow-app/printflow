@@ -69,9 +69,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
   const [prepaymentWarningAccepted, setPrepaymentWarningAccepted] = useState(false);
 
-  const [vendorCostForm, setVendorCostForm] = useState({ vendorId: '', amount: '' });
-  const [isUpdatingVendor, setIsUpdatingVendor] = useState(false);
-
   // Sprint 5: Costing & profitability
   const [taskExpenses, setTaskExpenses] = useState<any[]>([]);
   const [expenseForm, setExpenseForm] = useState({ expenseName: '', amount: '' });
@@ -385,7 +382,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         })
       };
 
-      const createdTasks = await tasksApi.createBulk(payload, currentUser.id);
+      await tasksApi.createBulk(payload, currentUser.id);
 
       // Vendor assignment is now handled within createBulk payload
 
@@ -580,44 +577,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     }
   };
 
-  const loadVendorCosts = async (taskId: string) => {
-    try {
-      const res = await vendorsApi.getOrderCosts(taskId);
-      setVendorCosts(res.data || []);
-    } catch {
-      setVendorCosts([]);
-    }
-  };
-
-  const handleAddVendorCost = async () => {
-    if (!selectedTask || !vendorCostForm.vendorId || !vendorCostForm.amount) return;
-    setIsAddingVendorCost(true);
-    try {
-      await vendorsApi.addOrderCost(selectedTask.id, {
-        vendorId: vendorCostForm.vendorId,
-        amount: Number(vendorCostForm.amount),
-        description: vendorCostForm.description,
-      });
-      setVendorCostForm({ vendorId: '', amount: '', description: '' });
-      await loadVendorCosts(selectedTask.id);
-      showStatus('success', "Hamkor xarajati qo'shildi!");
-    } catch {
-      showStatus('error', "Xarajat qo'shishda xato!");
-    } finally {
-      setIsAddingVendorCost(false);
-    }
-  };
-
-  const handleRemoveVendorCost = async (costId: string) => {
-    if (!selectedTask) return;
-    try {
-      await vendorsApi.removeOrderCost(costId);
-      await loadVendorCosts(selectedTask.id);
-      showStatus('success', "Xarajat o'chirildi.");
-    } catch {
-      showStatus('error', "O'chirishda xato!");
-    }
-  };
 
   const loadTaskExpenses = async (taskId: string) => {
     try {
