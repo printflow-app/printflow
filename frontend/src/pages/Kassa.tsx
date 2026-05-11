@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { financeApi, paymentTypesApi, customersApi, employeesApi, expenseTypesApi } from '../api';
+import { financeApi, paymentTypesApi, customersApi, employeesApi, expenseTypesApi, vendorsApi } from '../api';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
@@ -23,6 +23,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const [expenseTypes, setExpenseTypes] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [vendors, setVendors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,13 +41,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         } 
       };
 
-      const [transRes, summaryRes, ptRes, custRes, empRes, etRes] = await Promise.all([
+      const [transRes, summaryRes, ptRes, custRes, empRes, etRes, vendorRes] = await Promise.all([
         financeApi.getTransactions(queryParams),
         financeApi.getDailySummary({ params: { branchId: activeBranchId, start: selectedDate, end: selectedDate } }),
         paymentTypesApi.findAll(),
         customersApi.findAll(),
         employeesApi.findAll(),
-        expenseTypesApi.findAll()
+        expenseTypesApi.findAll(),
+        vendorsApi.findAll().catch(() => ({ data: [] })),
       ]);
 
       setTransactions(transRes.data.data || []);
@@ -56,6 +58,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       setCustomers(custRes.data || []);
       setEmployees(empRes.data || []);
       setExpenseTypes(etRes.data || []);
+      setVendors(vendorRes.data || []);
     } catch (err) {
       console.error("Kassa yuklashda xato:", err);
     } finally {
@@ -78,8 +81,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   });
 
   // Forms
-  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false });
-  const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false });
+  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '' });
+  const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
   const [customerTasks, setCustomerTasks] = useState<any[]>([]);
 
   const handleCustomerChange = async (cid: string) => {
@@ -110,9 +113,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      await financeApi.createTransaction({ ...kirimForm, type: 'kirim' });
+      await financeApi.createTransaction({
+        ...kirimForm,
+        type: 'kirim',
+        vendorId: kirimForm.vendorId || null,
+        customerId: kirimForm.vendorId ? null : kirimForm.customerId,
+      });
       setIsKirimModalOpen(false);
-      setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false });
+      setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '' });
       showStatus('success', "Kirim muvaffaqiyatli amalga oshirildi!");
       fetchData(true);
     } catch (err) {
@@ -126,13 +134,15 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      await financeApi.createTransaction({ 
-        ...chiqimForm, 
+      await financeApi.createTransaction({
+        ...chiqimForm,
         type: 'chiqim',
         employeeId: chiqimForm.isEmployeeExpense ? chiqimForm.employeeId : null,
+        vendorId: chiqimForm.isVendorExpense ? chiqimForm.vendorId : null,
+        expenseTypeId: chiqimForm.isVendorExpense || chiqimForm.isEmployeeExpense ? null : chiqimForm.expenseTypeId,
       });
       setIsChiqimModalOpen(false);
-      setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false });
+      setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
       showStatus('success', "Chiqim muvaffaqiyatli amalga oshirildi!");
       fetchData(true);
     } catch (err) {
@@ -284,10 +294,11 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   <td className="py-3 px-5">
                       <p className="font-black text-slate-800 text-xs tracking-tight">
                         {t.type === 'kirim'
-                          ? (t.customer?.name || t.customerName || t.serviceType || '—')
-                          : ((t.employeeId && !p.canViewSalary) ? 'Xodim maoshi' : (t.expenseReason || (t.expenseType?.name + (t.employee?.fullName ? ' - ' + t.employee.fullName : ''))))}
+                          ? (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.customer?.name || t.customerName || t.serviceType || '—'))
+                          : (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.employeeId && !p.canViewSalary) ? 'Xodim maoshi' : (t.expenseReason || (t.expenseType?.name + (t.employee?.fullName ? ' - ' + t.employee.fullName : ''))))}
                       </p>
-                      {t.expenseType && <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{t.expenseType.name}</span>}
+                      {t.vendor && <span className="text-[8px] font-black text-sky-500 uppercase tracking-widest mt-0.5">{t.vendor.specialty || 'Hamkor'}</span>}
+                      {!t.vendor && t.expenseType && <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{t.expenseType.name}</span>}
                   </td>
                   <td className="py-3 px-5 text-right whitespace-nowrap">
                       <span className={`font-black text-xs tabular-nums ${t.type === 'kirim' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -351,43 +362,49 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         type="success"
       >
         <form onSubmit={handleAddKirim} className="space-y-4">
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Mijozni tanlang</label>
-            <SearchableSelect 
-              options={customers.map(c => ({ id: c.id, label: c.name, subLabel: c.phone || 'Tel yo\'q', value: c }))}
-              value={kirimForm.customerId}
-              onChange={(id) => handleCustomerChange(id)}
-              placeholder="Mijoz qidirish..."
-            />
-            {/* Unknown customer name input — shows only when no customer selected */}
-            {!kirimForm.customerId && (
-              <div className="mt-2 animate-fade-in">
-                <input
-                  type="text"
-                  value={kirimForm.customerName}
-                  onChange={e => setKirimForm(f => ({ ...f, customerName: e.target.value }))}
-                  className="input-minimal text-slate-700 font-bold"
-                  placeholder="Noma'lum mijoz ismi (ixtiyoriy)..."
-                />
-              </div>
-            )}
-          </div>
+          {vendors.length > 0 && (
+            <div className="flex bg-slate-100 p-1 rounded-2xl">
+              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: ''}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${!kirimForm.vendorId ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>MIJOZDAN</button>
+              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: '_', customerId: '', customerName: ''}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${kirimForm.vendorId ? 'bg-white shadow text-sky-600' : 'text-slate-400'}`}>HAMKORDAN</button>
+            </div>
+          )}
 
-          {customerTasks.length > 0 && (
+          {kirimForm.vendorId ? (
+            <div className="animate-fade-in">
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
+              <select required value={kirimForm.vendorId === '_' ? '' : kirimForm.vendorId} onChange={e => setKirimForm(f => ({...f, vendorId: e.target.value}))} className="select-minimal">
+                <option value="">Tanlang...</option>
+                {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` — ${v.specialty}` : ''}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Mijozni tanlang</label>
+              <SearchableSelect
+                options={customers.map(c => ({ id: c.id, label: c.name, subLabel: c.phone || 'Tel yo\'q', value: c }))}
+                value={kirimForm.customerId}
+                onChange={(id) => handleCustomerChange(id)}
+                placeholder="Mijoz qidirish..."
+              />
+              {!kirimForm.customerId && (
+                <div className="mt-2 animate-fade-in">
+                  <input type="text" value={kirimForm.customerName} onChange={e => setKirimForm(f => ({ ...f, customerName: e.target.value }))} className="input-minimal text-slate-700 font-bold" placeholder="Noma'lum mijoz ismi (ixtiyoriy)..."/>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!kirimForm.vendorId && customerTasks.length > 0 && (
             <div className="animate-fade-in">
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1 text-orange-500">Bog'liq xizmat (Mijoz nomiga)</label>
-              <select 
-                value={kirimForm.serviceType} 
-                onChange={e => setKirimForm(f => ({ ...f, serviceType: e.target.value }))}
-                className="select-minimal font-black text-orange-700 h-11 border-orange-100 bg-orange-50/30"
-              >
+              <select value={kirimForm.serviceType} onChange={e => setKirimForm(f => ({ ...f, serviceType: e.target.value }))} className="select-minimal font-black text-orange-700 h-11 border-orange-100 bg-orange-50/30">
                 <option value="">— Xizmatni tanlang (ixtiyoriy) —</option>
                 {customerTasks.map((t, idx) => <option key={idx} value={t.orderName || t.title}>{t.orderName || t.title}</option>)}
               </select>
             </div>
           )}
-          
-          {hasDebt && (
+
+          {!kirimForm.vendorId && hasDebt && (
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 space-y-3">
               <p className="text-xs font-bold text-orange-900 flex items-center gap-2">
                 <AlertCircle size={14} className="text-orange-500" />
@@ -440,11 +457,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         <form onSubmit={handleAddChiqim} className="space-y-4">
           <div className="flex bg-slate-100 p-1 rounded-2xl mb-2">
-            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: false}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${!chiqimForm.isEmployeeExpense ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>UMUMIY</button>
-            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow text-orange-600' : 'text-slate-400'}`}>HODIM UCHUN</button>
+            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: false, isVendorExpense: false}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>UMUMIY</button>
+            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true, isVendorExpense: false}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow text-orange-600' : 'text-slate-400'}`}>HODIM</button>
+            {vendors.length > 0 && <button type="button" onClick={() => setChiqimForm(f => ({...f, isVendorExpense: true, isEmployeeExpense: false}))} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-colors ${chiqimForm.isVendorExpense ? 'bg-white shadow text-sky-600' : 'text-slate-400'}`}>HAMKOR</button>}
           </div>
 
-          {!chiqimForm.isEmployeeExpense ? (
+          {!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense && (
             <div className="animate-fade-in">
               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Xarajat Turi</label>
               <select required value={chiqimForm.expenseTypeId} onChange={(e) => setChiqimForm({...chiqimForm, expenseTypeId: e.target.value})} className="select-minimal">
@@ -452,15 +470,25 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 {expenseTypes.map(et => <option key={et.id} value={et.id}>{et.name}</option>)}
               </select>
             </div>
-          ) : (
+          )}
+          {chiqimForm.isEmployeeExpense && (
             <div className="animate-fade-in">
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Hodimni tanlang (Maoshidan ushlab qolinadi)</label>
-              <SearchableSelect 
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Hodimni tanlang</label>
+              <SearchableSelect
                 options={employees.map(e => ({ id: e.id, label: e.fullName, subLabel: e.role?.name || 'Xodim', value: e }))}
                 value={chiqimForm.employeeId}
                 onChange={(id) => setChiqimForm(f => ({ ...f, employeeId: id }))}
                 placeholder="Hodim qidirish..."
               />
+            </div>
+          )}
+          {chiqimForm.isVendorExpense && (
+            <div className="animate-fade-in">
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
+              <select required value={chiqimForm.vendorId} onChange={e => setChiqimForm(f => ({...f, vendorId: e.target.value}))} className="select-minimal">
+                <option value="">Tanlang...</option>
+                {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` — ${v.specialty}` : ''}</option>)}
+              </select>
             </div>
           )}
 

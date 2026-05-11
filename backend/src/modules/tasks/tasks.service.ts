@@ -29,6 +29,7 @@ export class TasksService {
         column: true,
         customer: true,
         paymentType: true,
+        vendor: { select: { id: true, name: true } },
         histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } }
       },
     });
@@ -41,6 +42,7 @@ export class TasksService {
         column: true, 
         customer: true,
         paymentType: true,
+        vendor: { select: { id: true, name: true } },
         histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } }
       },
     });
@@ -332,9 +334,11 @@ export class TasksService {
         // Check if moved to "Finished" columns: "Tayyor" or "Topshirildi"
         const finishedKeywords = ['tayyor', 'topshirildi', 'yakunlandi', 'bajarildi'];
         const isFinished = finishedKeywords.some(k => newCol?.title?.toLowerCase().includes(k));
-        
-        if (isFinished && oldTask.serviceId) {
-          await this.deductStock(tx, id);
+
+        if (isFinished) {
+          if (oldTask.serviceId) {
+            await this.deductStock(tx, id);
+          }
         }
       } else if (data.title || data.description) {
         await tx.taskHistory.create({

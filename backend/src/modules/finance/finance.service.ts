@@ -61,6 +61,7 @@ export class FinanceService {
           paymentType: true,
           customer: true,
           expenseType: true,
+          vendor: { select: { id: true, name: true } },
         },
         orderBy: { date: 'desc' },
         skip: (page - 1) * limit,
@@ -118,7 +119,7 @@ export class FinanceService {
   }
 
   async createTransaction(data: any) {
-    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, forExistingDebt } = data;
+    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, forExistingDebt, vendorId } = data;
 
     const transaction = await this.prisma.$transaction(async (tx) => {
       const createdTransaction = await tx.transaction.create({
@@ -127,38 +128,31 @@ export class FinanceService {
           amount: Number(amount),
           paymentTypeId,
           customerId: customerId || null,
-          customerName: !customerId ? (customerName || null) : null,
+          customerName: !customerId && !vendorId ? (customerName || null) : null,
           serviceType,
           expenseReason,
-          expenseTypeId,
-          employeeId,
+          expenseTypeId: vendorId ? null : expenseTypeId,
+          employeeId: vendorId ? null : employeeId,
+          vendorId: vendorId || null,
           ...(data.date ? { date: new Date(data.date) } : {}),
         } as any,
       });
 
       if (type === 'kirim' && customerId) {
-        const updateData: any = {
-          totalPaid: { increment: Number(amount) },
-        };
-        if (forExistingDebt) {
-          updateData.totalDebt = { decrement: Number(amount) };
-        }
-
-        await tx.customer.update({
-          where: { id: customerId },
-          data: updateData,
-        });
+        const updateData: any = { totalPaid: { increment: Number(amount) } };
+        if (forExistingDebt) updateData.totalDebt = { decrement: Number(amount) };
+        await tx.customer.update({ where: { id: customerId }, data: updateData });
       }
 
-      if (type === 'chiqim' && employeeId) {
+      if (type === 'chiqim' && employeeId && !vendorId) {
         await tx.employee.update({
           where: { id: employeeId },
-          data: {
-            givenAmount: { increment: Number(amount) },
-          },
+          data: { givenAmount: { increment: Number(amount) } },
         });
       }
 
+      // Vendor payout/income is just a transaction linked to vendorId.
+      // Balance is calculated dynamically.
       return createdTransaction;
     });
 

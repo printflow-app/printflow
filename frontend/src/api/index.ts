@@ -193,11 +193,6 @@ export const vendorsApi = {
   create: (data: any) => api.post('/vendors', data),
   update: (id: string, data: any) => api.put(`/vendors/${id}`, data),
   remove: (id: string) => api.delete(`/vendors/${id}`),
-  pay: (id: string, amount: number) => api.post(`/vendors/${id}/pay`, { amount }),
-  getOrderCosts: (taskId: string) => api.get(`/vendors/order-costs/${taskId}`),
-  addOrderCost: (taskId: string, data: { vendorId: string; amount: number; description?: string }) =>
-    api.post(`/vendors/order-costs/${taskId}`, data),
-  removeOrderCost: (costId: string) => api.delete(`/vendors/order-costs/entry/${costId}`),
 };
 
 // =============================================

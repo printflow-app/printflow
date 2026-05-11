@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Handshake, BarChart3 } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, CreditCard, Handshake, BarChart3, Building2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
@@ -17,6 +17,7 @@ const Davomat      = React.lazy(() => import('./Davomat'));
 const Admins       = React.lazy(() => import('./Admins'));
 const Billing      = React.lazy(() => import('./Billing'));
 const Filiallar    = React.lazy(() => import('./Filiallar'));
+const Hamkorlar    = React.lazy(() => import('./Hamkorlar'));
 const Hisobotlar   = React.lazy(() => import('./Hisobotlar'));
 const Qollanma     = React.lazy(() => import('./Qollanma'));
 
@@ -27,7 +28,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
-  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hisobotlar' | 'qollanma'>(() => {
+  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma'>(() => {
     return (localStorage.getItem('pf_active_tab') as any) || 'kassa';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -255,7 +256,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
     { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
     { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: p.canManageBilling || p.canViewBillingStatus || isAdmin, sub: 'Tarif va obuna holati' },
-    { id: 'filiallar', label: 'Hamkorlar va Filiallar', icon: Handshake, show: isAdmin || p.canManageBranches || p.canViewVendors || p.canViewBranches, sub: 'Subpudratchi va yetkazuvchilar' },
+    { id: 'hamkorlar', label: 'Hamkorlar', icon: Handshake, show: isAdmin || p.canViewVendors, sub: 'Subpudratchi va yetkazuvchilar' },
+    { id: 'filiallar', label: 'Filiallar', icon: Building2, show: isAdmin || p.canManageBranches || !!(p as any).canViewBranches, sub: 'Multi-filial boshqaruvi' },
     { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Lavozim va To\'lovlar' },
   ];
 
@@ -558,7 +560,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'davomat' && (p.canViewAttendance || isAdmin) && <Davomat currentUser={currentUser} />}
               {activeTab === 'billing' && (p.canManageBilling || p.canViewBillingStatus || isAdmin) && <Billing />}
               {activeTab === 'admins' && isAdmin && <Admins currentUser={currentUser} />}
-              {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || p.canViewVendors || p.canViewBranches) && <Filiallar currentUser={currentUser} />}
+              {activeTab === 'hamkorlar' && (isAdmin || p.canViewVendors) && <Hamkorlar currentUser={currentUser} />}
+              {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || !!(p as any).canViewBranches) && <Filiallar currentUser={currentUser} />}
               {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports) && <Hisobotlar currentUser={currentUser} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} />}
               {activeTab === 'qollanma' && <Qollanma />}

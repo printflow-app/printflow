@@ -28,6 +28,10 @@ const TENANT_SCOPED_MODELS = new Set([
   'systemSetting',
   'botSession',
   'branch',
+  'vendor',
+  'orderVendorCost',
+  'customerContact',
+  'vendorOrder',
 ]);
 
 // These models are NOT tenant-scoped (platform-level):

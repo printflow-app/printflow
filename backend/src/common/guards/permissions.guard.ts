@@ -44,7 +44,12 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Foydalanuvchi aniqlanmadi');
     }
 
-    if (user.isAdmin) {
+    const isAdminRole = user.role && (
+      user.role.toLowerCase() === 'admin' || 
+      user.role.toLowerCase() === 'superadmin'
+    );
+
+    if (user.isAdmin || isAdminRole) {
       return true;
     }
 

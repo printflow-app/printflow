@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus, Search, Trash2, Edit3, AlertCircle, AlertTriangle, CheckCircle2,
-  Phone, Briefcase, TrendingDown, ClipboardList, Handshake
+  Phone, Briefcase, TrendingDown, ClipboardList, Handshake, Clock, CheckCheck, Package, DollarSign
 } from 'lucide-react';
-import { vendorsApi } from '../api';
+import { vendorsApi, tasksApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -28,12 +28,7 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   // Add / edit form modal
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState({ id: '', name: '', phone: '', specialty: '' });
-
-  // Payment modal
-  const [payVendor, setPayVendor] = useState<any | null>(null);
-  const [payAmount, setPayAmount] = useState('');
-  const [isPaying, setIsPaying] = useState(false);
+  const [form, setForm] = useState({ id: '', name: '', phone: '' });
 
   // Delete confirm
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -44,28 +39,28 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  const fetchVendors = async () => {
+  const fetchAll = async () => {
     try {
       setIsLoading(true);
       const res = await vendorsApi.findAll();
       setVendors(res.data || []);
     } catch {
-      showStatus('error', "Hamkorlarni yuklashda xatolik!");
+      showStatus('error', "Yuklashda xatolik!");
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { fetchVendors(); }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   const openAdd = () => {
-    setForm({ id: '', name: '', phone: '', specialty: '' });
+    setForm({ id: '', name: '', phone: '' });
     setIsEditing(false);
     setIsFormOpen(true);
   };
 
   const openEdit = (v: any) => {
-    setForm({ id: v.id, name: v.name, phone: v.phone || '', specialty: v.specialty || '' });
+    setForm({ id: v.id, name: v.name, phone: v.phone || '' });
     setIsEditing(true);
     setIsFormOpen(true);
   };
@@ -89,37 +84,16 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     if (!form.name.trim()) return;
     try {
       if (isEditing) {
-        await vendorsApi.update(form.id, { name: form.name, phone: form.phone, specialty: form.specialty });
+        await vendorsApi.update(form.id, { name: form.name, phone: form.phone });
         showStatus('success', "Hamkor yangilandi!");
       } else {
-        await vendorsApi.create({ name: form.name, phone: form.phone, specialty: form.specialty });
+        await vendorsApi.create({ name: form.name, phone: form.phone });
         showStatus('success', "Yangi hamkor qo'shildi!");
       }
       setIsFormOpen(false);
-      fetchVendors();
+      fetchAll();
     } catch {
       showStatus('error', "Saqlashda xatolik!");
-    }
-  };
-
-  const handlePayVendor = async () => {
-    if (!payVendor || !payAmount || Number(payAmount) <= 0) return;
-    setIsPaying(true);
-    try {
-      await vendorsApi.pay(payVendor.id, Number(payAmount));
-      showStatus('success', `${Number(payAmount).toLocaleString()} UZS to'landi!`);
-      setPayVendor(null);
-      setPayAmount('');
-      fetchVendors();
-      // Refresh detail if open for this vendor
-      if (detailVendor?.id === payVendor.id) {
-        const res = await vendorsApi.findOne(payVendor.id);
-        setDetailData(res.data);
-      }
-    } catch {
-      showStatus('error', "To'lashda xatolik!");
-    } finally {
-      setIsPaying(false);
     }
   };
 
@@ -129,7 +103,7 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       await vendorsApi.remove(confirmId);
       showStatus('success', "Hamkor o'chirildi.");
       setConfirmId(null);
-      fetchVendors();
+      fetchAll();
     } catch {
       showStatus('error', "O'chirishda xatolik!");
     }
@@ -137,8 +111,7 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   const filtered = vendors.filter(v =>
     v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (v.phone || '').includes(searchTerm) ||
-    (v.specialty || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (v.phone || '').includes(searchTerm)
   );
 
   if (isLoading) return <LoadingSpinner fullPage />;
@@ -156,10 +129,10 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 mx-1 sm:mx-0">
         <div>
           <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">
-            <Handshake size={20} className="text-orange-500"/> Hamkorlar
+            <Handshake size={20} className="text-orange-500"/> Hamkorlar (Outsourcing)
           </h2>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">
-            Subpudratchi va yetkazib beruvchilar
+            Tashqi xizmatlar va subpudratni boshqarish
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -185,151 +158,111 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mx-1 sm:mx-0">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mx-1 sm:mx-0">
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jami hamkorlar</p>
           <p className="text-2xl font-black text-slate-800">{vendors.length}</p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Umumiy qarz (bizdan)</p>
-          <p className="text-lg font-black text-rose-500">
-            {formatCurrency(vendors.reduce((s, v) => s + Math.min(0, v.balance || 0), 0))}
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jami biriktirilgan</p>
+          <p className="text-lg font-black text-slate-800">
+            {formatCurrency(vendors.reduce((s, v) => s + (v.totalAssignedCost || 0), 0))}
           </p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Faol hamkorlar</p>
-          <p className="text-2xl font-black text-emerald-600">
-            {vendors.filter(v => (v._count?.orderCosts || 0) > 0).length}
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jami to'langan</p>
+          <p className="text-lg font-black text-emerald-600">
+            {formatCurrency(vendors.reduce((s, v) => s + (v.totalPaid || 0), 0))}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Umumiy qarz (Bizdan)</p>
+          <p className="text-lg font-black text-rose-500">
+            {formatCurrency(vendors.reduce((s, v) => s + (v.balance || 0), 0))}
           </p>
         </div>
       </div>
 
       {/* Vendor list */}
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-slate-400/40">
-          <Handshake size={48} className="mb-4"/>
-          <p className="font-black uppercase tracking-widest text-xs italic">
-            {searchTerm ? 'Hamkor topilmadi' : 'Hamkorlar ro\'yxati bo\'sh'}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mx-1 sm:mx-0">
-          {filtered.map(v => {
-            const owes = (v.balance || 0) < 0;
-            return (
-              <div
-                key={v.id}
-                onClick={() => openDetail(v)}
-                className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md hover:border-orange-300 transition-all cursor-pointer group"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 font-black text-sm">
-                      {v.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-slate-800 uppercase group-hover:text-orange-700 transition-colors">{v.name}</p>
-                      {v.specialty && (
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                          <Briefcase size={8}/> {v.specialty}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {canManageVendors && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {(v.balance || 0) < 0 && (
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm mx-1 sm:mx-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hamkor Nomi</th>
+                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Telefon</th>
+                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Jami Xizmat</th>
+                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">To'langan</th>
+                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Qarz (UZS)</th>
+                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Amallar</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400 italic text-xs font-bold uppercase tracking-widest">
+                    {searchTerm ? 'Hamkor topilmadi' : 'Ro\'yxat bo\'sh'}
+                  </td>
+                </tr>
+              ) : (
+                filtered.map(v => (
+                  <tr key={v.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => openDetail(v)}>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 font-black text-xs">
+                          {v.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-xs font-black text-slate-800 uppercase group-hover:text-orange-600 transition-colors">{v.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-xs font-bold text-slate-500">{v.phone || '-'}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-xs font-bold text-slate-600">{formatCurrency(v.totalAssignedCost)}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-xs font-bold text-emerald-600">{formatCurrency(v.totalPaid)}</span>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <span className={`text-xs font-black ${v.balance > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                        {formatCurrency(v.balance)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={e => { e.stopPropagation(); setPayVendor(v); setPayAmount(String(Math.abs(v.balance))); }}
-                          className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-500 text-emerald-500 hover:text-white flex items-center justify-center transition-all"
-                          title="Qarzni to'lash"
+                          onClick={e => { e.stopPropagation(); openEdit(v); }}
+                          className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-sky-500 hover:border-sky-200 transition-all"
                         >
-                          <TrendingDown size={13}/>
+                          <Edit3 size={14}/>
                         </button>
-                      )}
-                      <button
-                        onClick={e => { e.stopPropagation(); openEdit(v); }}
-                        className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-sky-50 text-slate-400 hover:text-sky-500 flex items-center justify-center transition-all"
-                      >
-                        <Edit3 size={13}/>
-                      </button>
-                      <button
-                        onClick={e => { e.stopPropagation(); setConfirmId(v.id); setConfirmName(v.name); }}
-                        className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 flex items-center justify-center transition-all"
-                      >
-                        <Trash2 size={13}/>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-50">
-                  {v.phone && (
-                    <span className="text-[9px] font-black text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-100 flex items-center gap-1">
-                      <Phone size={8}/> {v.phone}
-                    </span>
-                  )}
-                  <span className="text-[9px] font-black text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 flex items-center gap-1">
-                    <ClipboardList size={8}/> {v._count?.orderCosts || 0} buyurtma
-                  </span>
-                  {owes && (
-                    <span className="text-[9px] font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 flex items-center gap-1">
-                      <TrendingDown size={8}/> {formatCurrency(v.balance)}
-                    </span>
-                  )}
-                  {!owes && (v.balance || 0) > 0 && (
-                    <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 flex items-center gap-1">
-                      +{formatCurrency(v.balance)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                        <button
+                          onClick={e => { e.stopPropagation(); setConfirmId(v.id); setConfirmName(v.name); }}
+                          className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all"
+                        >
+                          <Trash2 size={14}/>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
 
       {/* MODAL: ADD / EDIT VENDOR */}
-      <Modal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        title={isEditing ? 'Hamkorni tahrirlash' : "Yangi hamkor qo'shish"}
-        type={isEditing ? undefined : 'warning'}
-      >
+      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={isEditing ? 'Hamkorni tahrirlash' : "Yangi hamkor qo'shish"}>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkor nomi *</label>
-            <input
-              type="text"
-              required
-              autoFocus
-              value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="input-minimal font-black text-slate-800 h-12 border-2"
-              placeholder="Masalan: Tashkent Print LLC"
-            />
+            <input type="text" required autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input-minimal font-black text-slate-800 h-12 border-2" placeholder="Masalan: Tashkent Print LLC"/>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Telefon (ixtiyoriy)</label>
-              <input
-                type="text"
-                value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                className="input-minimal h-11 border-2"
-                placeholder="+998 90 123 45 67"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Mutaxassislik (ixtiyoriy)</label>
-              <input
-                type="text"
-                value={form.specialty}
-                onChange={e => setForm(f => ({ ...f, specialty: e.target.value }))}
-                className="input-minimal h-11 border-2"
-                placeholder="Masalan: Silkografiya"
-              />
-            </div>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Telefon (ixtiyoriy)</label>
+            <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="input-minimal h-11 border-2" placeholder="+998 90 123 45 67"/>
           </div>
           <div className="flex gap-3 pt-2 border-t border-slate-100">
             <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-black text-[10px] tracking-widest" onClick={() => setIsFormOpen(false)}>BEKOR</button>
@@ -341,139 +274,111 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       </Modal>
 
       {/* MODAL: VENDOR DETAIL */}
-      <Modal
-        isOpen={isDetailOpen}
-        onClose={() => { setIsDetailOpen(false); setDetailData(null); }}
-        title={detailVendor?.name || 'Hamkor'}
-        maxWidth="max-w-2xl"
-      >
+      <Modal isOpen={isDetailOpen} onClose={() => { setIsDetailOpen(false); setDetailData(null); }} title={detailVendor?.name || 'Hamkor'} maxWidth="max-w-3xl">
         {isDetailLoading ? (
           <div className="py-16 flex flex-col items-center justify-center opacity-30">
             <div className="animate-spin w-8 h-8 border-2 border-orange-500 rounded-full border-t-transparent mb-3"/>
             <p className="text-[10px] font-black uppercase">Yuklanmoqda...</p>
           </div>
         ) : detailData ? (
-          <div className="space-y-5">
-            {/* Info cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {detailData.phone && (
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Telefon</p>
-                  <p className="text-sm font-black text-sky-600">{detailData.phone}</p>
-                </div>
-              )}
-              {detailData.specialty && (
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Mutaxassislik</p>
-                  <p className="text-sm font-black text-slate-800">{detailData.specialty}</p>
-                </div>
-              )}
-              <div className={`p-3.5 rounded-2xl border ${(detailData.balance || 0) < 0 ? 'bg-rose-50 border-rose-100' : 'bg-emerald-50 border-emerald-100'}`}>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Balans</p>
-                <p className={`text-sm font-black ${(detailData.balance || 0) < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                  {(detailData.balance || 0) < 0 ? '–' : '+'}{formatCurrency(detailData.balance || 0)}
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jami xizmat</p>
+                <p className="text-sm font-black text-slate-800">{formatCurrency(detailData.totalAssignedCost)}</p>
+              </div>
+              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">To'langan</p>
+                <p className="text-sm font-black text-emerald-600">{formatCurrency(detailData.totalPaid)}</p>
+              </div>
+              <div className={`p-4 rounded-2xl border ${detailData.balance > 0 ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Joriy qarz</p>
+                <p className={`text-sm font-black ${detailData.balance > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
+                  {formatCurrency(detailData.balance)}
                 </p>
-                {(detailData.balance || 0) < 0 && canManageVendors && (
-                  <button
-                    onClick={() => { setPayVendor(detailData); setPayAmount(String(Math.abs(detailData.balance))); }}
-                    className="mt-2 w-full h-7 bg-emerald-500 text-white text-[9px] font-black uppercase rounded-lg tracking-widest active:scale-95 transition-all"
-                  >
-                    TO'LASH
-                  </button>
-                )}
               </div>
             </div>
 
-            {/* Order costs history */}
-            <div>
-              <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-slate-100 pb-2">
-                <ClipboardList size={13}/> BUYURTMA TARIXI ({detailData.orderCosts?.length || 0})
-              </h4>
-              {(!detailData.orderCosts || detailData.orderCosts.length === 0) ? (
-                <div className="py-12 flex flex-col items-center justify-center opacity-20">
-                  <ClipboardList size={32} className="mb-3"/>
-                  <p className="text-[10px] font-black uppercase">Buyurtmalar yo'q</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Tasks List */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-end border-b border-slate-100 pb-2">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <ClipboardList size={14}/> Topshiriqlar ({detailData.tasks?.length || 0})
+                  </h4>
                 </div>
-              ) : (
-                <div className="space-y-2 max-h-[40vh] overflow-y-auto custom-scroll">
-                  {detailData.orderCosts.map((c: any) => (
-                    <div key={c.id} className="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-100 hover:bg-white transition-all">
-                      <div>
-                        <p className="text-xs font-black text-slate-800 uppercase">
-                          {c.task?.orderName ? `${c.task.orderName} — ` : ''}{c.task?.title || 'Buyurtma'}
-                        </p>
-                        {c.description && <p className="text-[10px] font-bold text-slate-400 italic mt-0.5">{c.description}</p>}
-                        <p className="text-[9px] font-black text-slate-300 mt-1">
-                          {new Date(c.createdAt).toLocaleDateString('uz-UZ')}
-                        </p>
+                
+                {/* Task Status Summary */}
+                {detailData.tasks?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 py-1">
+                    {Object.entries(
+                      detailData.tasks.reduce((acc: any, t: any) => {
+                        const status = t.column?.title || 'Noma\'lum';
+                        acc[status] = (acc[status] || 0) + (t.vendorCost || 0);
+                        return acc;
+                      }, {})
+                    ).map(([status, total]: [string, any]) => (
+                      <div key={status} className="bg-white border border-slate-100 px-2 py-1 rounded-lg shadow-sm">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-0.5">{status}</p>
+                        <p className="text-[10px] font-black text-slate-700 leading-none">{formatCurrency(total)}</p>
                       </div>
-                      <span className="text-sm font-black text-rose-600">{Number(c.amount).toLocaleString()} UZS</span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto custom-scroll pr-1">
+                  {detailData.tasks?.length === 0 ? (
+                    <p className="text-[10px] text-slate-300 italic py-4">Hali topshiriq biriktirilmagan</p>
+                  ) : detailData.tasks.map((t: any) => (
+                    <div key={t.id} className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex justify-between items-center group hover:bg-white hover:shadow-sm transition-all">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-[11px] font-black text-slate-700 uppercase truncate">{t.title}</p>
+                          <span className="shrink-0 text-[8px] font-black bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-500 uppercase">
+                            {t.column?.title || '...'}
+                          </span>
+                        </div>
+                        <p className="text-[9px] text-slate-400">{new Date(t.createdAt).toLocaleDateString('uz-UZ')}</p>
+                      </div>
+                      <span className="shrink-0 text-xs font-black text-rose-500">{formatCurrency(t.vendorCost)}</span>
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
+
+              {/* Payouts List */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <DollarSign size={14}/> To'lovlar (Chiqimlar)
+                </h4>
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto custom-scroll pr-1">
+                  {detailData.transactions?.length === 0 ? (
+                    <p className="text-[10px] text-slate-300 italic py-4">Hali to'lov qilinmagan</p>
+                  ) : detailData.transactions.map((tr: any) => (
+                    <div key={tr.id} className="bg-emerald-50/30 p-3 rounded-xl border border-emerald-100/50 flex justify-between items-center group hover:bg-emerald-50 transition-all">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className="text-[11px] font-black text-emerald-800 uppercase truncate">{tr.expenseReason || 'Hamkorga to\'lov'}</p>
+                        <p className="text-[9px] text-slate-400">{new Date(tr.date).toLocaleDateString('uz-UZ')}</p>
+                      </div>
+                      <span className="shrink-0 text-xs font-black text-emerald-600">{formatCurrency(tr.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="py-12 text-center opacity-20">
-            <p className="font-black uppercase text-xs">Ma'lumot topilmadi</p>
-          </div>
+          <div className="py-12 text-center opacity-20"><p className="font-black uppercase text-xs">Ma'lumot topilmadi</p></div>
         )}
       </Modal>
 
-      {/* MODAL: PAY VENDOR */}
-      <Modal
-        isOpen={!!payVendor}
-        onClose={() => { setPayVendor(null); setPayAmount(''); }}
-        title={`To'lash — ${payVendor?.name || ''}`}
-        type="warning"
-      >
-        <div className="space-y-5">
-          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
-            <TrendingDown className="text-emerald-500 mt-0.5 shrink-0" size={18}/>
-            <div>
-              <p className="text-xs font-black text-emerald-800 uppercase">Joriy qarz</p>
-              <p className="text-lg font-black text-rose-600">{payVendor ? formatCurrency(Math.abs(payVendor.balance || 0)) : ''}</p>
-            </div>
-          </div>
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">To'lov miqdori (UZS) *</label>
-            <input
-              type="number"
-              min="1"
-              autoFocus
-              value={payAmount}
-              onChange={e => setPayAmount(e.target.value)}
-              className="input-minimal font-black text-emerald-600 text-xl h-14 border-2 border-emerald-100"
-              placeholder="500 000"
-            />
-          </div>
-          <div className="flex gap-3 pt-2 border-t border-slate-100">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-black text-[10px] tracking-widest" onClick={() => { setPayVendor(null); setPayAmount(''); }}>BEKOR</button>
-            <button
-              type="button"
-              disabled={isPaying || !payAmount || Number(payAmount) <= 0}
-              onClick={handlePayVendor}
-              className="h-12 flex-[2] bg-emerald-600 text-white rounded-2xl uppercase font-black text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {isPaying ? "TO'LANMOQDA..." : "TO'LOVNI TASDIQLASH"}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
       {/* MODAL: DELETE CONFIRM */}
-      <Modal
-        isOpen={!!confirmId}
-        onClose={() => setConfirmId(null)}
-        title="Hamkorni o'chirish"
-        type="danger"
-      >
+      <Modal isOpen={!!confirmId} onClose={() => setConfirmId(null)} title="Hamkorni o'chirish" type="danger">
         <div className="space-y-5">
           <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-start gap-4">
             <AlertCircle className="text-rose-500 mt-1 shrink-0" size={22}/>
             <p className="text-xs font-bold text-rose-700">
-              <strong>{confirmName}</strong> hamkorini o'chirmoqchisiz. Barcha bog'liq xarajat yozuvlari ham o'chib ketadi!
+              <strong>{confirmName}</strong> hamkorini o'chirmoqchisiz. Barcha bog'liq yozuvlar ham o'chib ketadi!
             </p>
           </div>
           <div className="flex gap-3">

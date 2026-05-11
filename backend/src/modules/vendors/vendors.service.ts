@@ -6,22 +6,61 @@ export class VendorsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return (this.prisma as any).vendor.findMany({
+    const vendors = await (this.prisma as any).vendor.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { orderCosts: true } } },
+      include: {
+        tasks: { 
+          select: { 
+            id: true, 
+            title: true, 
+            vendorCost: true, 
+            createdAt: true,
+            column: { select: { title: true } }
+          } 
+        },
+        transactions: { where: { type: 'chiqim' }, select: { amount: true, date: true, expenseReason: true } }
+      },
+    });
+
+    return vendors.map((v: any) => {
+      const totalCost = v.tasks.reduce((sum: number, t: any) => sum + (Number(t.vendorCost) || 0), 0);
+      const totalPaid = v.transactions.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0);
+      return {
+        ...v,
+        totalAssignedCost: totalCost,
+        totalPaid: totalPaid,
+        balance: totalCost - totalPaid // Qarz
+      };
     });
   }
 
   async findOne(id: string) {
-    return (this.prisma as any).vendor.findUnique({
+    const vendor = await (this.prisma as any).vendor.findUnique({
       where: { id },
       include: {
-        orderCosts: {
-          include: { task: { select: { id: true, title: true, orderName: true } } },
+        tasks: {
           orderBy: { createdAt: 'desc' },
+          select: { id: true, title: true, orderName: true, vendorCost: true, createdAt: true }
         },
+        transactions: {
+          where: { type: 'chiqim' },
+          orderBy: { date: 'desc' },
+          select: { id: true, amount: true, date: true, expenseReason: true }
+        }
       },
     });
+
+    if (!vendor) return null;
+
+    const totalCost = vendor.tasks.reduce((sum: number, t: any) => sum + (Number(t.vendorCost) || 0), 0);
+    const totalPaid = vendor.transactions.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0);
+
+    return {
+      ...vendor,
+      totalAssignedCost: totalCost,
+      totalPaid: totalPaid,
+      balance: totalCost - totalPaid
+    };
   }
 
   async create(data: any) {
@@ -34,47 +73,5 @@ export class VendorsService {
 
   async remove(id: string) {
     return (this.prisma as any).vendor.delete({ where: { id } });
-  }
-
-  // =============================================
-  // OrderVendorCost (subpudrat xarajatlari)
-  // =============================================
-
-  async addOrderCost(taskId: string, data: { vendorId: string; amount: number; description?: string }) {
-    const cost = await (this.prisma as any).orderVendorCost.create({
-      data: { ...data, taskId },
-    });
-    // Update vendor balance (negative = we owe them)
-    await (this.prisma as any).vendor.update({
-      where: { id: data.vendorId },
-      data: { balance: { decrement: data.amount } },
-    });
-    return cost;
-  }
-
-  async payVendor(id: string, amount: number) {
-    return (this.prisma as any).vendor.update({
-      where: { id },
-      data: { balance: { increment: amount } },
-    });
-  }
-
-  async removeOrderCost(costId: string) {
-    const cost = await (this.prisma as any).orderVendorCost.findUnique({ where: { id: costId } });
-    if (cost) {
-      await (this.prisma as any).vendor.update({
-        where: { id: cost.vendorId },
-        data: { balance: { increment: cost.amount } },
-      });
-    }
-    return (this.prisma as any).orderVendorCost.delete({ where: { id: costId } });
-  }
-
-  async getOrderCosts(taskId: string) {
-    return (this.prisma as any).orderVendorCost.findMany({
-      where: { taskId },
-      include: { vendor: { select: { id: true, name: true, specialty: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
   }
 }

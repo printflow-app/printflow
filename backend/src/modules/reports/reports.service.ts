@@ -114,7 +114,7 @@ export class ReportsService {
 
     const vendors = await (this.prisma as any).vendor.findMany({
       include: {
-        orderCosts: {
+        orderVendorCosts: {
           where: { createdAt: { gte: from, lte: to } },
           include: { task: { select: { id: true, totalAmount: true } } },
         },
@@ -123,9 +123,9 @@ export class ReportsService {
 
     return vendors
       .map((vendor: any) => {
-        const totalCost = vendor.orderCosts.reduce((s: number, c: any) => s + (c.amount || 0), 0);
+        const totalCost = vendor.orderVendorCosts.reduce((s: number, c: any) => s + (c.amount || 0), 0);
         const taskMap = new Map<string, number>();
-        vendor.orderCosts.forEach((c: any) => {
+        vendor.orderVendorCosts.forEach((c: any) => {
           if (c.task && !taskMap.has(c.task.id)) {
             taskMap.set(c.task.id, c.task.totalAmount || 0);
           }
@@ -136,8 +136,6 @@ export class ReportsService {
         return {
           vendorId: vendor.id,
           vendorName: vendor.name,
-          specialty: vendor.specialty ?? null,
-          balance: vendor.balance,
           totalCost,
           linkedTaskCount: taskMap.size,
           linkedRevenue,
@@ -288,11 +286,16 @@ export class ReportsService {
           _sum: { amount: true },
         }),
         this.prisma.transaction.aggregate({
-          where: { type: 'chiqim', date: { gte: start, lte: end }, ...bFilter },
+          where: { type: 'chiqim', vendorId: null, date: { gte: start, lte: end }, ...bFilter },
           _sum: { amount: true },
         }),
-        (this.prisma as any).orderVendorCost.aggregate({
-          where: { createdAt: { gte: start, lte: end } },
+        this.prisma.transaction.aggregate({
+          where: { 
+            type: 'chiqim', 
+            vendorId: { not: null },
+            date: { gte: start, lte: end }, 
+            ...bFilter 
+          },
           _sum: { amount: true },
         }),
       ]);

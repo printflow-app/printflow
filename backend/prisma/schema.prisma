@@ -89,6 +89,7 @@ model Tenant {
   promoCode          PromoCode?     // Tenant'ning o'z referral kodı
   promoCodeUsages    PromoCodeUsage[] // Bu tenant boshqa kodni ishlatgan holatlari
   taskExpenses       TaskExpense[]
+  vendorOrders       VendorOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -619,10 +620,12 @@ model Vendor {
 
   name      String
   phone     String?
-  specialty String?   // Masalan: "Laminatsiya", "Kesish", "Bosma"
-  balance   Float @default(0)  // Negative = biz ularga qarzimiz
 
-  orderCosts OrderVendorCost[]
+  // Relations
+  tasks            Task[]
+  transactions     Transaction[]
+  orderVendorCosts OrderVendorCost[]
+  vendorOrders     VendorOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -694,6 +697,10 @@ model Transaction {
   expenseType   ExpenseType? @relation(fields: [expenseTypeId], references: [id])
   employeeId    String?
   employee      Employee?    @relation(fields: [employeeId], references: [id])
+
+  // Hamkor (subpudratchi) bog'liq
+  vendorId String?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id])
 
   // Filial bog'liq
   branchId String?
@@ -780,6 +787,11 @@ model Task {
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
 
+  // Outsourcing / Vendor
+  vendorId   String?
+  vendor     Vendor? @relation(fields: [vendorId], references: [id])
+  vendorCost Float?  @default(0)
+
   histories      TaskHistory[]
   stockMovements StockMovement[]
   vendorCosts    OrderVendorCost[]
@@ -829,6 +841,34 @@ model TaskHistory {
 // TASK EXPENSE — Buyurtma tannarxi xarajatlari
 // Dynamic costing: yo'l kira, material, mehnat va boshqalar
 // =============================================
+// =============================================
+// VENDOR ORDER — Hamkorga topshirilgan buyurtmalar
+// Workflow: PENDING → ACCEPTED → COMPLETED
+// =============================================
+model VendorOrder {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  title        String    // Buyurtma tavsifi
+  amount       Float     @default(0)
+  note         String?
+
+  status       String    @default("PENDING") // PENDING | ACCEPTED | COMPLETED
+
+  sourceTaskId String?   // Qaysi task dan yaratilgani (ixtiyoriy)
+  taskId       String?   // Qabul qilinganda yaratilgan kanban task ID
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
 model TaskExpense {
   id       String @id @default(uuid())
   tenantId String

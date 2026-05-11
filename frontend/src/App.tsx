@@ -63,6 +63,7 @@ export interface User {
     canViewFinanceReports: boolean;
     canViewServiceReports: boolean;
     canViewVendors: boolean;
+    canManageVendors: boolean;
     canManageAdmins: boolean;
     canViewRoles: boolean;
     canManageExpenseTypes: boolean;
@@ -428,6 +429,7 @@ export function buildUser(emp: any): User {
       canViewFinanceReports: role.canViewFinanceReports ?? false,
       canViewServiceReports: role.canViewServiceReports ?? false,
       canViewVendors: role.canViewVendors ?? false,
+      canManageVendors: role.canManageVendors ?? false,
       canManageAdmins: role.canManageAdmins ?? false,
       canViewRoles: role.canViewRoles ?? false,
       canManageExpenseTypes: role.canManageExpenseTypes ?? false,

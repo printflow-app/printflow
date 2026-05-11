@@ -69,10 +69,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
   const [prepaymentWarningAccepted, setPrepaymentWarningAccepted] = useState(false);
 
-  // Sprint 2: Vendor costs per task
-  const [vendorCosts, setVendorCosts] = useState<any[]>([]);
-  const [vendorCostForm, setVendorCostForm] = useState({ vendorId: '', amount: '', description: '' });
-  const [isAddingVendorCost, setIsAddingVendorCost] = useState(false);
+  const [vendorCostForm, setVendorCostForm] = useState({ vendorId: '', amount: '' });
+  const [isUpdatingVendor, setIsUpdatingVendor] = useState(false);
 
   // Sprint 5: Costing & profitability
   const [taskExpenses, setTaskExpenses] = useState<any[]>([]);
@@ -160,7 +158,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   useEffect(() => {
     if (activeTab === 'vendors' && selectedTask) {
-      loadVendorCosts(selectedTask.id);
+      setVendorCostForm({
+        vendorId: (selectedTask as any).vendorId || '',
+        amount: String((selectedTask as any).vendorCost || '')
+      });
     }
     if (activeTab === 'costing' && selectedTask) {
       loadTaskExpenses(selectedTask.id);
@@ -180,6 +181,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     deadlineAt: '',
     targetBranchId: ''
   });
+  // Vendor assignment
+  const [vendorAssign, setVendorAssign] = useState({ enabled: false, vendorId: '', amount: '', note: '' });
   const [currentOrderService, setCurrentOrderService] = useState({
     serviceId: '', selectedOptionIds: [] as string[], quantity: '', coefficient: '', totalAmount: 0
   });
@@ -258,6 +261,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       items: [], manualTotal: '', justification: '', deadlineAt: '',
       targetBranchId: activeBranchId || (branches.length > 0 ? branches[0].id : '')
     });
+    setVendorAssign({ enabled: false, vendorId: '', amount: '', note: '' });
     setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0 });
     setSelectedServiceOptions([]);
     setPriceBreakdown(null);
@@ -374,15 +378,20 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           }
           return {
             ...it,
-            totalAmount: adjustedTotal
+            totalAmount: adjustedTotal,
+            vendorId: vendorAssign.enabled ? vendorAssign.vendorId : undefined,
+            vendorCost: vendorAssign.enabled ? Number(vendorAssign.amount) : 0,
           };
         })
       };
 
-      await tasksApi.createBulk(payload, currentUser.id);
+      const createdTasks = await tasksApi.createBulk(payload, currentUser.id);
+
+      // Vendor assignment is now handled within createBulk payload
 
       setIsNewTaskModalOpen(false);
-      showStatus('success', "Buyurtma yaratildi (Guruhli)!");
+      setVendorAssign({ enabled: false, vendorId: '', amount: '', note: '' });
+      showStatus('success', "Buyurtma yaratildi!");
       fetchData(true);
     } catch (err) {
       showStatus('error', "Xatolik yuz berdi!");
@@ -838,6 +847,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                               #{task.id.slice(-6).toUpperCase()}
                             </span>
                           )}
+                          {(task as any).vendor && (
+                            <span className="text-[8px] font-black bg-amber-500 text-white px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1 shadow-sm shadow-amber-500/20">
+                              <Handshake size={7} /> {(task as any).vendor.name}
+                            </span>
+                          )}
                           {isMyTask && (
                             <span className="text-[8px] font-black bg-sky-500 text-white px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
                               <Users size={7} /> Mening taskım
@@ -1279,6 +1293,59 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 className="input-minimal font-black text-amber-700 border-2 border-amber-100 bg-amber-50/30 h-12"
               />
             </div>
+            {/* Hamkorga topshirish */}
+            {vendors.length > 0 && (
+              <div className="border border-slate-100 rounded-2xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setVendorAssign(v => ({ ...v, enabled: !v.enabled }))}
+                  className={`w-full flex items-center justify-between px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${vendorAssign.enabled ? 'bg-orange-50 text-orange-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                >
+                  <span className="flex items-center gap-2"><Handshake size={13}/> Hamkorga topshirish (ixtiyoriy)</span>
+                  <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${vendorAssign.enabled ? 'border-orange-500 bg-orange-500' : 'border-slate-300'}`}>
+                    {vendorAssign.enabled && <span className="w-2 h-2 bg-white rounded-full"/>}
+                  </span>
+                </button>
+                {vendorAssign.enabled && (
+                  <div className="p-4 space-y-3 bg-orange-50/30 border-t border-orange-100">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Hamkorni tanlang *</label>
+                      <select
+                        value={vendorAssign.vendorId}
+                        onChange={e => setVendorAssign(v => ({ ...v, vendorId: e.target.value }))}
+                        className="select-minimal h-10 font-black text-orange-700"
+                      >
+                        <option value="">— Hamkorni tanlang —</option>
+                        {vendors.map((v: any) => (
+                          <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Summa (UZS) *</label>
+                        <CurrencyInput
+                          value={vendorAssign.amount}
+                          onChange={v => setVendorAssign(f => ({ ...f, amount: v ? String(v) : '' }))}
+                          colorClass="text-orange-600 focus:border-orange-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Izoh (ixtiyoriy)</label>
+                        <input
+                          type="text"
+                          value={vendorAssign.note}
+                          onChange={e => setVendorAssign(v => ({ ...v, note: e.target.value }))}
+                          className="input-minimal h-10"
+                          placeholder="Topshiriq haqida..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Action buttons */}
             <div className="flex gap-3">
               <button
@@ -1468,78 +1535,66 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               </div>
             ) : activeTab === 'vendors' ? (
               <div className="space-y-5 animate-fade-in">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
-                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
-                    <Handshake size={13} /> Hamkor xarajati qo'shish
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                    <Handshake size={14} className="text-orange-500" /> Hamkorga biriktirish
                   </h4>
-                  <select
-                    value={vendorCostForm.vendorId}
-                    onChange={e => setVendorCostForm(f => ({ ...f, vendorId: e.target.value }))}
-                    className="select-minimal font-black text-slate-700"
-                  >
-                    <option value="">Hamkorni tanlang...</option>
-                    {vendors.map(v => (
-                      <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
-                    ))}
-                  </select>
-                  <div className="space-y-2">
+                  <div>
+                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkorni tanlang</label>
+                    <select
+                      value={vendorCostForm.vendorId}
+                      onChange={e => setVendorCostForm(f => ({ ...f, vendorId: e.target.value }))}
+                      className="select-minimal font-black text-slate-700 h-11"
+                    >
+                      <option value="">— Biriktirilmagan —</option>
+                      {vendors.map(v => (
+                        <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Xizmat narxi (Hamkorga to'lanadigan summa)</label>
                     <CurrencyInput
                       value={vendorCostForm.amount}
                       onChange={(uzs) => setVendorCostForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
-                      colorClass="text-emerald-600"
-                      placeholder="Summa"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Izoh (ixtiyoriy)"
-                      value={vendorCostForm.description}
-                      onChange={e => setVendorCostForm(f => ({ ...f, description: e.target.value }))}
-                      className="input-minimal"
+                      colorClass="text-orange-600"
                     />
                   </div>
                   <button
                     type="button"
-                    onClick={handleAddVendorCost}
-                    disabled={isAddingVendorCost || !vendorCostForm.vendorId || !vendorCostForm.amount}
-                    className="w-full h-10 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
+                    onClick={async () => {
+                      if (!selectedTask) return;
+                      setIsUpdatingVendor(true);
+                      try {
+                        await tasksApi.update(selectedTask.id, {
+                          vendorId: vendorCostForm.vendorId || null,
+                          vendorCost: Number(vendorCostForm.amount) || 0
+                        }, currentUser.id);
+                        showStatus('success', "Hamkor ma'lumotlari yangilandi!");
+                        // Update local state to reflect changes without full fetch if possible, 
+                        // but fetchData(true) is safer.
+                        fetchData(true);
+                        setIsDetailModalOpen(false);
+                      } catch {
+                        showStatus('error', "Saqlashda xatolik!");
+                      } finally {
+                        setIsUpdatingVendor(false);
+                      }
+                    }}
+                    disabled={isUpdatingVendor}
+                    className="w-full h-12 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50"
                   >
-                    {isAddingVendorCost ? 'QOSHILMOQDA...' : "QO'SHISH"}
+                    {isUpdatingVendor ? 'SAQLANMOQDA...' : "SAQLASH"}
                   </button>
                 </div>
-
-                {vendorCosts.length === 0 ? (
-                  <div className="py-16 flex flex-col items-center justify-center opacity-20">
-                    <Handshake size={36} className="mb-3" />
-                    <p className="text-[10px] font-black uppercase">Hamkor xarajati yo'q</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">
-                      Jami: {formatCurrency(vendorCosts.reduce((s: number, c: any) => s + c.amount, 0))}
+                
+                {(selectedTask as any).vendor && (
+                  <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-3">
+                    <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16}/>
+                    <p className="text-[10px] font-bold text-amber-800">
+                      Bu buyurtma <strong>{(selectedTask as any).vendor.name}</strong> hamkoriga biriktirilgan. 
+                      Kelishilgan narx: <strong>{formatCurrency((selectedTask as any).vendorCost || 0)}</strong>.
                     </p>
-                    {vendorCosts.map((cost: any) => (
-                      <div key={cost.id} className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center border border-orange-100">
-                            <Handshake size={15} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-black text-slate-800 uppercase">{cost.vendor?.name || 'Hamkor'}</p>
-                            {cost.description && <p className="text-[10px] font-bold text-slate-400 italic">{cost.description}</p>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-black text-emerald-600">{Number(cost.amount).toLocaleString()} UZS</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveVendorCost(cost.id)}
-                            className="text-slate-300 hover:text-rose-500 transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 )}
               </div>
