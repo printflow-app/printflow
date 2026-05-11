@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
-import { buildDisplayId } from './task-id.util';
+import { buildDisplayId, parseDisplayIdSequence } from './task-id.util';
 
 @Injectable()
 export class TasksService {
@@ -76,12 +76,16 @@ export class TasksService {
         });
         effectiveName = c?.name ?? null;
       }
+      const tenant = await tx.tenant.findUnique({
+        where: { id: TenantContext.getTenantId() },
+        select: { name: true },
+      });
       const maxTask = await (tx.task.findFirst as any)({
         orderBy: { displayId: 'desc' },
         select: { displayId: true },
       });
-      const nextSeq = maxTask ? parseInt(maxTask.displayId.replace('ID', ''), 10) + 1 : 10001;
-      const displayId = `ID${nextSeq}`;
+      const nextSeq = maxTask ? parseDisplayIdSequence(maxTask.displayId) + 1 : 10001;
+      const displayId = buildDisplayId(tenant?.name ?? 'X', nextSeq - 10001);
 
       const createdTask = await tx.task.create({
         data: {
@@ -188,12 +192,16 @@ export class TasksService {
         });
         effectiveBulkName = c?.name ?? null;
       }
+      const bulkTenant = await tx.tenant.findUnique({
+        where: { id: TenantContext.getTenantId() },
+        select: { name: true },
+      });
       // Find the current max displayId across the entire tenant to avoid collisions.
       const maxBulkTask = await (tx.task.findFirst as any)({
         orderBy: { displayId: 'desc' },
         select: { displayId: true },
       });
-      let nextBulkSeq = maxBulkTask ? parseInt(maxBulkTask.displayId.replace('ID', ''), 10) + 1 : 10001;
+      let nextBulkSeq = maxBulkTask ? parseDisplayIdSequence(maxBulkTask.displayId) + 1 : 10001;
 
       const createdTasks = [];
       let totalOrderAmount = 0;
@@ -208,7 +216,7 @@ export class TasksService {
           ? (perTaskDepositFloor + remainder)
           : perTaskDepositFloor;
 
-        const displayId = `ID${nextBulkSeq++}`;
+        const displayId = buildDisplayId(bulkTenant?.name ?? 'X', nextBulkSeq++ - 10001);
 
         const task = await tx.task.create({
           data: {
@@ -457,18 +465,25 @@ export class TasksService {
       select: { id: true, tenantId: true, customerName: true },
     });
 
-    // Per-tenant counter: start from existing displayId count
     const tenantCounters: Record<string, number> = {};
+    const tenantNames: Record<string, string> = {};
     let updated = 0;
 
     for (const task of tasks) {
+      if (tenantNames[task.tenantId] === undefined) {
+        const t = await (this.prisma as any).tenant.findUnique({
+          where: { id: task.tenantId },
+          select: { name: true },
+        });
+        tenantNames[task.tenantId] = t?.name ?? 'XX';
+      }
       if (tenantCounters[task.tenantId] === undefined) {
         tenantCounters[task.tenantId] = await (this.prisma as any).task.count({
           where: { tenantId: task.tenantId, displayId: { not: null } },
         });
       }
       const count = tenantCounters[task.tenantId];
-      const displayId = buildDisplayId(task.customerName || 'XX', count);
+      const displayId = buildDisplayId(tenantNames[task.tenantId], count);
       try {
         await (this.prisma as any).task.update({ where: { id: task.id }, data: { displayId } });
         tenantCounters[task.tenantId]++;

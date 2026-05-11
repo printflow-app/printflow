@@ -954,7 +954,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {/* Order Details */}
           <div className="bg-white p-5 rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Buyurtma Nomi (Masalan: Mega Meva)</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Buyurtma Nomi (Masalan: Bahor To'yi, Reklama Loyiha)</label>
               <input
                 type="text"
                 placeholder="Buyurtma nomini kiriting..."
