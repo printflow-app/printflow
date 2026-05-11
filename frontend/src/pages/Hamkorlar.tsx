@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Search, Trash2, Edit3, AlertCircle,
-  ClipboardList, DollarSign
+  Plus, Search, Trash2, Edit3, AlertCircle, AlertTriangle, CheckCircle2,
+  ClipboardList, Handshake, DollarSign
 } from 'lucide-react';
 import { vendorsApi } from '../api';
 import Modal from '../components/Modal';

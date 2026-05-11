@@ -69,6 +69,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
   const [prepaymentWarningAccepted, setPrepaymentWarningAccepted] = useState(false);
 
+  const [vendorCostForm, setVendorCostForm] = useState({ vendorId: '', amount: '' });
+  const [isUpdatingVendor, setIsUpdatingVendor] = useState(false);
+
   // Sprint 5: Costing & profitability
   const [taskExpenses, setTaskExpenses] = useState<any[]>([]);
   const [expenseForm, setExpenseForm] = useState({ expenseName: '', amount: '' });
@@ -484,6 +487,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     setSelectedTask(task);
     setIsDetailModalOpen(true);
     setActiveTab('details');
+    setVendorCostForm({
+      vendorId: (task as any).vendorId || '',
+      amount: (task as any).vendorCost ? String((task as any).vendorCost) : ''
+    });
     // Load overrides from task if exists, or initialize from some base logic
     // Backend likely stores it in a field we can use. Assuming 'overrides' field.
     try {
