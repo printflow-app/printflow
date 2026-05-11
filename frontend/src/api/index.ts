@@ -210,6 +210,7 @@ export const financeApi = {
   getDinamika: (config?: any) => api.get('/finance/dinamika', config),
   getStatsByPaymentType: (config?: any) => api.get('/finance/stats-by-payment-type', config),
   getExpenseBreakdown: (config?: any) => api.get('/finance/expense-breakdown', config),
+  getDailySummary: (config?: any) => api.get('/finance/daily-summary', config),
 };
 
 // =============================================

@@ -51,18 +51,32 @@ export class FinanceService {
     return where;
   }
 
-  async findAll(start?: string, end?: string, branchId?: string) {
+  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20) {
     const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
 
-    return this.prisma.transaction.findMany({
-      where,
-      include: {
-        paymentType: true,
-        customer: true,
-        expenseType: true,
-      },
-      orderBy: { date: 'desc' },
-    });
+    const [transactions, total] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where,
+        include: {
+          paymentType: true,
+          customer: true,
+          expenseType: true,
+        },
+        orderBy: { date: 'desc' },
+        skip: (page - 1) * limit,
+        take: Number(limit),
+      }),
+      this.prisma.transaction.count({ where }),
+    ]);
+
+    return {
+      data: transactions,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+      }
+    };
   }
 
   async getDashboard(start?: string, end?: string, branchId?: string) {
@@ -265,5 +279,49 @@ export class FinanceService {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10); // Top 10 categories
+  }
+
+  async getDailySummary(start?: string, end?: string, branchId?: string) {
+    const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
+
+    const [transactions, dashboard, allPaymentTypes] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where,
+        include: {
+          paymentType: true,
+          expenseType: true,
+        },
+      }),
+      this.getDashboard(start, end, branchId),
+      this.prisma.paymentType.findMany(),
+    ]);
+
+    const kirimByPaymentType: Record<string, number> = {};
+    const chiqimByPaymentType: Record<string, number> = {};
+    const chiqimByExpenseType: Record<string, number> = {};
+
+    // Initialize with all payment types
+    allPaymentTypes.forEach(pt => {
+      kirimByPaymentType[pt.name] = 0;
+      chiqimByPaymentType[pt.name] = 0;
+    });
+
+    transactions.forEach(t => {
+      const pName = t.paymentType?.name || 'Noma\'lum';
+      if (t.type === 'kirim') {
+        kirimByPaymentType[pName] = (kirimByPaymentType[pName] || 0) + t.amount;
+      } else {
+        chiqimByPaymentType[pName] = (chiqimByPaymentType[pName] || 0) + t.amount;
+        const eName = t.expenseType?.name || (t.employeeId ? 'Xodim' : 'Boshqa');
+        chiqimByExpenseType[eName] = (chiqimByExpenseType[eName] || 0) + t.amount;
+      }
+    });
+
+    return {
+      ...dashboard,
+      kirimBreakdown: Object.entries(kirimByPaymentType).map(([name, amount]) => ({ name, amount })),
+      chiqimBreakdown: Object.entries(chiqimByPaymentType).map(([name, amount]) => ({ name, amount })),
+      expenseBreakdown: Object.entries(chiqimByExpenseType).map(([name, amount]) => ({ name, amount })),
+    };
   }
 }

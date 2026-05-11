@@ -14,8 +14,14 @@ export class FinanceController {
   }
 
   @Get('transactions')
-  async findAll(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string) {
-    return this.financeService.findAll(start, end, branchId);
+  async findAll(
+    @Query('start') start?: string, 
+    @Query('end') end?: string, 
+    @Query('branchId') branchId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return this.financeService.findAll(start, end, branchId, page, limit);
   }
 
   @Post('transactions')
@@ -37,5 +43,10 @@ export class FinanceController {
   @RequireFeature('expenseAnalytics')
   async getExpenseBreakdown(@Query('start') start?: string, @Query('end') end?: string) {
     return this.financeService.getExpenseBreakdown(start, end);
+  }
+
+  @Get('daily-summary')
+  async getDailySummary(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string) {
+    return this.financeService.getDailySummary(start, end, branchId);
   }
 }
