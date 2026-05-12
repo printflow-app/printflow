@@ -8,8 +8,9 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, PieChart, Pie, Cell,
 } from 'recharts';
-import { reportsApi, financeApi, branchesApi, tasksApi, taskExpensesApi } from '../api';
+import { reportsApi, financeApi, branchesApi, tasksApi, taskExpensesApi, kpiApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
 
 // =============================================
 // HISOBOTLAR — Tahliliy hisobotlar markazi
@@ -281,6 +282,8 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [services, setServices] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [velocity, setVelocity] = useState<any[]>([]);
+  const [kpiRows, setKpiRows] = useState<any[]>([]);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
   const [dynamics, setDynamics] = useState<any[]>([]);
   const [dynamicsType, setDynamicsType] = useState<'daily' | 'monthly'>('monthly');
   const [paymentStats, setPaymentStats] = useState<{ kirim: any[]; chiqim: any[] }>({ kirim: [], chiqim: [] });
@@ -371,8 +374,8 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 label: dayLabel(d.name),
                 kirim: d.kirim || 0,
                 chiqim: d.chiqim || 0,
-                hamkorlar: 0,
-                net: (d.kirim || 0) - (d.chiqim || 0),
+                hamkorlar: d.hamkorlar || 0,
+                net: (d.kirim || 0) - (d.chiqim || 0) - (d.hamkorlar || 0),
               }));
               setDynamics(normalized);
               setDynamicsType('daily');
@@ -408,8 +411,12 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       if (canViewVendors) {
         calls.push(reportsApi.vendorProfitability({ start: params.start, end: params.end }).then(r => setVendors(r.data || [])).catch(() => {}));
       }
+      if (canViewCostCalc) {
+        calls.push(tasksApi.findAll().then(r => setAllTasks(r.data || [])).catch(() => {}));
+      }
       if (canViewKpi) {
         calls.push(reportsApi.employeeVelocity({ start: params.start, end: params.end }).then(r => setVelocity(r.data || [])).catch(() => {}));
+        calls.push(kpiApi.list({ start: params.start, end: params.end }).then(r => setKpiRows(r.data || [])).catch(() => {}));
       }
 
       await Promise.all(calls);
@@ -445,6 +452,27 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     } catch { /* silent */ }
   };
 
+  const handleCostingSelect = async (taskId: string) => {
+    if (!taskId) {
+      setCostingTask(null);
+      setCostingExpenses([]);
+      return;
+    }
+    const found = allTasks.find(t => t.id === taskId);
+    if (found) {
+      setCostingTask(found);
+      setIsSearchingCosting(true);
+      try {
+        const expRes = await taskExpensesApi.list(found.id);
+        setCostingExpenses(expRes.data || []);
+      } catch {
+        setCostingError('Xarajatlarni yuklashda xatolik');
+      } finally {
+        setIsSearchingCosting(false);
+      }
+    }
+  };
+
   const handleCostingSearch = async () => {
     const q = costingQuery.trim();
     if (!q) return;
@@ -453,9 +481,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     setCostingExpenses([]);
     setCostingError('');
     try {
-      const res = await tasksApi.findAll();
-      const all: any[] = res.data || [];
-      const found = all.find(
+      const found = allTasks.find(
         (t: any) =>
           t.displayId?.toLowerCase() === q.toLowerCase() ||
           t.orderName?.toLowerCase().includes(q.toLowerCase()) ||
@@ -577,9 +603,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10, fontWeight: 700 }} />
                 <Line type="monotone" name="Kirim" dataKey="kirim" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
                 <Line type="monotone" name="Chiqim" dataKey="chiqim" stroke="#f43f5e" strokeWidth={2.5} dot={{ r: 3, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
-                {dynamicsType === 'monthly' && (
-                  <Line type="monotone" name="Hamkorlar" dataKey="hamkorlar" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
-                )}
+                <Line type="monotone" name="Hamkorlar" dataKey="hamkorlar" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
                 <Line type="monotone" name="Sof foyda" dataKey="net" stroke="#FF6B00" strokeWidth={3} dot={{ r: 4, fill: '#FF6B00', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -680,54 +704,13 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* ── Employee Velocity ── */}
-      {canViewKpi && velocity.length > 0 && (
-        <Section title="Xodimlar Samaradorligi" sub="Buyurtmalar, muddatga rioya va daromad ulushi" icon={<Award size={16} className="text-orange-500" />} span2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left p-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">#</th>
-                  <th className="text-left p-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Xodim</th>
-                  <th className="text-right p-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Bajarilgan</th>
-                  <th className="text-right p-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Muddatga rioya</th>
-                  <th className="text-right p-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Avg soat</th>
-                  <th className="text-right p-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Daromad</th>
-                  <th className="text-right p-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {velocity.map((emp: any, i: number) => {
-                  const barPct = Math.round((emp.velocityScore / (velocity[0]?.velocityScore || 1)) * 100);
-                  return (
-                    <tr key={emp.employeeId} className={`border-t border-slate-100 hover:bg-orange-50/20 transition-colors ${i < 3 ? 'bg-orange-50/10' : ''}`}>
-                      <td className="p-3.5 font-black text-slate-500 text-[11px]">{i + 1}</td>
-                      <td className="p-3.5">
-                        <div className="font-black text-slate-800">{emp.fullName}</div>
-                        <div className="text-[10px] text-slate-400 font-bold">{emp.roleName || '—'}</div>
-                      </td>
-                      <td className="p-3.5 text-right font-black text-emerald-600">{emp.completedTasks}</td>
-                      <td className="p-3.5 text-right">
-                        {emp.deadlineMeetRate !== null
-                          ? <span className={`font-black ${emp.deadlineMeetRate >= 80 ? 'text-emerald-600' : emp.deadlineMeetRate >= 50 ? 'text-amber-600' : 'text-rose-500'}`}>{emp.deadlineMeetRate}%</span>
-                          : <span className="text-slate-300 font-bold">—</span>}
-                      </td>
-                      <td className="p-3.5 text-right font-bold text-slate-600">{emp.avgTaskHours != null ? `${emp.avgTaskHours}h` : '—'}</td>
-                      <td className="p-3.5 text-right font-black text-slate-700 tabular-nums">{fmt(emp.totalRevenue)}</td>
-                      <td className="p-3.5 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="hidden md:block w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${barPct}%` }} />
-                          </div>
-                          <span className="inline-block px-2 py-0.5 bg-orange-100 text-orange-700 rounded-md font-black text-[10px] min-w-[36px] text-center">{emp.velocityScore}</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Section>
+      {canViewKpi && kpiRows.length > 0 && (
+        <EmployeePerformanceTable 
+          rows={kpiRows} 
+          velocity={velocity} 
+          title="Xodimlar Samaradorligi" 
+          showBar
+        />
       )}
 
       {/* ── Tannarx Kalkulyatori ────────────────────────────────────────── */}
@@ -744,26 +727,51 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         </div>
 
         <div className="p-5 space-y-5">
-          {/* Search bar */}
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Buyurtma ID (YC-10001), nomi yoki mijoz ismini kiriting..."
-                value={costingQuery}
-                onChange={e => setCostingQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleCostingSearch()}
-                className="w-full h-11 pl-10 pr-4 text-sm font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all placeholder:font-sans placeholder:text-slate-400 placeholder:text-xs"
-              />
+          {/* Order Selection Dropdown */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Buyurtmani tanlang</p>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <select
+                  value={costingTask?.id || ''}
+                  onChange={(e) => handleCostingSelect(e.target.value)}
+                  className="w-full h-11 pl-4 pr-10 text-sm font-black bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="" className="font-sans">--- Buyurtmani tanlang (Joriy oy) ---</option>
+                  {allTasks
+                    .filter(t => {
+                      const d = new Date(t.createdAt);
+                      const now = new Date();
+                      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                    })
+                    .map(t => (
+                      <option key={t.id} value={t.id} className="font-mono">
+                        {t.displayId || 'ID yo\'q'} | {t.orderName || t.title} ({t.customerName || 'Mijozsiz'})
+                      </option>
+                    ))}
+                </select>
+                <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+              
+              <div className="relative flex-[0.8] hidden sm:block">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="ID yoki nom bilan tezkor qidiruv..."
+                  value={costingQuery}
+                  onChange={e => setCostingQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleCostingSearch()}
+                  className="w-full h-11 pl-10 pr-4 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all"
+                />
+              </div>
+              <button
+                onClick={handleCostingSearch}
+                disabled={isSearchingCosting || !costingQuery.trim()}
+                className="h-11 px-5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-40 hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-lg hidden sm:block"
+              >
+                {isSearchingCosting ? '...' : 'QIDIRISH'}
+              </button>
             </div>
-            <button
-              onClick={handleCostingSearch}
-              disabled={isSearchingCosting || !costingQuery.trim()}
-              className="h-11 px-7 bg-orange-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest disabled:opacity-40 hover:bg-orange-700 transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-orange-500/20"
-            >
-              {isSearchingCosting ? '...' : 'QIDIRISH'}
-            </button>
           </div>
 
           {/* Error */}
@@ -839,14 +847,14 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     <div className="p-4">
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
                       <p className="text-lg font-black text-slate-700 font-mono tabular-nums">
-                        {unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        {unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px] font-bold text-slate-400 ml-1">UZS</span>
                       </p>
                       <p className="text-[9px] font-bold text-slate-400 mt-0.5">{qty} dona asosida</p>
                     </div>
                     <div className="p-4">
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
                       <p className={`text-lg font-black font-mono tabular-nums ${unitProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
-                        {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px] font-bold text-slate-400 ml-1">UZS</span>
                       </p>
                       <p className="text-[9px] font-bold text-slate-400 mt-0.5">UZS / dona</p>
                     </div>

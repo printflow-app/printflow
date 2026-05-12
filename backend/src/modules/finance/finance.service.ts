@@ -195,7 +195,7 @@ export class FinanceService {
     const current = new Date(startDate);
     while (current <= endDate) {
       const day = current.toISOString().split('T')[0];
-      data[day] = { name: day, kirim: 0, chiqim: 0, balance: 0 };
+      data[day] = { name: day, kirim: 0, chiqim: 0, hamkorlar: 0, balance: 0 };
       current.setDate(current.getDate() + 1);
     }
 
@@ -205,7 +205,11 @@ export class FinanceService {
         if (t.type === 'kirim') {
           data[day].kirim += t.amount;
         } else {
-          data[day].chiqim += t.amount;
+          if (t.vendorId) {
+            data[day].hamkorlar += t.amount;
+          } else {
+            data[day].chiqim += t.amount;
+          }
         }
       }
     });
@@ -213,7 +217,7 @@ export class FinanceService {
     let cumulative = 0;
     const sortedDays = Object.keys(data).sort();
     sortedDays.forEach(day => {
-      cumulative += (data[day].kirim - data[day].chiqim);
+      cumulative += (data[day].kirim - data[day].chiqim - data[day].hamkorlar);
       data[day].balance = cumulative;
     });
 

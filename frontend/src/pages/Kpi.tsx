@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, Trophy, Activity, Clock, Calendar, Minus } from 'lucide-react';
 import { kpiApi, reportsApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
 
 interface KpiRow {
   employeeId: string;
@@ -184,67 +185,14 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       )}
 
       {/* Leaderboard with comparison & revenue */}
-      {canViewAll && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-black text-slate-800 tracking-tight">Samaradorlik Reytingi</h3>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Velocity score bo'yicha • oldingi davr bilan taqqoslash</p>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">#</th>
-                  <th className="text-left p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Xodim</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Yopilgan</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Jarayonda</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Muddatga rioya</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Daromad</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Kechikish</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Score</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Trend</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 && (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-400 font-bold text-xs uppercase">Ma'lumot yo'q</td></tr>
-                )}
-                {rows.map((r, i) => {
-                  const vel = getVelocityData(r.employeeId);
-                  const prevScore = getPrevScore(r.employeeId);
-                  return (
-                    <tr key={r.employeeId} className={`border-t border-slate-100 ${i < 3 ? 'bg-orange-50/30' : ''}`}>
-                      <td className="p-3 font-black text-slate-600">{i + 1}</td>
-                      <td className="p-3">
-                        <div className="font-black text-slate-800">{r.fullName}</div>
-                        <div className="text-[10px] text-slate-400 font-bold">{r.roleName || '—'}</div>
-                      </td>
-                      <td className="p-3 text-right font-black text-emerald-600">{r.completedTasks}</td>
-                      <td className="p-3 text-right font-black text-amber-500">{r.pendingTasks}</td>
-                      <td className="p-3 text-right">
-                        {vel?.deadlineMeetRate != null
-                          ? <span className={`font-black text-xs ${vel.deadlineMeetRate >= 80 ? 'text-emerald-600' : vel.deadlineMeetRate >= 50 ? 'text-amber-600' : 'text-rose-500'}`}>{vel.deadlineMeetRate}%</span>
-                          : <span className="text-slate-300 font-bold text-xs">—</span>}
-                      </td>
-                      <td className="p-3 text-right font-black text-slate-700 tabular-nums text-xs">
-                        {vel ? fmt(vel.totalRevenue) : '—'}
-                      </td>
-                      <td className="p-3 text-right font-bold text-rose-500">{r.lateMinutes}</td>
-                      <td className="p-3 text-right">
-                        <span className="inline-block px-2.5 py-1 bg-orange-100 text-orange-700 rounded-md font-black text-xs">{r.velocityScore}</span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <ScoreDelta current={r.velocityScore} previous={prevScore} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {canViewAll && rows.length > 0 && (
+        <EmployeePerformanceTable 
+          rows={rows} 
+          velocity={velocity} 
+          prevRows={prevRows}
+          title="Samaradorlik Reytingi" 
+          showTrend
+        />
       )}
 
       {!canViewAll && me && (

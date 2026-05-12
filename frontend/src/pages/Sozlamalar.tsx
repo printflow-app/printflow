@@ -5,6 +5,9 @@ import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CurrencyInput from '../components/CurrencyInput';
 
+const Billing = React.lazy(() => import('./Billing'));
+const Filiallar = React.lazy(() => import('./Filiallar'));
+
 const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
@@ -29,6 +32,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'branches' | 'billing'>('general');
 
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text });
@@ -490,14 +494,54 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
-    <div className="space-y-10 pb-20 animate-fade-in">
-      {/* Status notification */}
-      {statusMessage && (
-        <div className={`fixed top-4 right-4 z-[200] p-3 rounded-xl shadow-lg flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-          {statusMessage.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
-          <span className="font-bold text-xs tracking-tight">{statusMessage.text}</span>
+    <div className="space-y-6 pb-20 animate-fade-in">
+      {/* Tabs Switcher */}
+      <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
+        {[
+          { id: 'general', label: 'Asosiy Sozlamalar', icon: Settings, activeClass: 'bg-orange-600 text-white shadow-orange-500/20' },
+          { id: 'branches', label: 'Filiallar', icon: Building2, activeClass: 'bg-blue-600 text-white shadow-blue-500/20' },
+          { id: 'billing', label: 'Obuna va To\'lovlar', icon: CreditCard, activeClass: 'bg-purple-600 text-white shadow-purple-500/20' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSettingsTab(tab.id as any)}
+            className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap border-2 ${
+              activeSettingsTab === tab.id
+                ? `${tab.activeClass} border-transparent shadow-lg`
+                : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100 hover:text-slate-800'
+            }`}
+          >
+            <tab.icon size={16} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeSettingsTab === 'branches' && (
+        <div className="animate-fade-in">
+          <React.Suspense fallback={<LoadingSpinner />}>
+            <Filiallar currentUser={currentUser} />
+          </React.Suspense>
         </div>
       )}
+
+      {activeSettingsTab === 'billing' && (
+        <div className="animate-fade-in">
+          <React.Suspense fallback={<LoadingSpinner />}>
+            <Billing />
+          </React.Suspense>
+        </div>
+      )}
+
+      {activeSettingsTab === 'general' && (
+        <div className="space-y-10 animate-fade-in">
+          {/* Status notification */}
+          {statusMessage && (
+            <div className={`fixed top-4 right-4 z-[200] p-3 rounded-xl shadow-lg flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+              {statusMessage.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
+              <span className="font-bold text-xs tracking-tight">{statusMessage.text}</span>
+            </div>
+          )}
       
       {/* Roles Section */}
       {(isAdmin || p.canViewRoles || p.canManageRoles) && (
@@ -1202,7 +1246,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </div>
         </Modal>
       )}
-
+        </div>
+      )}
     </div>
   );
 };
@@ -1676,8 +1721,8 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           </div>
         </Modal>
       )}
-    </section>
-  );
+      </section>
+    );
 };
 
 export default Sozlamalar;

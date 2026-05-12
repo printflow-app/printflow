@@ -1168,14 +1168,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 <span className="text-sky-500">{newTaskForm.assigneeIds.length} ta tanlandi</span>
               </label>
 
-              {(currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin' || p.canAssignToOtherBranches) && (
-                <div className="mb-3">
+              {(branches.length > 0 && (isAdmin || p.canAssignToOtherBranches)) && (
+                <div className="mb-3 animate-fade-in">
                   <select
                     value={newTaskForm.targetBranchId}
                     onChange={(e) => setNewTaskForm(f => ({ ...f, targetBranchId: e.target.value, assigneeIds: [] }))}
                     className="select-minimal h-10 font-black text-orange-600 border-orange-200"
                   >
-                    <option value="">Barcha filiallar / Filialsiz</option>
+                    <option value="">-- Tanlangan filial --</option>
                     {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 </div>
@@ -1244,11 +1244,69 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="mt-4 pt-6 border-t border-slate-100 space-y-4">
+            {/* Hamkorga topshirish (Outsourcing) — Moved here for better visibility */}
+            {vendors.length > 0 && (
+              <div className="md:col-span-2 mt-2">
+                <div className={`rounded-2xl border-2 transition-all overflow-hidden ${vendorAssign.enabled ? 'border-orange-400 bg-orange-50/20 shadow-lg shadow-orange-500/10' : 'border-slate-100 bg-slate-50/50 hover:border-orange-200'}`}>
+                  <button
+                    type="button"
+                    onClick={() => setVendorAssign(v => ({ ...v, enabled: !v.enabled }))}
+                    className={`w-full flex items-center justify-between px-5 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${vendorAssign.enabled ? 'text-orange-700' : 'text-slate-500'}`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <div className={`p-2 rounded-xl transition-all ${vendorAssign.enabled ? 'bg-orange-500 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                        <Handshake size={16} />
+                      </div>
+                      Hamkorga topshirish (Outsourcing)
+                    </span>
+                    <div className={`w-10 h-5 rounded-full relative transition-all ${vendorAssign.enabled ? 'bg-orange-500' : 'bg-slate-300'}`}>
+                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${vendorAssign.enabled ? 'left-6' : 'left-1'}`} />
+                    </div>
+                  </button>
+                  
+                  {vendorAssign.enabled && (
+                    <div className="p-5 space-y-4 bg-white border-t-2 border-orange-100 animate-slide-up">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Hamkorni tanlang *</label>
+                          <select
+                            value={vendorAssign.vendorId}
+                            onChange={e => setVendorAssign(v => ({ ...v, vendorId: e.target.value }))}
+                            className="select-minimal h-11 font-black text-orange-700 bg-orange-50/30 border-orange-100"
+                          >
+                            <option value="">— Hamkorni tanlang —</option>
+                            {vendors.map((v: any) => (
+                              <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Summa (UZS) *</label>
+                          <CurrencyInput
+                            value={vendorAssign.amount}
+                            onChange={v => setVendorAssign(f => ({ ...f, amount: v ? String(v) : '' }))}
+                            colorClass="text-orange-600 font-black h-11 border-orange-100 bg-orange-50/30"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Izoh (ixtiyoriy)</label>
+                        <textarea
+                          value={vendorAssign.note}
+                          onChange={e => setVendorAssign(v => ({ ...v, note: e.target.value }))}
+                          className="input-minimal min-h-[60px] bg-slate-50 border-slate-100"
+                          placeholder="Hamkor uchun maxsus ko'rsatmalar..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Deadline field */}
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1 flex items-center gap-1.5">
                 <Clock size={11} className="text-amber-500" /> Topshiriq muddati (ixtiyoriy)
               </label>
@@ -1259,64 +1317,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 className="input-minimal font-black text-amber-700 border-2 border-amber-100 bg-amber-50/30 h-12"
               />
             </div>
-            {/* Hamkorga topshirish */}
-            {vendors.length > 0 && (
-              <div className="border border-slate-100 rounded-2xl overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setVendorAssign(v => ({ ...v, enabled: !v.enabled }))}
-                  className={`w-full flex items-center justify-between px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${vendorAssign.enabled ? 'bg-orange-50 text-orange-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-                >
-                  <span className="flex items-center gap-2"><Handshake size={13}/> Hamkorga topshirish (ixtiyoriy)</span>
-                  <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${vendorAssign.enabled ? 'border-orange-500 bg-orange-500' : 'border-slate-300'}`}>
-                    {vendorAssign.enabled && <span className="w-2 h-2 bg-white rounded-full"/>}
-                  </span>
-                </button>
-                {vendorAssign.enabled && (
-                  <div className="p-4 space-y-3 bg-orange-50/30 border-t border-orange-100">
-                    <div>
-                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Hamkorni tanlang *</label>
-                      <select
-                        value={vendorAssign.vendorId}
-                        onChange={e => setVendorAssign(v => ({ ...v, vendorId: e.target.value }))}
-                        className="select-minimal h-10 font-black text-orange-700"
-                      >
-                        <option value="">— Hamkorni tanlang —</option>
-                        {vendors.map((v: any) => (
-                          <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Summa (UZS) *</label>
-                        <CurrencyInput
-                          value={vendorAssign.amount}
-                          onChange={v => setVendorAssign(f => ({ ...f, amount: v ? String(v) : '' }))}
-                          colorClass="text-orange-600 focus:border-orange-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Izoh (ixtiyoriy)</label>
-                        <input
-                          type="text"
-                          value={vendorAssign.note}
-                          onChange={e => setVendorAssign(v => ({ ...v, note: e.target.value }))}
-                          className="input-minimal h-10"
-                          placeholder="Topshiriq haqida..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Action buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4 mt-6 border-t border-slate-100">
               <button
                 type="button"
-                className="btn-outline h-12 flex-1 rounded-2xl uppercase tracking-widest font-black text-[10px]"
+                className="h-12 sm:h-14 flex-1 rounded-2xl uppercase tracking-widest font-black text-[11px] border-2 border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 whitespace-nowrap px-6"
                 onClick={() => setIsNewTaskModalOpen(false)}
               >
                 Bekor qilish
@@ -1330,7 +1336,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   <button
                     type="submit"
                     disabled={blocked}
-                    className={`h-12 flex-[2] rounded-2xl uppercase tracking-widest font-black shadow-xl active:scale-95 transition-all text-[10px] ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20'}`}
+                    className={`h-12 sm:h-14 flex-[1.5] rounded-2xl uppercase tracking-widest font-black shadow-xl active:scale-95 transition-all text-[11px] whitespace-nowrap px-6 ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
                   >
                     Buyurtma Qo'shish
                   </button>

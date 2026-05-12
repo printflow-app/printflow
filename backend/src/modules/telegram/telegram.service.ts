@@ -830,6 +830,44 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           }
         }
 
+        // ── Kechikish eslatmasi: ish boshlanishidan 10 daqiqa o'tganda ──
+        if (currentMinutes >= workStartMins + 10 && currentMinutes < workStartMins + 15) {
+          const employees = await this.prisma.employee.findMany({
+            where: { tenantId: t.id, telegramId: { not: null } },
+          });
+          for (const emp of employees) {
+            if (!emp.telegramId) continue;
+
+            // Bugun allaqachon kelgan bo'lsa — o'tkazib yuborish
+            const alreadyIn = await this.prisma.attendanceRecord.findFirst({
+              where: { tenantId: t.id, employeeId: emp.id, date: todayStr, checkIn: { not: null } },
+            });
+            if (alreadyIn) continue;
+
+            // Bot session — xodim allaqachon bugun uchun prompt olganmi?
+            const session = await this.prisma.botSession.findUnique({
+              where: { chatId: emp.telegramId },
+            });
+            if (!session || (session as any).overtimePromptDate === todayStr) continue;
+
+            await this.sendMessage(
+              emp.telegramId,
+              `⚠️ *Davomat belgilamadingiz!*\n\n` +
+              `Siz davomat qilmadingiz, iltimos davomat qiling yoki kech qolayotgan bo'lsangiz yoki bugun kelmaydigan bo'lsangiz sababini shu yerga yozing.`,
+            );
+
+            // Sessiyani xabar kutish holatiga o'tkazamiz
+            await this.prisma.botSession.update({
+              where: { chatId: emp.telegramId },
+              data: {
+                step: 'OVERTIME_AWAITING',
+                overtimePromptDate: todayStr,
+                overtimePromptedAt: new Date(),
+              } as any,
+            });
+          }
+        }
+
         // ── Ketish eslatmasi: ish tugashiga 10–14 daqiqa qolganida ──
         if (diffToEnd >= 10 && diffToEnd < 15) {
           // checkIn bor lekin checkOut yo'q bo'lgan xodimlar

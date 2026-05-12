@@ -255,10 +255,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     { id: 'admins', label: 'Ma\'muriyat', icon: ShieldCheck, show: isAdmin, sub: 'Raxbarlar boshqaruvi' },
     { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
     { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
-    { id: 'billing', label: 'Obuna va To\'lov', icon: CreditCard, show: p.canManageBilling || p.canViewBillingStatus || isAdmin, sub: 'Tarif va obuna holati' },
     { id: 'hamkorlar', label: 'Hamkorlar', icon: Handshake, show: isAdmin || p.canViewVendors, sub: 'Subpudratchi va yetkazuvchilar' },
-    { id: 'filiallar', label: 'Filiallar', icon: Building2, show: isAdmin || p.canManageBranches || !!(p as any).canViewBranches, sub: 'Multi-filial boshqaruvi' },
-    { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Lavozim va To\'lovlar' },
+    { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Filiallar va Obuna' },
   ];
 
   const handleTabChange = (id: any) => {
