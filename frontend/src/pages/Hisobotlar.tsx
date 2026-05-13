@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart3, TrendingUp, TrendingDown, Users, ShoppingBag,
-  Minus, RefreshCw, Building2, Calendar, ChevronDown, Award,
+  Minus, RefreshCw, Building2, Calendar, ChevronDown,
   Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2,
 } from 'lucide-react';
 import {

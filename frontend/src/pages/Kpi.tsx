@@ -96,14 +96,6 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const getVelocityData = (empId: string) => velocity.find(v => v.employeeId === empId);
   const getPrevScore = (empId: string) => prevRows.find(r => r.employeeId === empId)?.velocityScore ?? null;
 
-  const ScoreDelta = ({ current, previous }: { current: number; previous: number | null }) => {
-    if (previous === null) return <span className="text-[9px] font-black text-slate-300">—</span>;
-    const diff = current - previous;
-    if (Math.abs(diff) < 2) return <span className="flex items-center gap-0.5 text-[9px] font-black text-slate-400"><Minus size={9} />0</span>;
-    return diff > 0
-      ? <span className="flex items-center gap-0.5 text-[9px] font-black text-emerald-600"><TrendingUp size={9} />+{diff}</span>
-      : <span className="flex items-center gap-0.5 text-[9px] font-black text-rose-500"><TrendingDown size={9} />{diff}</span>;
-  };
 
   const StatCard = ({ icon, label, value, hint }: any) => (
     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
