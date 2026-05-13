@@ -3,16 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --bg-main: #fafafa;
-  --bg-surface: #ffffff;
-  --bg-surface-hover: #f3f4f6;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --color-primary: #FF6B00;
-  --color-primary-hover: #E65A00;
+  --background: #fafafa;
+  --foreground: #0f172a;
+  --primary: #FF6B00;
+  --primary-foreground: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --border: #0f172a; /* Strictly using the same dark color for consistency */
+  --muted: #64748b;
+  --muted-foreground: #0f172a;
+  
+  /* Backward compatibility for existing utility classes */
+  --bg-main: var(--background);
+  --bg-surface: var(--card);
+  --text-main: var(--foreground);
+  --color-primary: var(--primary);
   --color-success: #10b981;
   --color-danger: #ef4444;
-  --color-warning: #f59e0b;
 }
 
 /* Spinner */
@@ -145,17 +152,7 @@
   @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-sm;
 }
 
-:root {
-  --bg: #ffffff;
-  --bg-secondary: #f8fafc;
-  --panel: #ffffff;
-  --border: #e2e8f0;
-  --text: #0f172a;
-  --text-muted: #64748b;
-  --primary: #FF6B00;
-  --primary-glow: rgba(255, 107, 0, 0.15);
-  --primary-hover: #e66000;
-}
+
 
 * {
   box-sizing: border-box;

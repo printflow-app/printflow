@@ -7,17 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        gold: {
-          DEFAULT: '#D4AF37',
-          light: '#F4EBD0',
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
         },
-        luxury: {
-          bg: '#FFFFFF',
-          text: '#1A1A1A',
-        }
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
+        border: "var(--border)",
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
       },
       fontFamily: {
-        serif: ['"Playfair Display"', 'serif'], // Luxurious serif fonts
+        sans: ['Inter', 'sans-serif'],
       }
     },
   },
