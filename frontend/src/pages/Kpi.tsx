@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, Trophy, Activity, Clock, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Trophy, Activity, Clock, Calendar, Minus } from 'lucide-react';
 import { kpiApi, reportsApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
@@ -178,11 +178,11 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
       {/* Leaderboard with comparison & revenue */}
       {canViewAll && rows.length > 0 && (
-        <EmployeePerformanceTable 
-          rows={rows} 
-          velocity={velocity} 
+        <EmployeePerformanceTable
+          rows={rows}
+          velocity={velocity}
           prevRows={prevRows}
-          title="Samaradorlik Reytingi" 
+          title="Samaradorlik Reytingi"
           showTrend
         />
       )}

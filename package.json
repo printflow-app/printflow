@@ -12,5 +12,9 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.77",
+    "ai": "^6.0.180"
   }
 }

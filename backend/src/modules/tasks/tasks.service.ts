@@ -56,7 +56,12 @@ export class TasksService {
 
     const remainingAmount = Math.max(0, Math.round(Number(totalAmount || 0) - Number(depositAmount || 0)));
 
-    const task = await this.prisma.$transaction(async (tx) => {
+    // Retry loop to handle race condition on displayId unique constraint
+    let task: any = null;
+    let retryCount = 0;
+    while (!task) {
+      try {
+        task = await this.prisma.$transaction(async (tx) => {
       let finalCustomerId = customerId;
 
       if (!finalCustomerId && customerName) {
@@ -86,7 +91,7 @@ export class TasksService {
         orderBy: { displayId: 'desc' },
         select: { displayId: true },
       });
-      const nextSeq = maxTask ? parseDisplayIdSequence(maxTask.displayId) + 1 : 10001;
+      const nextSeq = (maxTask ? parseDisplayIdSequence(maxTask.displayId) + 1 : 10001) + retryCount;
       const displayId = buildDisplayId(tenant?.name ?? 'X', nextSeq - 10001);
 
       const createdTask = await tx.task.create({
@@ -109,6 +114,7 @@ export class TasksService {
           quantity: Number(data.quantity || 1),
           coefficient: Number(data.coefficient || 1.0),
           deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
+          branchId: data.branchId || data.targetBranchId || undefined,
         } as any
       });
 
@@ -149,8 +155,19 @@ export class TasksService {
         } as any
       });
 
-      return createdTask;
-    });
+          return createdTask;
+        });
+      } catch (err: any) {
+        const isUniqueViolation = err?.code === 'P2002' ||
+          err?.message?.includes('Unique constraint') ||
+          err?.message?.includes('displayId');
+        if (isUniqueViolation && retryCount < 5) {
+          retryCount++;
+          continue;
+        }
+        throw err;
+      }
+    }
 
     // Telegram Notification
     this.notifyAssignees(task, '🆕 Yangi topshiriq');
@@ -172,7 +189,11 @@ export class TasksService {
     const perTaskDepositFloor = Math.floor(totalDepositNum / items.length);
     const remainder = totalDepositNum % items.length;
 
-    const tasks = await this.prisma.$transaction(async (tx) => {
+    let tasks: any[] | null = null;
+    let bulkRetry = 0;
+    while (!tasks) {
+      try {
+        tasks = await this.prisma.$transaction(async (tx) => {
       let finalCustomerId = customerId;
 
       if (!finalCustomerId && customerName) {
@@ -203,7 +224,7 @@ export class TasksService {
         orderBy: { displayId: 'desc' },
         select: { displayId: true },
       });
-      let nextBulkSeq = maxBulkTask ? parseDisplayIdSequence(maxBulkTask.displayId) + 1 : 10001;
+      let nextBulkSeq = (maxBulkTask ? parseDisplayIdSequence(maxBulkTask.displayId) + 1 : 10001) + bulkRetry;
 
       const createdTasks = [];
       let totalOrderAmount = 0;
@@ -285,8 +306,19 @@ export class TasksService {
         });
       }
 
-      return createdTasks;
-    });
+          return createdTasks;
+        });
+      } catch (err: any) {
+        const isUniqueViolation = err?.code === 'P2002' ||
+          err?.message?.includes('Unique constraint') ||
+          err?.message?.includes('displayId');
+        if (isUniqueViolation && bulkRetry < 5) {
+          bulkRetry += items.length; // skip ahead by item count to avoid all collisions
+          continue;
+        }
+        throw err;
+      }
+    }
 
     // Notify for each task
     const tId = TenantContext.getTenantId();

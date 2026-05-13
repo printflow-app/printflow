@@ -24,6 +24,7 @@ export function buildDisplayId(tenantName: string, sequence: number): string {
  * Handles both old "ID10001" and new "VP-10001" formats.
  */
 export function parseDisplayIdSequence(displayId: string): number {
+  if (!displayId) return 10000;
   const match = displayId.match(/(\d+)$/);
   return match ? parseInt(match[1], 10) : 10000;
 }

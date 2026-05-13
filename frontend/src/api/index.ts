@@ -386,4 +386,40 @@ export const reportsApi = {
     api.get('/reports/monthly-dynamics', { params }),
 };
 
+
+// =============================================
+// AI COPILOT
+// =============================================
+export const aiApi = {
+  /**
+   * Sends chat messages to the backend and returns a raw fetch Response
+   * with SSE streaming. Use this with a ReadableStream reader.
+   */
+  streamChat: async (messages: Array<{ role: string; content: string }>) => {
+    const raw = sessionStorage.getItem('pf_user_info');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (raw) {
+      try {
+        const user = JSON.parse(raw);
+        if (user?.tenantId) headers['X-Tenant-Id'] = user.tenantId;
+      } catch { /**/ }
+    }
+    const bearer = localStorage.getItem('pf_token');
+    if (bearer) headers['Authorization'] = `Bearer ${bearer}`;
+
+    const baseUrl = (import.meta.env.VITE_API_URL ||
+      (import.meta.env.DEV ? '' : 'https://printflow-production-bb78.up.railway.app'));
+    const url = baseUrl ? `${baseUrl.replace(/\/api$/, '')}/api/ai/chat` : '/api/ai/chat';
+
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({ messages }),
+    });
+  },
+};
+
 export default api;

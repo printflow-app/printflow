@@ -5,6 +5,7 @@ import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AICopilot from '../components/AICopilot/AICopilot';
 
 const Moliya       = React.lazy(() => import('./Moliya'));
 const Hodimlar     = React.lazy(() => import('./Hodimlar'));
@@ -33,6 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isAICopilotOpen, setIsAICopilotOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Global branch filter (multiBranch feature)
@@ -337,6 +339,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             <Lock size={16} />
           </button>
           <button
+            onClick={() => setIsAICopilotOpen(true)}
+            className="w-9 h-9 flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-lg shadow-md shadow-orange-500/30 hover:from-orange-500 hover:to-orange-700 transition-all"
+            title="AI Yordamchi"
+          >
+            ✦
+          </button>
+          <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="w-9 h-9 flex items-center justify-center text-slate-600 bg-slate-50 rounded-lg"
           >
@@ -576,6 +585,26 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           )}
         </div>
       </main>
+
+      {/* AI Copilot Drawer */}
+      <AICopilot
+        isOpen={isAICopilotOpen}
+        onClose={() => setIsAICopilotOpen(false)}
+        onServicesSaved={() => {
+          // If user is on 'sozlamalar' tab, a toast is enough since Sozlamalar auto-fetches
+        }}
+      />
+
+      {/* Global AI FAB (desktop) */}
+      {!isAICopilotOpen && (
+        <button
+          onClick={() => setIsAICopilotOpen(true)}
+          className="fixed bottom-6 right-6 z-30 w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-2xl shadow-xl shadow-orange-500/40 flex items-center justify-center text-2xl hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 hidden md:flex"
+          title="PrintFlow AI Yordamchi (Xizmatlar)"
+        >
+          ✦
+        </button>
+      )}
 
       <Modal isOpen={isLockSettingsOpen} onClose={() => setIsLockSettingsOpen(false)} title="Ekran Qulfi Sozlamalari" maxWidth="max-w-sm">
         <form onSubmit={handleSetLock} className="space-y-5">
