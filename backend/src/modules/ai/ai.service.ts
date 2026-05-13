@@ -120,14 +120,35 @@ Rule: If any required detail is missing, ask ONE short question to get it. DO NO
 TIZIMDAGI MA'LUMOTLAR:
 ${JSON.stringify(contextData)}`;
 
-      const coreMessages: any[] = messages
-        .filter(m => m.content?.trim().length > 0)
-        .map(m => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.content,
-        }));
+      // --- TOKEN DIET: SAFE TRUNCATION LOGIC ---
+      const MESSAGE_LIMIT = 6;
+      let truncatedMessages = messages.filter(m => 
+        (typeof m.content === 'string' ? m.content.trim().length > 0 : true)
+      );
 
-      // Guard: SDK requires at least one non-empty message
+      if (truncatedMessages.length > MESSAGE_LIMIT) {
+        let sliceIndex = truncatedMessages.length - MESSAGE_LIMIT;
+        
+        // Ensure we don't start with a 'tool' role (result) or a message that orphans a tool call.
+        // If the message at sliceIndex is a tool result, we must include the previous assistant message too.
+        while (sliceIndex > 0 && (
+          truncatedMessages[sliceIndex].role === 'tool' || 
+          (Array.isArray(truncatedMessages[sliceIndex].content) && 
+           truncatedMessages[sliceIndex].content.some((c: any) => c.type === 'tool-result'))
+        )) {
+          sliceIndex--;
+        }
+        truncatedMessages = truncatedMessages.slice(sliceIndex);
+      }
+
+      const coreMessages: any[] = truncatedMessages.map(m => ({
+        role: m.role,
+        content: m.content,
+        ...(m.toolCalls ? { toolCalls: m.toolCalls } : {}),
+        ...(m.toolResults ? { toolResults: m.toolResults } : {}),
+      }));
+
+      // Guard: SDK requires at least one message
       if (coreMessages.length === 0) {
         return new Response(
           JSON.stringify({ error: 'Xabar bo\'sh bo\'lishi mumkin emas.' }),
