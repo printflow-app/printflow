@@ -15,7 +15,7 @@ interface Department {
   createdAt: string;
 }
 
-const Bolimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Bolimlar: React.FC<{ currentUser: any }> = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

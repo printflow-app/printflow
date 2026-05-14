@@ -397,19 +397,20 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
                     <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 20 }}>{duration} oylik / Xodimlar: {plan.maxEmployees === 0 ? 'Cheksiz' : plan.maxEmployees}</div>
                     <ul style={{ listStyle: 'none', padding: 0, marginBottom: 24, flex: 1 }}>
                       {(() => {
-                        // Use allowedModules array (admin panel source of truth) + legacy features object fallback
+                        // Same feature list as in-app Billing.tsx — keeps landing/in-app pricing in sync.
+                        // IDs match the ALLOWED_MODULES keys in admin/src/App.tsx.
                         const modules: string[] = Array.isArray(plan.allowedModules) ? plan.allowedModules : [];
                         const allFeatures: Array<{ ids: string[]; label: string }> = [
                           { ids: ['kanban'], label: 'Kanban (Buyurtmalar)' },
-                          { ids: ['inventory', 'warehouse', 'canViewInventory'], label: 'Ombor boshqaruvi' },
-                          { ids: ['attendance', 'ai_chat', 'telegram_bot'], label: 'Telegram Bot (Xabarlar)' },
-                          { ids: ['attendance', 'canViewAttendance'], label: 'Ishga davomat (QR)' },
-                          { ids: ['finance', 'canViewFinance'], label: 'Moliya (Sof foyda/Zarar)' },
-                          { ids: ['kanban', 'tasks'], label: 'Task Management' },
-                          { ids: ['reports', 'statistics', 'kpiTracking', 'kpi'], label: 'Xodimlar KPI tahlili' },
-                          { ids: ['reports', 'finance', 'expenseAnalytics'], label: 'Chiqim Tahlili' },
-                          { ids: ['customers', 'debtors'], label: 'Qarzdorlarga avto-xabar' },
-                          { ids: ['branches', 'multiBranch', 'multi_branch'], label: 'Multi Filiallar' },
+                          { ids: ['finance'], label: 'Moliya (Sof foyda/Zarar)' },
+                          { ids: ['inventory', 'warehouse'], label: 'Ombor boshqaruvi' },
+                          { ids: ['attendance'], label: 'Ishga davomat (QR)' },
+                          { ids: ['reports', 'kpi', 'kpiTracking'], label: 'Hisobotlar & KPI' },
+                          { ids: ['customers'], label: 'Mijozlar bazasi (CRM)' },
+                          { ids: ['ai_chat'], label: 'AI Copilot' },
+                          { ids: ['partners'], label: 'Hamkorlar (Vendor)' },
+                          { ids: ['branches', 'multi_branch', 'multiBranch'], label: 'Multi Filiallar' },
+                          { ids: ['statistics'], label: 'Statistika & Grafiklar' },
                         ];
 
                         const isOn = (entry: { ids: string[] }) =>

@@ -546,7 +546,7 @@ function Plans() {
   const handleDelete = async () => {
     if (!editing) return;
     try {
-      await plansApi.remove(editing.id);
+      await plansApi.delete(editing.id);
       setShowDeleteConfirm(false); setShowModal(false); load();
     } catch (e: any) { setErrorMsg(e.response?.data?.message || 'O\'chirishda xatolik'); }
   };
