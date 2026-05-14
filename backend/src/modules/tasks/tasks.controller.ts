@@ -27,19 +27,24 @@ export class TasksController {
 
   // Kanban Column Endpoints — MUST be before :id routes!
   @Get('columns')
-  getColumns(@Req() req: Request) {
+  getColumns(@Req() req: Request, @Query('departmentId') departmentId?: string) {
     const { viewMode, currentUserId } = this.resolveViewMode(req);
-    return this.tasksService.getColumns(viewMode, currentUserId);
+    return this.tasksService.getColumns(viewMode, currentUserId, departmentId);
+  }
+
+  @Post('columns/ensure-defaults')
+  ensureDefaultColumns(@Body() body: { departmentId: string }) {
+    return this.tasksService.ensureDefaultColumns(body.departmentId);
   }
 
   @Post('columns')
-  createColumn(@Body() body: { title: string; orderIdx: number }) {
-    return this.tasksService.createColumn(body.title, body.orderIdx);
+  createColumn(@Body() body: { title: string; orderIdx: number; departmentId?: string }) {
+    return this.tasksService.createColumn(body.title, body.orderIdx, body.departmentId);
   }
 
   @Put('columns/:id')
-  updateColumn(@Param('id') id: string, @Body() body: { title: string }) {
-    return this.tasksService.updateColumn(id, body.title);
+  updateColumn(@Param('id') id: string, @Body() body: { title: string; departmentId?: string }) {
+    return this.tasksService.updateColumn(id, body.title, body.departmentId);
   }
 
   // NOTE: Column delete kept — only ORDER delete is disabled

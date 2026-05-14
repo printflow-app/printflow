@@ -166,7 +166,8 @@ export const tasksApi = {
     api.post(`/tasks/${id}/view`, { employeeId }),
   backfillIds: () => api.post('/tasks/backfill-ids'),
 
-  getColumns: () => api.get('/tasks/columns'),
+  getColumns: (departmentId?: string) => api.get('/tasks/columns', { params: departmentId ? { departmentId } : {} }),
+  ensureDefaultColumns: (departmentId: string) => api.post('/tasks/columns/ensure-defaults', { departmentId }),
   createColumn: (data: any) => api.post('/tasks/columns', data),
   updateColumn: (id: string, data: any) => api.put(`/tasks/columns/${id}`, data),
   deleteColumn: (id: string) => api.post(`/tasks/columns/${id}/delete`),

@@ -116,6 +116,7 @@ model Department {
   tasks        Task[]
   transactions Transaction[]
   materials    Material[]
+  kanbanColumns KanbanColumn[]
 
   @@index([tenantId])
   @@index([branchId])
@@ -773,10 +774,14 @@ model KanbanColumn {
   orderIdx Int      @default(0)
   tasks    Task[]
 
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+  @@index([departmentId])
 }
 
 model Task {

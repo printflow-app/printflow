@@ -89,8 +89,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
   const fetchData = async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
+      // If department is selected and has no columns yet, auto-create defaults
+      if (activeDepartmentId) {
+        await tasksApi.ensureDefaultColumns(activeDepartmentId).catch(() => {});
+      }
       const [colRes, empRes, ptRes, custRes, taskRes, svcRes, branchRes, vendorRes] = await Promise.all([
-        tasksApi.getColumns(),
+        tasksApi.getColumns(activeDepartmentId),
         employeesApi.findAll(),
         paymentTypesApi.findAll(),
         customersApi.findAll(),
@@ -470,7 +474,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
     e.preventDefault();
     if (newColumnTitle) {
       try {
-        await tasksApi.createColumn({ title: newColumnTitle, orderIdx: columns.length });
+        await tasksApi.createColumn({ title: newColumnTitle, orderIdx: columns.length, ...(activeDepartmentId ? { departmentId: activeDepartmentId } : {}) });
         setNewColumnTitle('');
         setIsNewColumnModalOpen(false);
         fetchData(true);
@@ -739,6 +743,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
         {isLoading ? (
           <div className="w-full flex items-center justify-center" style={{ minHeight: '60vh' }}>
             <LoadingSpinner size="lg" />
+          </div>
+        ) : columns.length === 0 && !activeDepartmentId ? (
+          <div className="w-full h-96 flex flex-col items-center justify-center text-slate-400/50 gap-3">
+            <ClipboardList size={48} className="mb-2" />
+            <p className="font-black uppercase tracking-widest text-xs italic">Bo'limni tanlang</p>
+            <p className="text-[10px] font-bold text-slate-400 text-center max-w-xs">Kanban endi bo'limlar bo'yicha ajratilgan. Yuqoridagi filtrdan bo'lim tanlang.</p>
           </div>
         ) : columns.length === 0 ? (
           <div className="w-full h-96 flex flex-col items-center justify-center text-slate-400/50">

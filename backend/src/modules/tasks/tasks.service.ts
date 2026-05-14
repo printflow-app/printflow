@@ -425,18 +425,34 @@ export class TasksService {
   // DELETE o'chirildi — faqat arxivlash mumkin (audit trail saqlanadi)
   // async remove() — DISABLED intentionally (use archive() instead)
 
-  async getColumns(viewMode: 'all' | 'own' = 'all', currentUserId?: string) {
+  async getColumns(viewMode: 'all' | 'own' = 'all', currentUserId?: string, departmentId?: string) {
     const taskWhere: any = { isArchived: false };
     if (viewMode === 'own' && currentUserId) {
       taskWhere.assignees = { contains: currentUserId };
     }
+    if (departmentId) taskWhere.departmentId = departmentId;
+
+    const colWhere: any = departmentId ? { departmentId } : {};
 
     return this.prisma.kanbanColumn.findMany({
+      where: colWhere,
       orderBy: { orderIdx: 'asc' },
       include: {
-        tasks: { where: taskWhere },
+        tasks: {
+          where: taskWhere,
+          include: { customer: true, paymentType: true, vendor: { select: { id: true, name: true } } },
+        },
       },
     });
+  }
+
+  async ensureDefaultColumns(departmentId: string) {
+    const existing = await this.prisma.kanbanColumn.findFirst({ where: { departmentId } });
+    if (existing) return;
+    const defaults = ['Buyurtma olindi', 'Jarayonda', 'Tayyor', 'Topshirildi'];
+    for (let i = 0; i < defaults.length; i++) {
+      await this.prisma.kanbanColumn.create({ data: { title: defaults[i], orderIdx: i, departmentId } as any });
+    }
   }
 
   async archive(id: string) {
@@ -454,12 +470,12 @@ export class TasksService {
     });
   }
 
-  async createColumn(title: string, orderIdx: number) {
-    return this.prisma.kanbanColumn.create({ data: { title, orderIdx } as any });
+  async createColumn(title: string, orderIdx: number, departmentId?: string) {
+    return this.prisma.kanbanColumn.create({ data: { title, orderIdx, ...(departmentId ? { departmentId } : {}) } as any });
   }
 
-  async updateColumn(id: string, title: string) {
-    return this.prisma.kanbanColumn.update({ where: { id }, data: { title } });
+  async updateColumn(id: string, title: string, departmentId?: string) {
+    return this.prisma.kanbanColumn.update({ where: { id }, data: { title, ...(departmentId !== undefined ? { departmentId: departmentId || null } : {}) } as any });
   }
 
   async removeColumn(id: string) {
