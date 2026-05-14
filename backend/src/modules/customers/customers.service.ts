@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // NOTE: `as any` casts on new Prisma models/fields (CustomerContact, isArchived)
@@ -6,8 +6,33 @@ import { PrismaService } from '../../prisma/prisma.service';
 // the dev server is running. The schema + DB are correct; casts are safe.
 
 @Injectable()
-export class CustomersService {
+export class CustomersService implements OnApplicationBootstrap {
   constructor(private prisma: PrismaService) {}
+
+  // Runs once on server start — fixes any customers where totalDebt was
+  // incorrectly decremented by kassa payments (forExistingDebt bug).
+  async onApplicationBootstrap() {
+    try {
+      const customers = await this.prisma.customer.findMany({
+        select: { id: true, totalDebt: true, tenantId: true },
+      });
+      for (const c of customers) {
+        const agg = await this.prisma.task.aggregate({
+          where: { customerId: c.id },
+          _sum: { totalAmount: true },
+        });
+        const correct = agg._sum.totalAmount ?? 0;
+        if (Math.abs(c.totalDebt - correct) > 0.01) {
+          await this.prisma.customer.update({
+            where: { id: c.id },
+            data: { totalDebt: correct },
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Customer debt recalc on startup failed:', e);
+    }
+  }
 
   async findAll(branchId?: string) {
     return this.prisma.customer.findMany({
