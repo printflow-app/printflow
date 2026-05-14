@@ -45,7 +45,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         rolesApi.findAll(activeBranchId).catch(() => ({ data: [] })),
         paymentTypesApi.findAll().catch(() => ({ data: [] })),
         expenseTypesApi.findAll().catch(() => ({ data: [] })),
-        tasksApi.getColumns(undefined, activeBranchId).catch(() => ({ data: [] })),
+        tasksApi.getColumns(activeBranchId).catch(() => ({ data: [] })),
         servicesApi.findAll(activeBranchId).catch(() => ({ data: [] })),
         employeesApi.findAll().catch(() => ({ data: [] })),
       ]);

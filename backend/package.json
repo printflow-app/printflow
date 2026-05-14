@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npx prisma generate && npx prisma db push --skip-generate && nest build",
+    "build": "npx prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node dist/main.js",
     "prestart:dev": "node -e \"const fs=require('fs');['tsconfig.build.tsbuildinfo','tsconfig.tsbuildinfo'].forEach(f=>{try{fs.unlinkSync(f);console.log('cleaned',f);}catch{}});\"",
