@@ -19,7 +19,29 @@ const STARTER_SUGGESTIONS = [
   'Xizmat uchun yangi narx qoidasi',
 ];
 
-const chatTransport = new DefaultChatTransport({ api: '/api/ai/chat' });
+// Build chat URL the same way as the main axios client (api/index.ts):
+// - dev: '/api/ai/chat' (Vite proxy → localhost:4000)
+// - prod: '<VITE_API_URL>/api/ai/chat' (Railway backend)
+const rawApiUrl = (import.meta as any).env.VITE_API_URL || ((import.meta as any).env.DEV ? '' : 'https://printflow-production-bb78.up.railway.app');
+const API_BASE = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api') : '/api';
+
+const chatTransport = new DefaultChatTransport({
+  api: `${API_BASE}/ai/chat`,
+  credentials: 'include', // send httpOnly auth cookie
+  headers: () => {
+    const h: Record<string, string> = {};
+    try {
+      const raw = sessionStorage.getItem('pf_user_info');
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u?.tenantId) h['X-Tenant-Id'] = u.tenantId;
+      }
+      const bearer = localStorage.getItem('pf_token');
+      if (bearer) h['Authorization'] = `Bearer ${bearer}`;
+    } catch {}
+    return h;
+  },
+});
 
 // ── UI Components ──────────────────────────────────────────────────
 
