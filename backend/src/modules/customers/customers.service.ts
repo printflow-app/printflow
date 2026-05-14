@@ -148,4 +148,27 @@ export class CustomersService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  // Recalculates totalDebt for all customers from their actual task amounts.
+  // Fixes cases where totalDebt was incorrectly decremented on kassa payments.
+  async recalculateAllDebts(tenantId: string) {
+    const customers = await this.prisma.customer.findMany({ where: { tenantId } });
+    const results: { id: string; name: string; old: number; new: number }[] = [];
+
+    for (const c of customers) {
+      const agg = await this.prisma.task.aggregate({
+        where: { customerId: c.id },
+        _sum: { totalAmount: true },
+      });
+      const correctDebt = agg._sum.totalAmount ?? 0;
+      if (Math.abs(c.totalDebt - correctDebt) > 0.01) {
+        await this.prisma.customer.update({
+          where: { id: c.id },
+          data: { totalDebt: correctDebt },
+        });
+        results.push({ id: c.id, name: c.name, old: c.totalDebt, new: correctDebt });
+      }
+    }
+    return { fixed: results.length, changes: results };
+  }
 }

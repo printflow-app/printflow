@@ -13,7 +13,7 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 // =============================================
 
 @Controller('kpi')
-@RequireFeature('kpiTracking')
+@RequireFeature('reports')
 export class KpiController {
   constructor(private kpiService: KpiService) {}
 

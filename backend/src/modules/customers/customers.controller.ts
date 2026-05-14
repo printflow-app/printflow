@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 
 @Controller('customers')
@@ -71,5 +71,12 @@ export class CustomersController {
   @Get(':id/orders')
   getOrderHistory(@Param('id') id: string) {
     return this.customersService.getOrderHistory(id);
+  }
+
+  // Recalculate totalDebt for all customers from actual task amounts
+  @Post('fix-debts')
+  fixDebts(@Req() req: any) {
+    const tenantId = req.user?.tenantId;
+    return this.customersService.recalculateAllDebts(tenantId);
   }
 }
