@@ -334,6 +334,8 @@ export const billingApi = {
   getOrCreatePromoCode: () => api.get('/billing/promo/my-code'),
   getMyPromoStats: () => api.get('/billing/promo/my-stats'),
   validatePromoCode: (code: string) => api.post('/billing/promo/validate', { code }),
+  // Platform settings (super-admin controlled, read-only for tenants)
+  getSetting: (key: string) => api.get(`/billing/settings/${key}`),
 };
 
 // =============================================

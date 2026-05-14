@@ -36,14 +36,39 @@ export class FeatureGuard implements CanActivate {
       throw new ForbiddenException(`FEATURE_DISABLED: Sizning ta'rifingizda '${requiredFeature}' imkoniyati yo'q`);
     }
 
-    let features = {};
-    try {
-      features = JSON.parse(tenant.plan.features);
-    } catch (e) {}
+    // Source of truth — `allowedModules` array (admin panel saves here).
+    // Legacy `features` JSON object is checked as fallback for old plans.
+    const allowedModules: string[] = Array.isArray((tenant.plan as any).allowedModules)
+      ? (tenant.plan as any).allowedModules
+      : [];
 
-    // Some features might be "view_only" or "basic". Here we check truthiness or explicit flags
-    const featureVal = features[requiredFeature];
-    if (featureVal === false || featureVal === undefined || featureVal === null || featureVal === '') {
+    let features: Record<string, any> = {};
+    try { features = JSON.parse(tenant.plan.features); } catch (e) {}
+
+    // Map legacy/short keys → canonical admin-panel module keys, so a controller
+    // marked @RequireFeature('attendance') matches both 'attendance' and any aliases.
+    const aliases: Record<string, string[]> = {
+      attendance:  ['attendance', 'canViewAttendance'],
+      finance:     ['finance', 'canViewFinance'],
+      kanban:      ['kanban', 'tasks'],
+      inventory:   ['inventory', 'warehouse', 'canViewInventory'],
+      reports:     ['reports', 'kpi', 'kpiTracking'],
+      customers:   ['customers', 'debtors'],
+      ai_chat:     ['ai_chat', 'telegram_bot', 'advancedBot'],
+      partners:    ['partners'],
+      branches:    ['branches', 'multiBranch', 'multi_branch'],
+      statistics:  ['statistics'],
+      employees:   ['employees'],
+    };
+    const keysToCheck = aliases[requiredFeature] || [requiredFeature];
+
+    const allowedByModules = keysToCheck.some(k => allowedModules.includes(k));
+    const allowedByFeatures = keysToCheck.some(k => {
+      const v = features[k];
+      return v !== false && v !== undefined && v !== null && v !== '';
+    });
+
+    if (!allowedByModules && !allowedByFeatures) {
       throw new ForbiddenException(`FEATURE_DISABLED: Sizning ta'rifingizda '${requiredFeature}' imkoniyati yo'q`);
     }
 

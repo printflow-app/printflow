@@ -308,11 +308,27 @@ const getActiveModules = (t: any) =>
 function Dashboard() {
   const [stats, setStats] = useState<any>({});
   const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [aiCopilotEnabled, setAiCopilotEnabled] = useState<boolean>(false);
+  const [aiToggleSaving, setAiToggleSaving] = useState<boolean>(false);
 
   useEffect(() => {
     tenantsApi.getStats().then(r => setStats(r.data)).catch(console.error);
     tenantsApi.findAll().then(r => setWorkspaces(r.data)).catch(console.error);
+    settingsApi.get('AI_COPILOT_ENABLED').then(r => setAiCopilotEnabled(!!r.data?.value)).catch(() => {});
   }, []);
+
+  const toggleAiCopilot = async () => {
+    const next = !aiCopilotEnabled;
+    setAiToggleSaving(true);
+    try {
+      await settingsApi.update('AI_COPILOT_ENABLED', next);
+      setAiCopilotEnabled(next);
+    } catch (e) {
+      console.error('AI Copilot toggle failed:', e);
+    } finally {
+      setAiToggleSaving(false);
+    }
+  };
 
   const kpis = [
     { label: 'Jami Workspacelar', value: stats.totalTenants ?? 0, sub: `${stats.activeTenants ?? 0} faol`, accent: '#3b82f6' },
@@ -332,6 +348,41 @@ function Dashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Global Feature Toggles */}
+      <div style={{ background: '#fff', borderRadius: 16, padding: '18px 22px', border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: aiCopilotEnabled ? 'linear-gradient(135deg,#FF6B00,#ff8533)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, transition: 'all 0.3s' }}>
+            <span style={{ filter: aiCopilotEnabled ? 'none' : 'grayscale(1)', opacity: aiCopilotEnabled ? 1 : 0.5 }}>🤖</span>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.2px' }}>AI Copilot (Global)</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', marginTop: 2 }}>
+              {aiCopilotEnabled
+                ? 'Yoqilgan — barcha workspacelarda AI yordamchi tugmasi ko\'rinadi'
+                : 'O\'chirilgan — hech kim AI yordamchidan foydalana olmaydi'}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={toggleAiCopilot}
+          disabled={aiToggleSaving}
+          style={{
+            position: 'relative',
+            width: 56, height: 30, borderRadius: 999,
+            background: aiCopilotEnabled ? '#FF6B00' : '#cbd5e1',
+            border: 'none', cursor: aiToggleSaving ? 'wait' : 'pointer',
+            transition: 'background 0.2s', flexShrink: 0,
+            opacity: aiToggleSaving ? 0.6 : 1,
+          }}
+        >
+          <div style={{
+            position: 'absolute', top: 3, left: aiCopilotEnabled ? 29 : 3,
+            width: 24, height: 24, borderRadius: '50%', background: '#fff',
+            transition: 'left 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+          }} />
+        </button>
+      </div>
+
       {/* KPI strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {kpis.map((k, i) => (
