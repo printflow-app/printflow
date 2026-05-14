@@ -436,12 +436,14 @@ model Branch {
   managerEmployeeId String?   // Employee.id reference (soft, no FK to avoid circular)
   isActive          Boolean   @default(true)
 
-  employees    Employee[]
-  tasks        Task[]
-  customers    Customer[]
-  transactions Transaction[]
-  departments  Department[]
-  services     Service[]
+  employees     Employee[]
+  tasks         Task[]        @relation("OriginBranch")
+  executorTasks Task[]        @relation("ExecutorBranch")
+  customers     Customer[]
+  transactions  Transaction[]
+  departments   Department[]
+  services      Service[]
+  roles         Role[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -458,6 +460,9 @@ model Role {
   id       String @id @default(uuid())
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   name     String
 
@@ -557,6 +562,7 @@ model Role {
 
   @@unique([tenantId, name])
   @@index([tenantId])
+  @@index([branchId])
 }
 
 model Employee {
@@ -831,7 +837,11 @@ model Task {
   isArchived Boolean @default(false) // true bo'lsa — o'chirilgan emas, arxivlangan
 
   branchId String?
-  branch   Branch? @relation(fields: [branchId], references: [id])
+  branch   Branch? @relation("OriginBranch", fields: [branchId], references: [id])
+
+  // Bajaruvchi filial — null = o'zimiz bajaramiz, set = boshqa filiala topshirilgan
+  executorBranchId String?
+  executorBranch   Branch? @relation("ExecutorBranch", fields: [executorBranchId], references: [id], onDelete: SetNull)
 
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
