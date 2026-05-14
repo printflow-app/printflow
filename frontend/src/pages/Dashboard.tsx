@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { employeesApi, branchesApi, billingApi } from '../api';
+import { employeesApi, branchesApi, billingApi, departmentsApi } from '../api';
 import logo from '../assets/logo.png';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -48,23 +48,40 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   // Global branch filter (multiBranch feature)
   const [activeBranchId, setActiveBranchId] = useState<string>(() => localStorage.getItem('pf_active_branch') || '');
   const [branches, setBranches] = useState<any[]>([]);
+  const [activeDepartmentId, setActiveDepartmentId] = useState<string>(() => localStorage.getItem('pf_active_dept') || '');
+  const [departments, setDepartments] = useState<any[]>([]);
 
   useEffect(() => {
     branchesApi.findAll().then(r => {
       const list: any[] = r.data || [];
       setBranches(list);
-      // If only one branch exists and no branch is selected yet, auto-select it
       if (list.length === 1 && !activeBranchId) {
         setActiveBranchId(list[0].id);
         localStorage.setItem('pf_active_branch', list[0].id);
       }
-      // Clear stale branch ID that no longer exists (__main__ is always valid)
       if (activeBranchId && activeBranchId !== '__main__' && !list.some((b: any) => b.id === activeBranchId)) {
         setActiveBranchId('');
         localStorage.removeItem('pf_active_branch');
       }
     }).catch(() => {});
   }, []);
+
+  // Load departments when branch changes
+  useEffect(() => {
+    if (!activeBranchId) {
+      setDepartments([]);
+      setActiveDepartmentId('');
+      localStorage.removeItem('pf_active_dept');
+      return;
+    }
+    const branchParam = activeBranchId === '__main__' ? undefined : activeBranchId;
+    departmentsApi.findAll(branchParam).then(r => {
+      setDepartments(Array.isArray(r.data) ? r.data : []);
+    }).catch(() => setDepartments([]));
+    // Reset dept if switching branch
+    setActiveDepartmentId('');
+    localStorage.removeItem('pf_active_dept');
+  }, [activeBranchId]);
 
   // Profile Form
   const [profileForm, setProfileForm] = useState({ fullName: '', login: '', password: '', confirmPassword: '' });
@@ -541,6 +558,23 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               ))}
             </select>
 
+            {activeBranchId && departments.length > 0 && (
+              <select
+                value={activeDepartmentId}
+                onChange={e => {
+                  setActiveDepartmentId(e.target.value);
+                  if (e.target.value) localStorage.setItem('pf_active_dept', e.target.value);
+                  else localStorage.removeItem('pf_active_dept');
+                }}
+                className="h-9 px-3 rounded-xl border border-orange-200 bg-orange-50 text-[10px] font-black text-orange-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[140px]"
+              >
+                <option value="">Barcha bo'limlar</option>
+                {departments.map((d: any) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            )}
+
             <button
               onClick={(e) => toggleTabLock(activeTab, e)}
               className={`group flex items-center gap-2 h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${lockedTabs.has(activeTab)
@@ -580,13 +614,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
           ) : (
             <React.Suspense fallback={<LoadingSpinner fullPage />}>
-              {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} activeDepartmentId={activeDepartmentId} />}
               {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
               { activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} /> }
               { activeTab === 'bolimlar' && isAdmin && <Bolimlar currentUser={currentUser} /> }
-              {activeTab === 'topshiriqlar' && (p.canViewTasks || isAdmin) && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'topshiriqlar' && (p.canViewTasks || isAdmin) && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} activeDepartmentId={activeDepartmentId} />}
               {activeTab === 'mijozlar' && (p.canViewCustomers || isAdmin) && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'ombor' && (p.canViewInventory || isAdmin) && <Ombor currentUser={currentUser} />}
+              {activeTab === 'ombor' && (p.canViewInventory || isAdmin) && <Ombor currentUser={currentUser} activeDepartmentId={activeDepartmentId} />}
               {activeTab === 'davomat' && (p.canViewAttendance || isAdmin) && <Davomat currentUser={currentUser} />}
               {activeTab === 'billing' && (p.canManageBilling || p.canViewBillingStatus || isAdmin) && <Billing />}
               {activeTab === 'admins' && isAdmin && <Admins currentUser={currentUser} />}

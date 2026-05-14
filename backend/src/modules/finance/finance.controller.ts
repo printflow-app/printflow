@@ -15,13 +15,14 @@ export class FinanceController {
 
   @Get('transactions')
   async findAll(
-    @Query('start') start?: string, 
-    @Query('end') end?: string, 
+    @Query('start') start?: string,
+    @Query('end') end?: string,
     @Query('branchId') branchId?: string,
+    @Query('departmentId') departmentId?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number
   ) {
-    return this.financeService.findAll(start, end, branchId, page, limit);
+    return this.financeService.findAll(start, end, branchId, page, limit, departmentId);
   }
 
   @Post('transactions')
@@ -30,13 +31,13 @@ export class FinanceController {
   }
 
   @Get('dinamika')
-  async getDinamika(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string) {
-    return this.financeService.getDinamika(start, end, branchId);
+  async getDinamika(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string, @Query('departmentId') departmentId?: string) {
+    return this.financeService.getDinamika(start, end, branchId, departmentId);
   }
 
   @Get('stats-by-payment-type')
-  async getStatsByPaymentType(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string) {
-    return this.financeService.getStatsByPaymentType(start, end, branchId);
+  async getStatsByPaymentType(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string, @Query('departmentId') departmentId?: string) {
+    return this.financeService.getStatsByPaymentType(start, end, branchId, departmentId);
   }
 
   @Get('expense-breakdown')

@@ -152,7 +152,7 @@ export const expenseTypesApi = {
 // TASKS & KANBAN
 // =============================================
 export const tasksApi = {
-  findAll: (branchId?: string) => api.get('/tasks', { params: branchId ? { branchId } : {} }),
+  findAll: (branchId?: string, departmentId?: string) => api.get('/tasks', { params: { ...(branchId ? { branchId } : {}), ...(departmentId ? { departmentId } : {}) } }),
   findOne: (id: string) => api.get(`/tasks/${id}`),
   create: (data: any, employeeId: string) =>
     api.post(`/tasks?employeeId=${employeeId}`, data),
@@ -245,7 +245,7 @@ export const servicesApi = {
 // OMBOR (Inventory)
 // =============================================
 export const inventoryApi = {
-  getMaterials: () => api.get('/inventory/materials'),
+  getMaterials: (departmentId?: string) => api.get('/inventory/materials', { params: departmentId ? { departmentId } : {} }),
   getMaterial: (id: string) => api.get(`/inventory/materials/${id}`),
   createMaterial: (data: any) => api.post('/inventory/materials', data),
   updateMaterial: (id: string, data: any) =>

@@ -12,10 +12,11 @@ export class TasksService {
     private telegramService: TelegramService,
   ) {}
 
-  async findAll(branchId?: string, viewMode: 'all' | 'own' = 'all', currentUserId?: string) {
+  async findAll(branchId?: string, viewMode: 'all' | 'own' = 'all', currentUserId?: string, departmentId?: string) {
     const where: any = {
       isArchived: false,
       ...(branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {}),
+      ...(departmentId ? { departmentId } : {}),
     };
 
     // tasks:view_own — only return tasks where the current employee is an assignee
@@ -115,6 +116,7 @@ export class TasksService {
           coefficient: Number(data.coefficient || 1.0),
           deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
           branchId: data.branchId || data.targetBranchId || undefined,
+          departmentId: data.departmentId || undefined,
         } as any
       });
 

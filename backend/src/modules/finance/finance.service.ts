@@ -40,6 +40,11 @@ export class FinanceService {
     return {};
   }
 
+  private deptFilter(departmentId?: string): Record<string, any> {
+    if (departmentId) return { departmentId };
+    return {};
+  }
+
   private getDateRange(start?: string, end?: string) {
     if (!start && !end) return {};
 
@@ -57,8 +62,8 @@ export class FinanceService {
     return where;
   }
 
-  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20) {
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId) };
+  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string) {
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
 
     const [transactions, total] = await Promise.all([
       this.prisma.transaction.findMany({
@@ -140,6 +145,7 @@ export class FinanceService {
           expenseTypeId: vendorId ? null : expenseTypeId,
           employeeId: vendorId ? null : employeeId,
           vendorId: vendorId || null,
+          departmentId: data.departmentId || null,
           ...(data.date ? { date: new Date(data.date) } : {}),
         } as any,
       });
@@ -176,7 +182,7 @@ export class FinanceService {
     return transaction;
   }
 
-  async getDinamika(start?: string, end?: string, branchId?: string) {
+  async getDinamika(start?: string, end?: string, branchId?: string, departmentId?: string) {
     let startDate = start ? this.parseDayBoundary(start, false) : null;
     if (!startDate) {
       startDate = new Date();
@@ -190,7 +196,7 @@ export class FinanceService {
       endDate.setUTCHours(23, 59, 59, 999);
     }
 
-    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId) };
+    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -231,8 +237,8 @@ export class FinanceService {
     return Object.values(data);
   }
 
-  async getStatsByPaymentType(start?: string, end?: string, branchId?: string) {
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId) };
+  async getStatsByPaymentType(start?: string, end?: string, branchId?: string, departmentId?: string) {
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,

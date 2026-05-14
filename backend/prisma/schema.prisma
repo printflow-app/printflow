@@ -113,6 +113,10 @@ model Department {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  tasks        Task[]
+  transactions Transaction[]
+  materials    Material[]
+
   @@index([tenantId])
   @@index([branchId])
   @@unique([tenantId, name])
@@ -294,6 +298,9 @@ model Material {
   reservedStock Float           @default(0)      // Band qilingan (ajratilgan) miqdor
   minStock      Float           @default(0)      // Minimum qoldiq (ogohlantirish uchun)
 
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
   movements     StockMovement[]
   bom           ServiceMaterial[]
 
@@ -301,6 +308,7 @@ model Material {
   updatedAt     DateTime        @updatedAt
 
   @@index([tenantId])
+  @@index([departmentId])
 }
 
 model StockMovement {
@@ -730,10 +738,14 @@ model Transaction {
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
 
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+  @@index([departmentId])
 }
 
 model ExpenseType {
@@ -810,6 +822,9 @@ model Task {
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
 
   // Outsourcing / Vendor
   vendorId   String?

@@ -5,7 +5,7 @@ import {
   Users, AlertTriangle, ExternalLink, Package, Building2,
   Archive, ArchiveRestore, Handshake, AlertOctagon
 } from 'lucide-react';
-import { tasksApi, taskExpensesApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi } from '../api';
+import { tasksApi, taskExpensesApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi, departmentsApi } from '../api';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
@@ -42,7 +42,7 @@ interface Column {
   title: string;
 }
 
-const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
+const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartmentId?: string }> = ({ currentUser, activeBranchId, activeDepartmentId }) => {
   const p = currentUser.permissions || {};
   const isAdmin =
     currentUser.role?.name?.toLowerCase() === 'admin' ||
@@ -59,6 +59,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [customers, setCustomers] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [deptOptions, setDeptOptions] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -93,7 +94,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         employeesApi.findAll(),
         paymentTypesApi.findAll(),
         customersApi.findAll(),
-        tasksApi.findAll(activeBranchId).catch(() => ({ data: [] })),
+        tasksApi.findAll(activeBranchId, activeDepartmentId).catch(() => ({ data: [] })),
         (p.canViewServices || currentUser.role?.name?.toLowerCase() === 'admin') ? servicesApi.findAll().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
         branchesApi.findAll().catch(() => ({ data: [] })),
         (p.canViewVendors || currentUser.role?.name?.toLowerCase() === 'admin') ? vendorsApi.findAll().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
@@ -129,6 +130,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   useEffect(() => {
     fetchData();
+  }, [activeBranchId, activeDepartmentId]);
+
+  useEffect(() => {
+    if (!activeBranchId) { setDeptOptions([]); return; }
+    const branchParam = activeBranchId === '__main__' ? undefined : activeBranchId;
+    departmentsApi.findAll(branchParam).then(r => setDeptOptions(Array.isArray(r.data) ? r.data : [])).catch(() => setDeptOptions([]));
   }, [activeBranchId]);
 
   const showStatus = (type: 'success' | 'error', text: string) => {
@@ -179,7 +186,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     manualTotal: '',
     justification: '',
     deadlineAt: '',
-    targetBranchId: ''
+    targetBranchId: '',
+    departmentId: ''
   });
   // Vendor assignment
   const [vendorAssign, setVendorAssign] = useState({ enabled: false, vendorId: '', amount: '', note: '' });
@@ -259,7 +267,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       customerId: '', customerName: '', customerPhone: '',
       totalAmount: '', depositAmount: '', paymentTypeId: paymentTypes[0]?.id || '',
       items: [], manualTotal: '', justification: '', deadlineAt: '',
-      targetBranchId: activeBranchId || (branches.length > 0 ? branches[0].id : '')
+      targetBranchId: activeBranchId || (branches.length > 0 ? branches[0].id : ''),
+      departmentId: activeDepartmentId || ''
     });
     setVendorAssign({ enabled: false, vendorId: '', amount: '', note: '' });
     setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0 });
@@ -367,6 +376,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         assigneeIds: newTaskForm.assigneeIds,
         deadlineAt: newTaskForm.deadlineAt || null,
         branchId: newTaskForm.targetBranchId || activeBranchId || undefined,
+        departmentId: newTaskForm.departmentId || activeDepartmentId || undefined,
         items: newTaskForm.items.map(it => {
           let adjustedTotal = it.totalAmount;
           if (finalTotal !== calculatedTotal) {
@@ -1177,6 +1187,20 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   >
                     <option value="">-- Tanlangan filial --</option>
                     {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {deptOptions.length > 0 && (
+                <div className="mb-3">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Bo'lim (ixtiyoriy)</label>
+                  <select
+                    value={newTaskForm.departmentId}
+                    onChange={(e) => setNewTaskForm(f => ({ ...f, departmentId: e.target.value }))}
+                    className="select-minimal h-10 font-black text-violet-600 border-violet-200"
+                  >
+                    <option value="">— Barcha bo'limlar —</option>
+                    {deptOptions.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </div>
               )}

@@ -7,8 +7,8 @@ export class InventoryController {
 
   // Materials CRUD
   @Get('materials')
-  findAllMaterials() {
-    return this.inventoryService.findAllMaterials();
+  findAllMaterials(@Query('departmentId') departmentId?: string) {
+    return this.inventoryService.findAllMaterials(departmentId);
   }
 
   @Get('materials/:id')

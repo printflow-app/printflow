@@ -31,7 +31,7 @@ interface Movement {
   createdAt: string;
 }
 
-const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Ombor: React.FC<{ currentUser: any; activeDepartmentId?: string }> = ({ currentUser, activeDepartmentId }) => {
   const isAdmin    = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const p          = currentUser.permissions || {};
   const canAddItem  = isAdmin || p.canAddInventoryItem  || p.canManageInventory;
@@ -63,7 +63,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [calcForm, setCalcForm] = useState({ productQty: '10', materialQty: '1', result: 0.1 });
 
   // Forms
-  const [newMaterialForm, setNewMaterialForm] = useState<{ name: string; unit: string; currentStock: string | number; minStock: string | number }>({ name: '', unit: 'dona', currentStock: '', minStock: '' });
+  const [newMaterialForm, setNewMaterialForm] = useState<{ name: string; unit: string; currentStock: string | number; minStock: string | number; departmentId: string }>({ name: '', unit: 'dona', currentStock: '', minStock: '', departmentId: '' });
   const [editMaterialForm, setEditMaterialForm] = useState<any>({});
   const [stockForm, setStockForm] = useState<{ quantity: string | number; note: string }>({ quantity: '', note: '' });
 
@@ -75,7 +75,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const fetchData = useCallback(async (refreshSelectedId?: string) => {
     try {
       const [matRes, movRes, svcRes] = await Promise.all([
-        inventoryApi.getMaterials().catch(() => ({ data: [] })),
+        inventoryApi.getMaterials(activeDepartmentId).catch(() => ({ data: [] })),
         inventoryApi.getMovements().catch(() => ({ data: [] })),
         servicesApi.findAll().catch(() => ({ data: [] })),
       ]);
@@ -95,7 +95,7 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData, activeDepartmentId]);
 
   useAutoRefresh(() => fetchData(selectedMaterial?.id), {
     intervalMs: 20000,
@@ -118,10 +118,11 @@ const Ombor: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         ...newMaterialForm,
         currentStock: Number(newMaterialForm.currentStock),
         minStock: Number(newMaterialForm.minStock),
+        departmentId: newMaterialForm.departmentId || activeDepartmentId || null,
       });
       showStatus('success', 'Material qo\'shildi!');
       setIsAddMaterialOpen(false);
-      setNewMaterialForm({ name: '', unit: 'dona', currentStock: '0', minStock: '0' });
+      setNewMaterialForm({ name: '', unit: 'dona', currentStock: '0', minStock: '0', departmentId: '' });
       fetchData();
     } catch {
       showStatus('error', 'Xatolik yuz berdi!');

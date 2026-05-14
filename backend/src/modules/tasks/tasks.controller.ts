@@ -55,9 +55,9 @@ export class TasksController {
 
   // Task Endpoints
   @Get()
-  findAll(@Query('branchId') branchId?: string, @Req() req?: any) {
+  findAll(@Query('branchId') branchId?: string, @Query('departmentId') departmentId?: string, @Req() req?: any) {
     const { viewMode, currentUserId } = this.resolveViewMode(req);
-    return this.tasksService.findAll(branchId, viewMode, currentUserId);
+    return this.tasksService.findAll(branchId, viewMode, currentUserId, departmentId);
   }
 
   @Get('archived')
