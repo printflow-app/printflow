@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, ShieldCheck, Building2, Layers } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, rolesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
+const FiliallarPage = React.lazy(() => import('./Filiallar'));
+const BolimlarPage = React.lazy(() => import('./Bolimlar'));
 const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.role?.name?.toLowerCase() === 'superadmin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
@@ -17,6 +19,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void } | null>(null);
+  const [activeAdminTab, setActiveAdminTab] = useState<'admins' | 'branches' | 'bolimlar'>('admins');
 
   // Employee Form
   const [newEmployee, setNewEmployee] = useState<any>({
@@ -128,8 +131,41 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   if (isLoading) return <LoadingSpinner fullPage />;
 
   return (
-    <div className="space-y-10 animate-fade-in relative">
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      {/* Tab switcher */}
+      <div className="flex gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
+        {[
+          { id: 'admins', label: "Ma'murlar", icon: ShieldCheck },
+          { id: 'branches', label: 'Filiallar', icon: Building2 },
+          { id: 'bolimlar', label: "Bo'limlar", icon: Layers },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveAdminTab(tab.id as any)}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+              activeAdminTab === tab.id
+                ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/20'
+                : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+            }`}
+          >
+            <tab.icon size={15} /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeAdminTab === 'branches' && (
+        <React.Suspense fallback={<LoadingSpinner />}>
+          <FiliallarPage currentUser={currentUser} />
+        </React.Suspense>
+      )}
+
+      {activeAdminTab === 'bolimlar' && (
+        <React.Suspense fallback={<LoadingSpinner />}>
+          <BolimlarPage currentUser={currentUser} />
+        </React.Suspense>
+      )}
+
+      {activeAdminTab === 'admins' && <div className="space-y-6 animate-fade-in">
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
             <h3 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
@@ -206,7 +242,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             </table>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Admin Modal: Create */}
       <Modal

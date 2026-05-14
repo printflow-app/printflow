@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TenantContext } from '../../common/tenant/tenant.context';
 import * as bcrypt from 'bcrypt';
 
 // =============================================
@@ -28,6 +29,26 @@ export class EmployeesService {
   }
 
   async create(data: any) {
+    // ── Plan limit tekshiruvi ─────────────────────────────────────
+    const tenantId = TenantContext.tryGetTenantId();
+    if (tenantId) {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        include: { plan: true },
+      });
+      const plan = tenant?.plan as any;
+      const maxEmployees: number = plan?.maxEmployees ?? 0;
+      if (maxEmployees > 0) {
+        const existingCount = await this.prisma.employee.count({});
+        if (existingCount >= maxEmployees) {
+          throw new ForbiddenException(
+            `Tarif limiti: maksimal ${maxEmployees} ta xodim. Tarifni yangilang.`,
+          );
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────
+
     // Auto-generate login if not provided
     if (!data.login) {
       let baseLogin = data.fullName.toLowerCase().replace(/\s+/g, '_');

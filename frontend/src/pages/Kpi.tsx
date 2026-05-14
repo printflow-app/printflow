@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Trophy, Activity, Clock, Calendar, Minus } from 'lucide-react';
+import { TrendingUp, Trophy, Activity, Clock, Calendar } from 'lucide-react';
 import { kpiApi, reportsApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
@@ -191,6 +191,18 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <p className="text-xs font-bold text-slate-500 leading-relaxed">
             Siz faqat o'zingizning samaradorlik ko'rsatkichlaringizni ko'ra olasiz. Boshqa xodimlarning ma'lumotlarini ko'rish uchun "KPI ko'rish" ruxsati kerak.
+          </p>
+        </div>
+      )}
+
+      {!me && rows.length === 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-10 text-center">
+          <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Activity size={28} className="text-orange-400" />
+          </div>
+          <h3 className="text-base font-black text-slate-700 uppercase tracking-tight mb-2">Ma'lumot yo'q</h3>
+          <p className="text-[11px] font-bold text-slate-400 leading-relaxed">
+            Hozircha KPI ma'lumotlari mavjud emas.<br />Xodimlar vazifalar bajarganida statistika to'ldiriladi.
           </p>
         </div>
       )}

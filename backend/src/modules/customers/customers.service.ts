@@ -11,7 +11,7 @@ export class CustomersService {
 
   async findAll(branchId?: string) {
     return this.prisma.customer.findMany({
-      where: branchId ? { branchId } : undefined,
+      where: branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : undefined,
       orderBy: { updatedAt: 'desc' },
       include: {
         contacts: { orderBy: { isPrimary: 'desc' } },

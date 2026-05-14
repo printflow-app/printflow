@@ -27,6 +27,8 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
   const [branches, setBranches] = useState<any[]>([]);
   const [localBranchId, setLocalBranchId] = useState(activeBranchId || '');
 
+  useEffect(() => { setLocalBranchId(activeBranchId || ''); }, [activeBranchId]);
+
   const localYMD = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -77,7 +79,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
     }
   };
 
-  useEffect(() => { fetchData(); }, [startDate, endDate, localBranchId, activeBranchId]);
+  useEffect(() => { fetchData(); }, [startDate, endDate, localBranchId]);
 
   return (
     <div className="space-y-4 sm:space-y-6">

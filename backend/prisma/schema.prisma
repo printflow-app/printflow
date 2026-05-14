@@ -30,7 +30,10 @@ model Plan {
   price3m     Float    @default(0)       // 3 oylik narx
   price6m     Float    @default(0)       // 6 oylik narx
   price12m    Float    @default(0)       // 12 oylik narx
-  maxEmployees Int     @default(8)       // Xodimlar limiti (0 = cheksiz)
+  maxEmployees   Int   @default(8)       // Xodimlar limiti (0 = cheksiz)
+  maxBranches    Int   @default(1)       // Filiallar limiti (0 = cheksiz)
+  maxDepartments Int   @default(1)       // Bo'limlar limiti (0 = cheksiz)
+  allowedModules String[]                // ['finance','kanban','inventory','reports','ai_chat']
   features    String   @default("{}")    // JSON: { "kanban": true, "finance": false, ... }
   description String?                    // Qisqa ta'rif
   isPopular   Boolean  @default(false)   // Eng ommabop — highlight qilish
@@ -93,6 +96,26 @@ model Tenant {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  departments        Department[]
+}
+
+// Bo'limlar (Departments) — Tenant ichidagi ichki tashkiliy bo'linmalar
+model Department {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId    String?  // Qaysi fililiga tegishli (null = asosiy/bosh ofis)
+  branch      Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@unique([tenantId, name])
 }
 
 model SuperAdmin {
@@ -404,6 +427,7 @@ model Branch {
   tasks        Task[]
   customers    Customer[]
   transactions Transaction[]
+  departments  Department[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

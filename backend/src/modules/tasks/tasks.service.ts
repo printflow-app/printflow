@@ -15,7 +15,7 @@ export class TasksService {
   async findAll(branchId?: string, viewMode: 'all' | 'own' = 'all', currentUserId?: string) {
     const where: any = {
       isArchived: false,
-      ...(branchId ? { branchId } : {}),
+      ...(branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {}),
     };
 
     // tasks:view_own — only return tasks where the current employee is an assignee

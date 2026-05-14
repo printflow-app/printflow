@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { LogOut, LayoutDashboard, Building2, Plus, X, Users, CreditCard, Package, Check, XCircle, Eye, EyeOff, Tag, Image, Trash2, Upload } from 'lucide-react';
+import { LogOut, LayoutDashboard, Building2, Plus, X, Users, CreditCard, Package, Check, XCircle, Eye, EyeOff, Tag, Image, Trash2, Upload, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
 import { authApi, tenantsApi, leadsApi, plansApi, settingsApi, platformApi } from './api';
 import { UIProvider, useUI } from './ui';
@@ -469,116 +469,85 @@ function Dashboard() {
   );
 }
 
-// ========== FEATURE KEYS (Granular) ==========
-const PLAN_FEATURES = [
-  {
-    category: 'Moliya & Kassa',
-    features: [
-      { key: 'finance', label: "Moliya bo'limi (Dashboard)" },
-      { key: 'canViewFinance', label: "Moliyani ko'rish" },
-      { key: 'canAddIncome', label: "Kirim qo'shish" },
-      { key: 'canAddExpense', label: "Chiqim qo'shish" },
-      { key: 'canViewTotalBalance', label: "Kassa qoldig'ini ko'rish" },
-      { key: 'canManagePaymentTypes', label: "To'lov turlarini boshqarish" },
-    ]
-  },
-  {
-    category: 'Xizmatlar (Kanban)',
-    features: [
-      { key: 'kanban', label: "Kanban (Buyurtmalar) bo'limi" },
-      { key: 'canViewTasks', label: "Topshiriqlarni ko'rish" },
-      { key: 'canCreateTask', label: "Yangi topshiriq yaratish" },
-      { key: 'canEditTask', label: "Topshiriqni tahrirlash" },
-      { key: 'canDeleteTask', label: "Topshiriqni o'chirish" },
-      { key: 'canMoveTask', label: "Bosqichdan bosqichga o'tkazish" },
-      { key: 'canManageColumns', label: "Bosqichlarni boshqarish" },
-    ]
-  },
-  {
-    category: 'Mijozlar',
-    features: [
-      { key: 'customers', label: "Mijozlar bo'limi" },
-      { key: 'canViewCustomers', label: "Mijozlar ro'yxatini ko'rish" },
-      { key: 'canManageCustomers', label: "Mijozlarni boshqarish" },
-    ]
-  },
-  {
-    category: 'Ombor & Inventar',
-    features: [
-      { key: 'warehouse', label: "Ombor bo'limi" },
-      { key: 'canViewInventory', label: "Omborni ko'rish" },
-      { key: 'canManageInventory', label: "Omborni boshqarish" },
-    ]
-  },
-  {
-    category: 'Davomat',
-    features: [
-      { key: 'attendance', label: "Davomat bo'limi" },
-      { key: 'canViewAttendance', label: "Davomatni ko'rish" },
-      { key: 'canManageAttendance', label: "Davomatni boshqarish" },
-    ]
-  },
-  {
-    category: 'Xizmatlar Katalogi & Tizim',
-    features: [
-      { key: 'employees', label: "Xodimlar bo'limi" },
-      { key: 'canViewEmployees', label: "Xodimlarni ko'rish" },
-      { key: 'canManageEmployees', label: "Xodimlarni boshqarish" },
-      { key: 'canManageRoles', label: "Lavozimlarni boshqarish" },
-      { key: 'canViewSalary', label: "Maoshlarni ko'rish" },
-      { key: 'canViewServices', label: "Xizmatlar katalogni ko'rish" },
-      { key: 'canManageServices', label: "Xizmatlar katalogni boshqarish" },
-    ]
-  },
-  {
-    category: '🚀 Premium Modullar',
-    features: [
-      { key: 'telegram_bot', label: 'Telegram Bot (Asosiy xabarlar)' },
-      { key: 'advancedBot', label: '⚡ Kengaytirilgan Bot (Hisobotlar, Ogohlantirishlar)' },
-      { key: 'kpiTracking', label: '📊 KPI Tahlili (Xodimlar samaradorligi)' },
-      { key: 'expenseAnalytics', label: '📈 Chiqim Tahlili (Kategoriyalar grafigi)' },
-      { key: 'multiBranch', label: '🏢 Multi-Filial (Ko\'p ofis boshqaruvi)' },
-      { key: 'tasks', label: 'Task Management (Vazifalar)' },
-      { key: 'debtors', label: 'Qarzdorlarga avto-xabar' },
-    ]
-  }
+// ========== UNIFIED PAGE & MODULE ACCESS ==========
+const ALLOWED_MODULES = [
+  { key: 'finance',       label: 'Kassa (Moliya)',      icon: '💰', desc: 'Tranzaksiyalar va kassa' },
+  { key: 'statistics',    label: 'Statistika',         icon: '📈', desc: 'Tahliliy grafiklar' },
+  { key: 'reports',       label: 'Hisobotlar',         icon: '📊', desc: 'KPI va chuqur tahlillar' },
+  { key: 'kanban',        label: 'Kanban (Xizmatlar)',  icon: '📋', desc: 'Buyurtmalar ish oqimi' },
+  { key: 'customers',     label: 'Mijozlar bazasi',     icon: '👥', desc: 'CRM va mijozlar hisobi' },
+  { key: 'employees',     label: 'Xodimlar',           icon: '👨‍🔧', desc: 'Xodimlar va rollar' },
+  { key: 'administration', label: 'Ma\'muriyat',        icon: '🛡️', desc: 'Tizim nazorati' },
+  { key: 'inventory',     label: 'Ombor',              icon: '📦', desc: 'Materiallar va stok' },
+  { key: 'attendance',    label: 'Davomat',            icon: '🕐', desc: 'Keldi-ketdi nazorati' },
+  { key: 'partners',      label: 'Hamkorlar',          icon: '🤝', desc: 'Vendor va hamkorlar' },
+  { key: 'settings',      label: 'Tizim sozlamalari',   icon: '⚙️', desc: 'Tizim konfiguratsiyasi' },
+  { key: 'branches',      label: 'Filiallar',          icon: '🏢', desc: 'Filiallar boshqaruvi' },
+  { key: 'subscriptions', label: 'Obuna va to\'lovlar', icon: '💳', desc: 'Billing va tariflar' },
+  { key: 'ai_chat',       label: 'AI Copilot',         icon: '🤖', desc: 'AI chatbot yordamchisi' },
 ];
 
-const ALL_FEATURES_KEYS = PLAN_FEATURES.flatMap(g => g.features.map(f => f.key));
+const defaultForm = () => ({ 
+  name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0, 
+  maxEmployees: 8, maxBranches: 1, maxDepartments: 1, allowedModules: [] as string[], 
+  description: '', isPopular: false, sortOrder: 0 
+});
 
 function Plans() {
-  const [plans, setPlans] = useState<any[]>([]); const [showModal, setShowModal] = useState(false); const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({ name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0, maxEmployees: 8, description: '', isPopular: false, sortOrder: 0, features: {} as Record<string, boolean> });
+  const [plans, setPlans] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const [form, setForm] = useState(defaultForm());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
   const [errorMsg, setErrorMsg] = useState('');
 
   const load = () => plansApi.findAll().then(r => setPlans(r.data)).catch(console.error);
   useEffect(() => { load(); }, []);
 
   const openCreate = () => {
-    const features: Record<string, boolean> = {}; ALL_FEATURES_KEYS.forEach(k => features[k] = false);
-    setForm({ name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0, maxEmployees: 8, description: '', isPopular: false, sortOrder: 0, features });
+    setForm(defaultForm());
     setEditing(null); setErrorMsg(''); setShowModal(true);
   };
   const openEdit = (p: any) => {
-    let features: Record<string, boolean> = {}; try { const parsed = JSON.parse(p.features); ALL_FEATURES_KEYS.forEach(k => features[k] = !!parsed[k]); } catch { ALL_FEATURES_KEYS.forEach(k => features[k] = false); }
-    setForm({ name: p.name, displayName: p.displayName, price3m: p.price3m, price6m: p.price6m, price12m: p.price12m, maxEmployees: p.maxEmployees, description: p.description || '', isPopular: p.isPopular, sortOrder: p.sortOrder, features });
+    setForm({
+      name: p.name, displayName: p.displayName,
+      price3m: p.price3m, price6m: p.price6m, price12m: p.price12m,
+      maxEmployees: p.maxEmployees ?? 8,
+      maxBranches: p.maxBranches ?? 1,
+      maxDepartments: p.maxDepartments ?? 1,
+      allowedModules: p.allowedModules ?? [],
+      description: p.description || '', isPopular: p.isPopular, sortOrder: p.sortOrder,
+    });
     setEditing(p); setErrorMsg(''); setShowModal(true);
   };
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form, features: JSON.stringify(form.features) };
+    const payload = { ...form };
     try {
-      if (editing) await plansApi.update(editing.id, payload); else await plansApi.create(payload);
+      if (editing) {
+        await plansApi.update(editing.id, payload);
+      } else {
+        await plansApi.create(payload);
+      }
       setShowModal(false); load();
-    } catch (err: any) { setErrorMsg(err.response?.data?.message || 'Xatolik yuz berdi'); }
+    } catch (err: any) { 
+      console.error('Save error:', err);
+      setErrorMsg(err.response?.data?.message || 'Xatolik yuz berdi'); 
+    }
+  };
+  const toggleModule = (key: string) => {
+    setForm(prev => ({
+      ...prev,
+      allowedModules: prev.allowedModules.includes(key)
+        ? prev.allowedModules.filter(m => m !== key)
+        : [...prev.allowedModules, key],
+    }));
   };
   const handleDelete = async () => {
     if (!editing) return;
     try {
-      await plansApi.delete(editing.id);
-      setShowModal(false); load();
+      await plansApi.remove(editing.id);
+      setShowDeleteConfirm(false); setShowModal(false); load();
     } catch (e: any) { setErrorMsg(e.response?.data?.message || 'O\'chirishda xatolik'); }
   };
 
@@ -602,65 +571,89 @@ function Plans() {
         ))}
       </div>
 
-        {showModal && (
-          <div className="modal-overlay">
-            <div className="modal-content" style={{ maxWidth: 640, maxHeight: '90vh', overflow: 'auto' }}>
-              <div className="modal-header"><h2>{editing ? 'Tahrirlash' : 'Yangi Tarif'}</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button></div>
-              <form onSubmit={handleSave}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div className="form-group"><label>Nomi (unikal)</label><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })} placeholder="STARTER" /></div>
-                  <div className="form-group"><label>Ko'rsatiladigan nomi</label><input required value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} placeholder="Starter (Kichik)" /></div>
-                  <div className="form-group"><label>3 oylik narx (UZS)</label><input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} /></div>
-                  <div className="form-group"><label>6 oylik narx (UZS)</label><input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} /></div>
-                  <div className="form-group"><label>12 oylik narx (UZS)</label><input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} /></div>
-                  <div className="form-group"><label>Xodimlar limiti (0=cheksiz)</label><input type="number" required value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} /></div>
-                </div>
-                <div className="form-group"><label>Tavsif</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input type="checkbox" checked={form.isPopular} onChange={e => setForm({ ...form, isPopular: e.target.checked })} style={{ width: 18, height: 18 }} />
-                  <label style={{ margin: 0 }}>🔥 Eng ommabop (Highlight)</label>
-                </div>
-                <div className="form-group"><label>Platforma funksiyalari (Ruxsatlar)</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginTop: 8 }}>
-                    {PLAN_FEATURES.map((group, i) => (
-                      <div key={i} style={{ border: '1px solid var(--border)', padding: 14, borderRadius: 10 }}>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', marginBottom: 10, textTransform: 'uppercase' }}>
-                          {group.category}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 740, maxHeight: '92vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
+            <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900 }}>{editing ? 'TARIFNI TAHRIRLASH' : 'YANGI TARIF'}</h2>
+              <button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button>
+            </div>
+            
+            {errorMsg && (
+              <div style={{ margin: '16px 24px 0', padding: '12px 16px', background: '#fef2f2', border: '1px solid #fee2e2', color: '#dc2626', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <AlertCircle size={18} /> {errorMsg}
+              </div>
+            )}
+            
+            <form id="plan-form" onSubmit={handleSave} style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="form-group"><label>NOMI (UNIKAL)</label><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })} placeholder="STARTER" /></div>
+                <div className="form-group"><label>KO'RSATILADIGAN NOMI</label><input required value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} placeholder="Starter Plan" /></div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 16 }}>
+                <div className="form-group"><label>3 OYLIK (UZS)</label><input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} /></div>
+                <div className="form-group"><label>6 OYLIK (UZS)</label><input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} /></div>
+                <div className="form-group"><label>12 OYLIK (UZS)</label><input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} /></div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 16 }}>
+                <div className="form-group"><label>XODIMLAR (0=∞)</label><input type="number" required min={0} value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} /></div>
+                <div className="form-group"><label>FILIALLAR (0=∞)</label><input type="number" required min={0} value={form.maxBranches} onChange={e => setForm({ ...form, maxBranches: +e.target.value })} /></div>
+                <div className="form-group"><label>BO'LIMLAR (0=∞)</label><input type="number" required min={0} value={form.maxDepartments} onChange={e => setForm({ ...form, maxDepartments: +e.target.value })} /></div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: 16 }}><label>TAVSIF</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              
+              <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 24, border: '1px solid #e2e8f0', marginTop: 10 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
+                  <input type="checkbox" checked={form.isPopular} onChange={e => setForm({ ...form, isPopular: e.target.checked })} style={{ width: 18, height: 18, accentColor: '#FF6B00' }} />
+                  <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>🔥 ENG OMMABOP REJA (HIGHLIGHT)</span>
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: 16, fontWeight: 900, color: '#0f172a', letterSpacing: '0.5px' }}>SAHIFALAR VA MODULLARGA RUXSAT</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 12 }}>
+                  {ALLOWED_MODULES.map(mod => {
+                    const active = form.allowedModules.includes(mod.key);
+                    return (
+                      <div
+                        key={mod.key}
+                        onClick={() => toggleModule(mod.key)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+                          borderRadius: 14, cursor: 'pointer', transition: 'all 0.15s ease',
+                          background: active ? 'rgba(255,107,0,0.05)' : '#fafafa',
+                          border: active ? '2px solid #FF6B00' : '2px solid #e2e8f0',
+                          boxShadow: active ? '0 4px 10px rgba(255,107,0,0.1)' : 'none',
+                        }}
+                      >
+                        <div style={{ fontSize: '1.5rem' }}>{mod.icon}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 800, color: active ? '#FF6B00' : '#0f172a', lineHeight: 1.1 }}>{mod.label}</div>
+                          <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: 2 }}>{mod.desc}</div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                          {group.features.map(f => (
-                            <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: '8px 10px', borderRadius: 8, background: form.features[f.key] ? 'rgba(255,107,0,0.08)' : 'transparent', border: form.features[f.key] ? '1px solid rgba(255,107,0,0.2)' : '1px solid transparent', transition: 'all 0.15s' }}>
-                              <input
-                                type="checkbox"
-                                checked={!!form.features[f.key]}
-                                onChange={e => setForm({ ...form, features: { ...form.features, [f.key]: e.target.checked } })}
-                                style={{ width: 16, height: 16, accentColor: 'var(--primary)' }}
-                              />
-                              {f.label}
-                            </label>
-                          ))}
-                        </div>
+                        {active && <Check size={16} color="#FF6B00" strokeWidth={3} />}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-                {errorMsg && (
-                  <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', color: '#dc2626', fontSize: '0.85rem', fontWeight: 700, marginBottom: 8 }}>
-                    ❌ {errorMsg}
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                  <button type="submit" className="btn" style={{ flex: 1, height: 48 }}>{editing ? 'Saqlash' : 'Yaratish'}</button>
-                  {editing && (
-                    <button type="button" className="btn" style={{ background: '#ef4444', height: 48 }}
-                      onClick={() => setShowDeleteConfirm(true)}
-                    >O'chirish</button>
-                  )}
-                </div>
-              </form>
+              </div>
+            </form>
+
+            <div className="modal-footer" style={{ padding: '20px 24px', borderTop: '1px solid #e2e8f0', background: 'white', display: 'flex', gap: 12 }}>
+              <button type="submit" form="plan-form" className="btn" style={{ flex: 1, height: 48, background: '#FF6B00', color: 'white', fontWeight: 800 }}>SAQLASH VA YANGILASH</button>
+              {editing && (
+                <button type="button" onClick={() => setShowDeleteConfirm(true)} className="btn" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fee2e2', height: 48, padding: '0 20px' }}>
+                  <Trash2 size={20} />
+                </button>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
+
         {/* Delete Confirm Modal */}
         {showDeleteConfirm && (
           <div className="modal-overlay">

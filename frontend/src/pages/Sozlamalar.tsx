@@ -6,7 +6,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import CurrencyInput from '../components/CurrencyInput';
 
 const Billing = React.lazy(() => import('./Billing'));
-const Filiallar = React.lazy(() => import('./Filiallar'));
 
 const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
@@ -32,7 +31,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'branches' | 'billing'>('general');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'billing'>('general');
 
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text });
@@ -499,8 +498,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
         {[
           { id: 'general', label: 'Asosiy Sozlamalar', icon: Settings, activeClass: 'bg-orange-600 text-white shadow-orange-500/20' },
-          { id: 'branches', label: 'Filiallar', icon: Building2, activeClass: 'bg-blue-600 text-white shadow-blue-500/20' },
-          { id: 'billing', label: 'Obuna va To\'lovlar', icon: CreditCard, activeClass: 'bg-purple-600 text-white shadow-purple-500/20' },
+          { id: 'billing', label: 'Obuna va To\'lovlar', icon: CreditCard, activeClass: 'bg-orange-600 text-white shadow-orange-500/20' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -516,14 +514,6 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </button>
         ))}
       </div>
-
-      {activeSettingsTab === 'branches' && (
-        <div className="animate-fade-in">
-          <React.Suspense fallback={<LoadingSpinner />}>
-            <Filiallar currentUser={currentUser} />
-          </React.Suspense>
-        </div>
-      )}
 
       {activeSettingsTab === 'billing' && (
         <div className="animate-fade-in">

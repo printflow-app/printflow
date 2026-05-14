@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TenantContext } from '../../common/tenant/tenant.context';
 
 // =============================================
 // BRANCHES SERVICE — Multi-Filial boshqaruvi
@@ -32,6 +33,27 @@ export class BranchesService {
   }
 
   async create(data: CreateBranchDto) {
+    // ── Plan limit tekshiruvi ──────────────────────────────────────
+    const tenantId = TenantContext.tryGetTenantId();
+    if (tenantId) {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        include: { plan: true },
+      });
+      const plan = tenant?.plan as any;
+      const maxBranches: number = plan?.maxBranches ?? 1;
+      if (maxBranches > 0) {
+        const existingCount = await this.prisma.branch.count({});
+        // Default branch (tenant o'zi) + yaratilgan branchlar >= limit → bloklash
+        if (existingCount >= maxBranches) {
+          throw new ForbiddenException(
+            `Tarif limiti: maksimal ${maxBranches} ta filial. Tarifni yangilang.`,
+          );
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────
+
     const existing = await this.prisma.branch.findFirst({
       where: { name: { equals: data.name.trim(), mode: 'insensitive' } },
     });

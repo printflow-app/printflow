@@ -4,8 +4,8 @@ import { billingApi } from '../api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const rawApiUrl = (import.meta as any).env.VITE_API_URL || 'https://printflow-production-bb78.up.railway.app';
-const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api';
+const rawApiUrl = (import.meta as any).env.VITE_API_URL || ((import.meta as any).env.DEV ? '' : 'https://printflow-production-bb78.up.railway.app');
+const API_URL = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api') : '/api';
 
 export default function Billing() {
   const [status, setStatus] = useState<any>(null);
@@ -252,27 +252,30 @@ export default function Billing() {
 
                   <ul className="space-y-2 mb-4 sm:mb-6 flex-1">
                     {(() => {
+                      const allowedMods: string[] = plan.allowedModules || [];
                       const allFeatures: Array<{ ids: string[]; label: string }> = [
                         { ids: ['kanban'], label: 'Kanban (Buyurtmalar)' },
-                        { ids: ['warehouse'], label: 'Ombor boshqaruvi' },
-                        { ids: ['telegram_bot', 'telegramBot'], label: 'Telegram Bot (Xabarlar)' },
-                        { ids: ['attendance'], label: 'Ishga davomat (QR)' },
                         { ids: ['finance'], label: 'Moliya (Sof foyda/Zarar)' },
-                        { ids: ['tasks', 'taskManagement'], label: 'Task Management' },
-                        { ids: ['kpi', 'kpiTracking'], label: 'Xodimlar KPI tahlili' },
-                        { ids: ['debtors', 'debtorReminders'], label: 'Qarzdorlarga avto-xabar' },
-                        { ids: ['multi_branch', 'multiBranch'], label: 'Multi Filiallar (Tez kunda)' }
+                        { ids: ['inventory', 'warehouse'], label: 'Ombor boshqaruvi' },
+                        { ids: ['attendance'], label: 'Ishga davomat (QR)' },
+                        { ids: ['reports', 'kpi', 'kpiTracking'], label: 'Hisobotlar & KPI' },
+                        { ids: ['customers'], label: 'Mijozlar bazasi (CRM)' },
+                        { ids: ['ai_chat'], label: 'AI Copilot' },
+                        { ids: ['partners'], label: 'Hamkorlar (Vendor)' },
+                        { ids: ['branches', 'multi_branch', 'multiBranch'], label: 'Multi Filiallar' },
+                        { ids: ['statistics'], label: 'Statistika & Grafiklar' },
                       ];
 
+                      const isEnabled = (feat: { ids: string[] }) =>
+                        feat.ids.some(id => features[id] || allowedMods.includes(id));
+
                       // Sort: active features first
-                      const sortedFeatures = [...allFeatures].sort((a, b) => {
-                        const valA = a.ids.some(id => features[id]) ? 1 : 0;
-                        const valB = b.ids.some(id => features[id]) ? 1 : 0;
-                        return valB - valA;
-                      });
+                      const sortedFeatures = [...allFeatures].sort((a, b) =>
+                        (isEnabled(b) ? 1 : 0) - (isEnabled(a) ? 1 : 0)
+                      );
 
                       return sortedFeatures.map(feat => {
-                        const val = feat.ids.some(id => features[id]);
+                        const val = isEnabled(feat);
                         return (
                           <li key={feat.ids[0]} className={`flex items-center gap-3 text-[11px] font-bold ${val ? 'text-slate-700' : 'text-slate-400 opacity-60'}`}>
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${val ? 'bg-orange-50' : 'bg-slate-100'}`}>

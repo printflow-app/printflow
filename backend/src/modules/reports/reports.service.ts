@@ -59,7 +59,7 @@ export class ReportsService {
         serviceId: { not: null },
         isArchived: false,
         createdAt: { gte: from, lte: to },
-        ...(branchId ? { branchId } : {}),
+        ...(branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {}),
       },
       include: { service: { select: { id: true, name: true } } },
     });
@@ -226,7 +226,7 @@ export class ReportsService {
     const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-    const bFilter = branchId ? { branchId } : {};
+    const bFilter = branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {};
 
     const columns = await this.prisma.kanbanColumn.findMany({ orderBy: { orderIdx: 'asc' } });
     const finalColumnId = columns.length ? columns[columns.length - 1].id : null;
@@ -278,7 +278,7 @@ export class ReportsService {
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
       const monthKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
 
-      const bFilter = branchId ? { branchId } : {};
+      const bFilter = branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {};
 
       const [income, expense, vendorCosts] = await Promise.all([
         this.prisma.transaction.aggregate({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3 } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, Layers } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi } from '../api';
 import logo from '../assets/logo.png';
@@ -21,6 +21,7 @@ const Filiallar    = React.lazy(() => import('./Filiallar'));
 const Hamkorlar    = React.lazy(() => import('./Hamkorlar'));
 const Hisobotlar   = React.lazy(() => import('./Hisobotlar'));
 const Qollanma     = React.lazy(() => import('./Qollanma'));
+const Bolimlar     = React.lazy(() => import('./Bolimlar'));
 
 interface DashboardProps {
   currentUser: any;
@@ -29,7 +30,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
-  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma'>(() => {
+  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'bolimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma'>(() => {
     return (localStorage.getItem('pf_active_tab') as any) || 'kassa';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -42,7 +43,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const [branches, setBranches] = useState<any[]>([]);
 
   useEffect(() => {
-    branchesApi.findAll().then(r => setBranches(r.data || [])).catch(() => {});
+    branchesApi.findAll().then(r => {
+      const list: any[] = r.data || [];
+      setBranches(list);
+      // If only one branch exists and no branch is selected yet, auto-select it
+      if (list.length === 1 && !activeBranchId) {
+        setActiveBranchId(list[0].id);
+        localStorage.setItem('pf_active_branch', list[0].id);
+      }
+      // Clear stale branch ID that no longer exists (__main__ is always valid)
+      if (activeBranchId && activeBranchId !== '__main__' && !list.some((b: any) => b.id === activeBranchId)) {
+        setActiveBranchId('');
+        localStorage.removeItem('pf_active_branch');
+      }
+    }).catch(() => {});
   }, []);
 
   // Profile Form
@@ -503,21 +517,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
           <div className="flex items-center gap-3">
 
-            {branches.length > 1 && (
-              <select
-                value={activeBranchId}
-                onChange={e => {
-                  setActiveBranchId(e.target.value);
-                  localStorage.setItem('pf_active_branch', e.target.value);
-                }}
-                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
-              >
-                <option value="">Barcha filiallar</option>
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-            )}
+            <select
+              value={activeBranchId}
+              onChange={e => {
+                setActiveBranchId(e.target.value);
+                localStorage.setItem('pf_active_branch', e.target.value);
+              }}
+              className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
+            >
+              <option value="">Barcha filiallar</option>
+              <option value="__main__">Bosh ofis (asosiy)</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
 
             <button
               onClick={(e) => toggleTabLock(activeTab, e)}
@@ -560,7 +573,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             <React.Suspense fallback={<LoadingSpinner fullPage />}>
               {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} />}
+              { activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} /> }
+              { activeTab === 'bolimlar' && isAdmin && <Bolimlar currentUser={currentUser} /> }
               {activeTab === 'topshiriqlar' && (p.canViewTasks || isAdmin) && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'mijozlar' && (p.canViewCustomers || isAdmin) && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'ombor' && (p.canViewInventory || isAdmin) && <Ombor currentUser={currentUser} />}
@@ -590,9 +604,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       <AICopilot
         isOpen={isAICopilotOpen}
         onClose={() => setIsAICopilotOpen(false)}
-        onServicesSaved={() => {
-          // If user is on 'sozlamalar' tab, a toast is enough since Sozlamalar auto-fetches
-        }}
       />
 
       {/* Global AI FAB (desktop) */}

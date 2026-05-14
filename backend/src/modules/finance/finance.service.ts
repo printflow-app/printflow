@@ -34,6 +34,12 @@ export class FinanceService {
     return dt;
   }
 
+  private branchFilter(branchId?: string): Record<string, any> {
+    if (branchId === '__main__') return { branchId: null };
+    if (branchId) return { branchId };
+    return {};
+  }
+
   private getDateRange(start?: string, end?: string) {
     if (!start && !end) return {};
 
@@ -52,7 +58,7 @@ export class FinanceService {
   }
 
   async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20) {
-    const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId) };
 
     const [transactions, total] = await Promise.all([
       this.prisma.transaction.findMany({
@@ -81,7 +87,7 @@ export class FinanceService {
   }
 
   async getDashboard(start?: string, end?: string, branchId?: string) {
-    const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId) };
 
     const [incomes, expenses] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -102,7 +108,7 @@ export class FinanceService {
     if (columns.length > 0) {
       const finalColumnId = columns[columns.length - 1].id;
       // For tasks, we use updatedAt for the date filter since that's when it was moved
-      const taskWhere: any = { columnId: finalColumnId, ...(branchId ? { branchId } : {}) };
+      const taskWhere: any = { columnId: finalColumnId, ...this.branchFilter(branchId) };
       const range = this.getDateRange(start, end);
       if (range.date) {
         taskWhere.updatedAt = range.date; // reusing the gte/lte from getDateRange
@@ -183,7 +189,7 @@ export class FinanceService {
       endDate.setUTCHours(23, 59, 59, 999);
     }
 
-    const where: any = { date: { gte: startDate, lte: endDate }, ...(branchId ? { branchId } : {}) };
+    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -225,7 +231,7 @@ export class FinanceService {
   }
 
   async getStatsByPaymentType(start?: string, end?: string, branchId?: string) {
-    const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -280,7 +286,7 @@ export class FinanceService {
   }
 
   async getDailySummary(start?: string, end?: string, branchId?: string) {
-    const where = { ...this.getDateRange(start, end), ...(branchId ? { branchId } : {}) };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId) };
 
     const [transactions, dashboard, allPaymentTypes] = await Promise.all([
       this.prisma.transaction.findMany({

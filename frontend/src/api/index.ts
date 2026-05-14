@@ -360,6 +360,16 @@ export const branchesApi = {
 };
 
 // =============================================
+// DEPARTMENTS (Bo'limlar)
+// =============================================
+export const departmentsApi = {
+  findAll: (branchId?: string) => api.get('/departments', { params: branchId ? { branchId } : {} }),
+  create: (data: { name: string; description?: string; branchId?: string }) => api.post('/departments', data),
+  update: (id: string, data: any) => api.put(`/departments/${id}`, data),
+  delete: (id: string) => api.delete(`/departments/${id}`),
+};
+
+// =============================================
 // WORKSPACE ADMINS
 // =============================================
 export const workspaceAdminsApi = {

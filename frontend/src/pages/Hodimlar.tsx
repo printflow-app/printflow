@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, UserPlus, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { employeesApi, rolesApi, branchesApi } from '../api';
+import { employeesApi, rolesApi, branchesApi, billingApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CurrencyInput from '../components/CurrencyInput';
@@ -35,15 +35,18 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [generatedCredentials, setGeneratedCredentials] = useState<{login: string, password: string} | null>(null);
   const [showGenPass, setShowGenPass] = useState(true);
   const [showSelectedPass, setShowSelectedPass] = useState(false);
+  const [maxEmployees, setMaxEmployees] = useState(0);
 
   const fetchData = async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
-      const [empRes, roleRes, branchRes] = await Promise.all([
+      const [empRes, roleRes, branchRes, statusRes] = await Promise.all([
         employeesApi.findAll(),
         rolesApi.findAll(),
         branchesApi.findAll().catch(() => ({ data: [] })),
+        billingApi.getStatus().catch(() => null),
       ]);
+      setMaxEmployees((statusRes?.data as any)?.plan?.maxEmployees ?? 0);
       setBranches(Array.isArray(branchRes.data) ? branchRes.data : []);
       
       const allRoles = roleRes.data || [];
@@ -146,13 +149,29 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
             <h3 className="text-base sm:text-xl font-black text-slate-800 tracking-tight">Jamoa A'zolari</h3>
-            <p className="text-[9px] font-black text-slate-400 mt-0.5 uppercase tracking-widest">Tizimga kirish huquqiga ega barcha xodimlar</p>
+            <p className="text-[9px] font-black text-slate-400 mt-0.5 uppercase tracking-widest">
+              Tizimga kirish huquqiga ega barcha xodimlar
+              {maxEmployees > 0 && (
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-[9px] font-black ${employees.length >= maxEmployees ? 'bg-rose-100 text-rose-600' : 'bg-orange-50 text-orange-600'}`}>
+                  {employees.length} / {maxEmployees}
+                </span>
+              )}
+            </p>
           </div>
-          {canAdd && (
-             <button className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all" onClick={() => setIsEmployeeModalOpen(true)}>
-               <UserPlus size={16} strokeWidth={2.5} /> Yangi Xodim
-             </button>
-          )}
+          {canAdd && (() => {
+            const atLimit = maxEmployees > 0 && employees.length >= maxEmployees;
+            return (
+              <button
+                disabled={atLimit}
+                onClick={() => !atLimit && setIsEmployeeModalOpen(true)}
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
+                title={atLimit ? `Limit to'ldi: ${maxEmployees} ta xodim (tarifni yangilang)` : ''}
+              >
+                <UserPlus size={16} strokeWidth={2.5} />
+                {atLimit ? `Limit to'ldi (${maxEmployees}/${maxEmployees})` : "Yangi Xodim"}
+              </button>
+            );
+          })()}
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">

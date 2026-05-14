@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Layers, Users, Zap, ShieldCheck, Check, Send, PlayCircle } from 'lucide-react';
 import logo from '../assets/logo.png';
 
-const rawApiUrl = (import.meta as any).env.VITE_API_URL || 'https://printflow-production-bb78.up.railway.app';
-const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api';
+const rawApiUrl = (import.meta as any).env.VITE_API_URL || ((import.meta as any).env.DEV ? '' : 'https://printflow-production-bb78.up.railway.app');
+const API_URL = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api') : '/api';
 
 function Landing({ onLoginClick }: { onLoginClick: () => void }) {
   const [scrolled, setScrolled] = useState(false);
@@ -374,7 +374,7 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
                 {[3, 6, 12].map(m => (
                   <button key={m} onClick={() => setDuration(m)} className="flex-1 sm:flex-none" style={{
                     padding: '10px 16px', fontSize: '0.8rem', fontWeight: 800, borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
-                    background: duration === m ? '#0f172a' : '#fff', color: duration === m ? '#fff' : '#475569', boxShadow: duration !== m ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                    background: duration === m ? '#FF6B00' : '#fff', color: duration === m ? '#fff' : '#475569', boxShadow: duration !== m ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
                   }}>{m} Oy {m === 6 ? '(-10%)' : m === 12 ? '(-25%)' : ''}</button>
                 ))}
               </div>
@@ -386,8 +386,8 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
                 return (
                   <div key={plan.id} style={{
                     background: '#fff',
-                    border: plan.isPopular ? '2px solid #FF6B00' : '1px solid #e2e8f0',
-                    boxShadow: plan.isPopular ? '0 20px 25px -5px rgba(255,107,0,0.1), 0 10px 10px -5px rgba(255,107,0,0.04)' : '0 4px 6px -1px rgba(0,0,0,0.05)',
+                    border: plan.isPopular ? '2px solid #FF6B00' : '1px solid #f1f5f9',
+                    boxShadow: plan.isPopular ? '0 20px 25px -5px rgba(255,107,0,0.15), 0 10px 10px -5px rgba(255,107,0,0.06)' : '0 2px 12px rgba(0,0,0,0.06)',
                     borderRadius: 16, padding: 32, position: 'relative', transition: 'transform 0.3s',
                   }}>
                     {plan.isPopular && <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#FF6B00', color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '4px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1 }}>🔥 Eng ommabop</div>}
@@ -397,23 +397,23 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
                     <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: 20 }}>{duration} oylik / Xodimlar: {plan.maxEmployees === 0 ? 'Cheksiz' : plan.maxEmployees}</div>
                     <ul style={{ listStyle: 'none', padding: 0, marginBottom: 24, flex: 1 }}>
                       {(() => {
-                        // Each entry lists the canonical id PLUS aliases — admin panel
-                        // saves keys like "kpiTracking"/"multiBranch" while older plans
-                        // used "kpi"/"multi_branch". Accept either to keep landing/admin in sync.
+                        // Use allowedModules array (admin panel source of truth) + legacy features object fallback
+                        const modules: string[] = Array.isArray(plan.allowedModules) ? plan.allowedModules : [];
                         const allFeatures: Array<{ ids: string[]; label: string }> = [
                           { ids: ['kanban'], label: 'Kanban (Buyurtmalar)' },
-                          { ids: ['warehouse', 'canViewInventory'], label: 'Ombor boshqaruvi' },
-                          { ids: ['telegram_bot', 'advancedBot'], label: 'Telegram Bot (Xabarlar)' },
+                          { ids: ['inventory', 'warehouse', 'canViewInventory'], label: 'Ombor boshqaruvi' },
+                          { ids: ['attendance', 'ai_chat', 'telegram_bot'], label: 'Telegram Bot (Xabarlar)' },
                           { ids: ['attendance', 'canViewAttendance'], label: 'Ishga davomat (QR)' },
                           { ids: ['finance', 'canViewFinance'], label: 'Moliya (Sof foyda/Zarar)' },
-                          { ids: ['tasks'], label: 'Task Management' },
-                          { ids: ['kpiTracking', 'kpi'], label: 'Xodimlar KPI tahlili' },
-                          { ids: ['expenseAnalytics'], label: 'Chiqim Tahlili' },
-                          { ids: ['debtors'], label: 'Qarzdorlarga avto-xabar' },
-                          { ids: ['multiBranch', 'multi_branch'], label: 'Multi Filiallar' },
+                          { ids: ['kanban', 'tasks'], label: 'Task Management' },
+                          { ids: ['reports', 'statistics', 'kpiTracking', 'kpi'], label: 'Xodimlar KPI tahlili' },
+                          { ids: ['reports', 'finance', 'expenseAnalytics'], label: 'Chiqim Tahlili' },
+                          { ids: ['customers', 'debtors'], label: 'Qarzdorlarga avto-xabar' },
+                          { ids: ['branches', 'multiBranch', 'multi_branch'], label: 'Multi Filiallar' },
                         ];
 
-                        const isOn = (entry: { ids: string[] }) => entry.ids.some(id => !!features[id]);
+                        const isOn = (entry: { ids: string[] }) =>
+                          entry.ids.some(id => modules.includes(id) || !!features[id]);
 
                         // Sort: active features first
                         const sortedFeatures = [...allFeatures].sort((a, b) => Number(isOn(b)) - Number(isOn(a)));
@@ -440,8 +440,8 @@ function Landing({ onLoginClick }: { onLoginClick: () => void }) {
                     </ul>
                     <a href="#contact" onClick={e => { e.preventDefault(); scrollTo('contact'); }} style={{
                       display: 'block', textAlign: 'center', padding: '16px 0', borderRadius: 12, fontWeight: 900, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: 1, textDecoration: 'none', transition: 'all 0.3s',
-                      background: plan.isPopular ? '#FF6B00' : '#0f172a', color: '#fff', border: 'none',
-                      boxShadow: plan.isPopular ? '0 10px 15px -3px rgba(255,107,0,0.3)' : 'none'
+                      background: plan.isPopular ? '#FF6B00' : '#f97316', color: '#fff', border: 'none',
+                      boxShadow: plan.isPopular ? '0 10px 15px -3px rgba(255,107,0,0.35)' : '0 4px 12px rgba(249,115,22,0.25)'
                     }}>Boshlash →</a>
                   </div>
                 );

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Building2, Plus, Trash2, Edit3, Phone, MapPin, Save, X,
 } from 'lucide-react';
-import { branchesApi, employeesApi } from '../api';
+import { branchesApi, employeesApi, billingApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
@@ -24,11 +24,17 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [editing, setEditing] = useState<Branch | null>(null);
   const [form, setForm] = useState({ name: '', address: '', phone: '', managerEmployeeId: '' });
   const [confirmDel, setConfirmDel] = useState<Branch | null>(null);
+  const [maxBranches, setMaxBranches] = useState(0);
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [bRes, eRes] = await Promise.all([branchesApi.findAll(), employeesApi.findAll()]);
+      const [bRes, eRes, statusRes] = await Promise.all([
+        branchesApi.findAll(),
+        employeesApi.findAll(),
+        billingApi.getStatus().catch(() => null),
+      ]);
+      setMaxBranches((statusRes?.data as any)?.plan?.maxBranches ?? 0);
       setBranches(Array.isArray(bRes.data) ? bRes.data : []);
       setEmployees(Array.isArray(eRes.data) ? eRes.data : []);
     } catch { console.error('Filiallarni yuklashda xato'); }
@@ -65,12 +71,27 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        {canManage && (
-          <button onClick={openCreate} className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-6 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 flex items-center gap-2">
-            <Plus size={16} strokeWidth={3} /> Yangi filial
-          </button>
+      <div className="flex items-center justify-between">
+        {maxBranches > 0 && (
+          <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl ${branches.length >= maxBranches ? 'bg-rose-50 text-rose-600' : 'bg-orange-50 text-orange-600'}`}>
+            {branches.length} / {maxBranches} filial
+          </span>
         )}
+        {!maxBranches && <span />}
+        {canManage && (() => {
+          const atLimit = maxBranches > 0 && branches.length >= maxBranches;
+          return (
+            <button
+              disabled={atLimit}
+              onClick={() => !atLimit && openCreate()}
+              className={`flex items-center gap-2 h-10 px-6 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-orange-500/20'}`}
+              title={atLimit ? `Limit to'ldi: ${maxBranches} ta filial (tarifni yangilang)` : ''}
+            >
+              <Plus size={16} strokeWidth={3} />
+              {atLimit ? `Limit to'ldi (${branches.length}/${maxBranches})` : 'Yangi filial'}
+            </button>
+          );
+        })()}
       </div>
 
       {branches.length === 0 ? (
