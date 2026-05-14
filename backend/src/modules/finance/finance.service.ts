@@ -91,8 +91,8 @@ export class FinanceService {
     };
   }
 
-  async getDashboard(start?: string, end?: string, branchId?: string) {
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId) };
+  async getDashboard(start?: string, end?: string, branchId?: string, departmentId?: string) {
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
 
     const [incomes, expenses] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -145,7 +145,6 @@ export class FinanceService {
           expenseTypeId: vendorId ? null : expenseTypeId,
           employeeId: vendorId ? null : employeeId,
           vendorId: vendorId || null,
-          departmentId: data.departmentId || null,
           ...(data.date ? { date: new Date(data.date) } : {}),
         } as any,
       });
@@ -292,8 +291,8 @@ export class FinanceService {
       .slice(0, 10); // Top 10 categories
   }
 
-  async getDailySummary(start?: string, end?: string, branchId?: string) {
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId) };
+  async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string) {
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
 
     const [transactions, dashboard, allPaymentTypes] = await Promise.all([
       this.prisma.transaction.findMany({

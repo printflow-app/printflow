@@ -1,23 +1,20 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { VendorsService } from './vendors.service';
-import { VendorOrdersService } from './vendor-orders.service';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 @Controller('vendors')
 @RequirePermissions('canViewVendors')
 export class VendorsController {
-  constructor(
-    private vendorsService: VendorsService,
-  ) {}
+  constructor(private vendorsService: VendorsService) {}
 
   @Get()
-  findAll() {
-    return this.vendorsService.findAll();
+  findAll(@Query('branchId') branchId?: string) {
+    return this.vendorsService.findAll(branchId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.vendorsService.findOne(id);
+  findOne(@Param('id') id: string, @Query('branchId') branchId?: string) {
+    return this.vendorsService.findOne(id, branchId);
   }
 
   @Post()
@@ -28,13 +25,13 @@ export class VendorsController {
 
   @Put(':id')
   @RequirePermissions('canManageVendors')
-  update(@Param('id') id: string, @Body() data: any) {
-    return this.vendorsService.update(id, data);
+  update(@Param('id') id: string, @Body() data: any, @Query('branchId') branchId?: string) {
+    return this.vendorsService.update(id, data, branchId);
   }
 
   @Delete(':id')
   @RequirePermissions('canManageVendors')
-  remove(@Param('id') id: string) {
-    return this.vendorsService.remove(id);
+  remove(@Param('id') id: string, @Query('branchId') branchId?: string) {
+    return this.vendorsService.remove(id, branchId);
   }
 }

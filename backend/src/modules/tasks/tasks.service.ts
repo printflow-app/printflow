@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
@@ -12,25 +11,34 @@ export class TasksService {
     private telegramService: TelegramService,
   ) {}
 
-  async findAll(branchId?: string, viewMode: 'all' | 'own' = 'all', currentUserId?: string, departmentId?: string) {
-    const where: any = {
-      isArchived: false,
-      ...(branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {}),
-      ...(departmentId ? { departmentId } : {}),
-    };
+  async findAll(branchId?: string, viewMode: 'all' | 'own' = 'all', currentUserId?: string) {
+    const base: any = { isArchived: false };
 
-    // tasks:view_own — only return tasks where the current employee is an assignee
     if (viewMode === 'own' && currentUserId) {
-      where.assignees = { contains: currentUserId };
+      base.assignees = { contains: currentUserId };
+    }
+
+    let branchClause: any = {};
+    if (branchId === '__main__') {
+      branchClause = { branchId: null, executorBranchId: null };
+    } else if (branchId) {
+      // Own tasks (we are the origin and executor) OR tasks delegated TO this branch
+      branchClause = {
+        OR: [
+          { branchId, executorBranchId: null },
+          { executorBranchId: branchId },
+        ],
+      };
     }
 
     return this.prisma.task.findMany({
-      where,
+      where: { ...base, ...branchClause },
       include: {
         column: true,
         customer: true,
         paymentType: true,
         vendor: { select: { id: true, name: true } },
+        executorBranch: { select: { id: true, name: true } },
         histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } }
       },
     });
@@ -116,7 +124,6 @@ export class TasksService {
           coefficient: Number(data.coefficient || 1.0),
           deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
           branchId: data.branchId || data.targetBranchId || undefined,
-          departmentId: data.departmentId || undefined,
         } as any
       });
 
@@ -182,9 +189,10 @@ export class TasksService {
   }
 
   async createBulk(data: any, employeeId?: string) {
-    const { 
-      orderName, items, customerId, customerName, customerPhone, 
-      totalDeposit, paymentTypeId, columnId, justification, assigneeIds, deadlineAt
+    const {
+      orderName, items, customerId, customerName, customerPhone,
+      totalDeposit, paymentTypeId, columnId, justification, assigneeIds, deadlineAt,
+      branchId, executorBranchId,
     } = data;
 
     const totalDepositNum = Math.round(Number(totalDeposit || 0));
@@ -264,6 +272,10 @@ export class TasksService {
             assignees: JSON.stringify(assigneeIds || []),
             attachments: "[]",
             deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
+            branchId: branchId || undefined,
+            executorBranchId: executorBranchId || null,
+            vendorId: item.vendorId || undefined,
+            vendorCost: Number(item.vendorCost || 0),
           } as any
         });
 
@@ -425,14 +437,34 @@ export class TasksService {
   // DELETE o'chirildi — faqat arxivlash mumkin (audit trail saqlanadi)
   // async remove() — DISABLED intentionally (use archive() instead)
 
-  async getColumns(viewMode: 'all' | 'own' = 'all', currentUserId?: string, departmentId?: string) {
-    const taskWhere: any = { isArchived: false };
+  async getColumns(viewMode: 'all' | 'own' = 'all', currentUserId?: string, branchId?: string) {
+    const taskBase: any = { isArchived: false };
     if (viewMode === 'own' && currentUserId) {
-      taskWhere.assignees = { contains: currentUserId };
+      taskBase.assignees = { contains: currentUserId };
     }
-    if (departmentId) taskWhere.departmentId = departmentId;
 
-    const colWhere: any = departmentId ? { departmentId } : {};
+    let taskWhere: any = taskBase;
+    if (branchId && branchId !== '__main__') {
+      taskWhere = {
+        ...taskBase,
+        OR: [
+          { branchId, executorBranchId: null },
+          { executorBranchId: branchId },
+        ],
+      };
+    } else if (branchId === '__main__') {
+      taskWhere = { ...taskBase, branchId: null, executorBranchId: null };
+    }
+
+    // Multi-Branch isolation: columns are now branch-scoped.
+    //   '__main__' or undefined → branchId IS NULL (Bosh ofis / legacy)
+    //   real UUID               → branchId = <UUID>
+    const colWhere: any = {};
+    if (branchId === '__main__' || !branchId) {
+      colWhere.branchId = null;
+    } else {
+      colWhere.branchId = branchId;
+    }
 
     return this.prisma.kanbanColumn.findMany({
       where: colWhere,
@@ -440,19 +472,14 @@ export class TasksService {
       include: {
         tasks: {
           where: taskWhere,
-          include: { customer: true, paymentType: true, vendor: { select: { id: true, name: true } } },
+          include: {
+            customer: true, paymentType: true,
+            vendor: { select: { id: true, name: true } },
+            executorBranch: { select: { id: true, name: true } },
+          },
         },
       },
     });
-  }
-
-  async ensureDefaultColumns(departmentId: string) {
-    const existing = await this.prisma.kanbanColumn.findFirst({ where: { departmentId } });
-    if (existing) return;
-    const defaults = ['Buyurtma olindi', 'Jarayonda', 'Tayyor', 'Topshirildi'];
-    for (let i = 0; i < defaults.length; i++) {
-      await this.prisma.kanbanColumn.create({ data: { title: defaults[i], orderIdx: i, departmentId } as any });
-    }
   }
 
   async archive(id: string) {
@@ -470,15 +497,24 @@ export class TasksService {
     });
   }
 
-  async createColumn(title: string, orderIdx: number, departmentId?: string) {
-    return this.prisma.kanbanColumn.create({ data: { title, orderIdx, ...(departmentId ? { departmentId } : {}) } as any });
+  async createColumn(title: string, orderIdx: number, branchId?: string) {
+    const branchScope = !branchId || branchId === '__main__' ? null : branchId;
+    return this.prisma.kanbanColumn.create({
+      data: { title, orderIdx, branchId: branchScope } as any,
+    });
   }
 
-  async updateColumn(id: string, title: string, departmentId?: string) {
-    return this.prisma.kanbanColumn.update({ where: { id }, data: { title, ...(departmentId !== undefined ? { departmentId: departmentId || null } : {}) } as any });
+  async updateColumn(id: string, title: string, branchId?: string) {
+    const branchScope = !branchId || branchId === '__main__' ? null : branchId;
+    const existing = await this.prisma.kanbanColumn.findFirst({ where: { id, branchId: branchScope } as any });
+    if (!existing) throw new Error('Bosqich topilmadi yoki ushbu filialga tegishli emas');
+    return this.prisma.kanbanColumn.update({ where: { id }, data: { title } });
   }
 
-  async removeColumn(id: string) {
+  async removeColumn(id: string, branchId?: string) {
+    const branchScope = !branchId || branchId === '__main__' ? null : branchId;
+    const existing = await this.prisma.kanbanColumn.findFirst({ where: { id, branchId: branchScope } as any });
+    if (!existing) throw new Error('Bosqich topilmadi yoki ushbu filialga tegishli emas');
     return this.prisma.kanbanColumn.delete({ where: { id } });
   }
 

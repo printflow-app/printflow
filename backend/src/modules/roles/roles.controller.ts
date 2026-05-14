@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { RolesService } from './roles.service';
 
 @Controller('roles')
@@ -6,13 +6,13 @@ export class RolesController {
   constructor(private rolesService: RolesService) {}
 
   @Get()
-  findAll() {
-    return this.rolesService.findAll();
+  findAll(@Query('branchId') branchId?: string) {
+    return this.rolesService.findAll(branchId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.rolesService.findOne(id);
+  findOne(@Param('id') id: string, @Query('branchId') branchId?: string) {
+    return this.rolesService.findOne(id, branchId);
   }
 
   @Post()
@@ -21,12 +21,12 @@ export class RolesController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: any) {
-    return this.rolesService.update(id, data);
+  update(@Param('id') id: string, @Body() data: any, @Query('branchId') branchId?: string) {
+    return this.rolesService.update(id, data, branchId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.rolesService.remove(id);
+  remove(@Param('id') id: string, @Query('branchId') branchId?: string) {
+    return this.rolesService.remove(id, branchId);
   }
 }

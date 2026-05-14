@@ -8,13 +8,13 @@ export class ServicesController {
 
   @Get()
   @RequirePermissions('canViewServices')
-  findAll() {
-    return this.servicesService.findAll();
+  findAll(@Query('branchId') branchId?: string) {
+    return this.servicesService.findAll(branchId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.servicesService.findOne(id);
+  findOne(@Param('id') id: string, @Query('branchId') branchId?: string) {
+    return this.servicesService.findOne(id, branchId);
   }
 
   @Post()
@@ -25,14 +25,20 @@ export class ServicesController {
 
   @Put(':id')
   @RequirePermissions('canManageServices')
-  update(@Param('id') id: string, @Body() data: any) {
-    return this.servicesService.update(id, data);
+  update(@Param('id') id: string, @Body() data: any, @Query('branchId') branchId?: string) {
+    return this.servicesService.update(id, data, branchId);
   }
 
   @Delete(':id')
   @RequirePermissions('canManageServices')
-  remove(@Param('id') id: string) {
-    return this.servicesService.remove(id);
+  remove(@Param('id') id: string, @Query('branchId') branchId?: string) {
+    return this.servicesService.remove(id, branchId);
+  }
+
+  @Post(':id/clone')
+  @RequirePermissions('canManageServices')
+  clone(@Param('id') id: string, @Body() body: { targetBranchId: string }) {
+    return this.servicesService.clone(id, body.targetBranchId);
   }
 
   // Opsiyalar

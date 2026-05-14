@@ -584,12 +584,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
   @Cron('0 21 * * *')
   async handleDailyReport() {
+    const { str: todayStr } = this.tashkentNow();
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
     for (const t of tenants) {
+      await this.cleanupCronLocks(t.id);
       const prefs = await this.getNotifPrefs(t.id);
       if (!prefs.hisobotReceivers?.length) continue;
       const report = await this.generateReportForTenant(t.id);
       for (const empId of prefs.hisobotReceivers) {
+        if (!await this.acquireCronLock(t.id, `cron_lock:daily_report:${todayStr}:${empId}`)) continue;
         const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
         if (emp?.telegramId) await this.sendMessage(emp.telegramId, report);
       }
@@ -600,6 +603,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   async handleHourlyTaskCheck() {
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
     const now = Date.now();
+    const { utc5 } = this.tashkentNow();
+    const hourStr = `${utc5.toISOString().slice(0, 13)}`; // "2025-01-14T09"
     for (const t of tenants) {
       const prefs = await this.getNotifPrefs(t.id);
       if (!prefs.reminderReceivers?.length) continue;
@@ -628,6 +633,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         if (!label) continue;
 
         for (const empId of prefs.reminderReceivers) {
+          // Multi-instance duplicate guard — keyed to this task + receiver + hour bucket
+          if (!await this.acquireCronLock(t.id, `cron_lock:task_reminder:${hourStr}:${task.id}:${empId}`)) continue;
           const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
           if (emp?.telegramId) {
             await this.sendMessage(
@@ -708,6 +715,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             shouldPrompt = !!(rec && rec.checkIn);
           }
           if (!shouldPrompt) continue;
+          // Multi-instance duplicate guard — overtimePromptDate check above is not atomic
+          if (!await this.acquireCronLock(t.id, `cron_lock:overtime_prompt:${todayStr}:${emp.id}`)) continue;
 
           const promptMsg =
             `🕐 *Ortiqcha ish vaqti*\n\n` +
@@ -767,6 +776,48 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
+  // ──────────────────────────────────────────────────────────────────
+  // CRON IDEMPOTENCY — DB-backed lock for multi-instance deployments
+  //
+  // Railway (and similar platforms) keep the old instance alive during
+  // rolling deploys. Both old and new processes fire the same @Cron at
+  // the same tick → duplicate messages.
+  //
+  // SystemSetting.@@unique([tenantId, key]) gives a free Postgres
+  // advisory lock: the first INSERT wins (returns true); the concurrent
+  // INSERT from the second instance hits a P2002 unique-constraint error
+  // and returns false. The loser skips sending.
+  // ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Tries to atomically acquire a per-job lock stored in SystemSetting.
+   * Returns true  → this instance won the race, proceed with sending.
+   * Returns false → another instance already sent, skip.
+   */
+  private async acquireCronLock(tenantId: string, lockKey: string): Promise<boolean> {
+    try {
+      await this.prisma.systemSetting.create({
+        data: { tenantId, key: lockKey, value: new Date().toISOString() },
+      });
+      return true;
+    } catch (e: any) {
+      if (e?.code === 'P2002') return false; // Duplicate — another instance won
+      console.warn('[CronLock] acquire error (failing open):', e?.message);
+      return true; // Fail open: a duplicate message is better than a missed one
+    }
+  }
+
+  /**
+   * Deletes cron lock rows older than 25 hours so SystemSetting doesn't grow unboundedly.
+   * ISO-8601 strings sort lexicographically, so string `lt` comparison is correct.
+   */
+  private async cleanupCronLocks(tenantId: string): Promise<void> {
+    const cutoff = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+    await this.prisma.systemSetting
+      .deleteMany({ where: { tenantId, key: { startsWith: 'cron_lock:' }, value: { lt: cutoff } } })
+      .catch(() => {});
+  }
+
   /** Returns current moment represented as Asia/Tashkent (UTC+5) wall-clock values */
   private tashkentNow(): { utc5: Date; str: string; day: number; mins: number } {
     const utc5 = new Date(Date.now() + 5 * 60 * 60 * 1000);
@@ -791,6 +842,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const { str: todayStr, day: todayDay, mins: currentMinutes } = this.tashkentNow();
 
     for (const t of tenants) {
+      await this.cleanupCronLocks(t.id);
       try {
         const settings = await this.prisma.systemSetting.findMany({
           where: { tenantId: t.id, key: { in: ['workStart', 'workEnd', 'workDays'] } },
@@ -819,6 +871,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
               where: { tenantId: t.id, employeeId: emp.id, date: todayStr, checkIn: { not: null } },
             });
             if (alreadyIn) continue;
+            // Multi-instance duplicate guard
+            if (!await this.acquireCronLock(t.id, `cron_lock:att_kelish:${todayStr}:${emp.id}`)) continue;
 
             await this.sendMessage(
               emp.telegramId,
@@ -849,6 +903,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
               where: { chatId: emp.telegramId },
             });
             if (!session || (session as any).overtimePromptDate === todayStr) continue;
+            // Multi-instance duplicate guard
+            if (!await this.acquireCronLock(t.id, `cron_lock:att_kechik:${todayStr}:${emp.id}`)) continue;
 
             await this.sendMessage(
               emp.telegramId,
@@ -882,6 +938,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           });
           for (const rec of uncheckedOut) {
             if (!rec.employee?.telegramId) continue;
+            // Multi-instance duplicate guard
+            if (!await this.acquireCronLock(t.id, `cron_lock:att_ketish:${todayStr}:${rec.employee.id}`)) continue;
+
             await this.sendMessage(
               rec.employee.telegramId,
               `🌆 *Ish vaqti tugashiga yaqin!*\n\n` +
@@ -899,6 +958,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
   @Cron('0 9 * * *')
   async handleLowStockAlert() {
+    const { str: todayStr } = this.tashkentNow();
     const tenants = await this.prisma.tenant.findMany({ where: { isActive: true } });
     for (const t of tenants) {
       const materials = await this.prisma.material.findMany({ where: { tenantId: t.id } });
@@ -913,7 +973,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         where: { tenantId: t.id, role: { canManageInventory: true } },
       });
       for (const m of managers) {
-        if (m.telegramId) await this.sendMessage(m.telegramId, message);
+        if (!m.telegramId) continue;
+        // Multi-instance duplicate guard
+        if (!await this.acquireCronLock(t.id, `cron_lock:low_stock:${todayStr}:${m.id}`)) continue;
+        await this.sendMessage(m.telegramId, message);
       }
     }
   }

@@ -250,6 +250,9 @@ model Service {
   tenantId    String
   tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  branchId    String?
+  branch      Branch?         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
   name        String
   description String?
   basePrice   Float           @default(0)
@@ -264,6 +267,7 @@ model Service {
   updatedAt   DateTime        @updatedAt
 
   @@index([tenantId])
+  @@index([branchId])
 }
 
 model ServiceOption {
@@ -437,6 +441,7 @@ model Branch {
   customers    Customer[]
   transactions Transaction[]
   departments  Department[]
+  services     Service[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

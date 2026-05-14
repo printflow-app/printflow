@@ -5,13 +5,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class InventoryService {
   constructor(private prisma: PrismaService) {}
 
-  async findAllMaterials(departmentId?: string) {
+  async findAllMaterials(branchId?: string) {
+    const where: any = {};
+    if (branchId === '__main__') where.branchId = null;
+    else if (branchId) where.branchId = branchId;
     return this.prisma.material.findMany({
-      where: departmentId ? { departmentId } : undefined,
+      where: Object.keys(where).length ? where : undefined,
       include: {
         movements: { orderBy: { createdAt: 'desc' }, take: 5 },
         bom: { include: { service: true } },
-        department: { select: { id: true, name: true } },
       },
       orderBy: { name: 'asc' },
     });

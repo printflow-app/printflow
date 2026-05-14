@@ -27,30 +27,30 @@ export class TasksController {
 
   // Kanban Column Endpoints — MUST be before :id routes!
   @Get('columns')
-  getColumns(@Req() req: Request, @Query('departmentId') departmentId?: string) {
+  getColumns(
+    @Req() req: Request,
+    @Query('branchId') branchId?: string,
+  ) {
     const { viewMode, currentUserId } = this.resolveViewMode(req);
-    return this.tasksService.getColumns(viewMode, currentUserId, departmentId);
-  }
-
-  @Post('columns/ensure-defaults')
-  ensureDefaultColumns(@Body() body: { departmentId: string }) {
-    return this.tasksService.ensureDefaultColumns(body.departmentId);
+    return this.tasksService.getColumns(viewMode, currentUserId, branchId);
   }
 
   @Post('columns')
-  createColumn(@Body() body: { title: string; orderIdx: number; departmentId?: string }) {
-    return this.tasksService.createColumn(body.title, body.orderIdx, body.departmentId);
+  createColumn(@Body() body: { title: string; orderIdx: number; branchId?: string }) {
+    return this.tasksService.createColumn(body.title, body.orderIdx, body.branchId);
   }
 
   @Put('columns/:id')
-  updateColumn(@Param('id') id: string, @Body() body: { title: string; departmentId?: string }) {
-    return this.tasksService.updateColumn(id, body.title, body.departmentId);
+  updateColumn(
+    @Param('id') id: string,
+    @Body() body: { title: string; branchId?: string },
+  ) {
+    return this.tasksService.updateColumn(id, body.title, body.branchId);
   }
 
-  // NOTE: Column delete kept — only ORDER delete is disabled
   @Post('columns/:id/delete')
-  removeColumn(@Param('id') id: string) {
-    return this.tasksService.removeColumn(id);
+  removeColumn(@Param('id') id: string, @Query('branchId') branchId?: string) {
+    return this.tasksService.removeColumn(id, branchId);
   }
 
   @Post('backfill-ids')
@@ -60,9 +60,9 @@ export class TasksController {
 
   // Task Endpoints
   @Get()
-  findAll(@Query('branchId') branchId?: string, @Query('departmentId') departmentId?: string, @Req() req?: any) {
+  findAll(@Query('branchId') branchId?: string, @Req() req?: any) {
     const { viewMode, currentUserId } = this.resolveViewMode(req);
-    return this.tasksService.findAll(branchId, viewMode, currentUserId, departmentId);
+    return this.tasksService.findAll(branchId, viewMode, currentUserId);
   }
 
   @Get('archived')

@@ -1,37 +1,60 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+
+// Multi-Branch isolation helper.
+//   '__main__' (or empty) → branchId IS NULL  (Bosh ofis / legacy data)
+//   real UUID             → branchId = <UUID> (specific branch)
+function normalizeBranch(branchId?: string | null): string | null {
+  if (!branchId || branchId === '__main__') return null;
+  return branchId;
+}
 
 @Injectable()
 export class ServicesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(branchId?: string) {
+    const scope = normalizeBranch(branchId);
     return this.prisma.service.findMany({
+      where: { branchId: scope },
       include: { options: true, materials: { include: { material: true } } },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async findOne(id: string) {
-    return this.prisma.service.findUnique({
-      where: { id },
+  async findOne(id: string, branchId?: string) {
+    const scope = normalizeBranch(branchId);
+    const service = await this.prisma.service.findFirst({
+      where: { id, branchId: scope },
       include: { options: true, materials: { include: { material: true } } },
     });
+    if (!service) throw new NotFoundException('Xizmat topilmadi');
+    return service;
   }
 
   async create(data: any) {
-    const { options, materials, ...rest } = data;
+    const { options, materials, branch, ...rest } = data;
+    if (rest.branchId === undefined) {
+      throw new BadRequestException('branchId majburiy: xizmat qaysi filialga tegishli ekanini ko\'rsating');
+    }
+    rest.branchId = normalizeBranch(rest.branchId);
     return this.prisma.service.create({ data: rest });
   }
 
-  async update(id: string, data: any) {
-    const { options, materials, ...rest } = data;
+  async update(id: string, data: any, branchId?: string) {
+    const scope = normalizeBranch(branchId);
+    const existing = await this.prisma.service.findFirst({ where: { id, branchId: scope } });
+    if (!existing) throw new NotFoundException('Xizmat topilmadi yoki ushbu filialga tegishli emas');
+
+    const { options, materials, branch, ...rest } = data;
+    delete rest.branchId; // cross-branch o'tkazish taqiqlangan
+    delete rest.tenantId;
+
     const updatedService = await this.prisma.service.update({
       where: { id },
       data: rest,
     });
 
-    // Agar basePrice o'zgarsa, barcha optsiyalar narxini yangilash
     if (rest.basePrice !== undefined) {
       await this.updateOptionsPrices(id);
     }
@@ -39,8 +62,36 @@ export class ServicesService {
     return updatedService;
   }
 
-  async remove(id: string) {
+  async remove(id: string, branchId?: string) {
+    const scope = normalizeBranch(branchId);
+    const existing = await this.prisma.service.findFirst({ where: { id, branchId: scope } });
+    if (!existing) throw new NotFoundException('Xizmat topilmadi yoki ushbu filialga tegishli emas');
     return this.prisma.service.delete({ where: { id } });
+  }
+
+  async clone(id: string, targetBranchId: string) {
+    const source = await this.prisma.service.findUnique({
+      where: { id },
+      include: { options: true },
+    });
+    if (!source) throw new NotFoundException('Xizmat topilmadi');
+
+    const { id: _id, tenantId: _tid, createdAt: _ca, updatedAt: _ua, branchId: _bid, options, ...rest } = source as any;
+
+    const cloned = await this.prisma.service.create({
+      data: { ...rest, branchId: normalizeBranch(targetBranchId) },
+    });
+
+    if (options?.length) {
+      await this.prisma.serviceOption.createMany({
+        data: options.map(({ id: _oid, serviceId: _sid, tenantId: _otid, createdAt: _oca, updatedAt: _oua, ...opt }: any) => ({
+          ...opt,
+          serviceId: cloned.id,
+        })),
+      });
+    }
+
+    return cloned;
   }
 
   // Opsiyalar

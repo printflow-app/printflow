@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { RequireFeature } from '../../common/decorators/feature.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -9,8 +9,8 @@ export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
   @Get('dashboard')
-  async getDashboard(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string) {
-    return this.financeService.getDashboard(start, end, branchId);
+  async getDashboard(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string, @Query('departmentId') departmentId?: string) {
+    return this.financeService.getDashboard(start, end, branchId, departmentId);
   }
 
   @Get('transactions')
@@ -18,9 +18,9 @@ export class FinanceController {
     @Query('start') start?: string,
     @Query('end') end?: string,
     @Query('branchId') branchId?: string,
-    @Query('departmentId') departmentId?: string,
     @Query('page') page?: number,
-    @Query('limit') limit?: number
+    @Query('limit') limit?: number,
+    @Query('departmentId') departmentId?: string,
   ) {
     return this.financeService.findAll(start, end, branchId, page, limit, departmentId);
   }
@@ -47,7 +47,7 @@ export class FinanceController {
   }
 
   @Get('daily-summary')
-  async getDailySummary(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string) {
-    return this.financeService.getDailySummary(start, end, branchId);
+  async getDailySummary(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string, @Query('departmentId') departmentId?: string) {
+    return this.financeService.getDailySummary(start, end, branchId, departmentId);
   }
 }

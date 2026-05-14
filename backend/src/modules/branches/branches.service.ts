@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
 
@@ -23,6 +23,9 @@ export class BranchesService {
   async findAll() {
     return this.prisma.branch.findMany({
       orderBy: { createdAt: 'asc' },
+      include: {
+        _count: { select: { employees: true, tasks: true } },
+      },
     });
   }
 
@@ -106,6 +109,25 @@ export class BranchesService {
 
   async remove(id: string) {
     await this.findOne(id);
+
+    const totalCount = await this.prisma.branch.count({});
+    if (totalCount <= 1) {
+      throw new BadRequestException('Kamida bitta filial bo\'lishi shart. O\'chirish mumkin emas.');
+    }
+
+    const branch = await this.prisma.branch.findFirst({
+      where: { id },
+      include: {
+        _count: { select: { employees: true, tasks: true } },
+      },
+    });
+    const counts = branch!._count;
+    if (counts.employees > 0 || counts.tasks > 0) {
+      throw new BadRequestException(
+        'Ushbu filialda faol ma\'lumotlar borligi sababli o\'chirish mumkin emas.',
+      );
+    }
+
     await this.prisma.branch.delete({ where: { id } });
     return { ok: true };
   }

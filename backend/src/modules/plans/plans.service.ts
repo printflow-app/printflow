@@ -53,7 +53,6 @@ export class PlansService {
     price12m: number;
     maxEmployees: number;
     maxBranches?: number;
-    maxDepartments?: number;
     allowedModules?: string[];
     features: string;
     description?: string;
@@ -61,8 +60,9 @@ export class PlansService {
     sortOrder?: number;
   }) {
     try {
-      console.log('CREATING PLAN:', data);
-      return await this.prisma.plan.create({ data });
+      const { maxDepartments: _md, ...safeData } = data as any;
+      console.log('CREATING PLAN:', safeData);
+      return await this.prisma.plan.create({ data: safeData as any });
     } catch (err) {
       console.error('PRISMA CREATE ERROR:', err);
       throw err;
@@ -77,7 +77,6 @@ export class PlansService {
     price12m: number;
     maxEmployees: number;
     maxBranches: number;
-    maxDepartments: number;
     allowedModules: string[];
     features: string;
     description: string;
@@ -89,16 +88,11 @@ export class PlansService {
       console.log('UPDATING PLAN ID:', id);
       console.log('DATA TO UPDATE:', JSON.stringify(data, null, 2));
       
-      // Agar features kelmasa, uni bo'sh JSON sifatida yuboramiz
-      const finalData = { ...data };
-      if (finalData.features === undefined) {
-        finalData.features = "{}";
-      }
+      const { maxDepartments: _md, ...rest } = data as any;
+      const finalData: any = { ...rest };
+      if (finalData.features === undefined) finalData.features = "{}";
 
-      const result = await this.prisma.plan.update({ 
-        where: { id }, 
-        data: finalData 
-      });
+      const result = await this.prisma.plan.update({ where: { id }, data: finalData });
       console.log('UPDATE SUCCESSFUL');
       return result;
     } catch (err) {
