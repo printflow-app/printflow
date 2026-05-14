@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, ShieldCheck, Building2, Layers } from 'lucide-react';
+import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, ShieldCheck, Building2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, rolesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 const FiliallarPage = React.lazy(() => import('./Filiallar'));
-const BolimlarPage = React.lazy(() => import('./Bolimlar'));
-const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.role?.name?.toLowerCase() === 'superadmin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
 
@@ -19,7 +18,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void } | null>(null);
-  const [activeAdminTab, setActiveAdminTab] = useState<'admins' | 'branches' | 'bolimlar'>('admins');
+  const [activeAdminTab, setActiveAdminTab] = useState<'admins' | 'branches'>('admins');
 
   // Employee Form
   const [newEmployee, setNewEmployee] = useState<any>({
@@ -34,7 +33,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       if (!silent) setIsLoading(true);
       const [empRes, roleRes] = await Promise.all([
         employeesApi.findAll(),
-        rolesApi.findAll()
+        rolesApi.findAll(activeBranchId)
       ]);
       
       // Filter for Admins/Owners
@@ -63,7 +62,7 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeBranchId]);
 
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +136,6 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         {[
           { id: 'admins', label: "Ma'murlar", icon: ShieldCheck },
           { id: 'branches', label: 'Filiallar', icon: Building2 },
-          { id: 'bolimlar', label: "Bo'limlar", icon: Layers },
         ].map(tab => (
           <button
             key={tab.id}
@@ -156,12 +154,6 @@ const Admins: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       {activeAdminTab === 'branches' && (
         <React.Suspense fallback={<LoadingSpinner />}>
           <FiliallarPage currentUser={currentUser} />
-        </React.Suspense>
-      )}
-
-      {activeAdminTab === 'bolimlar' && (
-        <React.Suspense fallback={<LoadingSpinner />}>
-          <BolimlarPage currentUser={currentUser} />
         </React.Suspense>
       )}
 

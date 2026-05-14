@@ -100,10 +100,12 @@ export const employeesApi = {
 // ROLES
 // =============================================
 export const rolesApi = {
-  findAll: () => api.get('/roles'),
+  findAll: (branchId?: string) => api.get('/roles', { params: branchId ? { branchId } : {} }),
   create: (data: any) => api.post('/roles', data),
-  update: (id: string, data: any) => api.put(`/roles/${id}`, data),
-  delete: (id: string) => api.delete(`/roles/${id}`),
+  update: (id: string, data: any, branchId?: string) =>
+    api.put(`/roles/${id}`, data, { params: branchId ? { branchId } : {} }),
+  delete: (id: string, branchId?: string) =>
+    api.delete(`/roles/${id}`, { params: branchId ? { branchId } : {} }),
 };
 
 // =============================================
@@ -152,7 +154,7 @@ export const expenseTypesApi = {
 // TASKS & KANBAN
 // =============================================
 export const tasksApi = {
-  findAll: (branchId?: string, departmentId?: string) => api.get('/tasks', { params: { ...(branchId ? { branchId } : {}), ...(departmentId ? { departmentId } : {}) } }),
+  findAll: (branchId?: string) => api.get('/tasks', { params: branchId ? { branchId } : {} }),
   findOne: (id: string) => api.get(`/tasks/${id}`),
   create: (data: any, employeeId: string) =>
     api.post(`/tasks?employeeId=${employeeId}`, data),
@@ -166,11 +168,15 @@ export const tasksApi = {
     api.post(`/tasks/${id}/view`, { employeeId }),
   backfillIds: () => api.post('/tasks/backfill-ids'),
 
-  getColumns: (departmentId?: string) => api.get('/tasks/columns', { params: departmentId ? { departmentId } : {} }),
-  ensureDefaultColumns: (departmentId: string) => api.post('/tasks/columns/ensure-defaults', { departmentId }),
+  getColumns: (branchId?: string) => {
+    const params: any = {};
+    if (branchId && branchId !== '__main__') params.branchId = branchId;
+    return api.get('/tasks/columns', { params });
+  },
   createColumn: (data: any) => api.post('/tasks/columns', data),
   updateColumn: (id: string, data: any) => api.put(`/tasks/columns/${id}`, data),
-  deleteColumn: (id: string) => api.post(`/tasks/columns/${id}/delete`),
+  deleteColumn: (id: string, branchId?: string) =>
+    api.post(`/tasks/columns/${id}/delete`, null, { params: branchId && branchId !== '__main__' ? { branchId } : {} }),
 };
 
 // =============================================
@@ -213,11 +219,14 @@ export const financeApi = {
 // XIZMATLAR KATALOGI (Pricing Engine)
 // =============================================
 export const servicesApi = {
-  findAll: () => api.get('/services'),
-  findOne: (id: string) => api.get(`/services/${id}`),
+  findAll: (branchId?: string) => api.get('/services', { params: branchId ? { branchId } : {} }),
+  findOne: (id: string, branchId?: string) =>
+    api.get(`/services/${id}`, { params: branchId ? { branchId } : {} }),
   create: (data: any) => api.post('/services', data),
-  update: (id: string, data: any) => api.put(`/services/${id}`, data),
-  delete: (id: string) => api.delete(`/services/${id}`),
+  update: (id: string, data: any, branchId?: string) =>
+    api.put(`/services/${id}`, data, { params: branchId ? { branchId } : {} }),
+  delete: (id: string, branchId?: string) =>
+    api.delete(`/services/${id}`, { params: branchId ? { branchId } : {} }),
 
   addOption: (serviceId: string, data: any) =>
     api.post(`/services/${serviceId}/options`, data),
@@ -230,6 +239,8 @@ export const servicesApi = {
     api.post(`/services/${serviceId}/materials`, data),
   deleteMaterial: (serviceId: string, materialId: string) =>
     api.delete(`/services/${serviceId}/materials/${materialId}`),
+
+  clone: (id: string, targetBranchId: string) => api.post(`/services/${id}/clone`, { targetBranchId }),
 
   calculatePrice: (
     serviceId: string,
@@ -246,7 +257,7 @@ export const servicesApi = {
 // OMBOR (Inventory)
 // =============================================
 export const inventoryApi = {
-  getMaterials: (departmentId?: string) => api.get('/inventory/materials', { params: departmentId ? { departmentId } : {} }),
+  getMaterials: (branchId?: string) => api.get('/inventory/materials', { params: branchId ? { branchId } : {} }),
   getMaterial: (id: string) => api.get(`/inventory/materials/${id}`),
   createMaterial: (data: any) => api.post('/inventory/materials', data),
   updateMaterial: (id: string, data: any) =>
@@ -362,15 +373,6 @@ export const branchesApi = {
   delete: (id: string) => api.delete(`/branches/${id}`),
 };
 
-// =============================================
-// DEPARTMENTS (Bo'limlar)
-// =============================================
-export const departmentsApi = {
-  findAll: (branchId?: string) => api.get('/departments', { params: branchId ? { branchId } : {} }),
-  create: (data: { name: string; description?: string; branchId?: string }) => api.post('/departments', data),
-  update: (id: string, data: any) => api.put(`/departments/${id}`, data),
-  delete: (id: string) => api.delete(`/departments/${id}`),
-};
 
 // =============================================
 // WORKSPACE ADMINS
@@ -403,6 +405,13 @@ export const reportsApi = {
 // =============================================
 // AI COPILOT
 // =============================================
+export const departmentsApi = {
+  findAll: (branchId: string) => api.get('/departments', { params: { branchId } }),
+  create: (data: { name: string; branchId: string }) => api.post('/departments', data),
+  update: (id: string, data: { name: string }, branchId: string) => api.put(`/departments/${id}`, data, { params: { branchId } }),
+  remove: (id: string, branchId: string) => api.delete(`/departments/${id}`, { params: { branchId } }),
+};
+
 export const aiApi = {
   /**
    * Sends chat messages to the backend and returns a raw fetch Response

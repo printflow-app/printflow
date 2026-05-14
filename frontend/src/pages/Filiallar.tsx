@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Building2, Plus, Trash2, Edit3, Phone, MapPin, Save, X,
+  Building2, Plus, Trash2, Edit3, Phone, MapPin, Save, X, ShieldCheck,
 } from 'lucide-react';
 import { branchesApi, employeesApi, billingApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 interface Branch {
   id: string; name: string; address?: string; phone?: string;
   managerEmployeeId?: string; isActive: boolean; createdAt: string; updatedAt: string;
+  _count?: { employees: number; tasks: number };
 }
 
 // ─── FILIALLAR TAB ───────────────────────────────────────────────────────────
@@ -69,15 +70,18 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   if (loading) return <LoadingSpinner fullPage />;
 
+  // Total visible count = 1 synthetic main + real DB branches
+  const totalCount = branches.length + 1;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         {maxBranches > 0 && (
           <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl ${branches.length >= maxBranches ? 'bg-rose-50 text-rose-600' : 'bg-orange-50 text-orange-600'}`}>
-            {branches.length} / {maxBranches} filial
+            {totalCount} / {maxBranches + 1} filial
           </span>
         )}
-        {!maxBranches && <span />}
+        {!maxBranches && <span className="text-[10px] font-black px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500">{totalCount} ta filial</span>}
         {canManage && (() => {
           const atLimit = maxBranches > 0 && branches.length >= maxBranches;
           return (
@@ -85,7 +89,7 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               disabled={atLimit}
               onClick={() => !atLimit && openCreate()}
               className={`flex items-center gap-2 h-10 px-6 text-xs font-black uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-orange-500/20'}`}
-              title={atLimit ? `Limit to'ldi: ${maxBranches} ta filial (tarifni yangilang)` : ''}
+              title={atLimit ? `Limit to'ldi: ${maxBranches} ta qo'shimcha filial (tarifni yangilang)` : ''}
             >
               <Plus size={16} strokeWidth={3} />
               {atLimit ? `Limit to'ldi (${branches.length}/${maxBranches})` : 'Yangi filial'}
@@ -94,35 +98,51 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         })()}
       </div>
 
-      {branches.length === 0 ? (
-        <div className="bg-white p-12 rounded-2xl border border-slate-200 shadow-sm text-center">
-          <Building2 className="mx-auto text-slate-300 mb-3" size={48} />
-          <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Hozircha filiallar yo'q</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Synthetic "Bosh ofis" card — always first, non-deletable, mirrors topbar "__main__" option */}
+        <div className="bg-gradient-to-br from-slate-50 to-orange-50 rounded-2xl border-2 border-orange-100 shadow-sm p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-11 h-11 rounded-xl bg-orange-100 text-orange-600 border border-orange-200 flex items-center justify-center"><Building2 size={20} /></div>
+            <span className="flex items-center gap-1 text-[9px] font-black text-orange-600 bg-orange-100 border border-orange-200 px-2 py-1 rounded-lg uppercase tracking-widest">
+              <ShieldCheck size={10} /> Asosiy
+            </span>
+          </div>
+          <h3 className="text-base font-black text-slate-800 tracking-tight mb-1">Bosh ofis</h3>
+          <p className="text-[11px] font-bold text-slate-400 italic">Filialsiz umumiy ma'lumotlar</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {branches.map((b) => {
-            const manager = employees.find((e) => e.id === b.managerEmployeeId);
-            return (
-              <div key={b.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 transition-all hover:shadow-md hover:border-orange-200">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-11 h-11 rounded-xl bg-orange-50 text-orange-600 border border-orange-100 flex items-center justify-center"><Building2 size={20} /></div>
-                  {canManage && (
+
+        {branches.map((b) => {
+          const manager = employees.find((e) => e.id === b.managerEmployeeId);
+          return (
+            <div key={b.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 transition-all hover:shadow-md hover:border-orange-200">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-11 h-11 rounded-xl bg-orange-50 text-orange-600 border border-orange-100 flex items-center justify-center"><Building2 size={20} /></div>
+                {canManage && (() => {
+                  const isLast = branches.length <= 1;
+                  const hasData = (b._count?.employees ?? 0) + (b._count?.tasks ?? 0) > 0;
+                  const cantDelete = isLast || hasData;
+                  const delTitle = isLast ? "Oxirgi filial o'chirilmaydi" : hasData ? "Faol ma'lumotlar bor — o'chirish mumkin emas" : "O'chirish";
+                  return (
                     <div className="flex gap-1">
                       <button onClick={() => openEdit(b)} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center"><Edit3 size={14} /></button>
-                      <button onClick={() => setConfirmDel(b)} className="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center"><Trash2 size={14} /></button>
+                      <button
+                        onClick={() => !cantDelete && setConfirmDel(b)}
+                        disabled={cantDelete}
+                        title={delTitle}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center ${cantDelete ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-rose-50 hover:bg-rose-100 text-rose-600'}`}
+                      ><Trash2 size={14} /></button>
                     </div>
-                  )}
-                </div>
-                <h3 className="text-base font-black text-slate-800 tracking-tight mb-1">{b.name}</h3>
-                {b.address && <p className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 mb-1"><MapPin size={12} /> {b.address}</p>}
-                {b.phone && <p className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 mb-1"><Phone size={12} /> {b.phone}</p>}
-                {manager && <p className="text-[11px] font-bold text-slate-600 mt-2 pt-2 border-t border-slate-100">Mas'ul: <span className="text-slate-800 font-black">{manager.fullName}</span></p>}
+                  );
+                })()}
               </div>
-            );
-          })}
-        </div>
-      )}
+              <h3 className="text-base font-black text-slate-800 tracking-tight mb-1">{b.name}</h3>
+              {b.address && <p className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 mb-1"><MapPin size={12} /> {b.address}</p>}
+              {b.phone && <p className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 mb-1"><Phone size={12} /> {b.phone}</p>}
+              {manager && <p className="text-[11px] font-bold text-slate-600 mt-2 pt-2 border-t border-slate-100">Mas'ul: <span className="text-slate-800 font-black">{manager.fullName}</span></p>}
+            </div>
+          );
+        })}
+      </div>
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Filialni tahrirlash' : 'Yangi filial'}>
         <form onSubmit={handleSubmit} className="space-y-4">

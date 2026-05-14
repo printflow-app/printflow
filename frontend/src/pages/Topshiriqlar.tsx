@@ -5,7 +5,7 @@ import {
   Users, AlertTriangle, ExternalLink, Package, Building2,
   Archive, ArchiveRestore, Handshake, AlertOctagon
 } from 'lucide-react';
-import { tasksApi, taskExpensesApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi, departmentsApi } from '../api';
+import { tasksApi, taskExpensesApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi } from '../api';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
@@ -42,7 +42,7 @@ interface Column {
   title: string;
 }
 
-const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartmentId?: string }> = ({ currentUser, activeBranchId, activeDepartmentId }) => {
+const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
   const isAdmin =
     currentUser.role?.name?.toLowerCase() === 'admin' ||
@@ -59,7 +59,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
   const [customers, setCustomers] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
-  const [deptOptions, setDeptOptions] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -89,17 +88,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
   const fetchData = async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
-      // If department is selected and has no columns yet, auto-create defaults
-      if (activeDepartmentId) {
-        await tasksApi.ensureDefaultColumns(activeDepartmentId).catch(() => {});
-      }
+      // Default kanban auto-creation removed — each branch builds its own funnel manually.
       const [colRes, empRes, ptRes, custRes, taskRes, svcRes, branchRes, vendorRes] = await Promise.all([
-        tasksApi.getColumns(activeDepartmentId),
+        tasksApi.getColumns(activeBranchId),
         employeesApi.findAll(),
         paymentTypesApi.findAll(),
         customersApi.findAll(),
-        tasksApi.findAll(activeBranchId, activeDepartmentId).catch(() => ({ data: [] })),
-        (p.canViewServices || currentUser.role?.name?.toLowerCase() === 'admin') ? servicesApi.findAll().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        tasksApi.findAll(activeBranchId).catch(() => ({ data: [] })),
+        (p.canViewServices || currentUser.role?.name?.toLowerCase() === 'admin') ? servicesApi.findAll(activeBranchId).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
         branchesApi.findAll().catch(() => ({ data: [] })),
         (p.canViewVendors || currentUser.role?.name?.toLowerCase() === 'admin') ? vendorsApi.findAll().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ]);
@@ -134,12 +130,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
 
   useEffect(() => {
     fetchData();
-  }, [activeBranchId, activeDepartmentId]);
-
-  useEffect(() => {
-    if (!activeBranchId) { setDeptOptions([]); return; }
-    const branchParam = activeBranchId === '__main__' ? undefined : activeBranchId;
-    departmentsApi.findAll(branchParam).then(r => setDeptOptions(Array.isArray(r.data) ? r.data : [])).catch(() => setDeptOptions([]));
   }, [activeBranchId]);
 
   const showStatus = (type: 'success' | 'error', text: string) => {
@@ -190,11 +180,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
     manualTotal: '',
     justification: '',
     deadlineAt: '',
-    targetBranchId: '',
-    departmentId: ''
   });
-  // Vendor assignment
-  const [vendorAssign, setVendorAssign] = useState({ enabled: false, vendorId: '', amount: '', note: '' });
+  // Bajaruvchi (Task Routing)
+  const [executorType, setExecutorType] = useState<'self' | 'branch' | 'vendor'>('self');
+  const [executorBranchId, setExecutorBranchId] = useState('');
+  // Vendor assignment (used when executorType === 'vendor')
+  const [vendorAssign, setVendorAssign] = useState({ vendorId: '', amount: '', note: '' });
   const [currentOrderService, setCurrentOrderService] = useState({
     serviceId: '', selectedOptionIds: [] as string[], quantity: '', coefficient: '', totalAmount: 0
   });
@@ -271,10 +262,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
       customerId: '', customerName: '', customerPhone: '',
       totalAmount: '', depositAmount: '', paymentTypeId: paymentTypes[0]?.id || '',
       items: [], manualTotal: '', justification: '', deadlineAt: '',
-      targetBranchId: activeBranchId || (branches.length > 0 ? branches[0].id : ''),
-      departmentId: activeDepartmentId || ''
     });
-    setVendorAssign({ enabled: false, vendorId: '', amount: '', note: '' });
+    setExecutorType('self');
+    setExecutorBranchId('');
+    setVendorAssign({ vendorId: '', amount: '', note: '' });
     setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0 });
     setSelectedServiceOptions([]);
     setPriceBreakdown(null);
@@ -352,8 +343,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
       showStatus('error', "Kamida bitta xizmat qo'shing!");
       return;
     }
-    if (newTaskForm.assigneeIds.length === 0) {
+    if (executorType === 'self' && newTaskForm.assigneeIds.length === 0) {
       showStatus('error', "Kamida bitta mas'ulni tanlang!");
+      return;
+    }
+    if (executorType === 'branch' && !executorBranchId) {
+      showStatus('error', "Bajaruvchi filialni tanlang!");
+      return;
+    }
+    if (executorType === 'vendor' && !vendorAssign.vendorId) {
+      showStatus('error', "Hamkorni tanlang!");
       return;
     }
 
@@ -367,7 +366,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
     }
 
     try {
-      // Use createBulk API
       const payload = {
         orderName: newTaskForm.orderName,
         customerId: newTaskForm.customerId,
@@ -377,10 +375,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
         paymentTypeId: newTaskForm.paymentTypeId,
         columnId: newTaskForm.columnId,
         justification: newTaskForm.justification,
-        assigneeIds: newTaskForm.assigneeIds,
+        assigneeIds: executorType !== 'branch' ? newTaskForm.assigneeIds : [],
         deadlineAt: newTaskForm.deadlineAt || null,
-        branchId: newTaskForm.targetBranchId || activeBranchId || undefined,
-        departmentId: newTaskForm.departmentId || activeDepartmentId || undefined,
+        branchId: activeBranchId || undefined,
+        executorBranchId: executorType === 'branch' ? executorBranchId : null,
         items: newTaskForm.items.map(it => {
           let adjustedTotal = it.totalAmount;
           if (finalTotal !== calculatedTotal) {
@@ -393,18 +391,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
           return {
             ...it,
             totalAmount: adjustedTotal,
-            vendorId: vendorAssign.enabled ? vendorAssign.vendorId : undefined,
-            vendorCost: vendorAssign.enabled ? Number(vendorAssign.amount) : 0,
+            vendorId: executorType === 'vendor' ? vendorAssign.vendorId : undefined,
+            vendorCost: executorType === 'vendor' ? Number(vendorAssign.amount) : 0,
           };
         })
       };
 
       await tasksApi.createBulk(payload, currentUser.id);
 
-      // Vendor assignment is now handled within createBulk payload
-
       setIsNewTaskModalOpen(false);
-      setVendorAssign({ enabled: false, vendorId: '', amount: '', note: '' });
+      setExecutorType('self');
+      setExecutorBranchId('');
+      setVendorAssign({ vendorId: '', amount: '', note: '' });
       showStatus('success', "Buyurtma yaratildi!");
       fetchData(true);
     } catch (err) {
@@ -474,7 +472,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
     e.preventDefault();
     if (newColumnTitle) {
       try {
-        await tasksApi.createColumn({ title: newColumnTitle, orderIdx: columns.length, ...(activeDepartmentId ? { departmentId: activeDepartmentId } : {}) });
+        await tasksApi.createColumn({
+          title: newColumnTitle,
+          orderIdx: columns.length,
+          ...(activeBranchId && activeBranchId !== '__main__' ? { branchId: activeBranchId } : {}),
+        });
         setNewColumnTitle('');
         setIsNewColumnModalOpen(false);
         fetchData(true);
@@ -488,7 +490,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
   const handleRemoveColumn = async () => {
     if (!confirmModal.id) return;
     try {
-      await tasksApi.deleteColumn(confirmModal.id);
+      await tasksApi.deleteColumn(confirmModal.id, activeBranchId);
       setConfirmModal({ ...confirmModal, isOpen: false });
       showStatus('success', "Bosqich o'chirildi.");
       fetchData(true);
@@ -647,7 +649,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
         value: newOptionForm.value,
         priceAdd: Number(newOptionForm.priceAdd) || 0,
       });
-      const svcRes = await servicesApi.findAll();
+      const svcRes = await servicesApi.findAll(activeBranchId);
       setServices(svcRes.data || []);
       const updatedSvc = (svcRes.data || []).find((s: any) => s.id === currentOrderService.serviceId);
       if (updatedSvc) setSelectedServiceOptions(updatedSvc.options || []);
@@ -744,7 +746,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
           <div className="w-full flex items-center justify-center" style={{ minHeight: '60vh' }}>
             <LoadingSpinner size="lg" />
           </div>
-        ) : columns.length === 0 && !activeDepartmentId ? (
+        ) : columns.length === 0 ? (
           <div className="w-full h-96 flex flex-col items-center justify-center text-slate-400/50 gap-3">
             <ClipboardList size={48} className="mb-2" />
             <p className="font-black uppercase tracking-widest text-xs italic">Bo'limni tanlang</p>
@@ -902,6 +904,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
                           {task.remainingAmount > 0 && (
                             <span className="text-[8px] font-black bg-rose-50 text-rose-600 px-2 py-1 rounded-md border border-rose-100 uppercase tracking-tighter flex items-center gap-1">
                               <AlertCircle size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.remainingAmount)}
+                            </span>
+                          )}
+                          {(task as any).executorBranch && (
+                            <span className="text-[8px] font-black bg-violet-50 text-violet-600 px-2 py-1 rounded-md border border-violet-100 uppercase tracking-tighter flex items-center gap-1">
+                              <ArrowRight size={9} /> {(task as any).executorBranch.name}
+                            </span>
+                          )}
+                          {(task as any).vendor && (
+                            <span className="text-[8px] font-black bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 uppercase tracking-tighter flex items-center gap-1">
+                              <Handshake size={9} /> {(task as any).vendor.name}
                             </span>
                           )}
                         </div>
@@ -1188,32 +1200,64 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
                 <span className="text-sky-500">{newTaskForm.assigneeIds.length} ta tanlandi</span>
               </label>
 
-              {(branches.length > 0 && (isAdmin || p.canAssignToOtherBranches)) && (
-                <div className="mb-3 animate-fade-in">
-                  <select
-                    value={newTaskForm.targetBranchId}
-                    onChange={(e) => setNewTaskForm(f => ({ ...f, targetBranchId: e.target.value, assigneeIds: [] }))}
-                    className="select-minimal h-10 font-black text-orange-600 border-orange-200"
-                  >
-                    <option value="">-- Tanlangan filial --</option>
-                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
+              {/* Bajaruvchi — executor routing (self / branch / vendor) */}
+              {(branches.length > 0 || vendors.length > 0) && (isAdmin || p.canAssignToOtherBranches) && (
+                <div className="mb-3 space-y-2 animate-fade-in">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Bajaruvchi</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: 'self', label: "O'zimiz", icon: <Building2 size={13} /> },
+                      ...(branches.length > 0 ? [{ key: 'branch', label: 'Filialga', icon: <ArrowRight size={13} /> }] : []),
+                      ...(vendors.length > 0 ? [{ key: 'vendor', label: 'Hamkorga', icon: <Handshake size={13} /> }] : []),
+                    ].map(opt => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => { setExecutorType(opt.key as any); setExecutorBranchId(''); }}
+                        className={`flex items-center justify-center gap-1.5 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
+                          executorType === opt.key
+                            ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/20'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-orange-300'
+                        }`}
+                      >
+                        {opt.icon} {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  {executorType === 'branch' && (
+                    <select
+                      value={executorBranchId}
+                      onChange={e => { setExecutorBranchId(e.target.value); setNewTaskForm(f => ({ ...f, assigneeIds: [] })); }}
+                      className="select-minimal h-10 font-black text-orange-600 border-orange-300 w-full"
+                    >
+                      <option value="">— Bajaruvchi filialni tanlang —</option>
+                      {branches.filter(b => b.id !== activeBranchId).map((b: any) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  {executorType === 'vendor' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={vendorAssign.vendorId}
+                        onChange={e => setVendorAssign(v => ({ ...v, vendorId: e.target.value }))}
+                        className="select-minimal h-10 font-black text-orange-700 border-orange-200 col-span-1"
+                      >
+                        <option value="">— Hamkorni tanlang —</option>
+                        {vendors.map((v: any) => (
+                          <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
+                        ))}
+                      </select>
+                      <CurrencyInput
+                        value={vendorAssign.amount}
+                        onChange={v => setVendorAssign(f => ({ ...f, amount: v ? String(v) : '' }))}
+                        colorClass="text-orange-600 font-black h-10 border-orange-200 col-span-1"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
-              {deptOptions.length > 0 && (
-                <div className="mb-3">
-                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Bo'lim (ixtiyoriy)</label>
-                  <select
-                    value={newTaskForm.departmentId}
-                    onChange={(e) => setNewTaskForm(f => ({ ...f, departmentId: e.target.value }))}
-                    className="select-minimal h-10 font-black text-violet-600 border-violet-200"
-                  >
-                    <option value="">— Barcha bo'limlar —</option>
-                    {deptOptions.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                  </select>
-                </div>
-              )}
 
               <div className="relative">
                 <div
@@ -1251,7 +1295,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
                     <div className="overflow-y-auto custom-scroll space-y-1">
                       {employees
                         .filter(e => e.fullName.toLowerCase().includes(empSearchTerm.toLowerCase()))
-                        .filter(e => !newTaskForm.targetBranchId || e.branchId === newTaskForm.targetBranchId)
+                        .filter(e => {
+                            if (executorType === 'branch' && executorBranchId) return e.branchId === executorBranchId;
+                            if (activeBranchId && activeBranchId !== '__main__') return e.branchId === activeBranchId;
+                            return true;
+                          })
                         .map(emp => {
                           const active = newTaskForm.assigneeIds.includes(emp.id);
                           const busy = isEmployeeBusy(emp.id);
@@ -1278,66 +1326,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string; active
                 )}
               </div>
             </div>
-
-            {/* Hamkorga topshirish (Outsourcing) — Moved here for better visibility */}
-            {vendors.length > 0 && (
-              <div className="md:col-span-2 mt-2">
-                <div className={`rounded-2xl border-2 transition-all overflow-hidden ${vendorAssign.enabled ? 'border-orange-400 bg-orange-50/20 shadow-lg shadow-orange-500/10' : 'border-slate-100 bg-slate-50/50 hover:border-orange-200'}`}>
-                  <button
-                    type="button"
-                    onClick={() => setVendorAssign(v => ({ ...v, enabled: !v.enabled }))}
-                    className={`w-full flex items-center justify-between px-5 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${vendorAssign.enabled ? 'text-orange-700' : 'text-slate-500'}`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <div className={`p-2 rounded-xl transition-all ${vendorAssign.enabled ? 'bg-orange-500 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
-                        <Handshake size={16} />
-                      </div>
-                      Hamkorga topshirish (Outsourcing)
-                    </span>
-                    <div className={`w-10 h-5 rounded-full relative transition-all ${vendorAssign.enabled ? 'bg-orange-500' : 'bg-slate-300'}`}>
-                      <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${vendorAssign.enabled ? 'left-6' : 'left-1'}`} />
-                    </div>
-                  </button>
-                  
-                  {vendorAssign.enabled && (
-                    <div className="p-5 space-y-4 bg-white border-t-2 border-orange-100 animate-slide-up">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Hamkorni tanlang *</label>
-                          <select
-                            value={vendorAssign.vendorId}
-                            onChange={e => setVendorAssign(v => ({ ...v, vendorId: e.target.value }))}
-                            className="select-minimal h-11 font-black text-orange-700 bg-orange-50/30 border-orange-100"
-                          >
-                            <option value="">— Hamkorni tanlang —</option>
-                            {vendors.map((v: any) => (
-                              <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Summa (UZS) *</label>
-                          <CurrencyInput
-                            value={vendorAssign.amount}
-                            onChange={v => setVendorAssign(f => ({ ...f, amount: v ? String(v) : '' }))}
-                            colorClass="text-orange-600 font-black h-11 border-orange-100 bg-orange-50/30"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Izoh (ixtiyoriy)</label>
-                        <textarea
-                          value={vendorAssign.note}
-                          onChange={e => setVendorAssign(v => ({ ...v, note: e.target.value }))}
-                          className="input-minimal min-h-[60px] bg-slate-50 border-slate-100"
-                          placeholder="Hamkor uchun maxsus ko'rsatmalar..."
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Deadline field */}
             <div className="md:col-span-2">

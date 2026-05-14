@@ -11,7 +11,7 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
 };
 
-const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartmentId?: string }> = ({ currentUser, activeBranchId, activeDepartmentId }) => {
+const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
 
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -24,27 +24,29 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartm
   const [customers, setCustomers] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [departmentId, setDepartmentId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load departments scoped to the active branch; reset selection on branch change
+  useEffect(() => {
+    if (!activeBranchId) { setDepartments([]); setDepartmentId(''); return; }
+    departmentsApi.findAll(activeBranchId).then(r => setDepartments(r.data || [])).catch(() => setDepartments([]));
+    setDepartmentId('');
+  }, [activeBranchId]);
 
   const fetchData = async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
-      
+
       const queryParams: any = {
-        params: {
-          branchId: activeBranchId,
-          ...(activeDepartmentId ? { departmentId: activeDepartmentId } : {}),
-          page,
-          limit: 20,
-          start: selectedDate,
-          end: selectedDate
-        }
+        params: { branchId: activeBranchId, page, limit: 20, start: selectedDate, end: selectedDate, ...(departmentId ? { departmentId } : {}) }
       };
 
       const [transRes, summaryRes, ptRes, custRes, empRes, etRes, vendorRes] = await Promise.all([
         financeApi.getTransactions(queryParams),
-        financeApi.getDailySummary({ params: { branchId: activeBranchId, ...(activeDepartmentId ? { departmentId: activeDepartmentId } : {}), start: selectedDate, end: selectedDate } }),
+        financeApi.getDailySummary({ params: { branchId: activeBranchId, start: selectedDate, end: selectedDate, ...(departmentId ? { departmentId } : {}) } }),
         paymentTypesApi.findAll(),
         customersApi.findAll(),
         employeesApi.findAll(),
@@ -69,7 +71,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartm
 
   useEffect(() => {
     fetchData();
-  }, [activeBranchId, activeDepartmentId, page, selectedDate]);
+  }, [activeBranchId, departmentId, page, selectedDate]);
 
   // Modals
   const [isKirimModalOpen, setIsKirimModalOpen] = useState(false);
@@ -82,15 +84,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartm
   });
 
   // Forms
-  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '', departmentId: '' });
-  const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '', departmentId: '' });
-  const [deptOptions, setDeptOptions] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (!activeBranchId) { setDeptOptions([]); return; }
-    const branchParam = activeBranchId === '__main__' ? undefined : activeBranchId;
-    departmentsApi.findAll(branchParam).then(r => setDeptOptions(Array.isArray(r.data) ? r.data : [])).catch(() => setDeptOptions([]));
-  }, [activeBranchId]);
+  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '' });
+  const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
   const [customerTasks, setCustomerTasks] = useState<any[]>([]);
 
   const handleCustomerChange = async (cid: string) => {
@@ -126,10 +121,9 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartm
         type: 'kirim',
         vendorId: kirimForm.vendorId || null,
         customerId: kirimForm.vendorId ? null : kirimForm.customerId,
-        departmentId: kirimForm.departmentId || activeDepartmentId || null,
       });
       setIsKirimModalOpen(false);
-      setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '', departmentId: '' });
+      setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '' });
       showStatus('success', "Kirim muvaffaqiyatli amalga oshirildi!");
       fetchData(true);
     } catch (err) {
@@ -149,10 +143,9 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartm
         employeeId: chiqimForm.isEmployeeExpense ? chiqimForm.employeeId : null,
         vendorId: chiqimForm.isVendorExpense ? chiqimForm.vendorId : null,
         expenseTypeId: chiqimForm.isVendorExpense || chiqimForm.isEmployeeExpense ? null : chiqimForm.expenseTypeId,
-        departmentId: chiqimForm.departmentId || activeDepartmentId || null,
       });
       setIsChiqimModalOpen(false);
-      setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '', departmentId: '' });
+      setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
       showStatus('success', "Chiqim muvaffaqiyatli amalga oshirildi!");
       fetchData(true);
     } catch (err) {
@@ -268,6 +261,16 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartm
                </button>
             </div>
           </div>
+          {departments.length > 0 && (
+            <select
+              value={departmentId}
+              onChange={e => { setDepartmentId(e.target.value); setPage(1); }}
+              className="text-[10px] font-black border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-orange-400 bg-white text-slate-700"
+            >
+              <option value="">Barcha bo'limlar</option>
+              {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          )}
           <div className="flex gap-2">
              {p.canAddIncome && (
                <button onClick={() => setIsKirimModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-6 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
@@ -449,15 +452,6 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartm
             </select>
           </div>
 
-          {deptOptions.length > 0 && (
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Bo'lim (ixtiyoriy)</label>
-              <select value={kirimForm.departmentId} onChange={e => setKirimForm(f => ({ ...f, departmentId: e.target.value }))} className="select-minimal">
-                <option value="">— Barcha bo'limlar —</option>
-                {deptOptions.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-          )}
 
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={() => setIsKirimModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
@@ -534,15 +528,6 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string; activeDepartm
             </select>
           </div>
 
-          {deptOptions.length > 0 && (
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Bo'lim (ixtiyoriy)</label>
-              <select value={chiqimForm.departmentId} onChange={e => setChiqimForm(f => ({ ...f, departmentId: e.target.value }))} className="select-minimal">
-                <option value="">— Barcha bo'limlar —</option>
-                {deptOptions.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-          )}
 
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={() => setIsChiqimModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>

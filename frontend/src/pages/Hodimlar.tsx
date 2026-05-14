@@ -10,7 +10,7 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
 };
 
-const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.role?.name?.toLowerCase() === 'superadmin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
 
@@ -42,7 +42,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       if (!silent) setIsLoading(true);
       const [empRes, roleRes, branchRes, statusRes] = await Promise.all([
         employeesApi.findAll(),
-        rolesApi.findAll(),
+        rolesApi.findAll(activeBranchId),
         branchesApi.findAll().catch(() => ({ data: [] })),
         billingApi.getStatus().catch(() => null),
       ]);
@@ -75,7 +75,7 @@ const Hodimlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeBranchId]);
 
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();

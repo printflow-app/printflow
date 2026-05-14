@@ -8,7 +8,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, PieChart, Pie, Cell,
 } from 'recharts';
-import { reportsApi, financeApi, branchesApi, tasksApi, taskExpensesApi, kpiApi } from '../api';
+import { reportsApi, financeApi, branchesApi, tasksApi, taskExpensesApi, kpiApi, departmentsApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
 
@@ -251,7 +251,7 @@ const ServiceStats = ({ services }: { services: any[] }) => {
 // =============================================
 type DatePreset = 'month' | '3month' | '6month' | 'year' | 'custom';
 
-const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const isAdmin = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
   const p = currentUser?.permissions || {};
   const tf = currentUser?.tenantFeatures || {};
@@ -271,7 +271,9 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const needsFinanceData = canViewGrowthCards || canViewDynamics || canViewIncomeByType || canViewExpenseByType || canViewExpenseCharts || canViewServiceStats;
 
   const [branches, setBranches] = useState<any[]>([]);
-  const [branchId, setBranchId] = useState('');
+  const [branchId, setBranchId] = useState(activeBranchId || '');
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [departmentId, setDepartmentId] = useState('');
   const [preset, setPreset] = useState<DatePreset>('3month');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -302,6 +304,19 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   useEffect(() => {
     branchesApi.findAll().then(r => setBranches(r.data || [])).catch(() => {});
   }, []);
+
+  // Sync local branchId when global activeBranchId changes (page navigation hydration)
+  useEffect(() => {
+    setBranchId(activeBranchId || '');
+    setDepartmentId('');
+  }, [activeBranchId]);
+
+  // Load departments scoped to the currently selected branch
+  useEffect(() => {
+    if (!branchId) { setDepartments([]); setDepartmentId(''); return; }
+    departmentsApi.findAll(branchId).then(r => setDepartments(r.data || [])).catch(() => setDepartments([]));
+    setDepartmentId('');
+  }, [branchId]);
 
   const getDateParams = useCallback((): { start?: string; end?: string; branchId?: string } => {
     const today = new Date();
@@ -348,10 +363,12 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       }
 
       const calls: Promise<any>[] = [];
+      // Finance params include department filter; report-level APIs don't use it
+      const financeParams = { ...params, ...(departmentId ? { departmentId } : {}) };
 
       // Sof Foyda kartochkasi uchun dashboard stats
       if (needsFinanceData) {
-        calls.push(financeApi.getDashboard({ params }).then(r => setDashStats(r.data)).catch(() => {}));
+        calls.push(financeApi.getDashboard({ params: financeParams }).then(r => setDashStats(r.data)).catch(() => {}));
       }
 
       // O'sish ko'rsatkichlari
@@ -368,7 +385,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       if (canViewDynamics) {
         if (isShortPreset) {
           calls.push(
-            financeApi.getDinamika({ params }).then(r => {
+            financeApi.getDinamika({ params: financeParams }).then(r => {
               const raw: any[] = r.data || [];
               const normalized = raw.map(d => ({
                 label: dayLabel(d.name),
@@ -400,12 +417,12 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
       // Kirim / Chiqim Turlari
       if (canViewIncomeByType || canViewExpenseByType) {
-        calls.push(financeApi.getStatsByPaymentType({ params }).then(r => setPaymentStats(r.data || { kirim: [], chiqim: [] })).catch(() => {}));
+        calls.push(financeApi.getStatsByPaymentType({ params: financeParams }).then(r => setPaymentStats(r.data || { kirim: [], chiqim: [] })).catch(() => {}));
       }
 
       // Chiqim Tahlili
       if (canViewExpenseCharts) {
-        calls.push(financeApi.getExpenseBreakdown({ params }).then(r => setExpenseBreakdown(r.data || [])).catch(() => {}));
+        calls.push(financeApi.getExpenseBreakdown({ params: financeParams }).then(r => setExpenseBreakdown(r.data || [])).catch(() => {}));
       }
 
       if (canViewVendors) {
@@ -423,7 +440,7 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     } finally {
       setLoading(false);
     }
-  }, [getDateParams, preset, needsFinanceData, canViewGrowthCards, canViewDynamics, canViewIncomeByType, canViewExpenseByType, canViewExpenseCharts, canViewServiceStats, canViewKpi, canViewVendors, isShortPreset, branchId]);
+  }, [getDateParams, preset, needsFinanceData, canViewGrowthCards, canViewDynamics, canViewIncomeByType, canViewExpenseByType, canViewExpenseCharts, canViewServiceStats, canViewKpi, canViewVendors, isShortPreset, branchId, departmentId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -539,19 +556,31 @@ const Hisobotlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="text-xs font-bold border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-orange-400" />
           </div>
         )}
-        {tf.multiBranch && branches.length > 1 && (
-          <div className="flex items-center gap-1.5 ml-auto">
-            <Building2 size={14} className="text-slate-400" />
+        <div className="flex items-center gap-2 ml-auto flex-wrap">
+          {tf.multiBranch && branches.length > 1 && (
+            <div className="flex items-center gap-1.5">
+              <Building2 size={14} className="text-slate-400" />
+              <div className="relative">
+                <select value={branchId} onChange={e => setBranchId(e.target.value)}
+                  className="appearance-none pl-3 pr-8 py-1.5 text-xs font-black border border-slate-200 rounded-lg outline-none focus:border-orange-400 bg-white">
+                  <option value="">Barcha filiallar</option>
+                  {branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
+          {branchId && departments.length > 0 && (
             <div className="relative">
-              <select value={branchId} onChange={e => setBranchId(e.target.value)}
+              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
                 className="appearance-none pl-3 pr-8 py-1.5 text-xs font-black border border-slate-200 rounded-lg outline-none focus:border-orange-400 bg-white">
-                <option value="">Barcha filiallar</option>
-                {branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                <option value="">Barcha bo'limlar</option>
+                {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
               <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ── O'sish ko'rsatkichlari + Sof Foyda ── */}

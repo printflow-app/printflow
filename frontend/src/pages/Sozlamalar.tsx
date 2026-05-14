@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, Bell, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt } from 'lucide-react';
-import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi } from '../api';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, Bell, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy } from 'lucide-react';
+import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, employeesApi, branchesApi } from '../api';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CurrencyInput from '../components/CurrencyInput';
 
 const Billing = React.lazy(() => import('./Billing'));
 
-const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
 
@@ -42,11 +42,11 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       if (!silent) setIsLoading(true);
       const [roleRes, ptRes, etRes, kcRes, svcRes, empRes] = await Promise.all([
-        rolesApi.findAll().catch(() => ({ data: [] })),
+        rolesApi.findAll(activeBranchId).catch(() => ({ data: [] })),
         paymentTypesApi.findAll().catch(() => ({ data: [] })),
         expenseTypesApi.findAll().catch(() => ({ data: [] })),
-        tasksApi.getColumns().catch(() => ({ data: [] })),
-        servicesApi.findAll().catch(() => ({ data: [] })),
+        tasksApi.getColumns(undefined, activeBranchId).catch(() => ({ data: [] })),
+        servicesApi.findAll(activeBranchId).catch(() => ({ data: [] })),
         employeesApi.findAll().catch(() => ({ data: [] })),
       ]);
       setRoles((roleRes.data || []).filter((r: any) => r.name?.toLowerCase() !== 'admin'));
@@ -176,7 +176,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeBranchId]);
 
   // Role Form
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
@@ -203,7 +203,8 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const handleAddRole = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await rolesApi.create(newRole);
+      const branchScope = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : null;
+      await rolesApi.create({ ...newRole, branchId: branchScope });
       setIsRoleModalOpen(false);
       setNewRole(initialRoleForm);
       fetchData(true);
@@ -230,7 +231,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     if (!editRoleData || !editingRoleId) return;
     try {
       const { id, employees, ...data } = editRoleData;
-      await rolesApi.update(editingRoleId, data);
+      await rolesApi.update(editingRoleId, data, activeBranchId);
       setEditingRoleId(null);
       setEditRoleData(null);
       fetchData(true);
@@ -247,7 +248,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       message: `"${role?.name}" lavozimini o'chirmoqchimisiz? Unga biriktirilgan xodimlar bilan muammo chiqishi mumkin!`,
       onConfirm: async () => {
         try {
-          await rolesApi.delete(id);
+          await rolesApi.delete(id, activeBranchId);
           fetchData(true);
           showStatus('success', "Lavozim o'chirildi.");
         } catch (err) {
@@ -865,7 +866,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                                     <button onClick={() => { setEditingColId(col.id); setEditColTitle(col.title); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-orange-500 hover:border-orange-200 border border-slate-100 flex items-center justify-center transition-all">
                                        <Edit3 size={12}/>
                                     </button>
-                                    <button onClick={() => { setConfirmModal({ isOpen: true, title: "Bosqichni o'chirish", message: "${col.title} bosqichi o'chirilsinmi?", onConfirm: () => { tasksApi.deleteColumn(col.id).then(() => fetchData(true)); setConfirmModal(null); } }); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:border-rose-200 border border-slate-100 flex items-center justify-center transition-all">
+                                    <button onClick={() => { setConfirmModal({ isOpen: true, title: "Bosqichni o'chirish", message: "${col.title} bosqichi o'chirilsinmi?", onConfirm: () => { tasksApi.deleteColumn(col.id, activeBranchId).then(() => fetchData(true)); setConfirmModal(null); } }); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:border-rose-200 border border-slate-100 flex items-center justify-center transition-all">
                                        <Trash2 size={12}/>
                                     </button>
                                  </div>
@@ -1166,7 +1167,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
       {/* Services Catalog Section */}
       {(isAdmin || p.canViewServices || p.canAddService || p.canEditService || p.canDeleteService) && (
-        <ServicesCatalogSection services={services} onRefresh={() => fetchData(true)} showStatus={showStatus} currentUser={currentUser} />
+        <ServicesCatalogSection services={services} onRefresh={() => fetchData(true)} showStatus={showStatus} currentUser={currentUser} activeBranchId={activeBranchId} />
       )}
 
       {/* Role Modal */}
@@ -1245,7 +1246,7 @@ const Sozlamalar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 // =============================================
 // XIZMATLAR KATALOGI KOMPONENTI
 // =============================================
-const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void; showStatus: (type: 'success' | 'error', text: string) => void; currentUser: any }> = ({ services, onRefresh, showStatus, currentUser }) => {
+const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void; showStatus: (type: 'success' | 'error', text: string) => void; currentUser: any; activeBranchId?: string }> = ({ services, onRefresh, showStatus, currentUser, activeBranchId }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
   const canAdd = isAdmin || p.canManageServices;
@@ -1269,15 +1270,47 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   const [isBOMOpen, setIsBOMOpen] = useState(false);
   const [newMaterialForm, setNewMaterialForm] = useState({ materialId: '', normPerUnit: '' });
 
+  // Clone-to-branch state
+  const [branches, setBranches] = useState<any[]>([]);
+  const [cloneModal, setCloneModal] = useState<{ isOpen: boolean; service: any | null }>({ isOpen: false, service: null });
+  const [cloneTargetBranchId, setCloneTargetBranchId] = useState('');
+  const [isCloning, setIsCloning] = useState(false);
+
   useEffect(() => {
     inventoryApi.getMaterials().then(res => setMaterials(res.data || []));
+    branchesApi.findAll().then(r => setBranches(r.data || [])).catch(() => {});
   }, []);
+
+  // Branches we can clone TO (exclude the current active branch)
+  const cloneTargets = branches.filter(b => b.id !== activeBranchId);
+  const canCloneToMain = !!activeBranchId && activeBranchId !== '__main__';
+
+  const openCloneModal = (svc: any) => {
+    const firstId = cloneTargets[0]?.id ?? '';
+    setCloneTargetBranchId(canCloneToMain ? '' : firstId);
+    setCloneModal({ isOpen: true, service: svc });
+  };
+
+  const handleClone = async () => {
+    if (!cloneModal.service) return;
+    setIsCloning(true);
+    try {
+      await servicesApi.clone(cloneModal.service.id, cloneTargetBranchId || '__main__');
+      setCloneModal({ isOpen: false, service: null });
+      showStatus('success', 'Xizmat muvaffaqiyatli nusxalandi!');
+    } catch {
+      showStatus('error', 'Nusxalashda xatolik yuz berdi!');
+    } finally {
+      setIsCloning(false);
+    }
+  };
 
 
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await servicesApi.create({ ...newSvcForm, basePrice: Number(newSvcForm.basePrice) });
+      const branchScope = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : null;
+      await servicesApi.create({ ...newSvcForm, basePrice: Number(newSvcForm.basePrice), branchId: branchScope });
       showStatus('success', 'Xizmat qo\'shildi!');
       setIsAddOpen(false);
       setNewSvcForm({ name: '', description: '', basePrice: '', unit: 'dona' });
@@ -1292,7 +1325,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
       message: "Bu xizmatni o'chirmoqchimisiz?", 
       onConfirm: async () => { 
         try { 
-          await servicesApi.delete(id); 
+          await servicesApi.delete(id, activeBranchId);
           onRefresh(); 
           showStatus("success", "Xizmat o'chirildi."); 
         } catch { 
@@ -1383,7 +1416,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
 
   const handleUpdateService = async (id: string) => {
     try {
-      await servicesApi.update(id, { ...editSvcForm, basePrice: Number(editSvcForm.basePrice) });
+      await servicesApi.update(id, { ...editSvcForm, basePrice: Number(editSvcForm.basePrice) }, activeBranchId);
       setEditSvcId(null);
       showStatus('success', 'Yangilandi!');
       onRefresh();
@@ -1467,6 +1500,9 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                       )}
                       {canEdit && (
                         <button onClick={() => { setEditSvcId(svc.id); setEditSvcForm({ name: svc.name, basePrice: String(svc.basePrice), unit: svc.unit }); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-all"><Edit3 size={15}/></button>
+                      )}
+                      {canEdit && (cloneTargets.length > 0 || canCloneToMain) && (
+                        <button onClick={() => openCloneModal(svc)} title="Filialga nusxalash" className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-violet-500 hover:text-white transition-all"><Copy size={15}/></button>
                       )}
                       {canDelete && (
                         <button onClick={() => handleDeleteService(svc.id)} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={15}/></button>
@@ -1701,8 +1737,8 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             <p className="text-sm font-bold text-slate-600">{confirmModal.message}</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmModal(null)} className="flex-1 btn-outline h-12">BEKOR</button>
-              <button 
-                onClick={confirmModal.onConfirm} 
+              <button
+                onClick={confirmModal.onConfirm}
                 className="flex-1 btn-primary bg-orange-600 text-white h-12 rounded-xl font-black uppercase tracking-widest hover:bg-orange-700 shadow-lg shadow-orange-500/20"
               >
                 TASDIQLASH
@@ -1711,6 +1747,66 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           </div>
         </Modal>
       )}
+
+      {/* Clone-to-Branch Modal */}
+      <Modal
+        isOpen={cloneModal.isOpen}
+        onClose={() => setCloneModal({ isOpen: false, service: null })}
+        title="Qaysi filialga nusxalansin?"
+      >
+        <div className="space-y-5">
+          <div className="flex items-center gap-3 bg-violet-50 border border-violet-100 rounded-2xl p-4">
+            <div className="w-9 h-9 bg-violet-600 text-white rounded-xl flex items-center justify-center font-black text-sm shrink-0">
+              {cloneModal.service?.name?.charAt(0)?.toUpperCase()}
+            </div>
+            <div>
+              <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{cloneModal.service?.name}</p>
+              <p className="text-[10px] font-bold text-violet-600">{Number(cloneModal.service?.basePrice || 0).toLocaleString('uz-UZ')} UZS / {cloneModal.service?.unit}</p>
+            </div>
+          </div>
+
+          {(cloneTargets.length === 0 && !canCloneToMain) ? (
+            <div className="py-4 text-center">
+              <p className="text-sm font-bold text-slate-400">Nusxalash mumkin bo'lgan boshqa filial yo'q.</p>
+              <p className="text-xs text-slate-300 mt-1">Avval yangi filial qo'shing.</p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Maqsad filial</label>
+                <select
+                  value={cloneTargetBranchId}
+                  onChange={e => setCloneTargetBranchId(e.target.value)}
+                  className="select-minimal"
+                >
+                  {canCloneToMain && <option value="">Bosh ofis (asosiy)</option>}
+                  {cloneTargets.map((b: any) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[10px] text-slate-400 px-1">Opsiyalar ham ko'chiriladi. Narxni keyinchalik o'sha filialda tahrirlashingiz mumkin.</p>
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest"
+                  onClick={() => setCloneModal({ isOpen: false, service: null })}
+                >
+                  Bekor
+                </button>
+                <button
+                  type="button"
+                  disabled={isCloning}
+                  onClick={handleClone}
+                  className="h-12 flex-1 bg-violet-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-violet-500/20 hover:bg-violet-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  <Copy size={13} /> {isCloning ? 'Nusxalanmoqda...' : 'Nusxalash'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
       </section>
     );
 };
