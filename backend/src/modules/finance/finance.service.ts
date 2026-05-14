@@ -125,7 +125,7 @@ export class FinanceService {
   }
 
   async createTransaction(data: any) {
-    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, forExistingDebt, vendorId } = data;
+    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, vendorId } = data;
 
     const transaction = await this.prisma.$transaction(async (tx) => {
       const createdTransaction = await tx.transaction.create({
@@ -145,9 +145,10 @@ export class FinanceService {
       });
 
       if (type === 'kirim' && customerId) {
-        const updateData: any = { totalPaid: { increment: Number(amount) } };
-        if (forExistingDebt) updateData.totalDebt = { decrement: Number(amount) };
-        await tx.customer.update({ where: { id: customerId }, data: updateData });
+        await tx.customer.update({
+          where: { id: customerId },
+          data: { totalPaid: { increment: Number(amount) } },
+        });
       }
 
       if (type === 'chiqim' && employeeId && !vendorId) {
