@@ -12,12 +12,22 @@ import { TenantContext } from '../../common/tenant/tenant.context';
 export class OvertimeService {
   constructor(private prisma: PrismaService) {}
 
-  // =========== CREATE (telegram bot tomonidan chaqiriladi) ===========
+  async create(params: {
+    employeeId: string;
+    date: string;
+    message: string;
+    minutes: number;
+  }) {
+    return this.prisma.overtimeRequest.create({
+      data: {
+        employeeId: params.employeeId,
+        date: params.date,
+        message: params.message,
+        minutes: params.minutes,
+      } as any,
+    });
+  }
 
-  /**
-   * Bot tomonidan yaratiladi — tenantId aniq, TenantContext kerak emas.
-   * (PrismaService middleware'i context bo'lmasa scope qo'llamaydi.)
-   */
   async createFromTelegram(params: {
     tenantId: string;
     employeeId: string;

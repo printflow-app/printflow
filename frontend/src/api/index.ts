@@ -360,6 +360,8 @@ export const overtimeApi = {
   approve: (id: string) => api.post(`/overtime/${id}/approve`),
   reject: (id: string, reason?: string) =>
     api.post(`/overtime/${id}/reject`, { reason }),
+  create: (data: { date: string; minutes: number; message: string }) =>
+    api.post('/overtime', data),
 };
 
 // =============================================

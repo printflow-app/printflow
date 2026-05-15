@@ -59,6 +59,11 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const [rejectingRequest, setRejectingRequest] = useState<OvertimeRequest | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
+  // Overtime prompt for self-checkout
+  const [showOvertimePrompt, setShowOvertimePrompt] = useState(false);
+  const [overtimeNote, setOvertimeNote] = useState('');
+  const [overtimeMins, setOvertimeMins] = useState(0);
+
   // Manual entry modal
   const [showManualModal, setShowManualModal] = useState(false);
   const [manualForm, setManualForm] = useState({ employeeId: '', date: getTodayString(), checkIn: '', checkOut: '' });
@@ -102,6 +107,18 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     // Ketish (check-out) uchun GPS kerak emas
     const isCheckout = buttonState === 'ketdim';
 
+    // Overtime check on checkout
+    if (isCheckout) {
+      const now = new Date();
+      const curM = now.getHours() * 60 + now.getMinutes();
+      const endM = workSettings.workEnd.hour * 60 + workSettings.workEnd.minute;
+      if (curM > endM + 15) { // 15 min buffer
+        setOvertimeMins(curM - endM);
+        setShowOvertimePrompt(true);
+        return;
+      }
+    }
+
     let geoData: { lat?: number; lng?: number } = {};
 
     if (!isCheckout) {
@@ -127,6 +144,34 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       if (action === 'checkin') showStatus('success', 'Keldim ✓ Davomat belgilandi');
       else if (action === 'checkout') showStatus('success', 'Ketdim ✓ Yaxshi kun bo\'lsin');
       else if (action === 'done') showStatus('error', 'Bugun davomat tugatilgan');
+      await Promise.all([fetchMyToday(), fetchMyRecords()]);
+    } catch (err: any) {
+      showStatus('error', err?.response?.data?.message || 'Xatolik yuz berdi');
+    } finally {
+      setIsMarking(false);
+    }
+  };
+
+  const handleOvertimeSubmit = async (withNote: boolean) => {
+    setIsMarking(true);
+    try {
+      // 1. Mark checkout
+      await attendanceApi.selfMark({});
+      
+      // 2. If note provided, create overtime request
+      if (withNote && overtimeNote.trim()) {
+        await overtimeApi.create({
+          date: getTodayString(),
+          minutes: overtimeMins,
+          message: overtimeNote
+        });
+        showStatus('success', 'Ketdim ✓ Ortiqcha ish so\'rovi yuborildi');
+      } else {
+        showStatus('success', 'Ketdim ✓ Yaxshi dam oling');
+      }
+      
+      setShowOvertimePrompt(false);
+      setOvertimeNote('');
       await Promise.all([fetchMyToday(), fetchMyRecords()]);
     } catch (err: any) {
       showStatus('error', err?.response?.data?.message || 'Xatolik yuz berdi');
@@ -439,6 +484,19 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             </div>
           </div>
         </div>
+
+        {/* Overtime logic reminder for active workers */}
+        {buttonState === 'ketdim' && (
+          <div className="mx-6 mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-200 flex items-start gap-3 animate-pulse">
+            <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={18} />
+            <div>
+              <p className="text-[11px] font-black text-amber-900 uppercase">Siz hali "Ketdim"ni bosmadingiz!</p>
+              <p className="text-[10px] font-bold text-amber-700 mt-0.5">
+                Ishingiz tugagan bo'lsa, iltimos tugmani bosing. Agar qo'shimcha vaqt qolib ishlayotgan bo'lsangiz, ketishda izoh yozishni unutmang.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── My Recent Records ─────────────────────────────────────── */}
@@ -918,6 +976,48 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <div className="flex gap-2 pt-2">
             <button onClick={() => setRejectingRequest(null)} className="btn-outline h-11 flex-1 rounded-xl font-black uppercase text-[9px] tracking-widest">Bekor</button>
             <button onClick={handleRejectOvertime} className="h-11 flex-1 rounded-xl font-black uppercase text-[9px] tracking-widest bg-rose-500 hover:bg-rose-600 text-white shadow-md">Rad etish</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL: OVERTIME PROMPT */}
+      <Modal isOpen={showOvertimePrompt} onClose={() => setShowOvertimePrompt(false)} title="Ortiqcha Ish Vaqti" maxWidth="max-w-md">
+        <div className="space-y-5">
+          <div className="bg-violet-50 p-4 rounded-2xl border border-violet-100 flex items-start gap-3">
+            <AlarmClock className="text-violet-500 shrink-0 mt-0.5" size={18} />
+            <div>
+              <p className="text-[11px] font-black text-violet-900 uppercase tracking-tight">Kech qoldingiz!</p>
+              <p className="text-[10px] font-bold text-violet-700 mt-1">
+                Siz ish vaqtidan tashqari ({overtimeMins} daqiqa) qoldingiz. Agar bu vaqt ichida ish qilgan bo'lsangiz, iltimos nima qilganingizni yozing.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Nima ish qildingiz? (Izoh)</label>
+            <textarea
+              value={overtimeNote}
+              onChange={e => setOvertimeNote(e.target.value)}
+              className="input-minimal min-h-[100px] text-xs font-bold"
+              placeholder="Masalan: Mijoz bilan kutilmagan uchrashuv, buyurtmani tugatish..."
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              onClick={() => handleOvertimeSubmit(true)}
+              disabled={!overtimeNote.trim() || isMarking}
+              className="w-full h-14 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-violet-500/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 size={18} /> SO'ROV YUBORISH VA KETISH
+            </button>
+            <button
+              onClick={() => handleOvertimeSubmit(false)}
+              disabled={isMarking}
+              className="w-full h-12 text-slate-400 hover:text-slate-600 text-[10px] font-black uppercase tracking-[0.2em] transition-colors"
+            >
+              Shunchaki ketish (izohsiz)
+            </button>
           </div>
         </div>
       </Modal>

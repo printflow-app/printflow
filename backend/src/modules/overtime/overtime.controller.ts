@@ -7,7 +7,18 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 export class OvertimeController {
   constructor(private overtimeService: OvertimeService) {}
 
-  @Get()
+  @Post()
+  create(@Body() body: { date: string; minutes: number; message: string }, @Req() req: Request) {
+    const employeeId = (req as any).user?.sub;
+    return this.overtimeService.create({
+      employeeId,
+      date: body.date,
+      message: body.message,
+      minutes: body.minutes,
+    });
+  }
+
+   @Get()
   @RequirePermissions('canViewAttendance')
   findAll(@Query('status') status?: string) {
     return this.overtimeService.findAll(status);
