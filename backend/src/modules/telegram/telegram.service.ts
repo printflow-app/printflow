@@ -486,6 +486,49 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   // XABARNOMA YUBORISH METHODLARI
   // =============================================
 
+  /**
+   * Davomat xizmati tomonidan chaqiriladi (xodim manual ketganda).
+   * Agar vaqt kech bo'lsa, Telegram orqali izoh so'raydi.
+   */
+  async triggerOvertimePrompt(employeeId: string, tenantId: string) {
+    const { str: todayStr, utc5 } = this.tashkentNow();
+    
+    const settings = await this.prisma.systemSetting.findMany({
+      where: { tenantId, key: { in: ['workEnd', 'workDays'] } },
+    });
+    const workEnd = this.parseSetting(settings, 'workEnd', { hour: 17, minute: 0 });
+    const workDays = this.parseSetting(settings, 'workDays', [1, 2, 3, 4, 5, 6]);
+
+    const isWorkDay = workDays.includes(utc5.getUTCDay());
+    const currentMins = utc5.getUTCHours() * 60 + utc5.getUTCMinutes();
+    const workEndMins = workEnd.hour * 60 + workEnd.minute;
+
+    // 15 minutdan ko'p o'tgan bo'lsa
+    if (currentMins > workEndMins + 15 || !isWorkDay) {
+      const emp = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+      if (!emp?.telegramId) return;
+
+      const promptMsg = 
+        `🕐 *Ortiqcha ish vaqti aniqlandi*\n\n` +
+        `Siz bugun (${todayStr}) ish vaqtidan tashqari qoldingiz.\n` +
+        `Iltimos, nima ishlar qilganingizni yozib yuboring (izoh).`;
+
+      try {
+        await this.bot.telegram.sendMessage(emp.telegramId, promptMsg, { parse_mode: 'Markdown' });
+        await this.prisma.botSession.update({
+          where: { chatId: emp.telegramId },
+          data: {
+            step: 'OVERTIME_AWAITING',
+            overtimePromptDate: todayStr,
+            overtimePromptedAt: new Date(),
+          } as any,
+        });
+      } catch (err: any) {
+        console.warn(`Overtime trigger prompt yuborilmadi (${emp.telegramId}):`, err.message);
+      }
+    }
+  }
+
   async sendMessage(telegramId: string, text: string) {
     if (!this.bot) return;
     try {

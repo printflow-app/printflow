@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
 import { randomUUID } from 'crypto';
+import { TelegramService } from '../telegram/telegram.service';
 
 const DEFAULT_WORK_START = { hour: 9, minute: 0 };
 const DEFAULT_WORK_END = { hour: 17, minute: 0 };
@@ -19,6 +20,7 @@ export class AttendanceService {
   constructor(
     private prisma: PrismaService,
     private settings: SettingsService,
+    private telegram: TelegramService,
   ) {}
 
   // ============ TOKEN MANAGEMENT (static, admin-generated) ============
@@ -277,6 +279,10 @@ export class AttendanceService {
             data: { checkOut: now },
             include: { employee: true },
           });
+
+          // Ortiqcha ish uchun Telegram'da izoh so'rash (background)
+          this.telegram.triggerOvertimePrompt(employeeId, tenantId).catch(() => {});
+
           return { ...updated, action: 'checkout' };
         }
 
