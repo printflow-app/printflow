@@ -23,9 +23,10 @@ export class KpiController {
     @Req() req: Request,
     @Query('start') start?: string,
     @Query('end') end?: string,
+    @Query('branchId') branchId?: string,
   ) {
     if (!req) throw new ForbiddenException('Foydalanuvchi aniqlanmadi');
-    return this.kpiService.getEmployeeKpiList(start, end);
+    return this.kpiService.getEmployeeKpiList(start, end, branchId);
   }
 
   @Get('me')

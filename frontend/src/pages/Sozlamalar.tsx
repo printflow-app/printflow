@@ -46,7 +46,9 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         paymentTypesApi.findAll().catch(() => ({ data: [] })),
         expenseTypesApi.findAll().catch(() => ({ data: [] })),
         tasksApi.getColumns(activeBranchId).catch(() => ({ data: [] })),
-        servicesApi.findAll(activeBranchId).catch(() => ({ data: [] })),
+        (activeBranchId && activeBranchId !== '__main__')
+          ? servicesApi.findAll(activeBranchId).catch(() => ({ data: [] }))
+          : Promise.resolve({ data: [] }),
         employeesApi.findAll().catch(() => ({ data: [] })),
       ]);
       setRoles((roleRes.data || []).filter((r: any) => r.name?.toLowerCase() !== 'admin'));
@@ -1281,21 +1283,35 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
     branchesApi.findAll().then(r => setBranches(r.data || [])).catch(() => {});
   }, []);
 
-  // Branches we can clone TO (exclude the current active branch)
+  // Branches we can clone TO (exclude the caller's current active branch — cloning
+  // to yourself is a no-op and the backend would reject it as a duplicate name anyway).
   const cloneTargets = branches.filter(b => b.id !== activeBranchId);
-  const canCloneToMain = !!activeBranchId && activeBranchId !== '__main__';
 
   const openCloneModal = (svc: any) => {
-    const firstId = cloneTargets[0]?.id ?? '';
-    setCloneTargetBranchId(canCloneToMain ? '' : firstId);
+    // Pre-select the first available target so the user can hit "Nusxalash" immediately.
+    setCloneTargetBranchId(cloneTargets[0]?.id ?? '');
     setCloneModal({ isOpen: true, service: svc });
+  };
+
+  const requireActiveBranch = (): string | null => {
+    if (!activeBranchId || activeBranchId === '__main__') {
+      showStatus('error', 'Avval aktiv filialni tanlang');
+      return null;
+    }
+    return activeBranchId;
   };
 
   const handleClone = async () => {
     if (!cloneModal.service) return;
+    const bId = requireActiveBranch();
+    if (!bId) return;
+    if (!cloneTargetBranchId) {
+      showStatus('error', 'Maqsadli filialni tanlang');
+      return;
+    }
     setIsCloning(true);
     try {
-      await servicesApi.clone(cloneModal.service.id, cloneTargetBranchId || '__main__');
+      await servicesApi.clone(cloneModal.service.id, bId, cloneTargetBranchId);
       setCloneModal({ isOpen: false, service: null });
       showStatus('success', 'Xizmat muvaffaqiyatli nusxalandi!');
     } catch {
@@ -1308,9 +1324,10 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
 
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
+    const bId = requireActiveBranch();
+    if (!bId) return;
     try {
-      const branchScope = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : null;
-      await servicesApi.create({ ...newSvcForm, basePrice: Number(newSvcForm.basePrice), branchId: branchScope });
+      await servicesApi.create({ ...newSvcForm, basePrice: Number(newSvcForm.basePrice), branchId: bId });
       showStatus('success', 'Xizmat qo\'shildi!');
       setIsAddOpen(false);
       setNewSvcForm({ name: '', description: '', basePrice: '', unit: 'dona' });
@@ -1319,32 +1336,36 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   };
 
   const handleDeleteService = async (id: string) => {
-    setConfirmModal({ 
-      isOpen: true, 
-      title: "Xizmatni o'chirish", 
-      message: "Bu xizmatni o'chirmoqchimisiz?", 
-      onConfirm: async () => { 
-        try { 
-          await servicesApi.delete(id, activeBranchId);
-          onRefresh(); 
-          showStatus("success", "Xizmat o'chirildi."); 
-        } catch { 
-          showStatus("error", "Xatolik yuz berdi."); 
-        } 
-        setConfirmModal(null); 
-      } 
+    const bId = requireActiveBranch();
+    if (!bId) return;
+    setConfirmModal({
+      isOpen: true,
+      title: "Xizmatni o'chirish",
+      message: "Bu xizmatni o'chirmoqchimisiz?",
+      onConfirm: async () => {
+        try {
+          await servicesApi.delete(id, bId);
+          onRefresh();
+          showStatus("success", "Xizmat o'chirildi.");
+        } catch {
+          showStatus("error", "Xatolik yuz berdi.");
+        }
+        setConfirmModal(null);
+      }
     });
   };
 
   const handleAddOption = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedService) return;
+    const bId = requireActiveBranch();
+    if (!bId) return;
     try {
       await servicesApi.addOption(selectedService.id, {
         name: newOptionForm.name,
         value: newOptionForm.value,
         percentageMarkup: Number(newOptionForm.percentageMarkup)
-      });
+      }, bId);
       showStatus('success', 'Optsiya qo\'shildi!');
       setIsOptionOpen(false);
       setNewOptionForm({ name: '', value: '', percentageMarkup: '' });
@@ -1357,34 +1378,38 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   };
 
   const handleDeleteOption = async (id: string) => {
-    setConfirmModal({ 
-      isOpen: true, 
-      title: "Opsiyani o'chirish", 
-      message: "Tanlangan optsiyani o'chirmoqchimisiz?", 
-      onConfirm: async () => { 
-        try { 
-          await servicesApi.deleteOption(id); 
-          const updated = await servicesApi.findAll(); 
-          const newSvc = updated.data.find((s: any) => s.id === selectedService.id); 
-          setSelectedService(newSvc); 
-          onRefresh(); 
-          showStatus("success", "Opsiya o'chirildi."); 
-        } catch { 
-          showStatus("error", "Xatolik yuz berdi."); 
-        } 
-        setConfirmModal(null); 
-      } 
+    const bId = requireActiveBranch();
+    if (!bId) return;
+    setConfirmModal({
+      isOpen: true,
+      title: "Opsiyani o'chirish",
+      message: "Tanlangan optsiyani o'chirmoqchimisiz?",
+      onConfirm: async () => {
+        try {
+          await servicesApi.deleteOption(id, bId);
+          const updated = await servicesApi.findAll(bId);
+          const newSvc = updated.data.find((s: any) => s.id === selectedService.id);
+          setSelectedService(newSvc);
+          onRefresh();
+          showStatus("success", "Opsiya o'chirildi.");
+        } catch {
+          showStatus("error", "Xatolik yuz berdi.");
+        }
+        setConfirmModal(null);
+      }
     });
   };
 
   const handleAddMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedService) return;
+    const bId = requireActiveBranch();
+    if (!bId) return;
     try {
-      await servicesApi.addMaterial(selectedService.id, { 
-        materialId: newMaterialForm.materialId, 
-        normPerUnit: Number(newMaterialForm.normPerUnit) 
-      });
+      await servicesApi.addMaterial(selectedService.id, {
+        materialId: newMaterialForm.materialId,
+        normPerUnit: Number(newMaterialForm.normPerUnit)
+      }, bId);
       showStatus('success', 'Material biriktirildi!');
       setIsBOMOpen(false);
       setNewMaterialForm({ materialId: '', normPerUnit: '' });
@@ -1393,30 +1418,34 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   };
 
   const handleRemoveMaterial = async (materialId: string) => {
-    if (!selectedService) return; 
-    setConfirmModal({ 
-      isOpen: true, 
-      title: "BOM o'chirish", 
-      message: "Ushbu material sarfini o'chirmoqchimisiz?", 
-      onConfirm: async () => { 
-        try { 
-          await servicesApi.deleteMaterial(selectedService.id, materialId); 
-          const updated = await servicesApi.findAll(); 
-          const newSvc = updated.data.find((s: any) => s.id === selectedService.id); 
-          setSelectedService(newSvc); 
-          onRefresh(); 
-          showStatus("success", "Material sarfi o'chirildi."); 
-        } catch { 
-          showStatus("error", "Xatolik yuz berdi."); 
-        } 
-        setConfirmModal(null); 
-      } 
+    if (!selectedService) return;
+    const bId = requireActiveBranch();
+    if (!bId) return;
+    setConfirmModal({
+      isOpen: true,
+      title: "BOM o'chirish",
+      message: "Ushbu material sarfini o'chirmoqchimisiz?",
+      onConfirm: async () => {
+        try {
+          await servicesApi.deleteMaterial(selectedService.id, materialId, bId);
+          const updated = await servicesApi.findAll(bId);
+          const newSvc = updated.data.find((s: any) => s.id === selectedService.id);
+          setSelectedService(newSvc);
+          onRefresh();
+          showStatus("success", "Material sarfi o'chirildi.");
+        } catch {
+          showStatus("error", "Xatolik yuz berdi.");
+        }
+        setConfirmModal(null);
+      }
     });
   };
 
   const handleUpdateService = async (id: string) => {
+    const bId = requireActiveBranch();
+    if (!bId) return;
     try {
-      await servicesApi.update(id, { ...editSvcForm, basePrice: Number(editSvcForm.basePrice) }, activeBranchId);
+      await servicesApi.update(id, { ...editSvcForm, basePrice: Number(editSvcForm.basePrice) }, bId);
       setEditSvcId(null);
       showStatus('success', 'Yangilandi!');
       onRefresh();
@@ -1501,7 +1530,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                       {canEdit && (
                         <button onClick={() => { setEditSvcId(svc.id); setEditSvcForm({ name: svc.name, basePrice: String(svc.basePrice), unit: svc.unit }); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-all"><Edit3 size={15}/></button>
                       )}
-                      {canEdit && (cloneTargets.length > 0 || canCloneToMain) && (
+                      {canEdit && cloneTargets.length > 0 && (
                         <button onClick={() => openCloneModal(svc)} title="Filialga nusxalash" className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-violet-500 hover:text-white transition-all"><Copy size={15}/></button>
                       )}
                       {canDelete && (
@@ -1765,7 +1794,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             </div>
           </div>
 
-          {(cloneTargets.length === 0 && !canCloneToMain) ? (
+          {cloneTargets.length === 0 ? (
             <div className="py-4 text-center">
               <p className="text-sm font-bold text-slate-400">Nusxalash mumkin bo'lgan boshqa filial yo'q.</p>
               <p className="text-xs text-slate-300 mt-1">Avval yangi filial qo'shing.</p>
@@ -1779,7 +1808,6 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                   onChange={e => setCloneTargetBranchId(e.target.value)}
                   className="select-minimal"
                 >
-                  {canCloneToMain && <option value="">Bosh ofis (asosiy)</option>}
                   {cloneTargets.map((b: any) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}

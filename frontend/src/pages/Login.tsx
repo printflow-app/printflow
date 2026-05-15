@@ -7,9 +7,10 @@ import logo from '../assets/logo.png';
 interface LoginProps {
   onLogin: (user: User) => void;
   onBack?: () => void;
+  onRegisterClick?: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
   const [workspaceSlug, setWorkspaceSlug] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -207,6 +208,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack }) => {
               )}
             </button>
           </form>
+
+          {onRegisterClick && (
+            <p className="mt-6 text-center text-xs font-bold text-slate-500">
+              Workspace yo'qmi?{' '}
+              <button
+                type="button"
+                onClick={onRegisterClick}
+                className="text-[#FF6B00] hover:underline font-black uppercase tracking-wider"
+              >
+                Yangi ochish
+              </button>
+            </p>
+          )}
         </div>
 
         <p className="mt-8 text-center text-[10px] font-bold text-zinc-700 uppercase tracking-[0.2em]">

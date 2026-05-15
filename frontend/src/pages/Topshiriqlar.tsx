@@ -5,7 +5,7 @@ import {
   Users, AlertTriangle, ExternalLink, Package, Building2,
   Archive, ArchiveRestore, Handshake, AlertOctagon
 } from 'lucide-react';
-import { tasksApi, taskExpensesApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi } from '../api';
+import { tasksApi, taskExpensesApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi, departmentsApi } from '../api';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
@@ -48,8 +48,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     currentUser.role?.name?.toLowerCase() === 'admin' ||
     currentUser.login === 'admin';
   const canCreateTask = p.canCreateTask || isAdmin;
-  const canEditTask   = p.canEditTask   || isAdmin;
-  const canMoveTask   = p.canMoveTask   || isAdmin;
+  const canEditTask = p.canEditTask || isAdmin;
+  const canMoveTask = p.canMoveTask || isAdmin;
   const canDeleteTask = p.canDeleteTask || isAdmin;
 
   const [employees, setEmployees] = useState<any[]>([]);
@@ -90,14 +90,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       if (!silent) setIsLoading(true);
       // Default kanban auto-creation removed — each branch builds its own funnel manually.
       const [colRes, empRes, ptRes, custRes, taskRes, svcRes, branchRes, vendorRes] = await Promise.all([
-        tasksApi.getColumns(activeBranchId),
-        employeesApi.findAll(),
-        paymentTypesApi.findAll(),
-        customersApi.findAll(),
-        tasksApi.findAll(activeBranchId).catch(() => ({ data: [] })),
-        (p.canViewServices || currentUser.role?.name?.toLowerCase() === 'admin') ? servicesApi.findAll(activeBranchId).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
-        branchesApi.findAll().catch(() => ({ data: [] })),
-        (p.canViewVendors || currentUser.role?.name?.toLowerCase() === 'admin') ? vendorsApi.findAll().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        tasksApi.getColumns(activeBranchId).catch(e => { console.error("Columns load error:", e); return { data: [] }; }),
+        employeesApi.findAll().catch(e => { console.error("Employees load error:", e); return { data: [] }; }),
+        paymentTypesApi.findAll().catch(e => { console.error("Payment types load error:", e); return { data: [] }; }),
+        customersApi.findAll(activeBranchId).catch(e => { console.error("Customers load error:", e); return { data: [] }; }),
+        tasksApi.findAll(activeBranchId).catch(e => { console.error("Tasks load error:", e); return { data: [] }; }),
+        (activeBranchId && activeBranchId !== '__main__' && (p.canViewServices || currentUser.role?.name?.toLowerCase() === 'admin')) ? servicesApi.findAll(activeBranchId).catch(e => { console.error("Services load error:", e); return { data: [] }; }) : Promise.resolve({ data: [] }),
+        branchesApi.findAll().catch(e => { console.error("Branches load error:", e); return { data: [] }; }),
+        (activeBranchId && activeBranchId !== '__main__' && (p.canViewVendors || currentUser.role?.name?.toLowerCase() === 'admin')) ? vendorsApi.findAll(activeBranchId).catch(e => { console.error("Vendors load error:", e); return { data: [] }; }) : Promise.resolve({ data: [] }),
       ]);
       setColumns(colRes.data || []);
       const filteredEmployees = (empRes.data || []).filter((emp: any) => {
@@ -130,6 +130,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   useEffect(() => {
     fetchData();
+  }, [activeBranchId]);
+
+  // Fetch departments scoped to the active branch. Empty array if no branch.
+  useEffect(() => {
+    setSelectedDepartmentId(''); // reset when branch changes
+    if (!activeBranchId || activeBranchId === '__main__') { setDepartments([]); return; }
+    departmentsApi.findAll(activeBranchId)
+      .then(r => setDepartments(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setDepartments([]));
   }, [activeBranchId]);
 
   const showStatus = (type: 'success' | 'error', text: string) => {
@@ -184,6 +193,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   // Bajaruvchi (Task Routing)
   const [executorType, setExecutorType] = useState<'self' | 'branch' | 'vendor'>('self');
   const [executorBranchId, setExecutorBranchId] = useState('');
+  // Departments — analytical tag, optional. Fetched per active branch.
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
   // Vendor assignment (used when executorType === 'vendor')
   const [vendorAssign, setVendorAssign] = useState({ vendorId: '', amount: '', note: '' });
   const [currentOrderService, setCurrentOrderService] = useState({
@@ -379,6 +391,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         deadlineAt: newTaskForm.deadlineAt || null,
         branchId: activeBranchId || undefined,
         executorBranchId: executorType === 'branch' ? executorBranchId : null,
+        departmentId: selectedDepartmentId || null,
         items: newTaskForm.items.map(it => {
           let adjustedTotal = it.totalAmount;
           if (finalTotal !== calculatedTotal) {
@@ -642,13 +655,17 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const handleAddServiceOption = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentOrderService.serviceId || !newOptionForm.name || !newOptionForm.value) return;
+    if (!activeBranchId || activeBranchId === '__main__') {
+      showStatus('error', 'Avval aktiv filialni tanlang');
+      return;
+    }
     setIsSavingOption(true);
     try {
       await servicesApi.addOption(currentOrderService.serviceId, {
         name: newOptionForm.name,
         value: newOptionForm.value,
         priceAdd: Number(newOptionForm.priceAdd) || 0,
-      });
+      }, activeBranchId);
       const svcRes = await servicesApi.findAll(activeBranchId);
       setServices(svcRes.data || []);
       const updatedSvc = (svcRes.data || []).find((s: any) => s.id === currentOrderService.serviceId);
@@ -677,14 +694,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   // Client-side search: filter by displayId, title, orderName, or customerName
   const filteredTasks = searchTerm.trim()
     ? visibleTasks.filter(t => {
-        const q = searchTerm.toLowerCase();
-        return (
-          t.displayId?.toLowerCase().includes(q) ||
-          t.title.toLowerCase().includes(q) ||
-          t.orderName?.toLowerCase().includes(q) ||
-          t.customerName?.toLowerCase().includes(q)
-        );
-      })
+      const q = searchTerm.toLowerCase();
+      return (
+        t.displayId?.toLowerCase().includes(q) ||
+        t.title.toLowerCase().includes(q) ||
+        t.orderName?.toLowerCase().includes(q) ||
+        t.customerName?.toLowerCase().includes(q)
+      );
+    })
     : visibleTasks;
 
   return (
@@ -790,8 +807,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 }}
                 onDrop={(e) => onTaskDrop(e, col.id)}
                 className={`min-w-[88vw] sm:min-w-[320px] w-[88vw] sm:w-[320px] max-h-full flex flex-col rounded-2xl p-2.5 border shadow-sm flex-shrink-0 snap-center transition-all duration-300 ${dragOverColId === col.id
-                    ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-400/50 scale-[1.02]'
-                    : 'bg-slate-100/50 border-slate-200/50'
+                  ? 'bg-orange-50 border-orange-300 ring-2 ring-orange-400/50 scale-[1.02]'
+                  : 'bg-slate-100/50 border-slate-200/50'
                   }`}
               >
                 {/* Column Header */}
@@ -818,10 +835,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         onDragEnd={canMoveTask ? () => { setDraggedTaskId(null); setDragOverColId(null); } : undefined}
                         onClick={() => openDetailModal(task)}
                         className={`p-3.5 rounded-xl shadow-sm border ${canMoveTask ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} hover:shadow-md transition-all duration-300 group animate-fade-in flex flex-col ${draggedTaskId === task.id
-                            ? 'opacity-40 scale-95 ring-2 ring-orange-500 shadow-xl border-orange-500 bg-white'
-                            : isMyTask
-                              ? 'bg-sky-50/60 border-sky-300 ring-1 ring-sky-200 hover:border-sky-400 hover:shadow-sky-500/10'
-                              : `bg-white ${getCardUrgencyClass(task)} hover:shadow-orange-500/10`
+                          ? 'opacity-40 scale-95 ring-2 ring-orange-500 shadow-xl border-orange-500 bg-white'
+                          : isMyTask
+                            ? 'bg-sky-50/60 border-sky-300 ring-1 ring-sky-200 hover:border-sky-400 hover:shadow-sky-500/10'
+                            : `bg-white ${getCardUrgencyClass(task)} hover:shadow-orange-500/10`
                           }`}
                       >
                         {/* displayId badge + "my task" badge row — always shown */}
@@ -1202,7 +1219,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
               {/* Bajaruvchi — executor routing (self / branch / vendor) */}
               {(branches.length > 0 || vendors.length > 0) && (isAdmin || p.canAssignToOtherBranches) && (
-                <div className="mb-3 space-y-2 animate-fade-in">
+                <div className="mb-3 mt-5 space-y-2 animate-fade-in">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Bajaruvchi</p>
                   <div className="grid grid-cols-3 gap-2">
                     {[
@@ -1214,11 +1231,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         key={opt.key}
                         type="button"
                         onClick={() => { setExecutorType(opt.key as any); setExecutorBranchId(''); }}
-                        className={`flex items-center justify-center gap-1.5 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                          executorType === opt.key
-                            ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/20'
-                            : 'bg-white border-slate-200 text-slate-500 hover:border-orange-300'
-                        }`}
+                        className={`flex items-center justify-center gap-1.5 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${executorType === opt.key
+                          ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/20'
+                          : 'bg-white border-slate-200 text-slate-500 hover:border-orange-300'
+                          }`}
                       >
                         {opt.icon} {opt.label}
                       </button>
@@ -1255,6 +1271,26 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       />
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Department (Bo'lim) — optional analytical tag.
+                  Visible only if the active branch has at least one department defined. */}
+              {departments.length > 0 && (
+                <div className="space-y-2 mt-5 mb-7">
+                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                    <Layers size={11} /> Bo'lim (ixtiyoriy)
+                  </label>
+                  <select
+                    value={selectedDepartmentId}
+                    onChange={e => setSelectedDepartmentId(e.target.value)}
+                    className="select-minimal h-10 font-bold w-full"
+                  >
+                    <option value="">— Bo'limsiz —</option>
+                    {departments.map((d: any) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -1296,10 +1332,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       {employees
                         .filter(e => e.fullName.toLowerCase().includes(empSearchTerm.toLowerCase()))
                         .filter(e => {
-                            if (executorType === 'branch' && executorBranchId) return e.branchId === executorBranchId;
-                            if (activeBranchId && activeBranchId !== '__main__') return e.branchId === activeBranchId;
-                            return true;
-                          })
+                          if (executorType === 'branch' && executorBranchId) return e.branchId === executorBranchId;
+                          if (activeBranchId && activeBranchId !== '__main__') return e.branchId === activeBranchId;
+                          return true;
+                        })
                         .map(emp => {
                           const active = newTaskForm.assigneeIds.includes(emp.id);
                           const busy = isEmployeeBusy(emp.id);
@@ -1451,7 +1487,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                             <a key={i} href={att.url} download={att.name}
                               className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-sm transition-all group">
                               <div className="w-9 h-9 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" /></svg>
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="text-[10px] font-black text-slate-700 truncate">{att.name}</p>
@@ -1581,12 +1617,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     {isUpdatingVendor ? 'SAQLANMOQDA...' : "SAQLASH"}
                   </button>
                 </div>
-                
+
                 {(selectedTask as any).vendor && (
                   <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start gap-3">
-                    <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16}/>
+                    <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16} />
                     <p className="text-[10px] font-bold text-amber-800">
-                      Bu buyurtma <strong>{(selectedTask as any).vendor.name}</strong> hamkoriga biriktirilgan. 
+                      Bu buyurtma <strong>{(selectedTask as any).vendor.name}</strong> hamkoriga biriktirilgan.
                       Kelishilgan narx: <strong>{formatCurrency((selectedTask as any).vendorCost || 0)}</strong>.
                     </p>
                   </div>
@@ -1823,7 +1859,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               onClick={() => moveFileInputRef.current?.click()}
               className="border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all min-h-[80px]"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fayl yuklash uchun bosing</p>
               <p className="text-[9px] text-slate-300 font-bold">PDF, AI, PSD, PNG, JPG va boshqalar</p>
             </div>
@@ -1834,11 +1870,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 {moveForm.newFiles.map((f, i) => (
                   <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
                     <div className="flex items-center gap-2 min-w-0">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                       <span className="text-[10px] font-black text-slate-700 truncate">{f.name}</span>
                     </div>
                     <button type="button" onClick={() => setMoveForm(fm => ({ ...fm, newFiles: fm.newFiles.filter((_, j) => j !== i) }))} className="text-slate-300 hover:text-rose-500 transition-colors ml-2 shrink-0">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                     </button>
                   </div>
                 ))}
@@ -1989,8 +2025,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                           key={pg}
                           onClick={() => setArxivPage(pg)}
                           className={`w-8 h-8 rounded-xl text-[10px] font-black transition-all ${pg === arxivPage
-                              ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                              : 'border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500'
+                            ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                            : 'border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500'
                             }`}
                         >
                           {pg}

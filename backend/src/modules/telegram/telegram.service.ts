@@ -789,21 +789,36 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   // and returns false. The loser skips sending.
   // ──────────────────────────────────────────────────────────────────
 
+  // Stable identifier for this process so logs can show WHICH instance won the lock.
+  // Set once per process lifetime; survives multiple cron ticks.
+  private readonly instanceTag =
+    `${process.env.RAILWAY_REPLICA_ID || process.env.HOSTNAME || 'local'}#${process.pid}`;
+
   /**
    * Tries to atomically acquire a per-job lock stored in SystemSetting.
    * Returns true  → this instance won the race, proceed with sending.
-   * Returns false → another instance already sent, skip.
+   * Returns false → another instance already sent, OR a transient DB error
+   *                 occurred. Fail-closed: one missed notification is far
+   *                 less harmful than duplicate spam to every employee.
    */
   private async acquireCronLock(tenantId: string, lockKey: string): Promise<boolean> {
     try {
       await this.prisma.systemSetting.create({
-        data: { tenantId, key: lockKey, value: new Date().toISOString() },
+        data: { tenantId, key: lockKey, value: `${new Date().toISOString()}|${this.instanceTag}` },
       });
+      console.log(`[CronLock] ACQUIRED ${this.instanceTag} tenant=${tenantId} key=${lockKey}`);
       return true;
     } catch (e: any) {
-      if (e?.code === 'P2002') return false; // Duplicate — another instance won
-      console.warn('[CronLock] acquire error (failing open):', e?.message);
-      return true; // Fail open: a duplicate message is better than a missed one
+      if (e?.code === 'P2002') {
+        console.log(`[CronLock] SKIPPED  ${this.instanceTag} tenant=${tenantId} key=${lockKey} (another instance held it)`);
+        return false;
+      }
+      // Fail CLOSED on unknown errors. Original code failed open ("duplicate >
+      // missed"), but in practice duplicates are far more user-hostile than a
+      // single missed reminder — and a transient DB error tends to affect both
+      // racing instances simultaneously, so failing open doubles the spam.
+      console.error(`[CronLock] ERROR    ${this.instanceTag} tenant=${tenantId} key=${lockKey}:`, e?.message);
+      return false;
     }
   }
 

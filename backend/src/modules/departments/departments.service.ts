@@ -17,8 +17,10 @@ export class DepartmentsService {
   async create(data: { name: string; branchId: string }) {
     if (!data.name?.trim()) throw new BadRequestException('name majburiy');
     if (!data.branchId) throw new BadRequestException('branchId majburiy');
+    // '__main__' = synthetic "Bosh ofis" card → null branchId in DB.
+    const scope = data.branchId === '__main__' ? null : data.branchId;
     return (this.prisma as any).department.create({
-      data: { name: data.name.trim(), branchId: data.branchId },
+      data: { name: data.name.trim(), branchId: scope },
     });
   }
 

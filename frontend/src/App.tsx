@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ScanAttendance from './pages/ScanAttendance';
 import Landing from './pages/Landing';
@@ -89,6 +90,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showLanding, setShowLanding] = useState(true);
+  const [showRegister, setShowRegister] = useState(false);
   const [subscriptionExpired, setSubscriptionExpired] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingForm, setOnboardingForm] = useState({
@@ -359,13 +361,26 @@ const App: React.FC = () => {
           onLogout={handleLogout}
           onUpdateUser={handleUpdateUser}
         />
+      ) : showRegister ? (
+        <Register
+          onRegistered={handleLogin}
+          onBack={() => { setShowRegister(false); setShowLanding(true); }}
+          onSwitchToLogin={() => setShowRegister(false)}
+        />
       ) : showLanding ? (
         <>
-          <Landing onLoginClick={() => setShowLanding(false)} />
+          <Landing
+            onLoginClick={() => setShowLanding(false)}
+            onRegisterClick={() => { setShowLanding(false); setShowRegister(true); }}
+          />
           <CookieConsent />
         </>
       ) : (
-        <Login onLogin={handleLogin} onBack={() => setShowLanding(true)} />
+        <Login
+          onLogin={handleLogin}
+          onBack={() => setShowLanding(true)}
+          onRegisterClick={() => setShowRegister(true)}
+        />
       )}
       <ToastContainer
         position="top-right"

@@ -130,7 +130,7 @@ export class FinanceService {
   }
 
   async createTransaction(data: any) {
-    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, vendorId } = data;
+    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, vendorId, departmentId } = data;
 
     const transaction = await this.prisma.$transaction(async (tx) => {
       const createdTransaction = await tx.transaction.create({
@@ -145,6 +145,7 @@ export class FinanceService {
           expenseTypeId: vendorId ? null : expenseTypeId,
           employeeId: vendorId ? null : employeeId,
           vendorId: vendorId || null,
+          departmentId: departmentId || null,
           ...(data.date ? { date: new Date(data.date) } : {}),
         } as any,
       });

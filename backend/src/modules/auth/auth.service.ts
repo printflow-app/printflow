@@ -1,11 +1,26 @@
 import {
   Injectable,
   UnauthorizedException,
+  ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
+import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
+
+// Trial duration for self-serve signups. Keep in sync with createWithAdmin (tenants.service.ts).
+const TRIAL_DAYS = 7;
+const BCRYPT_ROUNDS = 12;
+const DEFAULT_BRANCH_NAME = 'Bosh Ofis (Asosiy)';
+
+// Reserved slugs that must never become a tenant subdomain/path segment.
+const RESERVED_SLUGS = new Set([
+  'admin', 'api', 'app', 'auth', 'billing', 'dashboard', 'login', 'logout',
+  'register', 'super-admin', 'superadmin', 't', 'tenant', 'www',
+]);
 
 // =============================================
 // AUTH SERVICE
@@ -147,6 +162,185 @@ export class AuthService {
         givenAmount: isWorkspaceAdmin ? 0 : (userEntity as any).givenAmount,
         workDebt: isWorkspaceAdmin ? 0 : (userEntity as any).workDebt,
         tenantFeatures: tenant.plan?.features ? JSON.parse(tenant.plan.features) : {},
+      },
+    };
+  }
+
+  /**
+   * Self-serve tenant registration.
+   *
+   * Atomically creates:
+   *   1. Tenant (TRIAL, 7-day)
+   *   2. Admin Role (all permissions)
+   *   3. WorkspaceAdmin (bcrypt-hashed password)
+   *   4. Default Branch "Bosh Ofis (Asosiy)"
+   *
+   * Wrapped in $transaction — if ANY step fails, the whole signup rolls back
+   * (no orphaned tenants/roles/branches).
+   *
+   * Returns a signed JWT identical in shape to the workspace login flow,
+   * so the frontend can drop the user straight into the dashboard.
+   */
+  async register(dto: RegisterDto) {
+    // Refuse to sign tokens without a real secret — never fall back to a
+    // committed string. (Pre-existing fallbacks in login()/telegramAuth()
+    // should also be removed; tracked separately.)
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new InternalServerErrorException(
+        'Server konfiguratsiyasi xato: JWT_SECRET o\'rnatilmagan',
+      );
+    }
+
+    if (RESERVED_SLUGS.has(dto.workspaceSlug)) {
+      throw new ConflictException('Bu workspace nomi band, boshqa nom tanlang');
+    }
+
+    const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+
+    let tenant;
+    let admin;
+    try {
+      // Interactive transaction — all writes commit together or not at all.
+      // We pass tenantId explicitly into each create; Prisma middleware skips
+      // injection here because no TenantContext is active during signup.
+      const result = await this.prisma.$transaction(async (tx) => {
+        const t = await tx.tenant.create({
+          data: {
+            name: dto.tenantName,
+            slug: dto.workspaceSlug,
+            status: 'TRIAL',
+            trialEndsAt,
+          },
+        });
+
+        await tx.role.create({
+          data: {
+            tenantId: t.id,
+            name: 'Admin',
+            // Full permission set — mirrors tenants.service.ts createWithAdmin.
+            canViewFinance: true,
+            canAddIncome: true,
+            canAddExpense: true,
+            canViewTotalBalance: true,
+            canManagePaymentTypes: true,
+            canViewTasks: true,
+            canCreateTask: true,
+            canEditTask: true,
+            canDeleteTask: true,
+            canMoveTask: true,
+            canManageColumns: true,
+            canViewCustomers: true,
+            canManageCustomers: true,
+            canViewInventory: true,
+            canManageInventory: true,
+            canViewAttendance: true,
+            canManageAttendance: true,
+            canViewServices: true,
+            canManageServices: true,
+            canViewEmployees: true,
+            canManageEmployees: true,
+            canManageRoles: true,
+            canViewSalary: true,
+          },
+        });
+
+        const wsAdmin = await tx.workspaceAdmin.create({
+          data: {
+            tenantId: t.id,
+            fullName: dto.fullName,
+            phone: dto.phone ?? null,
+            login: dto.login,
+            passwordHash,
+          },
+        });
+
+        await tx.branch.create({
+          data: {
+            tenantId: t.id,
+            name: DEFAULT_BRANCH_NAME,
+            isActive: true,
+          },
+        });
+
+        return { tenant: t, admin: wsAdmin };
+      });
+      tenant = result.tenant;
+      admin = result.admin;
+    } catch (err) {
+      // P2002 = unique constraint violation. Slug or login collided with an
+      // existing row — return a 409 with a human-readable message instead of
+      // leaking Prisma internals.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const target = (err.meta?.target as string[] | string | undefined);
+        const fields = Array.isArray(target) ? target.join(',') : String(target ?? '');
+        if (fields.includes('slug')) {
+          throw new ConflictException('Bu workspace nomi allaqachon band');
+        }
+        if (fields.includes('login')) {
+          throw new ConflictException('Bu login band, boshqa login tanlang');
+        }
+        throw new ConflictException('Ushbu ma\'lumotlar bilan workspace mavjud');
+      }
+      throw err;
+    }
+
+    // Admin role permission shape — same object the login flow returns,
+    // so the frontend's permission gating works identically post-register.
+    const adminRoleShape = {
+      name: 'Admin',
+      canViewFinance: true, canAddIncome: true, canAddExpense: true, canViewTotalBalance: true,
+      canManagePaymentTypes: true, canViewTasks: true, canCreateTask: true, canEditTask: true,
+      canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
+      canManageCustomers: true, canViewInventory: true, canManageInventory: true,
+      canViewAttendance: true, canManageAttendance: true, canViewServices: true,
+      canManageServices: true, canViewEmployees: true, canManageEmployees: true,
+      canViewRoles: true, canManageRoles: true, canViewSalary: true, canManageAdmins: true,
+      canViewKpi: true, canManageBranches: true, canManageNotifications: true,
+      canViewExpenseCharts: true, canViewSettings: true, canAssignToOtherBranches: true,
+      canManageBilling: true, canViewVendors: true, canViewStatistics: true,
+      canViewFinanceReports: true, canViewServiceReports: true, canManageExpenseTypes: true,
+      canManageKanbanColumns: true, canManageGeneralSettings: true,
+      canViewAllTasks: true, canViewOwnTasks: false, canViewAllAttendance: true,
+      canViewGrowthCards: true, canViewIncomeByType: true, canViewExpenseByType: true,
+      canViewCostCalculator: true, canAddCustomer: true, canEditCustomer: true,
+      canDeleteCustomer: true, canAddEmployee: true, canEditEmployee: true,
+      canDeleteEmployee: true, canResetEmployeePassword: true, canAddInventoryItem: true,
+      canReceiveInventory: true, canUseInventory: true, canWriteOffInventory: true,
+      canManageVendors: true, canViewBranches: true, canViewBillingStatus: true,
+    };
+
+    const token = this.jwt.sign(
+      {
+        sub: admin.id,
+        tenantId: tenant.id,
+        workspaceSlug: tenant.slug,
+        role: 'Admin',
+        isAdmin: true,
+        permissions: adminRoleShape,
+        passwordVersion: admin.passwordVersion,
+      },
+      { secret: jwtSecret, expiresIn: '7d' },
+    );
+
+    return {
+      token,
+      workspaceSlug: tenant.slug,
+      user: {
+        id: admin.id,
+        fullName: admin.fullName,
+        login: admin.login,
+        phone: admin.phone,
+        telegramId: admin.telegramId,
+        passwordVersion: admin.passwordVersion,
+        isFirstLogin: false, // Self-serve registrant filled the form themselves
+        role: adminRoleShape,
+        permissions: adminRoleShape,
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        workspaceSlug: tenant.slug,
+        tenantFeatures: {},
       },
     };
   }

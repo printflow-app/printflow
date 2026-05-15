@@ -100,27 +100,26 @@ model Tenant {
   departments        Department[]
 }
 
-// Bo'limlar (Departments) — Tenant ichidagi ichki tashkiliy bo'linmalar
+// Bo'limlar (Departments) — Lightweight analytical tag for Tasks & Transactions only.
+// NOT used for role hierarchy, employee assignment, or routing. Pure reporting label.
 model Department {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  isActive    Boolean  @default(true)
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branchId    String?  // Qaysi fililiga tegishli (null = asosiy/bosh ofis)
-  branch      Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId  String?  // null = workspace-wide / bosh ofis; non-null = scoped to one branch
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   tasks        Task[]
   transactions Transaction[]
-  materials    Material[]
-  kanbanColumns KanbanColumn[]
 
+  // Department names are unique PER BRANCH (not per tenant) so two branches
+  // can each have a "Bosma" department.
+  @@unique([tenantId, branchId, name])
   @@index([tenantId])
   @@index([branchId])
-  @@unique([tenantId, name])
 }
 
 model SuperAdmin {
@@ -250,8 +249,10 @@ model Service {
   tenantId    String
   tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  branchId    String?
-  branch      Branch?         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  // Strict branch isolation — every Service belongs to exactly one Branch.
+  // Null semantics removed: there is no "shared" or "main office" Service.
+  branchId    String
+  branch      Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   name        String
   description String?
@@ -303,9 +304,6 @@ model Material {
   reservedStock Float           @default(0)      // Band qilingan (ajratilgan) miqdor
   minStock      Float           @default(0)      // Minimum qoldiq (ogohlantirish uchun)
 
-  departmentId  String?
-  department    Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-
   movements     StockMovement[]
   bom           ServiceMaterial[]
 
@@ -313,7 +311,6 @@ model Material {
   updatedAt     DateTime        @updatedAt
 
   @@index([tenantId])
-  @@index([departmentId])
 }
 
 model StockMovement {
@@ -437,13 +434,15 @@ model Branch {
   isActive          Boolean   @default(true)
 
   employees     Employee[]
-  tasks         Task[]        @relation("OriginBranch")
-  executorTasks Task[]        @relation("ExecutorBranch")
+  tasks         Task[]         @relation("OriginBranch")
+  executorTasks Task[]         @relation("ExecutorBranch")
   customers     Customer[]
   transactions  Transaction[]
   departments   Department[]
   services      Service[]
+  vendors       Vendor[]
   roles         Role[]
+  kanbanColumns KanbanColumn[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -662,6 +661,10 @@ model Vendor {
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  // Strict branch isolation — Vendors are owned by exactly one Branch.
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
   name      String
   phone     String?
 
@@ -675,6 +678,7 @@ model Vendor {
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+  @@index([branchId])
 }
 
 model OrderVendorCost {
@@ -785,14 +789,14 @@ model KanbanColumn {
   orderIdx Int      @default(0)
   tasks    Task[]
 
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
-  @@index([departmentId])
+  @@index([branchId])
 }
 
 model Task {

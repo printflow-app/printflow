@@ -10,8 +10,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators/public.decorator';
+import { RegisterDto } from './dto/register.dto';
 
 // =============================================
 // AUTH CONTROLLER — Public routes (no JWT required)
@@ -60,6 +62,32 @@ export class AuthController {
       user,
       workspaceSlug: body.workspaceSlug,
     };
+  }
+
+  /**
+   * Self-serve tenant registration.
+   * Rate-limited aggressively — registration is a tenant-creation DoS vector.
+   * 5 attempts per hour per IP. ThrottlerGuard is already global.
+   */
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60 * 60 * 1000 } })
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  async register(
+    @Body() body: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { token, user, workspaceSlug } = await this.authService.register(body);
+
+    res.cookie('pf_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+
+    return { token, user, workspaceSlug };
   }
 
   /**

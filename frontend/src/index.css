@@ -6,13 +6,27 @@
   --background: #fafafa;
   --foreground: #0f172a;
   --primary: #FF6B00;
+  --primary-hover: #E66100;
   --primary-foreground: #ffffff;
   --card: #ffffff;
   --card-foreground: #0f172a;
-  --border: #0f172a; /* Strictly using the same dark color for consistency */
+  /* Border tokens — was #0f172a (near-black) which made every bordered card look like a debug outline.
+     Now matches slate-200 for normal separation, with a stronger variant for emphasis. */
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
   --muted: #64748b;
   --muted-foreground: #0f172a;
-  
+
+  /* Design tokens — single source for radius and control heights.
+     Use these instead of ad-hoc rounded-lg/xl/2xl per file. */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --control-h-sm: 32px;
+  --control-h:    40px;
+  --control-h-lg: 48px;
+
   /* Backward compatibility for existing utility classes */
   --bg-main: var(--background);
   --bg-surface: var(--card);
@@ -91,39 +105,52 @@
 
 @layer components {
 
-  /* Minimal Buttons */
+  /* =========================================================
+     Form controls — UNIFIED HEIGHT (h-10 / 40px), RADIUS (rounded-xl),
+     FOCUS RING. Every button/input/select matches in line-height,
+     border radius, and ring style.
+     Override the per-component height with .h-sm or .h-lg modifier.
+     ========================================================= */
   .btn-primary {
-    @apply px-4 py-2 sm:px-5 sm:py-2.5 bg-orange-500 text-white font-semibold rounded-xl shadow-sm shadow-orange-500/30 hover:bg-orange-600 hover:shadow-orange-500/40 active:bg-orange-700 active:scale-[0.98] transition-all duration-200 disabled:bg-slate-300 disabled:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed text-xs sm:text-sm;
+    @apply inline-flex items-center justify-center gap-2 h-10 px-5 bg-orange-500 text-white font-semibold rounded-xl shadow-sm shadow-orange-500/30 hover:bg-orange-600 hover:shadow-orange-500/40 active:bg-orange-700 active:scale-[0.98] transition-all duration-200 disabled:bg-slate-300 disabled:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed text-sm;
   }
 
   .btn-success {
-    @apply px-4 py-2 sm:px-5 sm:py-2.5 bg-emerald-500 text-white font-semibold rounded-xl shadow-sm shadow-emerald-500/30 hover:bg-emerald-600 hover:shadow-emerald-500/40 active:bg-emerald-700 active:scale-[0.98] transition-all duration-200 text-xs sm:text-sm;
+    @apply inline-flex items-center justify-center gap-2 h-10 px-5 bg-emerald-500 text-white font-semibold rounded-xl shadow-sm shadow-emerald-500/30 hover:bg-emerald-600 hover:shadow-emerald-500/40 active:bg-emerald-700 active:scale-[0.98] transition-all duration-200 text-sm;
   }
 
   .btn-danger {
-    @apply px-4 py-2 sm:px-5 sm:py-2.5 bg-rose-500 text-white font-semibold rounded-xl shadow-sm shadow-rose-500/30 hover:bg-rose-600 border border-transparent active:bg-rose-700 active:scale-[0.98] transition-all duration-200 text-xs sm:text-sm;
+    @apply inline-flex items-center justify-center gap-2 h-10 px-5 bg-rose-500 text-white font-semibold rounded-xl shadow-sm shadow-rose-500/30 hover:bg-rose-600 border border-transparent active:bg-rose-700 active:scale-[0.98] transition-all duration-200 text-sm;
   }
 
   .btn-outline {
-    @apply px-4 py-2 sm:px-5 sm:py-2.5 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 active:scale-[0.98] transition-all duration-200 text-xs sm:text-sm;
+    @apply inline-flex items-center justify-center gap-2 h-10 px-5 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 active:scale-[0.98] transition-all duration-200 text-sm;
   }
 
-  /* Minimal Cards */
+  /* Size modifiers — apply alongside the color class: <button class="btn-primary h-sm"> */
+  .h-sm { @apply h-8 px-3 text-xs; }
+  .h-lg { @apply h-12 px-7 text-base; }
+
   .card-minimal {
-    @apply bg-white border border-slate-200/60 p-3 sm:p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300;
+    @apply bg-white border border-slate-200/60 p-4 sm:p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300;
   }
 
-  /* Inputs */
+  /* Inputs share the EXACT height + radius + focus ring as buttons */
   .input-minimal {
-    @apply w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-900 text-xs sm:text-sm font-medium focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 placeholder-slate-400;
+    @apply w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-900 text-sm font-medium focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 placeholder-slate-400;
   }
 
   .select-minimal {
-    @apply w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-900 text-xs sm:text-sm font-medium focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 appearance-none;
+    @apply w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-900 text-sm font-medium focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 appearance-none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.75rem center;
     background-repeat: no-repeat;
     background-size: 1.25em 1.25em;
+  }
+
+  /* Textarea — same family, multi-line. Padded instead of fixed-height. */
+  .textarea-minimal {
+    @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm font-medium leading-relaxed focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 placeholder-slate-400 resize-y min-h-[80px];
   }
 
   /* Minimal Table */
@@ -132,28 +159,34 @@
   }
 
   .table-minimal th {
-    @apply border-b border-slate-200 py-3 px-4 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-500 bg-slate-50 truncate;
+    /* font-bold (700) instead of font-black (900) — looks less shouty,
+       still clearly hierarchical against the body text. */
+    @apply border-b border-slate-200 py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-50/70 truncate;
   }
 
   .table-minimal td {
-    @apply border-b border-slate-100 py-3 px-4 text-xs sm:text-sm font-medium text-slate-700 align-middle;
+    @apply border-b border-slate-100 py-3 px-4 text-sm font-medium text-slate-700 align-middle;
   }
 
   .table-minimal tr {
-    @apply transition-colors duration-150 hover:bg-slate-50/80;
+    @apply transition-colors duration-150 hover:bg-slate-50/60;
   }
 
-  /* Status Badges */
+  /* Status badges — flatter, no shadow, no uppercase. Linear-style pill. */
   .badge-success {
-    @apply inline-flex items-center px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-sm uppercase;
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700;
   }
 
   .badge-danger {
-    @apply inline-flex items-center px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold tracking-wide bg-rose-50 text-rose-700 border border-rose-200/60 shadow-sm uppercase;
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700;
   }
 
   .badge-primary {
-    @apply inline-flex items-center px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold tracking-wide bg-orange-50 text-orange-700 border border-orange-200/60 shadow-sm uppercase;
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-orange-50 text-orange-700;
+  }
+
+  .badge-neutral {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-600;
   }
 }
 
@@ -182,18 +215,18 @@
 
 
 
-* {
+/* box-sizing only — Tailwind preflight already handles margin/padding reset.
+   The old `* { margin: 0; padding: 0 }` was nuking Tailwind's intended spacing. */
+*, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
+/* Body font-family is set via Tailwind `font-sans` in @layer base above.
+   Kept here only for the rendering hints (smoothing + horizontal-scroll lock). */
 body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--bg);
-  color: var(--text);
-  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01'; /* Inter alt-glyph variants — subtle, premium */
   overflow-x: hidden;
 }
 
@@ -400,9 +433,9 @@ body {
 }
 
 .btn:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 0, 0.3);
+  background-color: var(--primary-hover) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 32px rgba(255, 107, 0, 0.35);
 }
 
 .btn-outline {
@@ -600,8 +633,8 @@ body {
 .feature-card {
   background: var(--panel);
   border: none;
-  padding: 48px 40px;
-  border-radius: 16px;
+  padding: clamp(32px, 6vw, 48px) clamp(24px, 5vw, 40px);
+  border-radius: 20px;
   transition: all 0.4s ease;
   position: relative;
   overflow: hidden;
@@ -631,15 +664,15 @@ body {
 }
 
 .feature-icon-wrapper {
-  width: 72px;
-  height: 72px;
+  width: clamp(56px, 8vw, 72px);
+  height: clamp(56px, 8vw, 72px);
   background: rgba(255, 107, 0, 0.05);
   border: 1px solid rgba(255, 107, 0, 0.1);
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 32px;
+  margin-bottom: clamp(20px, 4vw, 32px);
   color: var(--primary);
   transition: all 0.3s ease;
 }
@@ -651,15 +684,15 @@ body {
 }
 
 .feature-title {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
   font-weight: 800;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   letter-spacing: -0.5px;
 }
 
 .feature-desc {
   color: var(--text-muted);
-  font-size: 1.05rem;
+  font-size: clamp(0.9rem, 2vw, 1.05rem);
   line-height: 1.6;
 }
 

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart3, TrendingUp, TrendingDown, Users, ShoppingBag,
-  Minus, RefreshCw, Building2, Calendar, ChevronDown,
+  Minus, RefreshCw, Calendar, ChevronDown,
   Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2,
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, PieChart, Pie, Cell,
 } from 'recharts';
-import { reportsApi, financeApi, branchesApi, tasksApi, taskExpensesApi, kpiApi, departmentsApi } from '../api';
+import { reportsApi, financeApi, tasksApi, taskExpensesApi, kpiApi, departmentsApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
 
@@ -254,7 +254,6 @@ type DatePreset = 'month' | '3month' | '6month' | 'year' | 'custom';
 const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const isAdmin = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
   const p = currentUser?.permissions || {};
-  const tf = currentUser?.tenantFeatures || {};
 
   // Hisobotlar — har bo'lim uchun alohida ruxsat
   const canViewGrowthCards   = isAdmin || p.canViewGrowthCards;
@@ -270,10 +269,12 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   // Moliyaviy API chaqiruvlari uchun yig'ma flag
   const needsFinanceData = canViewGrowthCards || canViewDynamics || canViewIncomeByType || canViewExpenseByType || canViewExpenseCharts || canViewServiceStats;
 
-  const [branches, setBranches] = useState<any[]>([]);
-  const [branchId, setBranchId] = useState(activeBranchId || '');
+  // Branch comes ONLY from the navbar (SSOT). No mirror, no per-page selector.
+  const branchId = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : '';
   const [departments, setDepartments] = useState<any[]>([]);
   const [departmentId, setDepartmentId] = useState('');
+  // Group-by-department toggle for the local breakdown card (client-side aggregation).
+  const [groupByDept, setGroupByDept] = useState(false);
   const [preset, setPreset] = useState<DatePreset>('3month');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -301,21 +302,12 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const [expenseForm, setExpenseForm] = useState({ expenseName: '', amount: '' });
   const [isAddingExpense, setIsAddingExpense] = useState(false);
 
+  // Load departments scoped to the active branch. Reset the per-page departmentId filter
+  // whenever the navbar branch flips — a department from another branch is meaningless here.
   useEffect(() => {
-    branchesApi.findAll().then(r => setBranches(r.data || [])).catch(() => {});
-  }, []);
-
-  // Sync local branchId when global activeBranchId changes (page navigation hydration)
-  useEffect(() => {
-    setBranchId(activeBranchId || '');
     setDepartmentId('');
-  }, [activeBranchId]);
-
-  // Load departments scoped to the currently selected branch
-  useEffect(() => {
-    if (!branchId) { setDepartments([]); setDepartmentId(''); return; }
+    if (!branchId) { setDepartments([]); return; }
     departmentsApi.findAll(branchId).then(r => setDepartments(r.data || [])).catch(() => setDepartments([]));
-    setDepartmentId('');
   }, [branchId]);
 
   const getDateParams = useCallback((): { start?: string; end?: string; branchId?: string } => {
@@ -428,8 +420,10 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       if (canViewVendors) {
         calls.push(reportsApi.vendorProfitability({ start: params.start, end: params.end }).then(r => setVendors(r.data || [])).catch(() => {}));
       }
-      if (canViewCostCalc) {
-        calls.push(tasksApi.findAll().then(r => setAllTasks(r.data || [])).catch(() => {}));
+      // Load tasks for cost calculator AND for the local department-grouping breakdown.
+      // Scoped to the active branch — analytics never mixes branches.
+      if (canViewCostCalc || canViewGrowthCards || canViewServiceStats) {
+        calls.push(tasksApi.findAll(params.branchId).then(r => setAllTasks(r.data || [])).catch(() => {}));
       }
       if (canViewKpi) {
         calls.push(reportsApi.employeeVelocity({ start: params.start, end: params.end }).then(r => setVelocity(r.data || [])).catch(() => {}));
@@ -557,28 +551,31 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           </div>
         )}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
-          {tf.multiBranch && branches.length > 1 && (
-            <div className="flex items-center gap-1.5">
-              <Building2 size={14} className="text-slate-400" />
+          {/* Branch selector intentionally removed — Navbar is the single source of truth.
+              Reports show data for whichever branch is active in the navbar. */}
+          {branchId && departments.length > 0 && (
+            <>
               <div className="relative">
-                <select value={branchId} onChange={e => setBranchId(e.target.value)}
+                <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
                   className="appearance-none pl-3 pr-8 py-1.5 text-xs font-black border border-slate-200 rounded-lg outline-none focus:border-orange-400 bg-white">
-                  <option value="">Barcha filiallar</option>
-                  {branches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  <option value="">Barcha bo'limlar</option>
+                  {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
                 <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
-            </div>
-          )}
-          {branchId && departments.length > 0 && (
-            <div className="relative">
-              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
-                className="appearance-none pl-3 pr-8 py-1.5 text-xs font-black border border-slate-200 rounded-lg outline-none focus:border-orange-400 bg-white">
-                <option value="">Barcha bo'limlar</option>
-                {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
+              <button
+                type="button"
+                onClick={() => setGroupByDept(v => !v)}
+                className={`px-3 py-1.5 text-xs font-black border rounded-lg transition-colors ${
+                  groupByDept
+                    ? 'bg-[#FF6B00] text-white border-[#FF6B00]'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-orange-400'
+                }`}
+                title="Bo'limlar bo'yicha guruhlash"
+              >
+                Bo'limga guruhlash
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -740,6 +737,70 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           title="Xodimlar Samaradorligi" 
           showBar
         />
+      )}
+
+      {/* ── Bo'limlar bo'yicha taqsimot (client-side grouping) ─────────────
+          Client-side group-by on the already-loaded tasks; no extra API call.
+          Activated by the "Bo'limga guruhlash" button in the filter bar. */}
+      {groupByDept && allTasks.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+                <Package size={16} className="text-orange-500" /> Bo'limlar bo'yicha taqsimot
+              </h3>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                Buyurtmalar va daromad — bo'limlarga guruhlangan
+              </p>
+            </div>
+          </div>
+          <div className="p-5">
+            {(() => {
+              // Filter to active department if one is selected, otherwise show all.
+              const scope = departmentId ? allTasks.filter(t => t.departmentId === departmentId) : allTasks;
+              const buckets: Record<string, { name: string; count: number; revenue: number }> = {};
+              const UNTAGGED_KEY = '__untagged__';
+              for (const t of scope) {
+                const key = t.departmentId || UNTAGGED_KEY;
+                if (!buckets[key]) {
+                  const dept = departments.find((d: any) => d.id === key);
+                  buckets[key] = {
+                    name: dept?.name || (key === UNTAGGED_KEY ? "Bo'limsiz" : 'Noma\'lum bo\'lim'),
+                    count: 0,
+                    revenue: 0,
+                  };
+                }
+                buckets[key].count += 1;
+                buckets[key].revenue += Number(t.totalAmount || 0);
+              }
+              const rows = Object.values(buckets).sort((a, b) => b.revenue - a.revenue);
+              const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0) || 1;
+              if (rows.length === 0) {
+                return <p className="text-xs font-bold text-slate-400">Ushbu davr uchun buyurtma topilmadi.</p>;
+              }
+              return (
+                <div className="space-y-3">
+                  {rows.map((r) => {
+                    const pct = Math.round((r.revenue / totalRevenue) * 100);
+                    return (
+                      <div key={r.name}>
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+                          <span>{r.name}</span>
+                          <span className="text-slate-500">
+                            {r.count} ta · {new Intl.NumberFormat('uz-UZ').format(r.revenue).replace(/,/g, ' ')} UZS · {pct}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-[#FF6B00]" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
       )}
 
       {/* ── Tannarx Kalkulyatori ────────────────────────────────────────── */}

@@ -6,8 +6,16 @@ export class CustomersController {
   constructor(private customersService: CustomersService) {}
 
   @Get()
-  findAll(@Query('branchId') branchId?: string) {
-    return this.customersService.findAll(branchId);
+  async findAll(
+    @Query('branchId') branchId?: string,
+    @Query('includeDetails') includeDetails?: string,
+  ) {
+    try {
+      return await this.customersService.findAll(branchId, includeDetails === 'true');
+    } catch (err) {
+      console.error('[CustomersController] findAll error:', err);
+      throw err;
+    }
   }
 
   @Get('top')

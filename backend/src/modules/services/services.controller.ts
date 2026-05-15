@@ -37,34 +37,53 @@ export class ServicesController {
 
   @Post(':id/clone')
   @RequirePermissions('canManageServices')
-  clone(@Param('id') id: string, @Body() body: { targetBranchId: string }) {
-    return this.servicesService.clone(id, body.targetBranchId);
+  clone(
+    @Param('id') id: string,
+    @Body() body: { targetBranchId: string },
+    @Query('branchId') sourceBranchId?: string,
+  ) {
+    return this.servicesService.clone(id, sourceBranchId, body.targetBranchId);
   }
 
-  // Opsiyalar
+  // Options
   @Post(':id/options')
   @RequirePermissions('canManageServices')
-  addOption(@Param('id') serviceId: string, @Body() data: any) {
-    return this.servicesService.addOption(serviceId, data);
+  addOption(
+    @Param('id') serviceId: string,
+    @Body() data: any,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.servicesService.addOption(serviceId, branchId, data);
   }
 
   @Put('options/:optionId')
   @RequirePermissions('canManageServices')
-  updateOption(@Param('optionId') optionId: string, @Body() data: any) {
-    return this.servicesService.updateOption(optionId, data);
+  updateOption(
+    @Param('optionId') optionId: string,
+    @Body() data: any,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.servicesService.updateOption(optionId, branchId, data);
   }
 
   @Delete('options/:optionId')
   @RequirePermissions('canManageServices')
-  removeOption(@Param('optionId') optionId: string) {
-    return this.servicesService.removeOption(optionId);
+  removeOption(
+    @Param('optionId') optionId: string,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.servicesService.removeOption(optionId, branchId);
   }
 
   // BOM
   @Post(':id/materials')
   @RequirePermissions('canManageServices')
-  addMaterial(@Param('id') serviceId: string, @Body() data: any) {
-    return this.servicesService.addMaterial(serviceId, data);
+  addMaterial(
+    @Param('id') serviceId: string,
+    @Body() data: any,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.servicesService.addMaterial(serviceId, branchId, data);
   }
 
   @Delete(':id/materials/:materialId')
@@ -72,11 +91,12 @@ export class ServicesController {
   removeMaterial(
     @Param('id') serviceId: string,
     @Param('materialId') materialId: string,
+    @Query('branchId') branchId?: string,
   ) {
-    return this.servicesService.removeMaterial(serviceId, materialId);
+    return this.servicesService.removeMaterial(serviceId, materialId, branchId);
   }
 
-  // Narx hisoblash
+  // Pricing
   @Post(':id/calculate-price')
   calculatePrice(
     @Param('id') serviceId: string,
@@ -87,7 +107,8 @@ export class ServicesController {
       discount: number;
       coefficient: number;
     },
+    @Query('branchId') branchId?: string,
   ) {
-    return this.servicesService.calculatePrice({ serviceId, ...body });
+    return this.servicesService.calculatePrice({ serviceId, branchId, ...body });
   }
 }

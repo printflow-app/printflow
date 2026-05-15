@@ -60,11 +60,13 @@ export class KpiService {
     return { from, to };
   }
 
-  async getEmployeeKpiList(start?: string, end?: string): Promise<KpiRow[]> {
+  async getEmployeeKpiList(start?: string, end?: string, branchId?: string): Promise<KpiRow[]> {
     const { from, to } = this.resolveRange(start, end);
 
     // Prisma middleware tenantId'ni avtomatik qo'shadi (TenantInterceptor orqali).
+    // Strict branch filter — when branchId is supplied, only employees of that branch.
     const employees = await this.prisma.employee.findMany({
+      where: branchId && branchId !== '__main__' ? { branchId } : undefined,
       include: { role: true },
     });
 

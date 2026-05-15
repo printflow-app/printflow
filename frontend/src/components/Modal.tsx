@@ -39,7 +39,7 @@ const Modal: React.FC<ModalProps> = ({
         <div className={`p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center ${typeConfig[type].bg}`}>
           <div className="flex items-center gap-3">
             {typeConfig[type].icon}
-            <h3 className={`text-base sm:text-lg font-black tracking-tight ${typeConfig[type].color}`}>{title}</h3>
+            <h3 className={`text-base sm:text-lg font-bold tracking-tight ${typeConfig[type].color}`}>{title}</h3>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-slate-200/50 flex items-center justify-center text-slate-400 transition-colors">
             <X size={20} />

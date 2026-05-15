@@ -58,9 +58,10 @@ export class TasksService {
   }
 
   async create(data: any, employeeId?: string) {
-    const { 
-      orderName, title, description, customerId, customerName, customerPhone, 
-      totalAmount, depositAmount, paymentTypeId, columnId, assignees, attachments, deadlineAt
+    const {
+      orderName, title, description, customerId, customerName, customerPhone,
+      totalAmount, depositAmount, paymentTypeId, columnId, assignees, attachments, deadlineAt,
+      departmentId,
     } = data;
 
     const remainingAmount = Math.max(0, Math.round(Number(totalAmount || 0) - Number(depositAmount || 0)));
@@ -124,6 +125,7 @@ export class TasksService {
           coefficient: Number(data.coefficient || 1.0),
           deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
           branchId: data.branchId || data.targetBranchId || undefined,
+          departmentId: departmentId || null,
         } as any
       });
 
@@ -150,7 +152,8 @@ export class TasksService {
             paymentTypeId,
             customerId: finalCustomerId,
             taskId: createdTask.id,
-            serviceType: title
+            serviceType: title,
+            departmentId: departmentId || null,
           } as any
         });
       }
@@ -192,7 +195,7 @@ export class TasksService {
     const {
       orderName, items, customerId, customerName, customerPhone,
       totalDeposit, paymentTypeId, columnId, justification, assigneeIds, deadlineAt,
-      branchId, executorBranchId,
+      branchId, executorBranchId, departmentId,
     } = data;
 
     const totalDepositNum = Math.round(Number(totalDeposit || 0));
@@ -276,6 +279,7 @@ export class TasksService {
             executorBranchId: executorBranchId || null,
             vendorId: item.vendorId || undefined,
             vendorCost: Number(item.vendorCost || 0),
+            departmentId: departmentId || null,
           } as any
         });
 
@@ -315,7 +319,8 @@ export class TasksService {
             paymentTypeId,
             customerId: finalCustomerId,
             taskId: createdTasks[0].id,
-            serviceType: items.length > 1 ? `${items[0].title} (+${items.length - 1} ta)` : items[0].title
+            serviceType: items.length > 1 ? `${items[0].title} (+${items.length - 1} ta)` : items[0].title,
+            departmentId: departmentId || null,
           } as any
         });
       }

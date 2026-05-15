@@ -34,18 +34,28 @@ export class CustomersService implements OnApplicationBootstrap {
     }
   }
 
-  async findAll(branchId?: string) {
+  async findAll(branchId?: string, includeDetails = false) {
+    const include: any = {
+      contacts: { orderBy: { isPrimary: 'desc' } },
+    };
+
+    if (includeDetails) {
+      include.transactions = {
+        include: { paymentType: true },
+        orderBy: { date: 'desc' },
+      };
+      include.tasks = { where: { isArchived: false } as any };
+    }
+
     return this.prisma.customer.findMany({
-      where: branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : undefined,
+      where:
+        branchId === '__main__'
+          ? { branchId: null }
+          : branchId
+          ? { branchId }
+          : undefined,
       orderBy: { updatedAt: 'desc' },
-      include: {
-        contacts: { orderBy: { isPrimary: 'desc' } },
-        transactions: {
-          include: { paymentType: true },
-          orderBy: { date: 'desc' },
-        },
-        tasks: { where: { isArchived: false } as any },
-      } as any,
+      include,
     });
   }
 

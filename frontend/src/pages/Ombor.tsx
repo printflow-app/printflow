@@ -74,10 +74,13 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
   const fetchData = useCallback(async (refreshSelectedId?: string) => {
     try {
+      const hasBranch = !!activeBranchId && activeBranchId !== '__main__';
       const [matRes, movRes, svcRes] = await Promise.all([
         inventoryApi.getMaterials(activeBranchId).catch(() => ({ data: [] })),
         inventoryApi.getMovements().catch(() => ({ data: [] })),
-        servicesApi.findAll(activeBranchId).catch(() => ({ data: [] })),
+        hasBranch
+          ? servicesApi.findAll(activeBranchId!).catch(() => ({ data: [] }))
+          : Promise.resolve({ data: [] }),
       ]);
       const freshMaterials = matRes.data || [];
       setMaterials(freshMaterials);
@@ -191,8 +194,12 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
   const handleLinkService = async (serviceId: string, norm: number) => {
     if (!selectedMaterial) return;
+    if (!activeBranchId || activeBranchId === '__main__') {
+      showStatus('error', 'Avval aktiv filialni tanlang');
+      return;
+    }
     try {
-      await servicesApi.addMaterial(serviceId, { materialId: selectedMaterial.id, normPerUnit: norm });
+      await servicesApi.addMaterial(serviceId, { materialId: selectedMaterial.id, normPerUnit: norm }, activeBranchId);
       showStatus('success', 'Xizmat biriktirildi!');
       // Pass the id so selectedMaterial gets refreshed immediately
       fetchData(selectedMaterial.id);
@@ -201,8 +208,9 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
   const handleUnlinkService = async () => {
     if (!selectedMaterial || !unlinkServiceId) return;
+    if (!activeBranchId || activeBranchId === '__main__') return;
     try {
-      await servicesApi.deleteMaterial(unlinkServiceId, selectedMaterial.id);
+      await servicesApi.deleteMaterial(unlinkServiceId, selectedMaterial.id, activeBranchId);
       showStatus('success', 'Bog\'liqlik olib tashlandi!');
       setIsUnlinkConfirmOpen(false);
       setUnlinkServiceId(null);

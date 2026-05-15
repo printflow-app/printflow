@@ -14,6 +14,15 @@ const api = axios.create({
   withCredentials: true, // httpOnly cookie avtomatik yuboriladi
 });
 
+// Throws if no branch is currently selected. Use before calling servicesApi / vendorsApi —
+// the backend will 400 anyway, but failing fast on the client gives a friendlier message.
+export function assertActiveBranchId(branchId: string | undefined | null): string {
+  if (!branchId || branchId === '__main__') {
+    throw new Error('Aktiv filial tanlanmagan');
+  }
+  return branchId;
+}
+
 // Request interceptor: attach X-Tenant-Id from session (defense-in-depth)
 // + optional Authorization Bearer for non-cookie clients (mobile, embeds).
 api.interceptors.request.use((config) => {
@@ -54,6 +63,17 @@ export const authApi = {
   // Workspace login: { workspaceSlug, login, password }
   login: (data: { workspaceSlug: string; login: string; password: string }) =>
     api.post('/auth/login', data),
+
+  // Self-serve tenant registration → creates Tenant + Admin + default Branch atomically,
+  // returns { token, user, workspaceSlug } in the same shape as login().
+  register: (data: {
+    tenantName: string;
+    workspaceSlug: string;
+    fullName: string;
+    login: string;
+    password: string;
+    phone?: string;
+  }) => api.post('/auth/register', data),
 
   logout: () => api.post('/auth/logout'),
 
@@ -112,7 +132,13 @@ export const rolesApi = {
 // CUSTOMERS
 // =============================================
 export const customersApi = {
-  findAll: (branchId?: string) => api.get('/customers', { params: branchId ? { branchId } : {} }),
+  findAll: (branchId?: string, includeDetails = false) =>
+    api.get('/customers', {
+      params: {
+        ...(branchId ? { branchId } : {}),
+        ...(includeDetails ? { includeDetails: 'true' } : {}),
+      },
+    }),
   create: (data: any) => api.post('/customers', data),
   update: (id: string, data: any) => api.put(`/customers/${id}`, data),
   delete: (id: string) => api.delete(`/customers/${id}`),
@@ -194,12 +220,18 @@ export const taskExpensesApi = {
 // =============================================
 // VENDORS / HAMKORLAR (Subcontractors)
 // =============================================
+// Strict isolation — every call must carry activeBranchId. The backend now
+// returns 400 if branchId is missing or '__main__'.
 export const vendorsApi = {
-  findAll: () => api.get('/vendors'),
-  findOne: (id: string) => api.get(`/vendors/${id}`),
-  create: (data: any) => api.post('/vendors', data),
-  update: (id: string, data: any) => api.put(`/vendors/${id}`, data),
-  remove: (id: string) => api.delete(`/vendors/${id}`),
+  findAll: (branchId: string) =>
+    api.get('/vendors', { params: { branchId } }),
+  findOne: (id: string, branchId: string) =>
+    api.get(`/vendors/${id}`, { params: { branchId } }),
+  create: (data: any) => api.post('/vendors', data), // branchId must be in body
+  update: (id: string, data: any, branchId: string) =>
+    api.put(`/vendors/${id}`, data, { params: { branchId } }),
+  remove: (id: string, branchId: string) =>
+    api.delete(`/vendors/${id}`, { params: { branchId } }),
 };
 
 // =============================================
@@ -218,29 +250,33 @@ export const financeApi = {
 // =============================================
 // XIZMATLAR KATALOGI (Pricing Engine)
 // =============================================
+// Strict isolation — every read/mutation must carry activeBranchId.
 export const servicesApi = {
-  findAll: (branchId?: string) => api.get('/services', { params: branchId ? { branchId } : {} }),
-  findOne: (id: string, branchId?: string) =>
-    api.get(`/services/${id}`, { params: branchId ? { branchId } : {} }),
-  create: (data: any) => api.post('/services', data),
-  update: (id: string, data: any, branchId?: string) =>
-    api.put(`/services/${id}`, data, { params: branchId ? { branchId } : {} }),
-  delete: (id: string, branchId?: string) =>
-    api.delete(`/services/${id}`, { params: branchId ? { branchId } : {} }),
+  findAll: (branchId: string) =>
+    api.get('/services', { params: { branchId } }),
+  findOne: (id: string, branchId: string) =>
+    api.get(`/services/${id}`, { params: { branchId } }),
+  create: (data: any) => api.post('/services', data), // branchId in body
+  update: (id: string, data: any, branchId: string) =>
+    api.put(`/services/${id}`, data, { params: { branchId } }),
+  delete: (id: string, branchId: string) =>
+    api.delete(`/services/${id}`, { params: { branchId } }),
 
-  addOption: (serviceId: string, data: any) =>
-    api.post(`/services/${serviceId}/options`, data),
-  updateOption: (optionId: string, data: any) =>
-    api.put(`/services/options/${optionId}`, data),
-  deleteOption: (optionId: string) =>
-    api.delete(`/services/options/${optionId}`),
+  addOption: (serviceId: string, data: any, branchId: string) =>
+    api.post(`/services/${serviceId}/options`, data, { params: { branchId } }),
+  updateOption: (optionId: string, data: any, branchId: string) =>
+    api.put(`/services/options/${optionId}`, data, { params: { branchId } }),
+  deleteOption: (optionId: string, branchId: string) =>
+    api.delete(`/services/options/${optionId}`, { params: { branchId } }),
 
-  addMaterial: (serviceId: string, data: any) =>
-    api.post(`/services/${serviceId}/materials`, data),
-  deleteMaterial: (serviceId: string, materialId: string) =>
-    api.delete(`/services/${serviceId}/materials/${materialId}`),
+  addMaterial: (serviceId: string, data: any, branchId: string) =>
+    api.post(`/services/${serviceId}/materials`, data, { params: { branchId } }),
+  deleteMaterial: (serviceId: string, materialId: string, branchId: string) =>
+    api.delete(`/services/${serviceId}/materials/${materialId}`, { params: { branchId } }),
 
-  clone: (id: string, targetBranchId: string) => api.post(`/services/${id}/clone`, { targetBranchId }),
+  // Source branch is the caller's active branch; target is chosen in the dialog.
+  clone: (id: string, sourceBranchId: string, targetBranchId: string) =>
+    api.post(`/services/${id}/clone`, { targetBranchId }, { params: { branchId: sourceBranchId } }),
 
   calculatePrice: (
     serviceId: string,
@@ -250,7 +286,8 @@ export const servicesApi = {
       discount: number;
       coefficient: number;
     },
-  ) => api.post(`/services/${serviceId}/calculate-price`, data),
+    branchId: string,
+  ) => api.post(`/services/${serviceId}/calculate-price`, data, { params: { branchId } }),
 };
 
 // =============================================
@@ -354,11 +391,11 @@ export const billingApi = {
 // KPI (Xodimlar samaradorligi)
 // =============================================
 export const kpiApi = {
-  list: (params?: { start?: string; end?: string }) =>
+  list: (params?: { start?: string; end?: string; branchId?: string }) =>
     api.get('/kpi/employees', { params }),
   me: (params?: { start?: string; end?: string }) =>
     api.get('/kpi/me', { params }),
-  summary: (params?: { start?: string; end?: string }) =>
+  summary: (params?: { start?: string; end?: string; branchId?: string }) =>
     api.get('/kpi/summary', { params }),
 };
 

@@ -27,12 +27,17 @@ export class TasksController {
 
   // Kanban Column Endpoints — MUST be before :id routes!
   @Get('columns')
-  getColumns(
+  async getColumns(
     @Req() req: Request,
     @Query('branchId') branchId?: string,
   ) {
-    const { viewMode, currentUserId } = this.resolveViewMode(req);
-    return this.tasksService.getColumns(viewMode, currentUserId, branchId);
+    try {
+      const { viewMode, currentUserId } = this.resolveViewMode(req);
+      return await this.tasksService.getColumns(viewMode, currentUserId, branchId);
+    } catch (err) {
+      console.error('[TasksController] getColumns error:', err);
+      throw err;
+    }
   }
 
   @Post('columns')
@@ -60,9 +65,14 @@ export class TasksController {
 
   // Task Endpoints
   @Get()
-  findAll(@Query('branchId') branchId?: string, @Req() req?: any) {
-    const { viewMode, currentUserId } = this.resolveViewMode(req);
-    return this.tasksService.findAll(branchId, viewMode, currentUserId);
+  async findAll(@Query('branchId') branchId?: string, @Req() req?: any) {
+    try {
+      const { viewMode, currentUserId } = this.resolveViewMode(req);
+      return await this.tasksService.findAll(branchId, viewMode, currentUserId);
+    } catch (err) {
+      console.error('[TasksController] findAll error:', err);
+      throw err;
+    }
   }
 
   @Get('archived')

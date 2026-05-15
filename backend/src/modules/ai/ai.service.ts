@@ -31,7 +31,7 @@ export class AiService {
     }
 
     try {
-      const [employees, customers, servicesRaw, kanbanCols, paymentTypes] = await Promise.all([
+      const [employees, customers, servicesRaw, kanbanCols, paymentTypes, departmentsRaw] = await Promise.all([
         this.prisma.employee.findMany({
           where: { tenantId },
           select: { id: true, fullName: true, branchId: true, role: { select: { name: true } } },
@@ -49,6 +49,10 @@ export class AiService {
           select: { id: true, title: true },
         }),
         this.prisma.paymentType.findMany({ where: { tenantId }, select: { id: true, name: true } }),
+        (this.prisma as any).department.findMany({
+          where: { tenantId },
+          select: { id: true, name: true, branchId: true },
+        }),
       ]);
 
       const contextData = {
@@ -68,6 +72,7 @@ export class AiService {
         })),
         ustunlar: kanbanCols.map(k => ({ id: k.id, nom: k.title })),
         tolov_turlari: paymentTypes.map(p => ({ id: p.id, nom: p.name })),
+        bolimlar: departmentsRaw.map((d: any) => ({ id: d.id, nom: d.name, filial_id: d.branchId })),
       };
 
       const firstColId = kanbanCols[0]?.id || '';
@@ -98,6 +103,7 @@ Template 1 (Orders):
 - Buyurtma: [Mijoz] - [Xizmat]
 - Mijoz: [Mijoz]
 - Xizmat: [Xizmat va o'lcham]
+- Bo'lim: [Bo'lim nomi yoki Yo'q] (only if the current branch has departments — match by name from "bolimlar" where filial_id = employee's branchId; if no match found or branch has no departments, use "Yo'q")
 - Zakolat: [Summa]
 - To'lov turi: [Naqd/Click]
 - Muddat: [Sana, Vaqt]
@@ -179,9 +185,20 @@ ${JSON.stringify(contextData)}`;
               deadlineAt: z.string().optional(),
               columnId: z.string().default(firstColId),
               notes: z.string().optional(),
+              // Optional analytical tag. Must be a Department id whose filial_id
+              // matches the calling employee's branchId — AI should resolve by name
+              // from contextData.bolimlar before passing here.
+              departmentId: z.string().optional(),
             }),
             execute: async (args) => {
               const currentEmployee = employees.find(e => e.id === employeeId);
+              // Safety check: reject cross-branch department to keep reporting consistent.
+              if (args.departmentId) {
+                const dept = departmentsRaw.find((d: any) => d.id === args.departmentId);
+                if (dept && currentEmployee?.branchId && dept.branchId !== currentEmployee.branchId) {
+                  return { success: false, error: "Tanlangan bo'lim sizning filialingizga tegishli emas" };
+                }
+              }
               const task = await this.tasksService.create(
                 {
                   ...args,
@@ -189,6 +206,7 @@ ${JSON.stringify(contextData)}`;
                   deadlineAt: args.deadlineAt ? new Date(args.deadlineAt) : null,
                   targetBranchId: currentEmployee?.branchId || null,
                   branchId: currentEmployee?.branchId || null,
+                  departmentId: args.departmentId || null,
                 },
                 employeeId,
               );
@@ -204,9 +222,17 @@ ${JSON.stringify(contextData)}`;
               description: z.string().optional(),
             }),
             execute: async (args) => {
+              // Services are strictly branch-isolated. Use the caller's home branch;
+              // refuse to create if the AI user has no branch (e.g. workspace admin).
+              const callerEmployee = employees.find(e => e.id === employeeId);
+              const branchId = callerEmployee?.branchId;
+              if (!branchId) {
+                return { success: false, error: 'Xizmat yaratish uchun aktiv filial kerak. Filialdagi xodim sifatida kiring.' };
+              }
               const service = await this.prisma.service.create({
                 data: {
                   tenantId,
+                  branchId,
                   name: args.name,
                   basePrice: args.basePrice,
                   unit: args.unit,

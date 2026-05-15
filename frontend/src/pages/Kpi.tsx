@@ -33,7 +33,7 @@ const fmt = (n: number) =>
 const localYMD = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Kpi: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const isAdmin = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
   const canViewAll = isAdmin || currentUser?.permissions?.canViewKpi;
 
@@ -62,20 +62,22 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       const prevEnd = new Date(startDate); prevEnd.setDate(prevEnd.getDate() - 1);
       const prevStart = new Date(prevEnd); prevStart.setDate(prevStart.getDate() - periodDays + 1);
 
-      const params = { start: localYMD(startDate), end: localYMD(today) };
-      const prevParams = { start: localYMD(prevStart), end: localYMD(prevEnd) };
+      const bId = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : undefined;
+      const params = { start: localYMD(startDate), end: localYMD(today), branchId: bId };
+      const prevParams = { start: localYMD(prevStart), end: localYMD(prevEnd), branchId: bId };
 
       const calls: Promise<any>[] = [];
       if (canViewAll) {
         calls.push(kpiApi.list(params));
         calls.push(kpiApi.list(prevParams));
-        calls.push(reportsApi.employeeVelocity(params));
+        calls.push(reportsApi.employeeVelocity({ start: params.start, end: params.end }));
       } else {
         calls.push(Promise.resolve({ data: [] }));
         calls.push(Promise.resolve({ data: [] }));
         calls.push(Promise.resolve({ data: [] }));
       }
-      calls.push(kpiApi.me(params));
+      // /me is always for the current user — branch filter not applicable.
+      calls.push(kpiApi.me({ start: params.start, end: params.end }));
 
       const [listRes, prevRes, velocityRes, meRes] = await Promise.all(calls);
       setRows(Array.isArray(listRes.data) ? listRes.data : []);
@@ -89,7 +91,8 @@ const Kpi: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [filter]);
+  // Auto-fetch on mount + whenever filter or navbar branch changes — no manual re-trigger.
+  useEffect(() => { fetchData(); }, [filter, activeBranchId]);
 
   if (loading) return <LoadingSpinner fullPage />;
 

@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
-// '__main__' or empty → branchId IS NULL (shared/legacy vendors)
-// real UUID           → branchId = <UUID> (branch-specific vendor)
-function normalizeBranch(branchId?: string | null): string | null {
-  if (!branchId || branchId === '__main__') return null;
+// Strict branch isolation — same contract as ServicesService.
+function requireBranchId(branchId: string | undefined | null, ctx: string): string {
+  if (!branchId || typeof branchId !== 'string' || branchId.trim() === '' || branchId === '__main__') {
+    throw new BadRequestException(`branchId majburiy (${ctx}): aktiv filialni tanlang`);
+  }
   return branchId;
 }
 
@@ -13,9 +14,9 @@ export class VendorsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(branchId?: string) {
-    const scope = normalizeBranch(branchId);
-    const vendors = await (this.prisma as any).vendor.findMany({
-      where: { branchId: scope },
+    const bId = requireBranchId(branchId, 'GET /vendors');
+    const vendors = await this.prisma.vendor.findMany({
+      where: { branchId: bId },
       orderBy: { name: 'asc' },
       include: {
         tasks: {
@@ -42,9 +43,9 @@ export class VendorsService {
   }
 
   async findOne(id: string, branchId?: string) {
-    const scope = normalizeBranch(branchId);
-    const vendor = await (this.prisma as any).vendor.findFirst({
-      where: { id, branchId: scope },
+    const bId = requireBranchId(branchId, 'GET /vendors/:id');
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { id, branchId: bId },
       include: {
         tasks: {
           orderBy: { createdAt: 'desc' },
@@ -58,7 +59,7 @@ export class VendorsService {
       },
     });
 
-    if (!vendor) throw new NotFoundException('Hamkor topilmadi');
+    if (!vendor) throw new NotFoundException('Hamkor topilmadi yoki ushbu filialga tegishli emas');
 
     const totalCost = vendor.tasks.reduce((sum: number, t: any) => sum + (Number(t.vendorCost) || 0), 0);
     const totalPaid = vendor.transactions.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0);
@@ -66,27 +67,25 @@ export class VendorsService {
   }
 
   async create(data: any) {
-    if (data.branchId === undefined) {
-      throw new BadRequestException('branchId majburiy: hamkor qaysi filialga tegishli ekanini ko\'rsating');
-    }
+    const bId = requireBranchId(data.branchId, 'POST /vendors');
     const { branch: _b, ...rest } = data;
-    rest.branchId = normalizeBranch(rest.branchId);
-    return (this.prisma as any).vendor.create({ data: rest });
+    rest.branchId = bId;
+    return this.prisma.vendor.create({ data: rest });
   }
 
   async update(id: string, data: any, branchId?: string) {
-    const scope = normalizeBranch(branchId);
-    const existing = await (this.prisma as any).vendor.findFirst({ where: { id, branchId: scope } });
+    const bId = requireBranchId(branchId, 'PUT /vendors/:id');
+    const existing = await this.prisma.vendor.findFirst({ where: { id, branchId: bId } });
     if (!existing) throw new NotFoundException('Hamkor topilmadi yoki ushbu filialga tegishli emas');
 
     const { branchId: _bi, branch: _b, tenantId: _t, ...rest } = data;
-    return (this.prisma as any).vendor.update({ where: { id }, data: rest });
+    return this.prisma.vendor.update({ where: { id }, data: rest });
   }
 
   async remove(id: string, branchId?: string) {
-    const scope = normalizeBranch(branchId);
-    const existing = await (this.prisma as any).vendor.findFirst({ where: { id, branchId: scope } });
+    const bId = requireBranchId(branchId, 'DELETE /vendors/:id');
+    const existing = await this.prisma.vendor.findFirst({ where: { id, branchId: bId } });
     if (!existing) throw new NotFoundException('Hamkor topilmadi yoki ushbu filialga tegishli emas');
-    return (this.prisma as any).vendor.delete({ where: { id } });
+    return this.prisma.vendor.delete({ where: { id } });
   }
 }

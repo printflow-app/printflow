@@ -586,7 +586,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'davomat' && (p.canViewAttendance || isAdmin) && <Davomat currentUser={currentUser} />}
               {activeTab === 'billing' && (p.canManageBilling || p.canViewBillingStatus || isAdmin) && <Billing />}
               {activeTab === 'admins' && isAdmin && <Admins currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'hamkorlar' && (isAdmin || p.canViewVendors) && <Hamkorlar currentUser={currentUser} />}
+              {activeTab === 'hamkorlar' && (isAdmin || p.canViewVendors) && <Hamkorlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || !!(p as any).canViewBranches) && <Filiallar currentUser={currentUser} />}
               {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports) && <Hisobotlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} activeBranchId={activeBranchId} />}

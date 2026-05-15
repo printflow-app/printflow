@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Filter, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { financeApi, branchesApi, tasksApi } from '../api';
+import { financeApi, tasksApi } from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Kpi from './Kpi';
 
@@ -24,10 +24,10 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
-  const [branches, setBranches] = useState<any[]>([]);
-  const [localBranchId, setLocalBranchId] = useState(activeBranchId || '');
 
-  useEffect(() => { setLocalBranchId(activeBranchId || ''); }, [activeBranchId]);
+  // Branch comes ONLY from the navbar (single source of truth via Dashboard prop).
+  // No local mirror, no per-page selector — selecting branches happens in one place.
+  const effectiveBranchId = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : '';
 
   const localYMD = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -54,19 +54,16 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
       const params: any = {};
       if (startDate) params.start = startDate;
       if (endDate) params.end = endDate;
-      if (localBranchId) params.branchId = localBranchId;
+      if (effectiveBranchId) params.branchId = effectiveBranchId;
 
-      const [dashRes, branchRes, tasksRes] = await Promise.all([
+      const [dashRes, tasksRes] = await Promise.all([
         canViewFinance ? financeApi.getDashboard({ params }) : Promise.resolve({ data: { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 } }),
-        branchesApi.findAll(),
-        tasksApi.findAll(localBranchId || undefined).catch(() => ({ data: [] })),
+        tasksApi.findAll(effectiveBranchId || undefined).catch(() => ({ data: [] })),
       ]);
       setDashboard(dashRes.data || { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
-      setBranches(branchRes.data || []);
 
       // Calculate pending and overdue orders from tasks
       const allTasks: any[] = tasksRes.data || [];
-      // Pending = tasks NOT in the last column (not completed/archived)
       const now = new Date();
       const pending = allTasks.filter(t => !t.isArchived);
       setPendingOrders(pending.length);
@@ -79,7 +76,8 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
     }
   };
 
-  useEffect(() => { fetchData(); }, [startDate, endDate, localBranchId]);
+  // Auto-fetch on mount AND whenever the navbar branch changes — no manual re-select needed.
+  useEffect(() => { fetchData(); }, [startDate, endDate, effectiveBranchId]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -108,16 +106,6 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             ))}
           </div>
 
-          {branches.length > 0 && (
-            <select
-              value={localBranchId}
-              onChange={e => setLocalBranchId(e.target.value)}
-              className="select-minimal h-[32px] text-[10px] font-black py-0 px-3 bg-slate-50 border-slate-200 text-slate-600 rounded-lg min-w-[150px]"
-            >
-              <option value="">Barcha filiallar</option>
-              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          )}
         </div>
       </div>
 
@@ -173,7 +161,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
       </div>
 
       {/* Employee KPI / Samaradorlik */}
-      <Kpi currentUser={currentUser} />
+      <Kpi currentUser={currentUser} activeBranchId={activeBranchId} />
     </>)}
     </div>
   );

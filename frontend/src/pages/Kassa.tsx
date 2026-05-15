@@ -51,7 +51,9 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         customersApi.findAll(),
         employeesApi.findAll(),
         expenseTypesApi.findAll(),
-        vendorsApi.findAll().catch(() => ({ data: [] })),
+        activeBranchId && activeBranchId !== '__main__'
+          ? vendorsApi.findAll(activeBranchId).catch(() => ({ data: [] }))
+          : Promise.resolve({ data: [] }),
       ]);
 
       setTransactions(transRes.data.data || []);

@@ -10,7 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('uz-UZ').format(Math.abs(amount)).replace(/,/g, ' ') + ' UZS';
 
-const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const canManageVendors = isAdmin || !!(currentUser.permissions?.canManageVendors);
 
@@ -40,9 +40,14 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   };
 
   const fetchAll = async () => {
+    if (!activeBranchId || activeBranchId === '__main__') {
+      setVendors([]);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
-      const res = await vendorsApi.findAll();
+      const res = await vendorsApi.findAll(activeBranchId);
       setVendors(res.data || []);
     } catch {
       showStatus('error', "Yuklashda xatolik!");
@@ -51,7 +56,7 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [activeBranchId]);
 
   const openAdd = () => {
     setForm({ id: '', name: '', phone: '' });
@@ -70,7 +75,8 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     setIsDetailOpen(true);
     setIsDetailLoading(true);
     try {
-      const res = await vendorsApi.findOne(v.id);
+      if (!activeBranchId || activeBranchId === '__main__') throw new Error('no branch');
+      const res = await vendorsApi.findOne(v.id, activeBranchId);
       setDetailData(res.data);
     } catch {
       setDetailData(null);
@@ -82,12 +88,16 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
+    if (!activeBranchId || activeBranchId === '__main__') {
+      showStatus('error', 'Avval aktiv filialni tanlang');
+      return;
+    }
     try {
       if (isEditing) {
-        await vendorsApi.update(form.id, { name: form.name, phone: form.phone });
+        await vendorsApi.update(form.id, { name: form.name, phone: form.phone }, activeBranchId);
         showStatus('success', "Hamkor yangilandi!");
       } else {
-        await vendorsApi.create({ name: form.name, phone: form.phone });
+        await vendorsApi.create({ name: form.name, phone: form.phone, branchId: activeBranchId });
         showStatus('success', "Yangi hamkor qo'shildi!");
       }
       setIsFormOpen(false);
@@ -99,8 +109,9 @@ const Hamkorlar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   const handleDelete = async () => {
     if (!confirmId) return;
+    if (!activeBranchId || activeBranchId === '__main__') return;
     try {
-      await vendorsApi.remove(confirmId);
+      await vendorsApi.remove(confirmId, activeBranchId);
       showStatus('success', "Hamkor o'chirildi.");
       setConfirmId(null);
       fetchAll();

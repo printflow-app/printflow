@@ -62,7 +62,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     try {
       if (!silent) setIsLoading(true);
       const [customersRes, topRes] = await Promise.all([
-        customersApi.findAll(activeBranchId),
+        customersApi.findAll(activeBranchId, true),
         customersApi.getTopCustomers(10),
       ]);
       setCustomers(customersRes.data || []);
