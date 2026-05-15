@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Layers } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi, billingApi } from '../api';
 import logo from '../assets/logo.png';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AICopilot from '../components/AICopilot/AICopilot';
+import { OnboardingWizard, isOnboardingComplete } from '../components/OnboardingWizard';
+import { OnboardingTour, isTourComplete } from '../components/OnboardingTour';
+import { CommandPalette } from '../components/CommandPalette';
 
 const Moliya       = React.lazy(() => import('./Moliya'));
 const Hodimlar     = React.lazy(() => import('./Hodimlar'));
@@ -28,10 +32,64 @@ interface DashboardProps {
   onUpdateUser: (updatedFields: any) => void;
 }
 
+type TabId = 'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma' | 'xizmatlar-katalog';
+const VALID_TABS: TabId[] = ['kassa','moliya','hodimlar','topshiriqlar','mijozlar','sozlamalar','ombor','davomat','admins','billing','filiallar','hamkorlar','hisobotlar','qollanma','xizmatlar-katalog'];
+
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
-  const [activeTab, setActiveTab] = useState<'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma'>(() => {
-    return (localStorage.getItem('pf_active_tab') as any) || 'kassa';
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // URL → tab. URL pattern: /dashboard/<tab>. Falls back to localStorage or 'kassa'.
+  const tabFromUrl = (() => {
+    const match = location.pathname.match(/^\/dashboard\/([^/]+)/);
+    const candidate = match?.[1] as TabId | undefined;
+    if (candidate && VALID_TABS.includes(candidate)) return candidate;
+    const stored = localStorage.getItem('pf_active_tab') as TabId | null;
+    return stored && VALID_TABS.includes(stored) ? stored : 'kassa';
+  })();
+
+  const [activeTab, setActiveTab] = useState<TabId>(tabFromUrl);
+
+  // Onboarding wizard — eski 3-qadamli forma (saqlangan, lekin endi default tour)
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+
+  // Interactive tour — yangi, o'yin uslubidagi guided tour
+  const [showTour, setShowTour] = useState<boolean>(() => {
+    const tid = currentUser?.tenantId;
+    return !!tid && !isTourComplete(tid) && !isOnboardingComplete(tid);
   });
+
+  // Collapsible sidebar groups. Persisted to localStorage so user's preference
+  // survives across sessions. Default: open whichever group contains the active tab.
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('pf_sidebar_groups');
+      if (stored) return new Set(JSON.parse(stored));
+    } catch {}
+    return new Set<string>(); // start collapsed; effect below opens the active group
+  });
+  const toggleGroup = (label: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      localStorage.setItem('pf_sidebar_groups', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  // Keep activeTab in sync with the URL — handles browser back/forward + deep links.
+  useEffect(() => {
+    const match = location.pathname.match(/^\/dashboard\/([^/]+)/);
+    const urlTab = match?.[1] as TabId | undefined;
+    if (urlTab && VALID_TABS.includes(urlTab) && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+    // If user lands on /dashboard (no tab), push them to the default
+    if (location.pathname === '/dashboard' || location.pathname === '/dashboard/') {
+      navigate(`/dashboard/${activeTab}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isAICopilotOpen, setIsAICopilotOpen] = useState(false);
@@ -265,24 +323,59 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     ? currentUser.tenantFeatures
     : { finance: true, kanban: true, customers: true, employees: true, warehouse: true, attendance: true };
 
-  const navItems = [
-    { id: 'kassa', label: 'Kassa (Tranzaksiyalar)', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
-    { id: 'moliya', label: 'Statistika', icon: TrendingUp, show: (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && tf.finance, sub: 'Daromad va hisobotlar' },
-    { id: 'hisobotlar', label: 'Hisobotlar', icon: BarChart3, show: isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports, sub: 'Biznes tahlil va hisobotlar' },
-    { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
-    { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: 'Qarzlar va hamkorlar' },
-    { id: 'hodimlar', label: 'Xodimlar', icon: Users, show: (p.canViewEmployees || isAdmin) && tf.employees, sub: 'Jamoa ro\'yxati' },
-    { id: 'admins', label: 'Ma\'muriyat', icon: ShieldCheck, show: isAdmin, sub: 'Raxbarlar boshqaruvi' },
-    { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
-    { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
-    { id: 'hamkorlar', label: 'Hamkorlar', icon: Handshake, show: isAdmin || p.canViewVendors, sub: 'Subpudratchi va yetkazuvchilar' },
-    { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Filiallar va Obuna' },
+  // Sidebar grouped into 3 logical sections for visual hierarchy.
+  // Sections render with a small caps label between them.
+  const navGroups: { label: string; items: { id: string; label: string; icon: any; show: boolean; sub: string }[] }[] = [
+    {
+      label: 'Operatsiya',
+      items: [
+        { id: 'kassa', label: 'Kassa', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
+        { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
+        { id: 'xizmatlar-katalog', label: 'Xizmatlar katalogi', icon: Layers, show: (p.canViewServices || p.canManageServices || isAdmin), sub: 'Narxlar va opsiyalar' },
+        { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: "Qarzlar va hamkorlar" },
+        { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
+        { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
+      ],
+    },
+    {
+      label: 'Tahlil',
+      items: [
+        { id: 'moliya', label: 'Statistika', icon: TrendingUp, show: (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && tf.finance, sub: 'Daromad va hisobotlar' },
+        { id: 'hisobotlar', label: 'Hisobotlar', icon: BarChart3, show: isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports, sub: 'Biznes tahlil' },
+      ],
+    },
+    {
+      label: 'Boshqaruv',
+      items: [
+        { id: 'hodimlar', label: 'Xodimlar', icon: Users, show: (p.canViewEmployees || isAdmin) && tf.employees, sub: "Jamoa ro'yxati" },
+        { id: 'admins', label: "Ma'muriyat", icon: ShieldCheck, show: isAdmin, sub: 'Raxbarlar boshqaruvi' },
+        { id: 'hamkorlar', label: 'Hamkorlar', icon: Handshake, show: isAdmin || p.canViewVendors, sub: 'Subpudratchi va yetkazuvchilar' },
+        { id: 'sozlamalar', label: 'Tizim Sozlamalari', icon: Settings, show: p.canViewSettings || isAdmin, sub: 'Filiallar va Obuna' },
+      ],
+    },
   ];
+  // Flat list for backward-compat: places that iterate `navItems` (e.g. lock-screen logic) still work.
+  const navItems = navGroups.flatMap(g => g.items);
+
+  // Ensure the group containing the active tab is open. Runs once + whenever activeTab changes.
+  useEffect(() => {
+    const owner = navGroups.find(g => g.items.some(it => it.id === activeTab));
+    if (owner && !openGroups.has(owner.label)) {
+      setOpenGroups(prev => {
+        const next = new Set(prev);
+        next.add(owner.label);
+        localStorage.setItem('pf_sidebar_groups', JSON.stringify([...next]));
+        return next;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleTabChange = (id: any) => {
     setActiveTab(id);
     localStorage.setItem('pf_active_tab', id);
     setIsSidebarOpen(false);
+    navigate(`/dashboard/${id}`);
   };
 
   if (isLocked || pendingTab) {
@@ -292,10 +385,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           <div className="w-24 h-24 bg-orange-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-orange-500/30 animate-bounce-slow">
             <Lock className="w-10 h-10 text-white" strokeWidth={2.5} />
           </div>
-          <h1 className="text-2xl font-black text-white uppercase italic tracking-tight mb-2">
+          <h1 className="text-2xl font-bold text-white uppercase italic tracking-tight mb-2">
             {pendingTab === 'settings_access' ? 'Sozlamalarga' : pendingTab === 'profile_access' ? 'Profilga' : pendingTab ? 'Sahifaga' : 'Tizimga'} <span className="text-orange-400">Kirish</span>
           </h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Davom etish uchun PIN kodni kiriting</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-10">Davom etish uchun PIN kodni kiriting</p>
 
           <form onSubmit={handleUnlock} className="space-y-4">
             <div className="relative group">
@@ -303,7 +396,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 type={showPins.input ? "text" : "password"}
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
-                className="w-full h-16 bg-white/10 border-2 border-white/10 rounded-2xl px-6 text-center text-2xl font-black text-white focus:bg-white/20 focus:border-orange-500 focus:outline-none transition-all placeholder:text-white/20"
+                className="w-full h-16 bg-white/10 border-2 border-white/10 rounded-2xl px-6 text-center text-2xl font-bold text-white focus:bg-white/20 focus:border-orange-500 focus:outline-none transition-all placeholder:text-white/20"
                 placeholder="••••"
                 maxLength={8}
                 autoFocus
@@ -318,7 +411,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
             <button
               type="submit"
-              className="w-full h-16 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all flex items-center justify-center gap-3"
+              className="w-full h-16 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all flex items-center justify-center gap-3"
             >
               <span>TASDIQLASH</span>
               <Unlock size={18} />
@@ -334,7 +427,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   onLogout();
                 }
               }}
-              className="w-full h-12 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-colors"
+              className="w-full h-12 text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] hover:text-white transition-colors"
             >
               {pendingTab ? 'Bekor qilish' : 'Tizimdan chiqish'}
             </button>
@@ -350,7 +443,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       <header className="md:hidden h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
           <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
-          <h1 className="text-sm font-black text-slate-900 tracking-tighter uppercase italic">Print<span className="text-[#FF6B00]">Flow</span></h1>
+          <h1 className="text-sm font-bold text-slate-900 tracking-tighter uppercase italic">Print<span className="text-[#FF6B00]">Flow</span></h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={handleManualLock} className="w-9 h-9 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg">
@@ -383,8 +476,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           <div className="flex items-center gap-2">
             <img src={logo} alt="PF" style={{ height: 32, width: 'auto' }} />
             <div>
-              <h1 className="text-lg font-black text-slate-900 tracking-tighter leading-noneUppercase italic">PRINT<span className="text-[#FF6B00]">FLOW</span></h1>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{currentUser.role?.name || 'Xodim'}</p>
+              <h1 className="text-lg font-bold text-slate-900 tracking-tighter leading-noneUppercase italic">PRINT<span className="text-[#FF6B00]">FLOW</span></h1>
+              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{currentUser.role?.name || 'Xodim'}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -412,32 +505,66 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         </div>
 
         <nav className="flex-1 px-2.5 py-4 flex flex-col gap-1 overflow-y-auto custom-scroll">
-          {navItems.map(item => item.show && (
-            <button
-              key={item.id}
-              onClick={() => handleTabChange(item.id as any)}
-              className={`group relative flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[11px] font-black transition-all duration-300 border ${activeTab === item.id
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 border-orange-500'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'
-                }`}
-            >
-              <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} className={activeTab === item.id ? 'text-white' : 'text-slate-300 group-hover:text-slate-500'} />
-              <div className="text-left flex-1">
-                <p className="leading-none uppercase tracking-tight">{item.label}</p>
-                <p className={`text-[8px] font-bold mt-0.5 uppercase tracking-tighter ${activeTab === item.id ? 'text-orange-100' : 'text-slate-400 opacity-60'}`}>{item.sub}</p>
-              </div>
+          {navGroups.map((group, gi) => {
+            const visibleItems = group.items.filter(it => it.show);
+            if (visibleItems.length === 0) return null;
+            const isOpen = openGroups.has(group.label);
+            const containsActive = visibleItems.some(it => it.id === activeTab);
+            return (
+              <React.Fragment key={group.label}>
+                {gi > 0 && <div className="my-1.5 border-t border-slate-100" />}
+                {/* Group header — clickable to expand/collapse */}
+                <button
+                  type="button"
+                  data-tour-group={group.label.toLowerCase()}
+                  data-tour-open={isOpen ? '1' : '0'}
+                  onClick={() => toggleGroup(group.label)}
+                  className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                    containsActive ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'
+                  } ${isOpen ? '' : 'hover:bg-slate-50'}`}
+                >
+                  <span className="flex items-center gap-2">
+                    {group.label}
+                    {/* Tiny badge: count of items in this group */}
+                    <span className="text-[9px] font-bold text-slate-300 normal-case tracking-normal">({visibleItems.length})</span>
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
 
-              <div
-                onClick={(e) => toggleTabLock(item.id, e)}
-                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${lockedTabs.has(item.id)
-                    ? 'bg-rose-500 text-white shadow-md'
-                    : 'bg-transparent text-slate-300 hover:bg-slate-100 hover:text-slate-600'
-                  }`}
-              >
-                {lockedTabs.has(item.id) ? <Lock size={10} strokeWidth={3} /> : <Unlock size={10} />}
-              </div>
-            </button>
-          ))}
+                {/* Group items — only render when open */}
+                {isOpen && visibleItems.map(item => (
+                  <button
+                    key={item.id}
+                    data-tour-id={`nav-${item.id}`}
+                    onClick={() => handleTabChange(item.id as any)}
+                    className={`group relative flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-300 border ${activeTab === item.id
+                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 border-orange-500'
+                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'
+                      }`}
+                  >
+                    <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} className={activeTab === item.id ? 'text-white' : 'text-slate-300 group-hover:text-slate-500'} />
+                    <div className="text-left flex-1">
+                      <p className="leading-none uppercase tracking-tight">{item.label}</p>
+                      <p className={`text-[8px] font-semibold mt-0.5 uppercase tracking-tighter ${activeTab === item.id ? 'text-orange-100' : 'text-slate-400 opacity-60'}`}>{item.sub}</p>
+                    </div>
+
+                    <div
+                      onClick={(e) => toggleTabLock(item.id, e)}
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${lockedTabs.has(item.id)
+                          ? 'bg-rose-500 text-white shadow-md'
+                          : 'bg-transparent text-slate-300 hover:bg-slate-100 hover:text-slate-600'
+                        }`}
+                    >
+                      {lockedTabs.has(item.id) ? <Lock size={10} strokeWidth={3} /> : <Unlock size={10} />}
+                    </div>
+                  </button>
+                ))}
+              </React.Fragment>
+            );
+          })}
         </nav>
 
         <div className="p-3 border-t border-slate-100 bg-slate-50/50">
@@ -451,17 +578,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             }}
             className="flex items-center w-full text-left gap-2.5 px-3 py-2.5 mb-2.5 rounded-xl bg-white border border-slate-200 shadow-sm hover:border-orange-300 transition-all group"
           >
-            <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 font-black flex items-center justify-center shadow-inner text-[10px] border border-orange-200 group-hover:bg-orange-600 group-hover:text-white transition-colors">
+            <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 font-bold flex items-center justify-center shadow-inner text-[10px] border border-orange-200 group-hover:bg-orange-600 group-hover:text-white transition-colors">
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="overflow-hidden min-w-0 flex-1">
-              <p className="text-[11px] font-black text-slate-800 truncate leading-tight uppercase tracking-tight">{currentUser.fullName}</p>
+              <p className="text-[11px] font-bold text-slate-800 truncate leading-tight uppercase tracking-tight">{currentUser.fullName}</p>
               <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate italic group-hover:text-orange-500">Profil Sozlamalari</p>
             </div>
           </button>
           <button
             onClick={() => handleTabChange('qollanma')}
-            className={`flex w-full items-center justify-center gap-2 px-3 py-2 mb-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border-dashed ${
+            className={`flex w-full items-center justify-center gap-2 px-3 py-2 mb-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border-dashed ${
               activeTab === 'qollanma' 
                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 border-emerald-500' 
                 : 'text-emerald-600 border-emerald-100 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20'
@@ -471,7 +598,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           </button>
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex w-full items-center justify-center gap-2 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest text-rose-500 border border-rose-100 bg-rose-50/50 hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-500/20 transition-all border-dashed"
+            className="flex w-full items-center justify-center gap-2 px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest text-rose-500 border border-rose-100 bg-rose-50/50 hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-500/20 transition-all border-dashed"
           >
             <LogOut size={12} strokeWidth={3} /> Chiqish
           </button>
@@ -486,20 +613,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <LogOut size={24} className="text-rose-500" strokeWidth={2.5} />
               </div>
-              <h3 className="text-base font-black text-slate-800 uppercase tracking-tight mb-1">Chiqishni tasdiqlang</h3>
+              <h3 className="text-base font-bold text-slate-800 uppercase tracking-tight mb-1">Chiqishni tasdiqlang</h3>
               <p className="text-[11px] text-slate-500 font-semibold">Tizimdan chiqmoqchimisiz? Barcha ochiq ma'lumotlar yopiladi.</p>
             </div>
             <div className="flex border-t border-slate-100">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-4 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
+                className="flex-1 py-4 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
               >
                 Bekor qilish
               </button>
               <div className="w-px bg-slate-100" />
               <button
                 onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
-                className="flex-1 py-4 text-[11px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-50 transition-colors"
+                className="flex-1 py-4 text-[11px] font-bold uppercase tracking-widest text-rose-500 hover:bg-rose-50 transition-colors"
               >
                 Ha, chiqish
               </button>
@@ -508,10 +635,30 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         </div>
       )}
 
+      {showOnboarding && currentUser?.tenantId && (
+        <OnboardingWizard
+          tenantId={currentUser.tenantId}
+          branchId={activeBranchId || branches[0]?.id}
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
+
+      {/* Interactive Tour — custom non-modal, granular qadamlar, auto-rewind */}
+      {showTour && currentUser?.tenantId && (
+        <OnboardingTour
+          tenantId={currentUser.tenantId}
+          activeTab={activeTab}
+          onComplete={() => setShowTour(false)}
+        />
+      )}
+
+      {/* Global command palette — Ctrl+K opens it */}
+      <CommandPalette />
+
       <main className="flex-1 flex flex-col h-[calc(100vh-3rem)] md:h-screen overflow-hidden">
         <header className="hidden md:flex h-16 px-6 items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md z-10">
           <div className="flex flex-col">
-            <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2.5 uppercase">
+            <h2 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2.5 uppercase">
               {navItems.find(i => i.id === activeTab)?.label}
               {lockedTabs.has(activeTab) && <Lock size={16} className="text-rose-500" />}
               {!lockedTabs.has(activeTab) && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>}
@@ -523,13 +670,26 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
           <div className="flex items-center gap-3">
 
+            {/* Ctrl+K hint — visible reminder of the command palette */}
+            <button
+              onClick={() => {
+                // Dispatch synthetic Ctrl+K event so the palette opens via its global listener
+                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+              }}
+              className="hidden lg:flex items-center gap-2 h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all"
+              title="Tezkor qidiruv"
+            >
+              <span>Qidiruv</span>
+              <kbd className="text-[9px] font-bold bg-slate-100 px-1.5 py-0.5 rounded">Ctrl K</kbd>
+            </button>
+
             <select
               value={activeBranchId}
               onChange={e => {
                 setActiveBranchId(e.target.value);
                 localStorage.setItem('pf_active_branch', e.target.value);
               }}
-              className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
+              className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
             >
               <option value="">Barcha filiallar</option>
               <option value="__main__">Bosh ofis (asosiy)</option>
@@ -540,7 +700,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
             <button
               onClick={(e) => toggleTabLock(activeTab, e)}
-              className={`group flex items-center gap-2 h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${lockedTabs.has(activeTab)
+              className={`group flex items-center gap-2 h-10 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg ${lockedTabs.has(activeTab)
                   ? 'bg-rose-600 text-white shadow-rose-500/20'
                   : 'bg-orange-600 text-white shadow-orange-500/10 hover:bg-orange-700'
                 }`}
@@ -561,13 +721,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-orange-500/10 border border-slate-100 rotate-3 hover:rotate-0 transition-transform duration-500">
                   <Lock className="w-8 h-8 text-orange-600" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tight mb-2">Sahifa <span className="text-rose-500">Qulflangan</span></h3>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8 leading-relaxed">Ushbu bo'limga kirish uchun<br />tizim PIN kodini kiriting</p>
+                <h3 className="text-xl font-bold text-slate-800 uppercase italic tracking-tight mb-2">Sahifa <span className="text-rose-500">Qulflangan</span></h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-8 leading-relaxed">Ushbu bo'limga kirish uchun<br />tizim PIN kodini kiriting</p>
 
                 <form onSubmit={(e) => { e.preventDefault(); setPendingTab(activeTab); }} className="space-y-4">
                   <button
                     type="submit"
-                    className="w-full h-14 bg-slate-900 hover:bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-3"
+                    className="w-full h-14 bg-slate-900 hover:bg-orange-600 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-3"
                   >
                     <span>PIN KODNI KIRITISH</span>
                     <ShieldCheck size={16} />
@@ -590,13 +750,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || !!(p as any).canViewBranches) && <Filiallar currentUser={currentUser} />}
               {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports) && <Hisobotlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {/* Xizmatlar katalogi — alohida tab, lekin Sozlamalar komponentini render qiladi.
+                  Foydalanuvchining ruxsatlariga qarab Sozlamalar faqat services bo'limini ko'rsatadi
+                  (boshqa bo'limlar o'z permission'lari bilan gated). Paradoxni hal qiladi:
+                  canViewServices bor lekin canViewSettings yo'q foydalanuvchilar shu yo'l bilan kiradi. */}
+              {activeTab === 'xizmatlar-katalog' && (p.canViewServices || p.canManageServices || isAdmin) && <Sozlamalar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'qollanma' && <Qollanma />}
 
               {/* Unauthorized message if tab is set but permission removed */}
               {!navItems.find(i => i.id === activeTab)?.show && (
                 <div className="flex flex-col items-center justify-center h-full text-center p-10 bg-white rounded-3xl border border-slate-200">
                   <Lock size={48} className="text-slate-200 mb-4" />
-                  <h3 className="text-xl font-black text-slate-800 uppercase italic">Kirish cheklangan</h3>
+                  <h3 className="text-xl font-bold text-slate-800 uppercase italic">Kirish cheklangan</h3>
                   <p className="text-xs font-bold text-slate-400 mt-2">Ushbu bo'limni ko'rish uchun ruxsatingiz yo'q.</p>
                 </div>
               )}
@@ -635,14 +800,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
           <div className="space-y-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Yangi PIN kod</label>
+              <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest ml-1">Yangi PIN kod</label>
               <div className="relative">
                 <input
                   type={showPins.p1 ? "text" : "password"}
                   required
                   value={newPin.pin1}
                   onChange={(e) => setNewPin({ ...newPin, pin1: e.target.value })}
-                  className="input-minimal w-full text-center text-xl font-black tracking-[0.5em]"
+                  className="input-minimal w-full text-center text-xl font-bold tracking-[0.5em]"
                   placeholder="••••"
                   maxLength={8}
                 />
@@ -652,14 +817,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">PIN kodni tasdiqlang</label>
+              <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest ml-1">PIN kodni tasdiqlang</label>
               <div className="relative">
                 <input
                   type={showPins.p2 ? "text" : "password"}
                   required
                   value={newPin.pin2}
                   onChange={(e) => setNewPin({ ...newPin, pin2: e.target.value })}
-                  className="input-minimal w-full text-center text-xl font-black tracking-[0.5em]"
+                  className="input-minimal w-full text-center text-xl font-bold tracking-[0.5em]"
                   placeholder="••••"
                   maxLength={8}
                 />
@@ -669,7 +834,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1 flex justify-between">
+              <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest ml-1 flex justify-between">
                 <span>Avtomatik qulflash (daqiqa)</span>
                 <span className="text-orange-600">{lockTimeout} min</span>
               </label>
@@ -689,7 +854,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
           </div>
 
-          <button type="submit" className="btn-primary w-full h-14 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-orange-500/20">
+          <button type="submit" className="btn-primary w-full h-14 bg-orange-600 text-white rounded-2xl font-bold uppercase tracking-widest shadow-lg shadow-orange-500/20">
             SOZLAMALARNI SAQLASH
           </button>
         </form>
@@ -699,7 +864,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       <Modal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} title="Profilni Tahrirlash" maxWidth="max-w-sm">
         <form onSubmit={handleUpdateProfile} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">To'liq Ism (F.I.SH)</label>
+            <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest ml-1">To'liq Ism (F.I.SH)</label>
             <input
               type="text" required
               value={profileForm.fullName}
@@ -708,7 +873,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Login</label>
+            <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest ml-1">Login</label>
             <input
               type="text" required
               value={profileForm.login}
@@ -717,10 +882,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             />
           </div>
           <div className="pt-4 border-t border-slate-100">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Parolni o'zgartirish (ixtiyoriy)</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Parolni o'zgartirish (ixtiyoriy)</p>
             <div className="space-y-4">
               <div className="relative">
-                <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Yangi Parol</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest ml-1">Yangi Parol</label>
                 <input
                   type={showProfilePass ? "text" : "password"}
                   value={profileForm.password}
@@ -733,7 +898,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 </button>
               </div>
               <div className="relative">
-                <label className="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest ml-1">Parolni tasdiqlang</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest ml-1">Parolni tasdiqlang</label>
                 <input
                   type={showProfileConfirmPass ? "text" : "password"}
                   value={profileForm.confirmPassword}
@@ -749,7 +914,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           </div>
 
           <div className="pt-4">
-            <button type="submit" className="btn-primary w-full h-14 font-black tracking-widest uppercase bg-slate-900 hover:bg-orange-600 text-white shadow-xl shadow-slate-900/10 rounded-2xl transition-all">
+            <button type="submit" className="btn-primary w-full h-14 font-bold tracking-widest uppercase bg-slate-900 hover:bg-orange-600 text-white shadow-xl shadow-slate-900/10 rounded-2xl transition-all">
               O'ZGARISHLARNI SAQLASH
             </button>
           </div>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TrendingUp, Filter, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { financeApi, tasksApi } from '../api';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { useQuery } from '@tanstack/react-query';
+import { SkeletonStats } from '../components/Skeleton';
 import Kpi from './Kpi';
 
 // =============================================
@@ -16,18 +17,35 @@ const formatCurrency = (amount: number) =>
 const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const isAdminRole    = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
   const canViewFinance = !!(currentUser?.permissions?.canViewFinance || currentUser?.permissions?.canViewStatistics || isAdminRole);
-  const [dashboard, setDashboard] = useState({ totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
-  const [pendingOrders, setPendingOrders] = useState(0);
-  const [overdueOrders, setOverdueOrders] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
   // Branch comes ONLY from the navbar (single source of truth via Dashboard prop).
-  // No local mirror, no per-page selector — selecting branches happens in one place.
   const effectiveBranchId = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : '';
+
+  const dashParams: any = {};
+  if (startDate) dashParams.start = startDate;
+  if (endDate) dashParams.end = endDate;
+  if (effectiveBranchId) dashParams.branchId = effectiveBranchId;
+
+  const dashboardQuery = useQuery({
+    queryKey: ['moliya-dashboard', dashParams],
+    queryFn: async () => (await financeApi.getDashboard({ params: dashParams })).data || { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 },
+    enabled: canViewFinance,
+  });
+  const tasksQuery = useQuery({
+    queryKey: ['moliya-tasks', effectiveBranchId],
+    queryFn: async () => (await tasksApi.findAll(effectiveBranchId || undefined)).data || [],
+  });
+
+  const dashboard = (dashboardQuery.data as any) || { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 };
+  const allTasksList: any[] = (tasksQuery.data as any[]) || [];
+  const now = new Date();
+  const pending = allTasksList.filter(t => !t.isArchived);
+  const pendingOrders = pending.length;
+  const overdueOrders = pending.filter(t => t.deadlineAt && new Date(t.deadlineAt) < now).length;
+  const isLoading = dashboardQuery.isLoading || tasksQuery.isLoading;
 
   const localYMD = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -48,49 +66,20 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
     }
   };
 
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      const params: any = {};
-      if (startDate) params.start = startDate;
-      if (endDate) params.end = endDate;
-      if (effectiveBranchId) params.branchId = effectiveBranchId;
-
-      const [dashRes, tasksRes] = await Promise.all([
-        canViewFinance ? financeApi.getDashboard({ params }) : Promise.resolve({ data: { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 } }),
-        tasksApi.findAll(effectiveBranchId || undefined).catch(() => ({ data: [] })),
-      ]);
-      setDashboard(dashRes.data || { totalKirim: 0, totalChiqim: 0, balance: 0, completedTasks: 0 });
-
-      // Calculate pending and overdue orders from tasks
-      const allTasks: any[] = tasksRes.data || [];
-      const now = new Date();
-      const pending = allTasks.filter(t => !t.isArchived);
-      setPendingOrders(pending.length);
-      const overdue = pending.filter(t => t.deadlineAt && new Date(t.deadlineAt) < now);
-      setOverdueOrders(overdue.length);
-    } catch (err) {
-      console.error('Statistika yuklashda xato:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Auto-fetch on mount AND whenever the navbar branch changes — no manual re-select needed.
-  useEffect(() => { fetchData(); }, [startDate, endDate, effectiveBranchId]);
+  // RQ auto-handles fetching — no fetchData() needed.
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {isLoading && <LoadingSpinner fullPage />}
+      {isLoading && <div className="absolute inset-0 z-10"><SkeletonStats count={3} /></div>}
       {isLoading ? null : (<>
 
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">
+          <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2 px-1">
             <Filter size={18} className="text-[#FF6B00]" /> Filtrlar
           </h3>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1">Sana bo'yicha tahlil</p>
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1">Sana bo'yicha tahlil</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0">
@@ -99,7 +88,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-black rounded-md transition-all ${activeFilter === f ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeFilter === f ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 {f === 'all' ? 'Barchasi' : f === 'today' ? 'Bugun' : f === 'week' ? 'Hafta' : 'Oy'}
               </button>
@@ -118,8 +107,8 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             <div className="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3 border border-emerald-200 shadow-sm">
               <TrendingUp size={18} />
             </div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Jami Kirim</p>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight">{formatCurrency(dashboard.totalKirim)}</h3>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Jami Kirim</p>
+            <h3 className="text-xl font-bold text-slate-800 tracking-tight">{formatCurrency(dashboard.totalKirim)}</h3>
           </div>
         </div>
         )}
@@ -130,8 +119,8 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             <div className="w-9 h-9 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-3 border border-blue-200 shadow-sm">
               <CheckCircle size={18} />
             </div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bajarilgan Buyurtmalar</p>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight">{dashboard.completedTasks || 0} ta</h3>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilgan Buyurtmalar</p>
+            <h3 className="text-xl font-bold text-slate-800 tracking-tight">{dashboard.completedTasks || 0} ta</h3>
           </div>
         </div>
 
@@ -149,10 +138,10 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             }`}>
               {overdueOrders > 0 ? <AlertCircle size={18} /> : <Clock size={18} />}
             </div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bajarilishi Kutilmoqda</p>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight">{pendingOrders} ta</h3>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilishi Kutilmoqda</p>
+            <h3 className="text-xl font-bold text-slate-800 tracking-tight">{pendingOrders} ta</h3>
             {overdueOrders > 0 && (
-              <p className="text-[9px] font-black text-rose-500 mt-0.5 flex items-center gap-1">
+              <p className="text-[9px] font-bold text-rose-500 mt-0.5 flex items-center gap-1">
                 <AlertCircle size={10} /> {overdueOrders} ta muddati o'tgan
               </p>
             )}

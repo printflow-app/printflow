@@ -108,7 +108,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl" />
             <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-800 mb-1 uppercase">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800 mb-1 uppercase">
             Print<span className="text-[#FF6B00]">Flow</span>
           </h1>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
@@ -121,7 +121,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
 
           <form onSubmit={handleSubmit} className="space-y-4 relative" autoComplete="off">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Tashkilot nomi
               </label>
               <div className="relative">
@@ -140,7 +140,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Workspace slug (URL identifikator)
               </label>
               <div className="relative">
@@ -166,7 +166,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                   Ism Familiya
                 </label>
                 <div className="relative">
@@ -184,7 +184,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                   Telefon (ixtiyoriy)
                 </label>
                 <div className="relative">
@@ -203,7 +203,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Admin Login
               </label>
               <div className="relative">
@@ -222,7 +222,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Parol
               </label>
               <div className="relative">
@@ -257,7 +257,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#FF6B00] hover:bg-[#e66000] disabled:bg-orange-300 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]"
+              className="w-full bg-[#FF6B00] hover:bg-[#e66000] disabled:bg-orange-300 disabled:cursor-not-allowed text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]"
             >
               {loading ? 'Yaratilmoqda...' : 'Workspace yaratish'}
             </button>

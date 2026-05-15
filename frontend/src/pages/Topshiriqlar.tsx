@@ -5,12 +5,18 @@ import {
   Users, AlertTriangle, ExternalLink, Package, Building2,
   Archive, ArchiveRestore, Handshake, AlertOctagon
 } from 'lucide-react';
-import { tasksApi, taskExpensesApi, employeesApi, paymentTypesApi, customersApi, servicesApi, branchesApi, settingsApi, vendorsApi, departmentsApi } from '../api';
+import { tasksApi, taskExpensesApi, servicesApi, settingsApi } from '../api';
+import {
+  useBranches, useEmployees, useCustomers, usePaymentTypes,
+  useServices, useVendors, useTaskColumns, useTasks, useDepartments,
+  useInvalidate,
+} from '../hooks/queries';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { SkeletonKanban } from '../components/Skeleton';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { TaskIdentityBadges, TaskDeadlineBadges } from './Topshiriqlar/TaskBadges';
 
 interface Task {
   id: string;
@@ -52,15 +58,36 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const canMoveTask = p.canMoveTask || isAdmin;
   const canDeleteTask = p.canDeleteTask || isAdmin;
 
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [columns, setColumns] = useState<Column[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [paymentTypes, setPaymentTypes] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
-  const [branches, setBranches] = useState<any[]>([]);
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // ============ React Query data hooks ============
+  // Bularning hammasi cache'lanadi, tab almashganda darhol ochiladi.
+  // Mutatsiyalardan keyin invalidate.* chaqirilsa avtomatik refetch bo'ladi.
+  const { data: rawEmployees = [] } = useEmployees();
+  const { data: columns = [], isLoading: colsLoading } = useTaskColumns(activeBranchId) as { data: Column[]; isLoading: boolean };
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks(activeBranchId) as { data: Task[]; isLoading: boolean };
+  const { data: paymentTypes = [] } = usePaymentTypes();
+  const { data: customers = [] } = useCustomers(activeBranchId);
+  const { data: branches = [] } = useBranches();
+
+  // Services & Vendors — faqat permission bor va aktiv branch mavjudligida
+  const canSeeServices = (p.canViewServices || currentUser.role?.name?.toLowerCase() === 'admin');
+  const canSeeVendors  = (p.canViewVendors  || currentUser.role?.name?.toLowerCase() === 'admin');
+  const { data: rawServices = [] } = useServices(canSeeServices ? activeBranchId : undefined);
+  const { data: rawVendors  = [] } = useVendors(canSeeVendors  ? activeBranchId : undefined);
+  const services = rawServices;
+  const vendors  = rawVendors;
+
+  // Filter out admin/owner roles from assignee employees — same logic as before
+  const employees = (rawEmployees as any[]).filter((emp: any) => {
+    const roleName = emp.role?.name?.toLowerCase() || '';
+    return emp.login !== 'admin' &&
+      roleName !== 'admin' &&
+      roleName !== 'superadmin' &&
+      roleName !== 'rahbar' &&
+      roleName !== 'owner';
+  });
+
+  const isLoading = colsLoading || tasksLoading;
+  const invalidate = useInvalidate();
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, type: 'task' | 'column', id: string, title: string }>({ isOpen: false, type: 'task', id: '', title: '' });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -85,61 +112,29 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   // Kanban search
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchData = async (silent = false) => {
-    try {
-      if (!silent) setIsLoading(true);
-      // Default kanban auto-creation removed — each branch builds its own funnel manually.
-      const [colRes, empRes, ptRes, custRes, taskRes, svcRes, branchRes, vendorRes] = await Promise.all([
-        tasksApi.getColumns(activeBranchId).catch(e => { console.error("Columns load error:", e); return { data: [] }; }),
-        employeesApi.findAll().catch(e => { console.error("Employees load error:", e); return { data: [] }; }),
-        paymentTypesApi.findAll().catch(e => { console.error("Payment types load error:", e); return { data: [] }; }),
-        customersApi.findAll(activeBranchId).catch(e => { console.error("Customers load error:", e); return { data: [] }; }),
-        tasksApi.findAll(activeBranchId).catch(e => { console.error("Tasks load error:", e); return { data: [] }; }),
-        (activeBranchId && activeBranchId !== '__main__' && (p.canViewServices || currentUser.role?.name?.toLowerCase() === 'admin')) ? servicesApi.findAll(activeBranchId).catch(e => { console.error("Services load error:", e); return { data: [] }; }) : Promise.resolve({ data: [] }),
-        branchesApi.findAll().catch(e => { console.error("Branches load error:", e); return { data: [] }; }),
-        (activeBranchId && activeBranchId !== '__main__' && (p.canViewVendors || currentUser.role?.name?.toLowerCase() === 'admin')) ? vendorsApi.findAll(activeBranchId).catch(e => { console.error("Vendors load error:", e); return { data: [] }; }) : Promise.resolve({ data: [] }),
-      ]);
-      setColumns(colRes.data || []);
-      const filteredEmployees = (empRes.data || []).filter((emp: any) => {
-        const roleName = emp.role?.name?.toLowerCase() || '';
-        return emp.login !== 'admin' &&
-          roleName !== 'admin' &&
-          roleName !== 'superadmin' &&
-          roleName !== 'rahbar' &&
-          roleName !== 'owner';
-      });
-      setEmployees(filteredEmployees);
-      setPaymentTypes(ptRes.data || []);
-      setCustomers(custRes.data || []);
-      setTasks(taskRes.data || []);
-      setServices(svcRes.data || []);
-      setBranches(branchRes.data || []);
-      setVendors(vendorRes.data || []);
-
-      // Fetch min prepayment threshold from system settings
-      settingsApi.get('MIN_PREPAYMENT_PERCENTAGE')
-        .then(r => { if (r.data?.value) setMinPrepaymentPct(Number(r.data.value)); })
-        .catch(() => setMinPrepaymentPct(70));
-    } catch (err) {
-      showStatus('error', "Ma'lumotlarni yuklashda xatolik yuz berdi!");
-      console.error("Ma'lumotlarni yuklashda xato:", err);
-    } finally {
-      if (!silent) setIsLoading(false);
-    }
+  // fetchData() — backward-compat shim. Mutation handler'lar buni chaqirib qoladi.
+  // Endi state setlamaydi; RQ cache'ini invalidate qiladi va RQ avtomatik refetch qiladi.
+  const fetchData = async (_silent = false) => {
+    invalidate.tasks();
+    invalidate.taskColumns();
+    invalidate.customers();
+    // Other resources (employees, services, vendors, branches, paymentTypes) rarely
+    // change as side-effect of task mutations — they self-refresh on their own staleTime.
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [activeBranchId]);
+  // Departments — RQ hook bilan, manual fetch effect o'rniga
+  const { data: departments = [] } = useDepartments(
+    activeBranchId && activeBranchId !== '__main__' ? activeBranchId : undefined
+  );
+  // Reset selected department when active branch changes
+  useEffect(() => { setSelectedDepartmentId(''); }, [activeBranchId]);
 
-  // Fetch departments scoped to the active branch. Empty array if no branch.
+  // Fetch min prepayment threshold from system settings (one-time, not branch-scoped)
   useEffect(() => {
-    setSelectedDepartmentId(''); // reset when branch changes
-    if (!activeBranchId || activeBranchId === '__main__') { setDepartments([]); return; }
-    departmentsApi.findAll(activeBranchId)
-      .then(r => setDepartments(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setDepartments([]));
-  }, [activeBranchId]);
+    settingsApi.get('MIN_PREPAYMENT_PERCENTAGE')
+      .then(r => { if (r.data?.value) setMinPrepaymentPct(Number(r.data.value)); })
+      .catch(() => setMinPrepaymentPct(70));
+  }, []);
 
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text });
@@ -193,8 +188,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   // Bajaruvchi (Task Routing)
   const [executorType, setExecutorType] = useState<'self' | 'branch' | 'vendor'>('self');
   const [executorBranchId, setExecutorBranchId] = useState('');
-  // Departments — analytical tag, optional. Fetched per active branch.
-  const [departments, setDepartments] = useState<any[]>([]);
+  // Departments — fetched via useDepartments() RQ hook below.
   const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
   // Vendor assignment (used when executorType === 'vendor')
   const [vendorAssign, setVendorAssign] = useState({ vendorId: '', amount: '', note: '' });
@@ -666,8 +660,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         value: newOptionForm.value,
         priceAdd: Number(newOptionForm.priceAdd) || 0,
       }, activeBranchId);
-      const svcRes = await servicesApi.findAll(activeBranchId);
-      setServices(svcRes.data || []);
+      // Invalidate services cache; RQ will refetch. For the immediate options
+      // update we need fresh data — fetch once inline, then invalidate for cache.
+      const svcRes = await servicesApi.findAll(activeBranchId!);
+      invalidate.services();
       const updatedSvc = (svcRes.data || []).find((s: any) => s.id === currentOrderService.serviceId);
       if (updatedSvc) setSelectedServiceOptions(updatedSvc.options || []);
       setNewOptionForm({ name: '', value: '', priceAdd: '' });
@@ -718,8 +714,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 z-10 mx-1 sm:mx-0">
         <div>
-          <h2 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">Xizmatlar & Kanban</h2>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">Ish jarayonini boshqarish</p>
+          <h2 className="text-base font-bold text-slate-800 tracking-tight flex items-center gap-2 px-1">Xizmatlar & Kanban</h2>
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">Ish jarayonini boshqarish</p>
         </div>
 
         {/* Search input */}
@@ -735,22 +731,22 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors text-xs font-black"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors text-xs font-bold"
             >✕</button>
           )}
         </div>
 
         <div className="flex flex-row flex-wrap items-center gap-2">
-          <button onClick={openArxivModal} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-violet-400 hover:text-violet-500 transition-all flex items-center gap-1.5 whitespace-nowrap">
+          <button onClick={openArxivModal} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-violet-400 hover:text-violet-500 transition-all flex items-center gap-1.5 whitespace-nowrap">
             <Archive size={12} /> ARXIV
           </button>
           {p.canManageColumns && (
-            <button onClick={() => setIsNewColumnModalOpen(true)} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-black uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
+            <button onClick={() => setIsNewColumnModalOpen(true)} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
               + BOSQICH
             </button>
           )}
           {canCreateTask && (
-            <button onClick={() => openNewTaskModal()} className="flex items-center gap-1.5 h-9 px-4 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all whitespace-nowrap">
+            <button onClick={() => openNewTaskModal()} className="flex items-center gap-1.5 h-9 px-4 bg-[#FF6B00] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all whitespace-nowrap">
               <Plus size={13} strokeWidth={3} /> BUYURTMA
             </button>
           )}
@@ -760,19 +756,29 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       {/* Kanban Board Container */}
       <div className="flex-1 flex gap-4 sm:gap-6 overflow-x-auto pb-8 items-start snap-x custom-scroll px-1 sm:px-0" style={{ minHeight: '65vh' }}>
         {isLoading ? (
-          <div className="w-full flex items-center justify-center" style={{ minHeight: '60vh' }}>
-            <LoadingSpinner size="lg" />
-          </div>
+          <div className="w-full"><SkeletonKanban columns={4} /></div>
         ) : columns.length === 0 ? (
-          <div className="w-full h-96 flex flex-col items-center justify-center text-slate-400/50 gap-3">
-            <ClipboardList size={48} className="mb-2" />
-            <p className="font-black uppercase tracking-widest text-xs italic">Bo'limni tanlang</p>
-            <p className="text-[10px] font-bold text-slate-400 text-center max-w-xs">Kanban endi bo'limlar bo'yicha ajratilgan. Yuqoridagi filtrdan bo'lim tanlang.</p>
+          <div className="w-full h-96 flex flex-col items-center justify-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-400">
+              <ClipboardList size={28} />
+            </div>
+            <p className="text-base font-bold text-slate-800">Kanban bosqichlari yo'q</p>
+            <p className="text-sm text-slate-500 text-center max-w-sm">Birinchi navbatda Kanban ustunlarini yarating (Yangi → Jarayonda → Tayyor kabi). Sozlamalar bo'limidan qo'shing.</p>
           </div>
-        ) : columns.length === 0 ? (
-          <div className="w-full h-96 flex flex-col items-center justify-center text-slate-400/50">
-            <ClipboardList size={48} className="mb-4" />
-            <p className="font-black uppercase tracking-widest text-xs italic">Bosqichlar mavjud emas</p>
+        ) : tasks.length === 0 && !searchTerm ? (
+          <div className="w-full flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-400">
+              <ClipboardList size={28} />
+            </div>
+            <div className="text-center">
+              <p className="text-base font-bold text-slate-800 mb-1">Hali buyurtma yo'q</p>
+              <p className="text-sm text-slate-500 max-w-md">Kanban ustunlari tayyor. Birinchi buyurtmangizni yarating va uni bosqichlarda kuzating.</p>
+            </div>
+            {canCreateTask && (
+              <button onClick={() => openNewTaskModal()} className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm flex items-center gap-2 mt-2">
+                <Plus size={16} /> Birinchi buyurtmani yaratish
+              </button>
+            )}
           </div>
         ) : (
           columns.map(col => {
@@ -815,8 +821,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 <div className="flex justify-between items-center px-3 mb-3 mt-1 group">
                   <div className="flex items-center gap-1.5 flex-1 pr-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
-                    <h3 className="font-black text-slate-800 text-[10px] uppercase tracking-widest truncate">{col.title}</h3>
-                    <span className="bg-white text-slate-500 text-[9px] font-black px-1.5 py-0.5 rounded-md border border-slate-200/50 shadow-sm">{colTasks.length}</span>
+                    <h3 className="font-bold text-slate-800 text-[10px] uppercase tracking-widest truncate">{col.title}</h3>
+                    <span className="bg-white text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded-md border border-slate-200/50 shadow-sm">{colTasks.length}</span>
                   </div>
                   {p.canManageColumns && (
                     <button onClick={() => setConfirmModal({ isOpen: true, type: 'column', id: col.id, title: col.title })} className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={12} /></button>
@@ -825,6 +831,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                 {/* Column Tasks Scrollable Area */}
                 <div className="flex flex-col gap-3 sm:gap-4 flex-1 overflow-y-auto px-1 pb-4 custom-scroll max-h-[70vh]">
+                  {colTasks.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-8 px-3 text-center border-2 border-dashed border-slate-200 rounded-xl">
+                      <ClipboardList size={20} className="text-slate-300 mb-2" />
+                      <p className="text-[10px] font-semibold text-slate-400">Bo'sh</p>
+                    </div>
+                  )}
                   {colTasks.map(task => {
                     const isMyTask = myId ? parseJson(task.assignees).includes(myId) : false;
                     return (
@@ -841,95 +853,33 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                             : `bg-white ${getCardUrgencyClass(task)} hover:shadow-orange-500/10`
                           }`}
                       >
-                        {/* displayId badge + "my task" badge row — always shown */}
-                        <div className="flex items-center gap-1.5 mb-2 -mt-0.5 flex-wrap">
-                          {task.displayId ? (
-                            <span className="text-[8px] font-black font-mono bg-violet-50 text-violet-600 border border-violet-200 px-2 py-0.5 rounded-md tracking-widest uppercase">
-                              {task.displayId}
-                            </span>
-                          ) : (
-                            <span className="text-[8px] font-black font-mono bg-slate-50 text-slate-400 border border-slate-200 px-2 py-0.5 rounded-md tracking-widest">
-                              #{task.id.slice(-6).toUpperCase()}
-                            </span>
-                          )}
-                          {(task as any).vendor && (
-                            <span className="text-[8px] font-black bg-amber-500 text-white px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1 shadow-sm shadow-amber-500/20">
-                              <Handshake size={7} /> {(task as any).vendor.name}
-                            </span>
-                          )}
-                          {isMyTask && (
-                            <span className="text-[8px] font-black bg-sky-500 text-white px-2 py-0.5 rounded-md uppercase tracking-widest flex items-center gap-1">
-                              <Users size={7} /> Mening taskım
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="font-black text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-orange-700 transition-colors uppercase tracking-tight line-clamp-2">
+                        <TaskIdentityBadges task={task as any} vendor={(task as any).vendor} isMyTask={isMyTask} />
+                        <h4 className="font-bold text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-orange-700 transition-colors uppercase tracking-tight line-clamp-2">
                           {task.orderName && <span className="text-orange-600">{task.orderName} — </span>}
                           {task.title}
                         </h4>
                         <p className="text-[10px] font-medium text-slate-500 mb-3 line-clamp-2 leading-normal italic">{task.description}</p>
 
-                        {/* Deadline / Age badges */}
-                        {(() => {
-                          const now = new Date();
-                          const created = task.createdAt ? new Date(task.createdAt) : null;
-                          const deadline = task.deadlineAt ? new Date(task.deadlineAt) : null;
-                          const ageHours = created ? (now.getTime() - created.getTime()) / 3600000 : 0;
-                          const isPastDeadline = deadline && now > deadline;
-                          const isDeadlineSoon = deadline && !isPastDeadline && (deadline.getTime() - now.getTime()) < 86400000;
-                          const isOld = !deadline && ageHours > 10;
-                          return (
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {isPastDeadline && (
-                                <span className="text-[8px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-md border border-red-200 uppercase flex items-center gap-1 animate-pulse">
-                                  <AlertTriangle size={8} /> MUDDAT O'TDI
-                                </span>
-                              )}
-                              {isDeadlineSoon && (
-                                <span className="text-[8px] font-black bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md border border-orange-200 uppercase flex items-center gap-1">
-                                  <Clock size={8} /> {deadline!.toLocaleDateString('uz-UZ')} {deadline!.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              )}
-                              {!isPastDeadline && !isDeadlineSoon && deadline && (
-                                <span className="text-[8px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md border border-amber-100 uppercase flex items-center gap-1">
-                                  <Clock size={8} /> {deadline.toLocaleDateString('uz-UZ')} {deadline.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              )}
-                              {isOld && (
-                                <span className="text-[8px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200 uppercase flex items-center gap-1 animate-pulse">
-                                  <AlertTriangle size={8} /> {Math.floor(ageHours)}S KUTMOQDA
-                                </span>
-                              )}
-                              {!activeBranchId && task.branchId && (() => {
-                                const br = branches.find((b: any) => b.id === task.branchId);
-                                return br ? (
-                                  <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-200 uppercase flex items-center gap-1">
-                                    <Building2 size={8} /> {br.name}
-                                  </span>
-                                ) : null;
-                              })()}
-                            </div>
-                          );
-                        })()}
+                        <TaskDeadlineBadges task={task as any} activeBranchId={activeBranchId} branches={branches} />
 
                         <div className="flex flex-wrap gap-1 mb-3">
                           {task.totalAmount > 0 && (
-                            <span className="text-[8px] font-black bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md border border-emerald-100 uppercase tracking-tighter flex items-center gap-1">
+                            <span className="text-[8px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md border border-emerald-100 uppercase tracking-tighter flex items-center gap-1">
                               <Wallet size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.totalAmount)}
                             </span>
                           )}
                           {task.remainingAmount > 0 && (
-                            <span className="text-[8px] font-black bg-rose-50 text-rose-600 px-2 py-1 rounded-md border border-rose-100 uppercase tracking-tighter flex items-center gap-1">
+                            <span className="text-[8px] font-bold bg-rose-50 text-rose-600 px-2 py-1 rounded-md border border-rose-100 uppercase tracking-tighter flex items-center gap-1">
                               <AlertCircle size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.remainingAmount)}
                             </span>
                           )}
                           {(task as any).executorBranch && (
-                            <span className="text-[8px] font-black bg-violet-50 text-violet-600 px-2 py-1 rounded-md border border-violet-100 uppercase tracking-tighter flex items-center gap-1">
+                            <span className="text-[8px] font-bold bg-violet-50 text-violet-600 px-2 py-1 rounded-md border border-violet-100 uppercase tracking-tighter flex items-center gap-1">
                               <ArrowRight size={9} /> {(task as any).executorBranch.name}
                             </span>
                           )}
                           {(task as any).vendor && (
-                            <span className="text-[8px] font-black bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 uppercase tracking-tighter flex items-center gap-1">
+                            <span className="text-[8px] font-bold bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 uppercase tracking-tighter flex items-center gap-1">
                               <Handshake size={9} /> {(task as any).vendor.name}
                             </span>
                           )}
@@ -940,7 +890,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                             {parseJson(task.assignees).map((id: string) => {
                               const emp = employees.find(e => e.id === id);
                               return (
-                                <div key={id} title={emp?.fullName} className="w-5 h-5 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[9px] font-black text-orange-500 shadow-sm">
+                                <div key={id} title={emp?.fullName} className="w-5 h-5 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[9px] font-bold text-orange-500 shadow-sm">
                                   {emp?.fullName?.charAt(0).toUpperCase() || '?'}
                                 </div>
                               );
@@ -951,7 +901,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                           </div>
                           <div className="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
                             <Users size={10} className="text-slate-300" />
-                            <span className="text-[9px] font-black text-slate-400">{parseJson(task.assignees).length}</span>
+                            <span className="text-[9px] font-bold text-slate-400">{parseJson(task.assignees).length}</span>
                           </div>
                         </div>
                       </div>
@@ -967,7 +917,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         {p.canManageColumns && (
           <button onClick={() => setIsNewColumnModalOpen(true)} className="min-w-[280px] h-20 border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 text-slate-400 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/30 transition-all group shrink-0">
             <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span className="font-black text-[11px] uppercase tracking-widest">Yangi Bosqich</span>
+            <span className="font-bold text-[11px] uppercase tracking-widest">Yangi Bosqich</span>
           </button>
         )}
       </div>
@@ -983,13 +933,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {/* Order Details */}
           <div className="bg-white p-5 rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Buyurtma Nomi (Masalan: Bahor To'yi, Reklama Loyiha)</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Buyurtma Nomi (Masalan: Bahor To'yi, Reklama Loyiha)</label>
               <input
                 type="text"
                 placeholder="Buyurtma nomini kiriting..."
                 value={newTaskForm.orderName}
                 onChange={e => setNewTaskForm(f => ({ ...f, orderName: e.target.value }))}
-                className="input-minimal font-black text-slate-700 h-12 border-2"
+                className="input-minimal font-bold text-slate-700 h-12 border-2"
               />
             </div>
           </div>
@@ -1014,7 +964,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
           {/* Service Items List */}
           <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
               <Layers size={13} /> Buyurtma Tarkibi ({newTaskForm.items.length})
             </h4>
 
@@ -1024,13 +974,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   <div key={idx} className="flex items-center justify-between bg-white border-2 border-slate-100 p-3 rounded-2xl animate-slide-up group">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-slate-800 uppercase tracking-tight">{it.title}</span>
-                        <span className="text-[9px] font-black bg-orange-50 text-orange-600 px-2 py-0.5 rounded uppercase">x {it.quantity}</span>
+                        <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">{it.title}</span>
+                        <span className="text-[9px] font-bold bg-orange-50 text-orange-600 px-2 py-0.5 rounded uppercase">x {it.quantity}</span>
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 mt-0.5 italic">{it.optionsSummary}</p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-black text-slate-800">{it.totalAmount.toLocaleString()} UZS</span>
+                      <span className="text-sm font-bold text-slate-800">{it.totalAmount.toLocaleString()} UZS</span>
                       <button type="button" onClick={() => removeItemFromOrder(idx)} className="text-slate-300 hover:text-rose-500 transition-colors">
                         <Trash2 size={16} />
                       </button>
@@ -1042,7 +992,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
             {/* Add Item Form */}
             <div className="bg-orange-50/50 border border-orange-100 rounded-3xl p-5 space-y-4">
-              <h4 className="text-[9px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2 mb-2">
+              <h4 className="text-[9px] font-bold text-orange-600 uppercase tracking-widest flex items-center gap-2 mb-2">
                 <Plus size={13} /> Xizmat Qo'shish
               </h4>
 
@@ -1056,13 +1006,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               {currentOrderService.serviceId && (
                 <div className="space-y-4 animate-fade-in">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest">
+                    <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest">
                       Opsiyalar: {selectedServiceOptions.length === 0 && <span className="text-slate-300 font-bold normal-case">(mavjud emas)</span>}
                     </p>
                     <button
                       type="button"
                       onClick={() => { setNewOptionForm({ name: '', value: '', priceAdd: '' }); setIsNewOptionModalOpen(true); }}
-                      className="text-[8px] font-black bg-orange-100 text-orange-600 px-2 py-1 rounded-lg hover:bg-orange-200 transition-all flex items-center gap-1"
+                      className="text-[8px] font-bold bg-orange-100 text-orange-600 px-2 py-1 rounded-lg hover:bg-orange-200 transition-all flex items-center gap-1"
                     >
                       <Plus size={9} /> YANGI OPSIYA
                     </button>
@@ -1077,12 +1027,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                               key={opt.id}
                               type="button"
                               onClick={() => toggleOption(opt.id)}
-                              className={`px-3 py-2 rounded-xl text-[10px] font-black flex items-center gap-2 border-2 transition-all ${active ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-500/20' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
+                              className={`px-3 py-2 rounded-xl text-[10px] font-bold flex items-center gap-2 border-2 transition-all ${active ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-500/20' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
                                 }`}
                             >
                               {active && <CheckCircle2 size={12} />}
                               <span>{opt.name}: {opt.value}</span>
-                              <span className={`font-black ${active ? 'text-orange-200' : 'text-orange-500'}`}>{Number(opt.priceAdd).toLocaleString()} UZS</span>
+                              <span className={`font-bold ${active ? 'text-orange-200' : 'text-orange-500'}`}>{Number(opt.priceAdd).toLocaleString()} UZS</span>
                             </button>
                           );
                         })}
@@ -1092,21 +1042,21 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[9px] font-black text-orange-500 uppercase tracking-widest mb-1.5">Miqdor <span className="text-slate-400 capitalize font-medium">({services.find(s => s.id === currentOrderService.serviceId)?.unit})</span></label>
+                      <label className="block text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1.5">Miqdor <span className="text-slate-400 capitalize font-medium">({services.find(s => s.id === currentOrderService.serviceId)?.unit})</span></label>
                       <input
                         type="number" min="0.1" step="0.1"
                         value={currentOrderService.quantity}
                         onChange={e => recalculatePrice({ quantity: e.target.value })}
-                        className="input-minimal font-black text-orange-700 h-11 bg-white border-2 border-orange-100"
+                        className="input-minimal font-bold text-orange-700 h-11 bg-white border-2 border-orange-100"
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-black text-orange-500 uppercase tracking-widest mb-1.5">Koeffitsiyent</label>
+                      <label className="block text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1.5">Koeffitsiyent</label>
                       <input
                         type="number" min="0.1" step="0.1"
                         value={currentOrderService.coefficient}
                         onChange={e => recalculatePrice({ coefficient: e.target.value })}
-                        className="input-minimal font-black text-orange-700 h-11 bg-white border-2 border-orange-100"
+                        className="input-minimal font-bold text-orange-700 h-11 bg-white border-2 border-orange-100"
                       />
                     </div>
                   </div>
@@ -1114,13 +1064,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   {priceBreakdown && (
                     <div className="bg-white border-2 border-orange-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Xizmat summasi</p>
-                        <span className="text-lg font-black text-orange-700">{priceBreakdown.total.toLocaleString()} UZS</span>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Xizmat summasi</p>
+                        <span className="text-lg font-bold text-orange-700">{priceBreakdown.total.toLocaleString()} UZS</span>
                       </div>
                       <button
                         type="button"
                         onClick={addItemToOrder}
-                        className="w-full sm:w-auto h-11 px-6 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
+                        className="w-full sm:w-auto h-11 px-6 bg-orange-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
                       >
                         RO'YXATGA QO'SHISH
                       </button>
@@ -1135,23 +1085,23 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <div className="md:col-span-2 p-4 sm:p-5 bg-emerald-50/50 border border-emerald-100 rounded-3xl space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3">
                 <div>
-                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Hisoblangan jami narx</p>
-                  <span className="text-2xl font-black text-slate-800">{Number(newTaskForm.totalAmount).toLocaleString()} UZS</span>
+                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Hisoblangan jami narx</p>
+                  <span className="text-2xl font-bold text-slate-800">{Number(newTaskForm.totalAmount).toLocaleString()} UZS</span>
                 </div>
                 <div className="w-full sm:w-64">
-                  <label className="block text-[10px] font-black text-emerald-600 uppercase mb-2">Manual o'zgartirish</label>
+                  <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-2">Manual o'zgartirish</label>
                   <CurrencyInput
                     value={newTaskForm.manualTotal}
                     onChange={(uzs) => setNewTaskForm(f => ({ ...f, manualTotal: uzs ? String(uzs) : "" }))}
                     colorClass="text-emerald-600"
-                    className="input-minimal font-black border-2 border-emerald-100 bg-white"
+                    className="input-minimal font-bold border-2 border-emerald-100 bg-white"
                   />
                 </div>
               </div>
 
               {newTaskForm.manualTotal && Number(newTaskForm.manualTotal) !== Number(newTaskForm.totalAmount) && Number(newTaskForm.totalAmount) !== 0 && (
                 <div className="animate-fade-in space-y-2">
-                  <label className="block text-[10px] font-black text-rose-500 uppercase px-1">Narx o'zgargani uchun izoh (sabab) yozing *</label>
+                  <label className="block text-[10px] font-bold text-rose-500 uppercase px-1">Narx o'zgargani uchun izoh (sabab) yozing *</label>
                   <textarea
                     required
                     value={newTaskForm.justification}
@@ -1164,7 +1114,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Sizga berilgan zakolat</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Sizga berilgan zakolat</label>
               <CurrencyInput
                 value={newTaskForm.depositAmount}
                 onChange={(uzs) => setNewTaskForm(f => ({ ...f, depositAmount: String(uzs) }))}
@@ -1183,7 +1133,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <div className="flex items-start gap-3">
                       <AlertOctagon className="text-amber-500 mt-0.5 shrink-0" size={18} />
                       <div>
-                        <p className="text-xs font-black text-amber-800 uppercase tracking-tight">Zakolat kam!</p>
+                        <p className="text-xs font-bold text-amber-800 uppercase tracking-tight">Zakolat kam!</p>
                         <p className="text-[11px] font-bold text-amber-700 mt-0.5">
                           Zakolat <strong>{pct}%</strong> ni tashkil etadi. Tavsiya etilgan minimal: <strong>{minPrepaymentPct}%</strong>
                         </p>
@@ -1196,7 +1146,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         onChange={e => setPrepaymentWarningAccepted(e.target.checked)}
                         className="w-4 h-4 accent-amber-500"
                       />
-                      <span className="text-[11px] font-black text-amber-700 uppercase">Men bu holat haqida xabardorman va davom etishga ruxsatim bor</span>
+                      <span className="text-[11px] font-bold text-amber-700 uppercase">Men bu holat haqida xabardorman va davom etishga ruxsatim bor</span>
                     </label>
                   </div>
                 </div>
@@ -1204,15 +1154,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             })()}
 
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">To'lov Turi (Zakolat uchun)</label>
-              <select value={newTaskForm.paymentTypeId} onChange={(e) => setNewTaskForm({ ...newTaskForm, paymentTypeId: e.target.value })} className="select-minimal h-12 font-black">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">To'lov Turi (Zakolat uchun)</label>
+              <select value={newTaskForm.paymentTypeId} onChange={(e) => setNewTaskForm({ ...newTaskForm, paymentTypeId: e.target.value })} className="select-minimal h-12 font-bold">
                 <option value="">Tanlang...</option>
                 {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
               </select>
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1 px-1 flex justify-between">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 px-1 flex justify-between">
                 Mas'ul Jamoani Tanlang
                 <span className="text-sky-500">{newTaskForm.assigneeIds.length} ta tanlandi</span>
               </label>
@@ -1220,7 +1170,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               {/* Bajaruvchi — executor routing (self / branch / vendor) */}
               {(branches.length > 0 || vendors.length > 0) && (isAdmin || p.canAssignToOtherBranches) && (
                 <div className="mb-3 mt-5 space-y-2 animate-fade-in">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Bajaruvchi</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Bajaruvchi</p>
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { key: 'self', label: "O'zimiz", icon: <Building2 size={13} /> },
@@ -1231,7 +1181,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         key={opt.key}
                         type="button"
                         onClick={() => { setExecutorType(opt.key as any); setExecutorBranchId(''); }}
-                        className={`flex items-center justify-center gap-1.5 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${executorType === opt.key
+                        className={`flex items-center justify-center gap-1.5 h-9 rounded-xl text-[10px] font-bold uppercase tracking-widest border-2 transition-all ${executorType === opt.key
                           ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/20'
                           : 'bg-white border-slate-200 text-slate-500 hover:border-orange-300'
                           }`}
@@ -1244,7 +1194,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <select
                       value={executorBranchId}
                       onChange={e => { setExecutorBranchId(e.target.value); setNewTaskForm(f => ({ ...f, assigneeIds: [] })); }}
-                      className="select-minimal h-10 font-black text-orange-600 border-orange-300 w-full"
+                      className="select-minimal h-10 font-bold text-orange-600 border-orange-300 w-full"
                     >
                       <option value="">— Bajaruvchi filialni tanlang —</option>
                       {branches.filter(b => b.id !== activeBranchId).map((b: any) => (
@@ -1257,7 +1207,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       <select
                         value={vendorAssign.vendorId}
                         onChange={e => setVendorAssign(v => ({ ...v, vendorId: e.target.value }))}
-                        className="select-minimal h-10 font-black text-orange-700 border-orange-200 col-span-1"
+                        className="select-minimal h-10 font-bold text-orange-700 border-orange-200 col-span-1"
                       >
                         <option value="">— Hamkorni tanlang —</option>
                         {vendors.map((v: any) => (
@@ -1267,7 +1217,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       <CurrencyInput
                         value={vendorAssign.amount}
                         onChange={v => setVendorAssign(f => ({ ...f, amount: v ? String(v) : '' }))}
-                        colorClass="text-orange-600 font-black h-10 border-orange-200 col-span-1"
+                        colorClass="text-orange-600 font-bold h-10 border-orange-200 col-span-1"
                       />
                     </div>
                   )}
@@ -1278,7 +1228,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   Visible only if the active branch has at least one department defined. */}
               {departments.length > 0 && (
                 <div className="space-y-2 mt-5 mb-7">
-                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                  <label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
                     <Layers size={11} /> Bo'lim (ixtiyoriy)
                   </label>
                   <select
@@ -1306,7 +1256,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     newTaskForm.assigneeIds.map(id => {
                       const emp = employees.find(e => e.id === id);
                       return (
-                        <span key={id} className="bg-white px-3 py-1 rounded-xl border border-sky-100 text-[10px] font-black text-sky-700 shadow-sm flex items-center gap-1.5 animate-fade-in">
+                        <span key={id} className="bg-white px-3 py-1 rounded-xl border border-sky-100 text-[10px] font-bold text-sky-700 shadow-sm flex items-center gap-1.5 animate-fade-in">
                           {emp?.fullName}
                           <button type="button" onClick={(e) => { e.stopPropagation(); toggleAssigneeForNewTask(id); }} className="hover:text-rose-500">×</button>
                         </span>
@@ -1347,11 +1297,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                               className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${active ? 'bg-sky-50 text-sky-700' : 'hover:bg-slate-50 text-slate-600'}`}
                             >
                               <div className="text-left">
-                                <p className="text-xs font-black uppercase tracking-tight">{emp.fullName}</p>
+                                <p className="text-xs font-bold uppercase tracking-tight">{emp.fullName}</p>
                                 <p className="text-[10px] font-bold opacity-60">{emp.role?.name || 'Xodim'}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                                {busy && <span className="text-[8px] font-black bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
+                                {busy && <span className="text-[8px] font-bold bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
                                 {active && <CheckCircle2 size={16} className="text-sky-500" />}
                               </div>
                             </button>
@@ -1365,14 +1315,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
             {/* Deadline field */}
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1 flex items-center gap-1.5">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1 flex items-center gap-1.5">
                 <Clock size={11} className="text-amber-500" /> Topshiriq muddati (ixtiyoriy)
               </label>
               <input
                 type="datetime-local"
                 value={newTaskForm.deadlineAt}
                 onChange={e => setNewTaskForm(f => ({ ...f, deadlineAt: e.target.value }))}
-                className="input-minimal font-black text-amber-700 border-2 border-amber-100 bg-amber-50/30 h-12"
+                className="input-minimal font-bold text-amber-700 border-2 border-amber-100 bg-amber-50/30 h-12"
               />
             </div>
 
@@ -1380,7 +1330,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <div className="flex flex-col sm:flex-row gap-4 pt-4 mt-6 border-t border-slate-100">
               <button
                 type="button"
-                className="h-12 sm:h-14 flex-1 rounded-2xl uppercase tracking-widest font-black text-[11px] border-2 border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 whitespace-nowrap px-6"
+                className="h-12 sm:h-14 flex-1 rounded-2xl uppercase tracking-widest font-bold text-[11px] border-2 border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 whitespace-nowrap px-6"
                 onClick={() => setIsNewTaskModalOpen(false)}
               >
                 Bekor qilish
@@ -1394,7 +1344,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   <button
                     type="submit"
                     disabled={blocked}
-                    className={`h-12 sm:h-14 flex-[1.5] rounded-2xl uppercase tracking-widest font-black shadow-xl active:scale-95 transition-all text-[11px] whitespace-nowrap px-6 ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
+                    className={`h-12 sm:h-14 flex-[1.5] rounded-2xl uppercase tracking-widest font-bold shadow-xl active:scale-95 transition-all text-[11px] whitespace-nowrap px-6 ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
                   >
                     Buyurtma Qo'shish
                   </button>
@@ -1415,13 +1365,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           footer={
             <div className="flex justify-between items-center w-full">
               <div className="flex flex-col">
-                <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5 px-0.5">Qolgan qarz</p>
-                <span className="text-sm font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-xl border border-rose-100">{formatCurrency(selectedTask.remainingAmount)}</span>
+                <p className="text-[9px] font-bold text-slate-400 uppercase mb-0.5 px-0.5">Qolgan qarz</p>
+                <span className="text-sm font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-xl border border-rose-100">{formatCurrency(selectedTask.remainingAmount)}</span>
               </div>
               {canMoveTask && (
                 <button
                   onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }}
-                  className="btn-primary flex items-center gap-3 h-14 px-8 sm:px-12 text-[10px] sm:text-[12px] font-black uppercase tracking-widest bg-gradient-to-r from-orange-500 to-orange-700 border-none shadow-xl shadow-orange-500/20 active:scale-95"
+                  className="btn-primary flex items-center gap-3 h-14 px-8 sm:px-12 text-[10px] sm:text-[12px] font-bold uppercase tracking-widest bg-gradient-to-r from-orange-500 to-orange-700 border-none shadow-xl shadow-orange-500/20 active:scale-95"
                 >
                   BOSQICHNI O'ZGARTIRISH <ArrowRight size={18} />
                 </button>
@@ -1431,28 +1381,28 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         >
           <div className="flex flex-col h-full">
             <div className="flex bg-slate-100/50 p-1 rounded-2xl mb-6">
-              <button onClick={() => setActiveTab('details')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'details' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TAFSILOTLAR</button>
-              <button onClick={() => setActiveTab('history')} className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TARIXI</button>
+              <button onClick={() => setActiveTab('details')} className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${activeTab === 'details' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TAFSILOTLAR</button>
+              <button onClick={() => setActiveTab('history')} className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}>TARIXI</button>
             </div>
 
             {activeTab === 'details' ? (
               <div className="space-y-6 animate-fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-sky-200 transition-all">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Mijoz</p>
-                    <p className="font-black text-slate-800 text-sm">{selectedTask.customerName || "Noma'lum"}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Mijoz</p>
+                    <p className="font-bold text-slate-800 text-sm">{selectedTask.customerName || "Noma'lum"}</p>
                     <p className="text-[11px] font-bold text-sky-500 mt-1.5">{selectedTask.customerPhone || 'Tel kiritilmagan'}</p>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="flex justify-between items-center mb-2">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mas'ul Jamoa</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mas'ul Jamoa</p>
                       {canEditTask && (
-                        <button onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} className="text-[10px] font-black text-sky-600 hover:text-sky-700 transition-colors uppercase">Tahrirlash</button>
+                        <button onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} className="text-[10px] font-bold text-sky-600 hover:text-sky-700 transition-colors uppercase">Tahrirlash</button>
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {parseJson(selectedTask.assignees).map((id: string) => (
-                        <span key={id} className="bg-white px-3 py-1 rounded-lg border border-slate-200 text-[10px] font-black text-slate-600 shadow-sm">{employees.find(e => e.id === id)?.fullName || 'Xodim'}</span>
+                        <span key={id} className="bg-white px-3 py-1 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-600 shadow-sm">{employees.find(e => e.id === id)?.fullName || 'Xodim'}</span>
                       ))}
                     </div>
                   </div>
@@ -1460,8 +1410,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                   <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
-                    <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black text-sky-500 uppercase hover:text-sky-700 transition-colors flex items-center gap-1">
+                    <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
+                    <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-bold text-sky-500 uppercase hover:text-sky-700 transition-colors flex items-center gap-1">
                       <Plus size={11} /> Fayl yuklash
                     </button>
                     <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} />
@@ -1471,7 +1421,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   {/* Attached files */}
                   {parseJson(selectedTask.attachments).length > 0 && (
                     <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Yuklangan fayllar ({parseJson(selectedTask.attachments).length})</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Yuklangan fayllar ({parseJson(selectedTask.attachments).length})</p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {parseJson(selectedTask.attachments).map((raw: any, i: number) => {
                           const att = parseAttachmentItem(raw);
@@ -1490,7 +1440,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" /></svg>
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-black text-slate-700 truncate">{att.name}</p>
+                                <p className="text-[10px] font-bold text-slate-700 truncate">{att.name}</p>
                                 <p className="text-[9px] text-slate-400 font-bold uppercase">Yuklab olish</p>
                               </div>
                             </a>
@@ -1503,8 +1453,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                   <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 font-sans"><Package size={14} /> XLMASHYO SARFI (TAXMINIY)</h4>
-                    <button onClick={() => setIsOverrideModalOpen(true)} className="text-[10px] font-black text-violet-600 hover:text-violet-700 transition-colors uppercase">Sarfni tahrirlash</button>
+                    <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 font-sans"><Package size={14} /> XLMASHYO SARFI (TAXMINIY)</h4>
+                    <button onClick={() => setIsOverrideModalOpen(true)} className="text-[10px] font-bold text-violet-600 hover:text-violet-700 transition-colors uppercase">Sarfni tahrirlash</button>
                   </div>
                   {overrides.length === 0 ? (
                     <p className="text-[10px] font-bold text-slate-300 italic">Xomashyo sarfi belgilanmagan</p>
@@ -1516,8 +1466,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                             <Package size={14} />
                           </div>
                           <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5 line-clamp-1">{ov.name}</p>
-                            <p className="text-xs font-black text-slate-800">{ov.quantity} {ov.unit}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5 line-clamp-1">{ov.name}</p>
+                            <p className="text-xs font-bold text-slate-800">{ov.quantity} {ov.unit}</p>
                           </div>
                         </div>
                       ))}
@@ -1527,7 +1477,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                 {canDeleteTask && (
                   <div className="flex justify-end pt-2">
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'task', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-black text-amber-400 hover:text-amber-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Archive size={14} /> Buyurtmani arxivlash</button>
+                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'task', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-bold text-amber-400 hover:text-amber-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Archive size={14} /> Buyurtmani arxivlash</button>
                   </div>
                 )}
               </div>
@@ -1536,22 +1486,22 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 {(!selectedTask.histories || selectedTask.histories.length === 0) ? (
                   <div className="py-20 flex flex-col items-center justify-center opacity-20">
                     <ClipboardList size={40} className="mb-4" />
-                    <p className="font-black uppercase text-xs">Tarixiy ma'lumotlar mavjud emas</p>
+                    <p className="font-bold uppercase text-xs">Tarixiy ma'lumotlar mavjud emas</p>
                   </div>
                 ) : (
                   selectedTask.histories.map((h: any, i: number) => (
                     <div key={i} className="flex gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 items-start hover:bg-white hover:shadow-sm transition-all">
-                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm font-black text-slate-400 text-xs">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm font-bold text-slate-400 text-xs">
                         {h.employee?.fullName?.charAt(0) || 'T'}
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
-                          <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{h.employee?.fullName || 'Tizim'}</p>
-                          <p className="text-[9px] font-black text-slate-300">
+                          <p className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">{h.employee?.fullName || 'Tizim'}</p>
+                          <p className="text-[9px] font-bold text-slate-300">
                             {new Date(h.createdAt).toLocaleDateString('uz-UZ')} {new Date(h.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
-                        <p className="text-[9px] font-black text-sky-500 mb-2 uppercase tracking-widest">{h.action}</p>
+                        <p className="text-[9px] font-bold text-sky-500 mb-2 uppercase tracking-widest">{h.action}</p>
                         <p className="text-xs font-semibold text-slate-500 leading-relaxed italic">{h.details}</p>
                         {h.note && (
                           <div className="mt-3 p-3 bg-white/80 rounded-xl border border-slate-200/60 shadow-inner">
@@ -1566,15 +1516,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             ) : activeTab === 'vendors' ? (
               <div className="space-y-5 animate-fade-in">
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                     <Handshake size={14} className="text-orange-500" /> Hamkorga biriktirish
                   </h4>
                   <div>
-                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkorni tanlang</label>
+                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkorni tanlang</label>
                     <select
                       value={vendorCostForm.vendorId}
                       onChange={e => setVendorCostForm(f => ({ ...f, vendorId: e.target.value }))}
-                      className="select-minimal font-black text-slate-700 h-11"
+                      className="select-minimal font-bold text-slate-700 h-11"
                     >
                       <option value="">— Biriktirilmagan —</option>
                       {vendors.map(v => (
@@ -1583,7 +1533,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Xizmat narxi (Hamkorga to'lanadigan summa)</label>
+                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Xizmat narxi (Hamkorga to'lanadigan summa)</label>
                     <CurrencyInput
                       value={vendorCostForm.amount}
                       onChange={(uzs) => setVendorCostForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
@@ -1612,7 +1562,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       }
                     }}
                     disabled={isUpdatingVendor}
-                    className="w-full h-12 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50"
+                    className="w-full h-12 bg-orange-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50"
                   >
                     {isUpdatingVendor ? 'SAQLANMOQDA...' : "SAQLASH"}
                   </button>
@@ -1646,23 +1596,23 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       {/* Revenue + Cost */}
                       <div className="grid grid-cols-2 divide-x divide-stone-200 border-b border-stone-200">
                         <div className="p-4">
-                          <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
-                          <p className="text-sm font-black text-stone-800 font-mono">{revenue.toLocaleString()} UZS</p>
+                          <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
+                          <p className="text-sm font-bold text-stone-800 font-mono">{revenue.toLocaleString()} UZS</p>
                         </div>
                         <div className="p-4">
-                          <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
-                          <p className="text-sm font-black text-stone-700 font-mono">{totalCost.toLocaleString()} UZS</p>
+                          <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
+                          <p className="text-sm font-bold text-stone-700 font-mono">{totalCost.toLocaleString()} UZS</p>
                         </div>
                       </div>
                       {/* Net Profit hero */}
                       <div className="p-4 border-b border-stone-200">
-                        <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">Sof Foyda</p>
+                        <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">Sof Foyda</p>
                         <div className="flex items-baseline gap-3">
-                          <p className={`text-2xl font-black font-mono tracking-tight ${netProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                          <p className={`text-2xl font-bold font-mono tracking-tight ${netProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
                             {netProfit.toLocaleString()} UZS
                           </p>
                           {revenue > 0 && (
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${netProfit >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${netProfit >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
                               {netProfit >= 0 ? '+' : ''}{margin.toFixed(1)}% marja
                             </span>
                           )}
@@ -1671,13 +1621,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       {/* Unit metrics */}
                       <div className="grid grid-cols-2 divide-x divide-stone-200">
                         <div className="p-4">
-                          <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
-                          <p className="text-[13px] font-black text-stone-700 font-mono">{unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} UZS</p>
+                          <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
+                          <p className="text-[13px] font-bold text-stone-700 font-mono">{unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} UZS</p>
                           <p className="text-[8px] text-stone-400 font-bold mt-0.5">{qty} dona asosida</p>
                         </div>
                         <div className="p-4">
-                          <p className="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
-                          <p className={`text-[13px] font-black font-mono ${unitProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                          <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
+                          <p className={`text-[13px] font-bold font-mono ${unitProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
                             {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} UZS
                           </p>
                         </div>
@@ -1688,7 +1638,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                 {/* ── Add Expense Form ── */}
                 <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-3">
-                  <p className="text-[8px] font-black text-stone-500 uppercase tracking-widest">Xarajat Qo'shish</p>
+                  <p className="text-[8px] font-bold text-stone-500 uppercase tracking-widest">Xarajat Qo'shish</p>
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       type="text"
@@ -1708,7 +1658,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     type="button"
                     onClick={handleAddExpense}
                     disabled={isAddingExpense || !expenseForm.expenseName.trim() || !expenseForm.amount}
-                    className="w-full h-10 bg-stone-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-900 transition-all active:scale-95"
+                    className="w-full h-10 bg-stone-800 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-900 transition-all active:scale-95"
                   >
                     {isAddingExpense ? 'QOSHILMOQDA...' : "+ XARAJAT QO'SHISH"}
                   </button>
@@ -1717,18 +1667,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 {/* ── Expense List ── */}
                 {taskExpenses.length === 0 ? (
                   <div className="py-10 flex items-center justify-center">
-                    <p className="text-[10px] font-black uppercase text-stone-300 tracking-widest">Hali xarajat qo'shilmagan</p>
+                    <p className="text-[10px] font-bold uppercase text-stone-300 tracking-widest">Hali xarajat qo'shilmagan</p>
                   </div>
                 ) : (
                   <div className="space-y-1.5">
                     {taskExpenses.map((exp: any) => (
                       <div key={exp.id} className="flex items-center justify-between bg-white border border-stone-200 rounded-xl px-4 py-3 hover:border-stone-300 transition-colors">
                         <div>
-                          <p className="text-[11px] font-black text-stone-800 uppercase tracking-tight">{exp.expenseName}</p>
+                          <p className="text-[11px] font-bold text-stone-800 uppercase tracking-tight">{exp.expenseName}</p>
                           <p className="text-[9px] text-stone-400 font-bold mt-0.5">{new Date(exp.createdAt).toLocaleDateString('uz-UZ')}</p>
                         </div>
                         <div className="flex items-center gap-4">
-                          <span className="text-sm font-black text-stone-700 font-mono">{Number(exp.amount).toLocaleString()} UZS</span>
+                          <span className="text-sm font-bold text-stone-700 font-mono">{Number(exp.amount).toLocaleString()} UZS</span>
                           <button
                             type="button"
                             onClick={() => handleDeleteExpense(exp.id)}
@@ -1740,8 +1690,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       </div>
                     ))}
                     <div className="flex justify-between items-center pt-3 px-1 border-t border-stone-200 mt-2">
-                      <span className="text-[9px] font-black text-stone-500 uppercase tracking-widest">Jami xarajat</span>
-                      <span className="text-sm font-black text-stone-800 font-mono">
+                      <span className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">Jami xarajat</span>
+                      <span className="text-sm font-bold text-stone-800 font-mono">
                         {taskExpenses.reduce((s: number, e: any) => s + Number(e.amount), 0).toLocaleString()} UZS
                       </span>
                     </div>
@@ -1763,20 +1713,20 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           <div className="bg-sky-50 p-4 rounded-2xl border border-sky-100 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-sky-500 shadow-sm shadow-sky-500/10"><Users size={20} /></div>
             <div>
-              <p className="text-[9px] font-black text-sky-400 uppercase tracking-widest mb-0.5">Tanlangan task</p>
-              <p className="text-sm font-black text-sky-900 truncate max-w-[200px]">{selectedTask?.title}</p>
+              <p className="text-[9px] font-bold text-sky-400 uppercase tracking-widest mb-0.5">Tanlangan task</p>
+              <p className="text-sm font-bold text-sky-900 truncate max-w-[200px]">{selectedTask?.title}</p>
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Yangi holat (Varonka)</label>
-            <select value={moveForm.columnId} onChange={(e) => setMoveForm({ ...moveForm, columnId: e.target.value })} className="select-minimal font-black text-orange-600">
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Yangi holat (Varonka)</label>
+            <select value={moveForm.columnId} onChange={(e) => setMoveForm({ ...moveForm, columnId: e.target.value })} className="select-minimal font-bold text-orange-600">
               {columns.map(col => <option key={col.id} value={col.id}>{col.title}</option>)}
             </select>
           </div>
 
           <div className="relative">
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-3 px-1 border-b border-slate-100 pb-2 flex justify-between">
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-3 px-1 border-b border-slate-100 pb-2 flex justify-between">
               Mas'ul Jamoani Yangilash
               <span className="text-sky-500">{moveForm.assigneeIds.length} ta tanlandi</span>
             </label>
@@ -1791,7 +1741,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 moveForm.assigneeIds.map(id => {
                   const emp = employees.find(e => e.id === id);
                   return (
-                    <span key={id} className="bg-white px-3 py-1 rounded-xl border border-sky-100 text-[10px] font-black text-sky-700 shadow-sm flex items-center gap-1.5 animate-fade-in">
+                    <span key={id} className="bg-white px-3 py-1 rounded-xl border border-sky-100 text-[10px] font-bold text-sky-700 shadow-sm flex items-center gap-1.5 animate-fade-in">
                       {emp?.fullName}
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleAssigneeForMove(id); }} className="hover:text-rose-500">×</button>
                     </span>
@@ -1827,11 +1777,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                           className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${active ? 'bg-sky-50 text-sky-700' : 'hover:bg-slate-50 text-slate-600'}`}
                         >
                           <div className="text-left">
-                            <p className="text-xs font-black uppercase tracking-tight">{emp.fullName}</p>
+                            <p className="text-xs font-bold uppercase tracking-tight">{emp.fullName}</p>
                             <p className="text-[10px] font-bold opacity-60">{emp.role?.name || 'Xodim'}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            {busy && <span className="text-[8px] font-black bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
+                            {busy && <span className="text-[8px] font-bold bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
                             {active && <CheckCircle2 size={16} className="text-sky-500" />}
                           </div>
                         </button>
@@ -1843,16 +1793,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">O'zgarish Haqida Izoh (History)</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">O'zgarish Haqida Izoh (History)</label>
             <textarea required value={moveForm.note} onChange={(e) => setMoveForm({ ...moveForm, note: e.target.value })} className="input-minimal" placeholder="Nima ish qilindi? Masalan: Dizayn tasdiqlandi..." />
           </div>
 
           {/* Design file upload */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase px-1">Design Fayllar (ixtiyoriy)</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase px-1">Design Fayllar (ixtiyoriy)</label>
               {moveForm.newFiles.length > 0 && (
-                <span className="text-[9px] font-black text-orange-500">{moveForm.newFiles.length} ta fayl tanlandi</span>
+                <span className="text-[9px] font-bold text-orange-500">{moveForm.newFiles.length} ta fayl tanlandi</span>
               )}
             </div>
             <div
@@ -1860,7 +1810,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               className="border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all min-h-[80px]"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fayl yuklash uchun bosing</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fayl yuklash uchun bosing</p>
               <p className="text-[9px] text-slate-300 font-bold">PDF, AI, PSD, PNG, JPG va boshqalar</p>
             </div>
             <input type="file" hidden multiple ref={moveFileInputRef} onChange={handleMoveFileSelect} />
@@ -1871,7 +1821,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
                     <div className="flex items-center gap-2 min-w-0">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                      <span className="text-[10px] font-black text-slate-700 truncate">{f.name}</span>
+                      <span className="text-[10px] font-bold text-slate-700 truncate">{f.name}</span>
                     </div>
                     <button type="button" onClick={() => setMoveForm(fm => ({ ...fm, newFiles: fm.newFiles.filter((_, j) => j !== i) }))} className="text-slate-300 hover:text-rose-500 transition-colors ml-2 shrink-0">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -1883,8 +1833,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-slate-100 items-end justify-end">
-            <button type="button" className="btn-outline h-14 flex-1 rounded-2xl font-black uppercase tracking-widest text-[10px] px-8" onClick={() => setIsMoveTaskModalOpen(false)}>BEKOR</button>
-            <button type="submit" className="btn-primary h-14 flex-[2] rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-sky-500/20 px-10">O'ZGARTIRISHNI SAQLASH</button>
+            <button type="button" className="btn-outline h-14 flex-1 rounded-2xl font-bold uppercase tracking-widest text-[10px] px-8" onClick={() => setIsMoveTaskModalOpen(false)}>BEKOR</button>
+            <button type="submit" className="btn-primary h-14 flex-[2] rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-sky-500/20 px-10">O'ZGARTIRISHNI SAQLASH</button>
           </div>
         </form>
       </Modal>
@@ -1898,20 +1848,20 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       >
         <form onSubmit={handleAddColumn} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Ustun Nomi</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Ustun Nomi</label>
             <input
               type="text"
               required
               autoFocus
               value={newColumnTitle}
               onChange={(e) => setNewColumnTitle(e.target.value)}
-              className="input-minimal h-12 text-sm font-black uppercase tracking-wider"
+              className="input-minimal h-12 text-sm font-bold uppercase tracking-wider"
               placeholder="Masalan: PECHATDA..."
             />
           </div>
           <div className="flex gap-3 pt-2 items-end justify-end">
-            <button type="button" className="btn-outline h-14 flex-1 rounded-xl uppercase font-black text-[10px] tracking-widest px-8" onClick={() => setIsNewColumnModalOpen(false)}>BEKOR</button>
-            <button type="submit" className="btn-primary h-14 flex-1 rounded-xl uppercase font-black text-[10px] tracking-widest shadow-amber-500/10 bg-amber-500 hover:bg-amber-600 px-10">YARATISH</button>
+            <button type="button" className="btn-outline h-14 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest px-8" onClick={() => setIsNewColumnModalOpen(false)}>BEKOR</button>
+            <button type="submit" className="btn-primary h-14 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest shadow-amber-500/10 bg-amber-500 hover:bg-amber-600 px-10">YARATISH</button>
           </div>
         </form>
       </Modal>
@@ -1927,7 +1877,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-start gap-4">
             <AlertCircle className="text-rose-500 mt-1" size={24} />
             <div>
-              <p className="text-sm font-black text-rose-900 uppercase">Diqqat!</p>
+              <p className="text-sm font-bold text-rose-900 uppercase">Diqqat!</p>
               <p className="text-xs font-bold text-rose-700 mt-1">
                 {confirmModal.type === 'task'
                   ? <>Siz <strong>{confirmModal.title}</strong> buyurtmasini arxivlamoqchisiz. Buyurtma arxivga ko'chiriladi.</>
@@ -1939,14 +1889,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           <div className="flex gap-3 pt-2 items-end justify-end">
             <button
               type="button"
-              className="btn-outline h-14 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest px-8"
+              className="btn-outline h-14 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest px-8"
               onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
             >
               Bekor qilish
             </button>
             <button
               type="button"
-              className="h-14 flex-1 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all px-10"
+              className="h-14 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all px-10"
               onClick={confirmModal.type === 'task' ? handleArchiveTask : handleRemoveColumn}
             >
               {confirmModal.type === 'task' ? 'Ha, arxivlash' : "Ha, o'chirilsin"}
@@ -1966,12 +1916,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {isArxivLoading ? (
             <div className="py-20 flex flex-col items-center justify-center opacity-30">
               <div className="animate-spin w-8 h-8 border-2 border-orange-500 rounded-full border-t-transparent mb-3" />
-              <p className="text-[10px] font-black uppercase">Yuklanmoqda...</p>
+              <p className="text-[10px] font-bold uppercase">Yuklanmoqda...</p>
             </div>
           ) : arxivTasks.length === 0 ? (
             <div className="py-20 flex flex-col items-center justify-center opacity-20">
               <ArchiveRestore size={40} className="mb-4" />
-              <p className="text-[10px] font-black uppercase">Arxivlangan buyurtmalar yo'q</p>
+              <p className="text-[10px] font-bold uppercase">Arxivlangan buyurtmalar yo'q</p>
             </div>
           ) : (() => {
             const totalPages = Math.ceil(arxivTasks.length / ARXIV_PAGE_SIZE);
@@ -1979,10 +1929,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             return (
               <div>
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     Jami: <span className="text-slate-600">{arxivTasks.length}</span> ta
                   </p>
-                  <p className="text-[10px] font-black text-slate-400">
+                  <p className="text-[10px] font-bold text-slate-400">
                     {arxivPage}/{totalPages} sahifa
                   </p>
                 </div>
@@ -1991,20 +1941,20 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <div key={task.id} className="flex items-start justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all">
                       <div className="flex-1 pr-3 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          {task.orderName && <span className="text-orange-600 font-black text-xs shrink-0">{task.orderName} —</span>}
-                          <span className="text-xs font-black text-slate-800 uppercase truncate">{task.title}</span>
+                          {task.orderName && <span className="text-orange-600 font-bold text-xs shrink-0">{task.orderName} —</span>}
+                          <span className="text-xs font-bold text-slate-800 uppercase truncate">{task.title}</span>
                         </div>
                         <p className="text-[10px] font-bold text-slate-400 italic line-clamp-1">{task.description}</p>
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {task.totalAmount > 0 && (
-                            <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{Number(task.totalAmount).toLocaleString()} UZS</span>
+                            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{Number(task.totalAmount).toLocaleString()} UZS</span>
                           )}
                           {task.customerName && (
-                            <span className="text-[9px] font-black text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">{task.customerName}</span>
+                            <span className="text-[9px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">{task.customerName}</span>
                           )}
                         </div>
                       </div>
-                      <span className="text-[9px] font-black text-slate-300 uppercase shrink-0 mt-0.5">
+                      <span className="text-[9px] font-bold text-slate-300 uppercase shrink-0 mt-0.5">
                         {task.createdAt ? new Date(task.createdAt).toLocaleDateString('uz-UZ') : '—'}
                       </span>
                     </div>
@@ -2015,7 +1965,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <button
                       onClick={() => setArxivPage(p => Math.max(1, p - 1))}
                       disabled={arxivPage === 1}
-                      className="h-8 px-4 rounded-xl border border-slate-200 text-[10px] font-black text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="h-8 px-4 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       ← OLDINGI
                     </button>
@@ -2024,7 +1974,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         <button
                           key={pg}
                           onClick={() => setArxivPage(pg)}
-                          className={`w-8 h-8 rounded-xl text-[10px] font-black transition-all ${pg === arxivPage
+                          className={`w-8 h-8 rounded-xl text-[10px] font-bold transition-all ${pg === arxivPage
                             ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
                             : 'border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500'
                             }`}
@@ -2036,7 +1986,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <button
                       onClick={() => setArxivPage(p => Math.min(totalPages, p + 1))}
                       disabled={arxivPage === totalPages}
-                      className="h-8 px-4 rounded-xl border border-slate-200 text-[10px] font-black text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="h-8 px-4 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 hover:border-orange-400 hover:text-orange-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       KEYINGI →
                     </button>
@@ -2058,12 +2008,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       >
         <form onSubmit={handleAddServiceOption} className="space-y-4">
           <div className="bg-orange-50 p-3 rounded-2xl border border-orange-100">
-            <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest">
+            <p className="text-[9px] font-bold text-orange-600 uppercase tracking-widest">
               Xizmat: {services.find(s => s.id === currentOrderService.serviceId)?.name || '—'}
             </p>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Opsiya Nomi *</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Opsiya Nomi *</label>
             <input
               type="text"
               required
@@ -2071,37 +2021,37 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               placeholder="Masalan: Rangi, O'lchami..."
               value={newOptionForm.name}
               onChange={e => setNewOptionForm(f => ({ ...f, name: e.target.value }))}
-              className="input-minimal h-11 font-black border-2"
+              className="input-minimal h-11 font-bold border-2"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qiymat *</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qiymat *</label>
             <input
               type="text"
               required
               placeholder="Masalan: Qizil, A4, Laminate..."
               value={newOptionForm.value}
               onChange={e => setNewOptionForm(f => ({ ...f, value: e.target.value }))}
-              className="input-minimal h-11 font-black border-2"
+              className="input-minimal h-11 font-bold border-2"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qo'shimcha narx (asosiy narxga qo'shiladi, UZS)</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qo'shimcha narx (asosiy narxga qo'shiladi, UZS)</label>
             <input
               type="number"
               min="0"
               placeholder="0"
               value={newOptionForm.priceAdd}
               onChange={e => setNewOptionForm(f => ({ ...f, priceAdd: e.target.value }))}
-              className="input-minimal h-11 font-black border-2 text-orange-600"
+              className="input-minimal h-11 font-bold border-2 text-orange-600"
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setIsNewOptionModalOpen(false)} className="btn-outline h-11 flex-1 rounded-xl uppercase font-black text-[10px] tracking-widest">BEKOR</button>
+            <button type="button" onClick={() => setIsNewOptionModalOpen(false)} className="btn-outline h-11 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest">BEKOR</button>
             <button
               type="submit"
               disabled={isSavingOption}
-              className="h-11 flex-[2] bg-orange-500 text-white rounded-xl uppercase font-black text-[10px] tracking-widest shadow-lg shadow-orange-500/20 disabled:opacity-50 active:scale-95 transition-all"
+              className="h-11 flex-[2] bg-orange-500 text-white rounded-xl uppercase font-bold text-[10px] tracking-widest shadow-lg shadow-orange-500/20 disabled:opacity-50 active:scale-95 transition-all"
             >
               {isSavingOption ? 'SAQLANMOQDA...' : "QO'SHISH"}
             </button>
@@ -2117,7 +2067,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       >
         <div className="space-y-6">
           <div className="bg-violet-50 p-4 rounded-2xl border border-violet-100 mb-4">
-            <p className="text-[11px] font-black text-violet-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+            <p className="text-[11px] font-bold text-violet-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
               <AlertTriangle size={14} /> Diqqat!
             </p>
             <p className="text-[10px] font-bold text-violet-700 leading-relaxed uppercase">
@@ -2130,8 +2080,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             {overrides.map((ov, idx) => (
               <div key={ov.materialId} className="flex flex-col gap-2 p-4 bg-white border-2 border-slate-100 rounded-3xl shadow-sm">
                 <div className="flex justify-between items-center px-1">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ov.name}</p>
-                  <p className="text-[9px] font-black text-slate-300 uppercase">{ov.unit}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{ov.name}</p>
+                  <p className="text-[9px] font-bold text-slate-300 uppercase">{ov.unit}</p>
                 </div>
                 <div className="relative">
                   <input
@@ -2143,9 +2093,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       newOv[idx].quantity = e.target.value;
                       setOverrides(newOv);
                     }}
-                    className="input-minimal h-14 bg-slate-50 border-2 border-slate-100 focus:border-violet-500 font-black text-violet-600 text-xl"
+                    className="input-minimal h-14 bg-slate-50 border-2 border-slate-100 focus:border-violet-500 font-bold text-violet-600 text-xl"
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">MIQDOR</div>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-300 uppercase">MIQDOR</div>
                 </div>
               </div>
             ))}
@@ -2153,16 +2103,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             {overrides.length === 0 && (
               <div className="py-10 text-center opacity-30">
                 <Package size={32} className="mx-auto mb-2" />
-                <p className="text-[10px] font-black uppercase">Bu xizmatga xomashyo biriktirilmagan</p>
+                <p className="text-[10px] font-bold uppercase">Bu xizmatga xomashyo biriktirilmagan</p>
               </div>
             )}
           </div>
 
           <div className="flex gap-3 pt-6 border-t border-slate-100">
-            <button onClick={() => setIsOverrideModalOpen(false)} className="btn-outline h-14 flex-1 rounded-2xl uppercase font-black text-[10px] tracking-widest">Bekor Berish</button>
+            <button onClick={() => setIsOverrideModalOpen(false)} className="btn-outline h-14 flex-1 rounded-2xl uppercase font-bold text-[10px] tracking-widest">Bekor Berish</button>
             <button
               onClick={handleSaveOverrides}
-              className="h-14 flex-[2] bg-violet-600 text-white rounded-2xl uppercase font-black text-[10px] tracking-widest shadow-xl shadow-violet-500/20 active:scale-95 transition-all"
+              className="h-14 flex-[2] bg-violet-600 text-white rounded-2xl uppercase font-bold text-[10px] tracking-widest shadow-xl shadow-violet-500/20 active:scale-95 transition-all"
             >
               SAQLASH VA QO'LLASH
             </button>

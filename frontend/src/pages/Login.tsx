@@ -92,7 +92,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
             <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl group-hover:bg-[#FF6B00]/20 transition-all duration-500" />
             <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain hover:scale-110 transition-transform duration-300" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-800 mb-1 uppercase">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800 mb-1 uppercase">
             Print<span className="text-[#FF6B00]">Flow</span>
           </h1>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
@@ -107,7 +107,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
           <form onSubmit={handleSubmit} className="space-y-5 relative" autoComplete="off">
             {/* Workspace Slug */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Workspace
               </label>
               <div className="relative group">
@@ -129,7 +129,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
 
             {/* Login */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Login
               </label>
               <div className="relative group">
@@ -151,7 +151,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
 
             {/* Password */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Parol
               </label>
               <div className="relative group">
@@ -196,7 +196,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-13 bg-[#FF6B00] hover:bg-[#e66000] disabled:bg-slate-300 rounded-lg text-white flex justify-center items-center gap-3 text-sm font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all duration-200 mt-2 py-4"
+              className="w-full h-13 bg-[#FF6B00] hover:bg-[#e66000] disabled:bg-slate-300 rounded-lg text-white flex justify-center items-center gap-3 text-sm font-bold uppercase tracking-widest shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all duration-200 mt-2 py-4"
             >
               {loading ? (
                 <>
@@ -215,7 +215,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
               <button
                 type="button"
                 onClick={onRegisterClick}
-                className="text-[#FF6B00] hover:underline font-black uppercase tracking-wider"
+                className="text-[#FF6B00] hover:underline font-bold uppercase tracking-wider"
               >
                 Yangi ochish
               </button>

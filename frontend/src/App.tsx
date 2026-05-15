@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Login from './pages/Login';
@@ -87,10 +88,10 @@ function clearSession() {
 }
 
 const App: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [showLanding, setShowLanding] = useState(true);
-  const [showRegister, setShowRegister] = useState(false);
   const [subscriptionExpired, setSubscriptionExpired] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingForm, setOnboardingForm] = useState({
@@ -137,7 +138,7 @@ const App: React.FC = () => {
         if (user) {
           setCurrentUser(user);
           saveSession(user);
-          setShowLanding(false);
+          // navigate to dashboard happens in a separate effect (we need URL stability during init)
 
           if (user.isFirstLogin) {
             setOnboardingForm({
@@ -166,7 +167,7 @@ const App: React.FC = () => {
               const fullUser = { ...data.user, workspaceSlug: data.workspaceSlug };
               setCurrentUser(fullUser as any);
               saveSession(fullUser as any);
-              setShowLanding(false);
+              // navigate to dashboard happens in a separate effect (we need URL stability during init)
               return;
             }
           } catch {
@@ -174,7 +175,7 @@ const App: React.FC = () => {
           }
           clearSession();
           setCurrentUser(null);
-          setShowLanding(false); // Telegram WebApp ichida Landing yo'q, to'g'ridan Login
+          // navigate to dashboard happens in a separate effect (we need URL stability during init) // Telegram WebApp ichida Landing yo'q, to'g'ridan Login
           return;
         }
 
@@ -242,7 +243,6 @@ const App: React.FC = () => {
   const handleLogin = (user: User) => {
     saveSession(user);
     setCurrentUser(user);
-    setShowLanding(false);
     if (user.isFirstLogin) {
       setOnboardingForm({
         tenantName: user.tenantName || '',
@@ -254,6 +254,7 @@ const App: React.FC = () => {
       });
       setShowOnboarding(true);
     }
+    navigate('/dashboard');
   };
 
   const handleUpdateUser = (updatedFields: Partial<User>) => {
@@ -269,10 +270,23 @@ const App: React.FC = () => {
     try { await authApi.logout(); } catch { }
     clearSession();
     setCurrentUser(null);
-    setShowLanding(false); // Login sahifasiga qaytish
+    navigate('/login');
   };
 
-  const isScanPage = window.location.pathname.startsWith('/attendance/scan');
+  const isScanPage = location.pathname.startsWith('/attendance/scan');
+
+  // After auth init: if user is loaded and they're on a public route, send to dashboard.
+  // If user is null and they're on a protected route, send to landing/login.
+  useEffect(() => {
+    if (loading) return;
+    const path = location.pathname;
+    const isPublic = path === '/' || path.startsWith('/login') || path.startsWith('/register');
+    if (currentUser && isPublic) {
+      navigate('/dashboard', { replace: true });
+    } else if (!currentUser && path.startsWith('/dashboard')) {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, loading, location.pathname, navigate]);
 
   if (loading && !isScanPage) {
     return (
@@ -283,10 +297,10 @@ const App: React.FC = () => {
             <div className="w-16 h-16 border-2 border-[#FF6B00]/20 border-t-[#FF6B00] rounded-full animate-spin"></div>
           </div>
         </div>
-        <h1 className="text-2xl font-black tracking-tight uppercase mb-2">
+        <h1 className="text-2xl font-bold tracking-tight uppercase mb-2">
           Print<span className="text-[#FF6B00]">Flow</span>
         </h1>
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">
           Tizimga kirilmoqda...
         </p>
       </div>
@@ -299,24 +313,24 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
             <div className="bg-black p-6 text-white">
-              <h2 className="text-xl font-black uppercase tracking-tight">Ma'lumotlarni <span className="text-[#FF6B00]">Tahrirlang</span></h2>
-              <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mt-1">Xavfsizlik va sozlash uchun barcha maydonlarni to'ldiring</p>
+              <h2 className="text-xl font-bold uppercase tracking-tight">Ma'lumotlarni <span className="text-[#FF6B00]">Tahrirlang</span></h2>
+              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Xavfsizlik va sozlash uchun barcha maydonlarni to'ldiring</p>
             </div>
             <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-500">Tashkilot / Workspace Nomi</label>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Tashkilot / Workspace Nomi</label>
                 <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                   value={onboardingForm.tenantName} onChange={e => setOnboardingForm({...onboardingForm, tenantName: e.target.value})} placeholder="Ideal Print MCHJ" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-500">Ism Familiyangiz</label>
+                  <label className="text-[10px] font-bold uppercase text-slate-500">Ism Familiyangiz</label>
                   <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                     value={onboardingForm.fullName} onChange={e => setOnboardingForm({...onboardingForm, fullName: e.target.value})} placeholder="Sardor Karimov" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-500">Telefon Raqamingiz</label>
+                  <label className="text-[10px] font-bold uppercase text-slate-500">Telefon Raqamingiz</label>
                   <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                     value={onboardingForm.phone} onChange={e => setOnboardingForm({...onboardingForm, phone: e.target.value})} placeholder="+998 90 123 45 67" />
                 </div>
@@ -324,12 +338,12 @@ const App: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-500">Yangi Login</label>
+                  <label className="text-[10px] font-bold uppercase text-slate-500">Yangi Login</label>
                   <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                     value={onboardingForm.login} onChange={e => setOnboardingForm({...onboardingForm, login: e.target.value})} placeholder="admin_new" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-500">Yangi Parol (ixtiyoriy)</label>
+                  <label className="text-[10px] font-bold uppercase text-slate-500">Yangi Parol (ixtiyoriy)</label>
                   <input className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                     type="password" value={onboardingForm.password} onChange={e => setOnboardingForm({...onboardingForm, password: e.target.value})} placeholder="********" />
                 </div>
@@ -341,7 +355,7 @@ const App: React.FC = () => {
                 </p>
               </div>
 
-              <button type="submit" className="w-full bg-[#FF6B00] hover:bg-[#e66000] text-white font-black uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]">
+              <button type="submit" className="w-full bg-[#FF6B00] hover:bg-[#e66000] text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]">
                 Saqlash va Boshlash
               </button>
             </form>
@@ -353,34 +367,64 @@ const App: React.FC = () => {
         <React.Suspense fallback={null}>
           <Billing />
         </React.Suspense>
-      ) : isScanPage ? (
-        <ScanAttendance currentUser={currentUser} />
-      ) : currentUser ? (
-        <Dashboard
-          currentUser={currentUser}
-          onLogout={handleLogout}
-          onUpdateUser={handleUpdateUser}
-        />
-      ) : showRegister ? (
-        <Register
-          onRegistered={handleLogin}
-          onBack={() => { setShowRegister(false); setShowLanding(true); }}
-          onSwitchToLogin={() => setShowRegister(false)}
-        />
-      ) : showLanding ? (
-        <>
-          <Landing
-            onLoginClick={() => setShowLanding(false)}
-            onRegisterClick={() => { setShowLanding(false); setShowRegister(true); }}
-          />
-          <CookieConsent />
-        </>
       ) : (
-        <Login
-          onLogin={handleLogin}
-          onBack={() => setShowLanding(true)}
-          onRegisterClick={() => setShowRegister(true)}
-        />
+        <Routes>
+          {/* Attendance QR scan — public, no auth */}
+          <Route path="/attendance/scan" element={<ScanAttendance currentUser={currentUser} />} />
+
+          {/* Authenticated routes */}
+          {currentUser ? (
+            <>
+              <Route
+                path="/dashboard/*"
+                element={
+                  <Dashboard
+                    currentUser={currentUser}
+                    onLogout={handleLogout}
+                    onUpdateUser={handleUpdateUser}
+                  />
+                }
+              />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </>
+          ) : (
+            <>
+              <Route
+                path="/"
+                element={
+                  <>
+                    <Landing
+                      onLoginClick={() => navigate('/login')}
+                      onRegisterClick={() => navigate('/register')}
+                    />
+                    <CookieConsent />
+                  </>
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  <Login
+                    onLogin={handleLogin}
+                    onBack={() => navigate('/')}
+                    onRegisterClick={() => navigate('/register')}
+                  />
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <Register
+                    onRegistered={handleLogin}
+                    onBack={() => navigate('/')}
+                    onSwitchToLogin={() => navigate('/login')}
+                  />
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
+          )}
+        </Routes>
       )}
       <ToastContainer
         position="top-right"

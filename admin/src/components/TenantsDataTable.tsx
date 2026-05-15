@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowDown, ArrowUp, ArrowUpDown, CalendarPlus, CreditCard, Ban, CheckCircle2, Search,
 } from 'lucide-react';
-import { tenantsApi, plansApi } from '../api';
+import { tenantsApi } from '../api';
+import { useTenants, usePlans, useInvalidate } from '../hooks/queries';
 import { useUI } from '../ui';
 import { DropdownMenu, type MenuItem } from './DropdownMenu';
 
@@ -75,9 +76,18 @@ const fmtDate = (iso: string | null) => {
 
 export function TenantsDataTable() {
   const ui = useUI();
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
+  // RQ — cache'lanadi, mutatsiyalardan keyin invalidate.tenants() chaqirsa avto-refetch
+  const { data: tenantsData = [], isLoading: tLoading, error: tError } = useTenants();
+  const { data: plansData = [] } = usePlans();
+  const tenants = tenantsData as Tenant[];
+  const plans = plansData as Plan[];
+  const loading = tLoading;
+  const invalidate = useInvalidate();
+
+  // Toast on first error
+  useEffect(() => {
+    if (tError) ui.toast('Workspacelarni yuklashda xatolik', 'error');
+  }, [tError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
@@ -87,21 +97,8 @@ export function TenantsDataTable() {
 
   const [planPickerFor, setPlanPickerFor] = useState<Tenant | null>(null);
 
-  const refresh = async () => {
-    setLoading(true);
-    try {
-      const [tRes, pRes] = await Promise.all([tenantsApi.findAll(), plansApi.findAll()]);
-      setTenants(tRes.data || []);
-      setPlans(pRes.data || []);
-    } catch (e) {
-      console.error(e);
-      ui.toast('Workspacelarni yuklashda xatolik', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // refresh() shim — invalidates RQ caches, hooks auto-refetch
+  const refresh = () => { invalidate.tenants(); invalidate.plans(); };
 
   // -------- Derived data (filter → search → sort → paginate) --------
   const filtered = useMemo(() => {

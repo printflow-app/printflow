@@ -47,7 +47,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   return (
     <div className="relative w-full" ref={containerRef}>
-      {label && <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">{label}</label>}
+      {label && <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">{label}</label>}
       
       <div 
         onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -58,7 +58,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         <div className="flex-1 truncate">
           {selectedOption ? (
             <div className="flex flex-col">
-              <span className="text-sm font-black text-slate-800">{selectedOption.label}</span>
+              <span className="text-sm font-bold text-slate-800">{selectedOption.label}</span>
               {selectedOption.subLabel && <span className="text-[10px] font-bold text-violet-600 uppercase">{selectedOption.subLabel}</span>}
             </div>
           ) : (
@@ -99,7 +99,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className={`text-sm ${value === opt.id ? 'font-black text-violet-700' : 'font-bold text-slate-700'}`}>
+                    <span className={`text-sm ${value === opt.id ? 'font-bold text-violet-700' : 'font-bold text-slate-700'}`}>
                       {opt.label}
                     </span>
                     {opt.subLabel && <span className="text-[10px] font-bold text-slate-400 uppercase">{opt.subLabel}</span>}

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Plus, Search, Trash2, Edit3, AlertCircle, AlertTriangle, CheckCircle2,
   ClipboardList, Handshake, DollarSign
 } from 'lucide-react';
 import { vendorsApi } from '../api';
+import { useVendors, useInvalidate } from '../hooks/queries';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -14,8 +15,9 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const canManageVendors = isAdmin || !!(currentUser.permissions?.canManageVendors);
 
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // React Query — cached per branchId, deduped, auto-refetch on invalidate.
+  const { data: vendors = [], isLoading } = useVendors(activeBranchId);
+  const invalidate = useInvalidate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -39,24 +41,8 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  const fetchAll = async () => {
-    if (!activeBranchId || activeBranchId === '__main__') {
-      setVendors([]);
-      setIsLoading(false);
-      return;
-    }
-    try {
-      setIsLoading(true);
-      const res = await vendorsApi.findAll(activeBranchId);
-      setVendors(res.data || []);
-    } catch {
-      showStatus('error', "Yuklashda xatolik!");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchAll(); }, [activeBranchId]);
+  // fetchAll() o'rniga RQ invalidate ishlatamiz. Mutatsiyalardan keyin avtomatik refetch.
+  const refetchVendors = () => invalidate.vendors();
 
   const openAdd = () => {
     setForm({ id: '', name: '', phone: '' });
@@ -101,7 +87,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
         showStatus('success', "Yangi hamkor qo'shildi!");
       }
       setIsFormOpen(false);
-      fetchAll();
+      refetchVendors();
     } catch {
       showStatus('error', "Saqlashda xatolik!");
     }
@@ -114,7 +100,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       await vendorsApi.remove(confirmId, activeBranchId);
       showStatus('success', "Hamkor o'chirildi.");
       setConfirmId(null);
-      fetchAll();
+      refetchVendors();
     } catch {
       showStatus('error', "O'chirishda xatolik!");
     }
@@ -139,10 +125,10 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 mx-1 sm:mx-0">
         <div>
-          <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 px-1">
+          <h2 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2 px-1">
             <Handshake size={20} className="text-orange-500"/> Hamkorlar (Outsourcing)
           </h2>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">
             Tashqi xizmatlar va subpudratni boshqarish
           </p>
         </div>
@@ -160,7 +146,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
           {canManageVendors && (
             <button
               onClick={openAdd}
-              className="flex items-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all hover:-translate-y-0.5"
+              className="flex items-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all hover:-translate-y-0.5"
             >
               <Plus size={14} strokeWidth={3}/> HAMKOR QO'SHISH
             </button>
@@ -171,24 +157,24 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mx-1 sm:mx-0">
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jami hamkorlar</p>
-          <p className="text-2xl font-black text-slate-800">{vendors.length}</p>
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jami hamkorlar</p>
+          <p className="text-2xl font-bold text-slate-800">{vendors.length}</p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jami biriktirilgan</p>
-          <p className="text-lg font-black text-slate-800">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jami biriktirilgan</p>
+          <p className="text-lg font-bold text-slate-800">
             {formatCurrency(vendors.reduce((s, v) => s + (v.totalAssignedCost || 0), 0))}
           </p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jami to'langan</p>
-          <p className="text-lg font-black text-emerald-600">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jami to'langan</p>
+          <p className="text-lg font-bold text-emerald-600">
             {formatCurrency(vendors.reduce((s, v) => s + (v.totalPaid || 0), 0))}
           </p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Umumiy qarz (Bizdan)</p>
-          <p className="text-lg font-black text-rose-500">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Umumiy qarz (Bizdan)</p>
+          <p className="text-lg font-bold text-rose-500">
             {formatCurrency(vendors.reduce((s, v) => s + (v.balance || 0), 0))}
           </p>
         </div>
@@ -200,19 +186,36 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hamkor Nomi</th>
-                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Telefon</th>
-                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Jami Xizmat</th>
-                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">To'langan</th>
-                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Qarz (UZS)</th>
-                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Amallar</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hamkor Nomi</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Telefon</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jami Xizmat</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">To'langan</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Qarz (UZS)</th>
+                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Amallar</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400 italic text-xs font-bold uppercase tracking-widest">
-                    {searchTerm ? 'Hamkor topilmadi' : 'Ro\'yxat bo\'sh'}
+                  <td colSpan={6} className="px-5 py-16 text-center">
+                    {searchTerm ? (
+                      <p className="text-sm font-semibold text-slate-400">"{searchTerm}" — Hamkor topilmadi</p>
+                    ) : (
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-400">
+                          <Handshake size={26} />
+                        </div>
+                        <div>
+                          <p className="text-base font-bold text-slate-800 mb-1">Hali hamkor qo'shilmagan</p>
+                          <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">Subpudratchi va yetkazib beruvchilarni qo'shing, ularning xarajat va to'lovlarini kuzating.</p>
+                        </div>
+                        {canManageVendors && (
+                          <button onClick={openAdd} className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-2">
+                            <Plus size={16} /> Birinchi hamkorni qo'shish
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -220,10 +223,10 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                   <tr key={v.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => openDetail(v)}>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 font-black text-xs">
+                        <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 font-bold text-xs">
                           {v.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-xs font-black text-slate-800 uppercase group-hover:text-orange-600 transition-colors">{v.name}</span>
+                        <span className="text-xs font-bold text-slate-800 uppercase group-hover:text-orange-600 transition-colors">{v.name}</span>
                       </div>
                     </td>
                     <td className="px-5 py-4">
@@ -236,7 +239,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       <span className="text-xs font-bold text-emerald-600">{formatCurrency(v.totalPaid)}</span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <span className={`text-xs font-black ${v.balance > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+                      <span className={`text-xs font-bold ${v.balance > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
                         {formatCurrency(v.balance)}
                       </span>
                     </td>
@@ -268,16 +271,16 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={isEditing ? 'Hamkorni tahrirlash' : "Yangi hamkor qo'shish"}>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkor nomi *</label>
-            <input type="text" required autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input-minimal font-black text-slate-800 h-12 border-2" placeholder="Masalan: Tashkent Print LLC"/>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkor nomi *</label>
+            <input type="text" required autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input-minimal font-bold text-slate-800 h-12 border-2" placeholder="Masalan: Tashkent Print LLC"/>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Telefon (ixtiyoriy)</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Telefon (ixtiyoriy)</label>
             <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="input-minimal h-11 border-2" placeholder="+998 90 123 45 67"/>
           </div>
           <div className="flex gap-3 pt-2 border-t border-slate-100">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-black text-[10px] tracking-widest" onClick={() => setIsFormOpen(false)}>BEKOR</button>
-            <button type="submit" className="h-12 flex-[2] bg-orange-600 text-white rounded-2xl uppercase font-black text-[10px] tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-bold text-[10px] tracking-widest" onClick={() => setIsFormOpen(false)}>BEKOR</button>
+            <button type="submit" className="h-12 flex-[2] bg-orange-600 text-white rounded-2xl uppercase font-bold text-[10px] tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
               {isEditing ? 'YANGILASH' : "QO'SHISH"}
             </button>
           </div>
@@ -289,22 +292,22 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
         {isDetailLoading ? (
           <div className="py-16 flex flex-col items-center justify-center opacity-30">
             <div className="animate-spin w-8 h-8 border-2 border-orange-500 rounded-full border-t-transparent mb-3"/>
-            <p className="text-[10px] font-black uppercase">Yuklanmoqda...</p>
+            <p className="text-[10px] font-bold uppercase">Yuklanmoqda...</p>
           </div>
         ) : detailData ? (
           <div className="space-y-6">
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Jami xizmat</p>
-                <p className="text-sm font-black text-slate-800">{formatCurrency(detailData.totalAssignedCost)}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jami xizmat</p>
+                <p className="text-sm font-bold text-slate-800">{formatCurrency(detailData.totalAssignedCost)}</p>
               </div>
               <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">To'langan</p>
-                <p className="text-sm font-black text-emerald-600">{formatCurrency(detailData.totalPaid)}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">To'langan</p>
+                <p className="text-sm font-bold text-emerald-600">{formatCurrency(detailData.totalPaid)}</p>
               </div>
               <div className={`p-4 rounded-2xl border ${detailData.balance > 0 ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Joriy qarz</p>
-                <p className={`text-sm font-black ${detailData.balance > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Joriy qarz</p>
+                <p className={`text-sm font-bold ${detailData.balance > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
                   {formatCurrency(detailData.balance)}
                 </p>
               </div>
@@ -314,7 +317,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
               {/* Tasks List */}
               <div className="space-y-3">
                 <div className="flex justify-between items-end border-b border-slate-100 pb-2">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                     <ClipboardList size={14}/> Topshiriqlar ({detailData.tasks?.length || 0})
                   </h4>
                 </div>
@@ -330,8 +333,8 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       }, {})
                     ).map(([status, total]: [string, any]) => (
                       <div key={status} className="bg-white border border-slate-100 px-2 py-1 rounded-lg shadow-sm">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-0.5">{status}</p>
-                        <p className="text-[10px] font-black text-slate-700 leading-none">{formatCurrency(total)}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter leading-none mb-0.5">{status}</p>
+                        <p className="text-[10px] font-bold text-slate-700 leading-none">{formatCurrency(total)}</p>
                       </div>
                     ))}
                   </div>
@@ -344,14 +347,14 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                     <div key={t.id} className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex justify-between items-center group hover:bg-white hover:shadow-sm transition-all">
                       <div className="min-w-0 flex-1 pr-2">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-[11px] font-black text-slate-700 uppercase truncate">{t.title}</p>
-                          <span className="shrink-0 text-[8px] font-black bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-500 uppercase">
+                          <p className="text-[11px] font-bold text-slate-700 uppercase truncate">{t.title}</p>
+                          <span className="shrink-0 text-[8px] font-bold bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-500 uppercase">
                             {t.column?.title || '...'}
                           </span>
                         </div>
                         <p className="text-[9px] text-slate-400">{new Date(t.createdAt).toLocaleDateString('uz-UZ')}</p>
                       </div>
-                      <span className="shrink-0 text-xs font-black text-rose-500">{formatCurrency(t.vendorCost)}</span>
+                      <span className="shrink-0 text-xs font-bold text-rose-500">{formatCurrency(t.vendorCost)}</span>
                     </div>
                   ))}
                 </div>
@@ -359,7 +362,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
 
               {/* Payouts List */}
               <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
                   <DollarSign size={14}/> To'lovlar (Chiqimlar)
                 </h4>
                 <div className="space-y-2 max-h-[40vh] overflow-y-auto custom-scroll pr-1">
@@ -368,10 +371,10 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                   ) : detailData.transactions.map((tr: any) => (
                     <div key={tr.id} className="bg-emerald-50/30 p-3 rounded-xl border border-emerald-100/50 flex justify-between items-center group hover:bg-emerald-50 transition-all">
                       <div className="min-w-0 flex-1 pr-2">
-                        <p className="text-[11px] font-black text-emerald-800 uppercase truncate">{tr.expenseReason || 'Hamkorga to\'lov'}</p>
+                        <p className="text-[11px] font-bold text-emerald-800 uppercase truncate">{tr.expenseReason || 'Hamkorga to\'lov'}</p>
                         <p className="text-[9px] text-slate-400">{new Date(tr.date).toLocaleDateString('uz-UZ')}</p>
                       </div>
-                      <span className="shrink-0 text-xs font-black text-emerald-600">{formatCurrency(tr.amount)}</span>
+                      <span className="shrink-0 text-xs font-bold text-emerald-600">{formatCurrency(tr.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -379,7 +382,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             </div>
           </div>
         ) : (
-          <div className="py-12 text-center opacity-20"><p className="font-black uppercase text-xs">Ma'lumot topilmadi</p></div>
+          <div className="py-12 text-center opacity-20"><p className="font-bold uppercase text-xs">Ma'lumot topilmadi</p></div>
         )}
       </Modal>
 
@@ -393,8 +396,8 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" onClick={() => setConfirmId(null)}>BEKOR</button>
-            <button className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
+            <button className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest" onClick={() => setConfirmId(null)}>BEKOR</button>
+            <button className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
               HA, O'CHIRILSIN
             </button>
           </div>

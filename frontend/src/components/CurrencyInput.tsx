@@ -46,7 +46,7 @@ interface CurrencyInputProps {
 const CurrencyInput: React.FC<CurrencyInputProps> = ({
   value,
   onChange,
-  className = 'input-minimal h-12 text-lg font-black',
+  className = 'input-minimal h-12 text-lg font-bold',
   placeholder = '0',
   colorClass = 'text-slate-800',
 }) => {
@@ -101,7 +101,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
             key={c}
             type="button"
             onClick={() => handleCurrencyChange(c)}
-            className={`px-3.5 py-1 text-[10px] font-black rounded-lg border transition-all ${
+            className={`px-3.5 py-1 text-[10px] font-bold rounded-lg border transition-all ${
               currency === c
                 ? c === 'UZS'
                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20'
@@ -119,18 +119,18 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
       {/* Exchange rate row — shown only for non-UZS */}
       {currency !== 'UZS' && (
         <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
-          <span className="text-[9px] font-black text-slate-400 whitespace-nowrap">
+          <span className="text-[9px] font-bold text-slate-400 whitespace-nowrap">
             1 {currency} =
           </span>
           <NumberInput
             value={rate}
             onChange={(r) => handleRateChange(r, currency)}
             placeholder="kurs"
-            className="w-28 h-7 text-xs font-black border border-slate-200 rounded-lg px-2 bg-white text-slate-700 text-center"
+            className="w-28 h-7 text-xs font-bold border border-slate-200 rounded-lg px-2 bg-white text-slate-700 text-center"
           />
-          <span className="text-[9px] font-black text-slate-400">UZS</span>
+          <span className="text-[9px] font-bold text-slate-400">UZS</span>
           {uzsEquivalent !== null && uzsEquivalent > 0 && (
-            <span className="ml-auto text-xs font-black text-emerald-600 whitespace-nowrap">
+            <span className="ml-auto text-xs font-bold text-emerald-600 whitespace-nowrap">
               ≈ {uzsEquivalent.toLocaleString()} UZS
             </span>
           )}

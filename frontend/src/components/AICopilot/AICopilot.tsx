@@ -52,7 +52,7 @@ const SuccessBadge: React.FC<{ text: string }> = ({ text }) => (
         <ShieldCheck size={18} strokeWidth={2.5} />
       </div>
       <div>
-         <p className="text-[11px] font-black uppercase tracking-widest leading-none">Muvaffaqiyatli</p>
+         <p className="text-[11px] font-bold uppercase tracking-widest leading-none">Muvaffaqiyatli</p>
          <p className="text-[10px] font-bold text-emerald-600/80 mt-0.5">{text}</p>
       </div>
     </div>
@@ -67,8 +67,8 @@ const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; childr
           <Icon size={20} strokeWidth={2.5} />
         </div>
         <div>
-          <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">{subtitle}</p>
-          <p className="text-[14px] font-black text-slate-900 tracking-tight">{title}</p>
+          <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">{subtitle}</p>
+          <p className="text-[14px] font-bold text-slate-900 tracking-tight">{title}</p>
         </div>
       </div>
     </div>
@@ -76,7 +76,7 @@ const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; childr
       {children}
       <button
         onClick={onConfirm}
-        className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
+        className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
       >
         <CheckCircle2 size={16} strokeWidth={2.5} />
         Tasdiqlash
@@ -141,10 +141,10 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             </div>
           </div>
           <div>
-            <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2 uppercase">
+            <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2 uppercase">
               PrintFlow <span className="px-1.5 py-0.5 bg-orange-500 text-white text-[9px] rounded-md shadow-sm">AI PRO</span>
             </h2>
-            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1">Ready for 3 Workflows</p>
+            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1">Ready for 3 Workflows</p>
           </div>
           <button onClick={onClose} className="ml-auto w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition-all">
             <X size={20} />
@@ -211,17 +211,17 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Buyurtmani Tasdiqlash" subtitle="Yangi Buyurtma" icon={Package} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nomi</p>
-                                 <p className="text-[12px] font-black text-slate-800">{args?.orderName}</p>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Nomi</p>
+                                 <p className="text-[12px] font-bold text-slate-800">{args?.orderName}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Miqdor</p>
-                                    <p className="text-[12px] font-black text-slate-800">{args?.quantity}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Miqdor</p>
+                                    <p className="text-[12px] font-bold text-slate-800">{args?.quantity}</p>
                                  </div>
                                  <div className="p-3 rounded-2xl bg-slate-900 text-white text-center">
-                                    <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Jami</p>
-                                    <p className="text-[12px] font-black">{args?.totalAmount?.toLocaleString()} UZS</p>
+                                    <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Jami</p>
+                                    <p className="text-[12px] font-bold">{args?.totalAmount?.toLocaleString()} UZS</p>
                                  </div>
                               </div>
                            </div>
@@ -234,12 +234,12 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Xizmatni Tasdiqlash" subtitle="Yangi Xizmat" icon={Plus} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Xizmat nomi</p>
-                                 <p className="text-[12px] font-black text-slate-800">{args?.name}</p>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Xizmat nomi</p>
+                                 <p className="text-[12px] font-bold text-slate-800">{args?.name}</p>
                               </div>
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Narxi / Birlik</p>
-                                 <p className="text-[12px] font-black text-slate-800">{args?.basePrice?.toLocaleString()} UZS / {args?.unit}</p>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Narxi / Birlik</p>
+                                 <p className="text-[12px] font-bold text-slate-800">{args?.basePrice?.toLocaleString()} UZS / {args?.unit}</p>
                               </div>
                            </div>
                         </CardWrapper>
@@ -251,17 +251,17 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Optsiya Tasdiqlash" subtitle="Yangi Optsiya" icon={Settings} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Xizmat va Optsiya</p>
-                                 <p className="text-[12px] font-black text-slate-800">{args?.targetServiceName} - {args?.optionName}</p>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Xizmat va Optsiya</p>
+                                 <p className="text-[12px] font-bold text-slate-800">{args?.targetServiceName} - {args?.optionName}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Eski narx</p>
-                                    <p className="text-[12px] font-black text-slate-400 line-through">{args?.oldPrice?.toLocaleString()}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Eski narx</p>
+                                    <p className="text-[12px] font-bold text-slate-400 line-through">{args?.oldPrice?.toLocaleString()}</p>
                                  </div>
                                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
-                                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Yangi narx</p>
-                                    <p className="text-[12px] font-black text-emerald-700">{args?.newPrice?.toLocaleString()}</p>
+                                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Yangi narx</p>
+                                    <p className="text-[12px] font-bold text-emerald-700">{args?.newPrice?.toLocaleString()}</p>
                                   </div>
                               </div>
                            </div>
@@ -272,7 +272,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                     return null;
                   })}
 
-                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest px-2">{msg.role === 'user' ? 'Siz' : 'Assistant'}</span>
+                  <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest px-2">{msg.role === 'user' ? 'Siz' : 'Assistant'}</span>
                 </div>
               </div>
             );
@@ -283,7 +283,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
               <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg"><Bot size={16} className="text-white" strokeWidth={2.5} /></div>
               <div className="px-6 py-4 rounded-3xl rounded-tl-sm bg-orange-400 text-white flex items-center gap-2">
                 <Loader2 size={16} className="animate-spin" />
-                <span className="text-[11px] font-black uppercase tracking-widest">O'ylayapman...</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest">O'ylayapman...</span>
               </div>
             </div>
           )}
@@ -295,7 +295,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           {messages.length === 0 && (
             <div className="flex flex-wrap gap-2 mb-6">
               {STARTER_SUGGESTIONS.map((suggestion, i) => (
-                <button key={i} onClick={() => setInput(suggestion)} className="flex items-center gap-2 px-4 py-2 text-[10px] font-black bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl hover:border-orange-500 hover:text-orange-600 transition-all uppercase tracking-tight group">
+                <button key={i} onClick={() => setInput(suggestion)} className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl hover:border-orange-500 hover:text-orange-600 transition-all uppercase tracking-tight group">
                   <Zap size={10} className="text-orange-400" /> {suggestion}
                 </button>
               ))}
@@ -323,11 +323,11 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           </form>
 
           <div className="flex items-center justify-between mt-4 px-2">
-            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               System Active
             </div>
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Vercel AI SDK • Anthropic</p>
+            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Vercel AI SDK • Anthropic</p>
           </div>
         </div>
       </div>

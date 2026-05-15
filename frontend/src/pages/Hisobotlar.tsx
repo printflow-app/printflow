@@ -8,8 +8,10 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, PieChart, Pie, Cell,
 } from 'recharts';
-import { reportsApi, financeApi, tasksApi, taskExpensesApi, kpiApi, departmentsApi } from '../api';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { reportsApi, financeApi, tasksApi, taskExpensesApi, kpiApi } from '../api';
+import { useQuery } from '@tanstack/react-query';
+import { useDepartments } from '../hooks/queries';
+import { SkeletonStats, SkeletonCardGrid } from '../components/Skeleton';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
 
 // =============================================
@@ -56,15 +58,15 @@ const GrowthCard = ({ label, value, previous, growth, icon, format }: {
       <div className="flex items-center justify-between">
         <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600">{icon}</div>
         {growth !== null ? (
-          <span className={`flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full ${up ? 'bg-emerald-50 text-emerald-600' : dn ? 'bg-rose-50 text-rose-500' : 'bg-slate-100 text-slate-500'}`}>
+          <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${up ? 'bg-emerald-50 text-emerald-600' : dn ? 'bg-rose-50 text-rose-500' : 'bg-slate-100 text-slate-500'}`}>
             {up ? <TrendingUp size={11} /> : dn ? <TrendingDown size={11} /> : <Minus size={11} />}
             {up ? '+' : ''}{growth}%
           </span>
-        ) : <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-400">—</span>}
+        ) : <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-400">—</span>}
       </div>
       <div>
-        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
-        <h3 className="text-2xl font-black text-slate-900 tracking-tight">{format(value)}</h3>
+        <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{format(value)}</h3>
         <p className="text-[10px] font-bold text-slate-400 mt-0.5">O'tgan oy: {format(previous)}</p>
       </div>
     </div>
@@ -76,7 +78,7 @@ const PieTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-3 py-2 text-xs">
-      <p className="font-black text-slate-700">{payload[0].name}</p>
+      <p className="font-bold text-slate-700">{payload[0].name}</p>
       <p className="font-bold text-orange-600">{fmtFull(payload[0].value)}</p>
     </div>
   );
@@ -86,11 +88,11 @@ const LineTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-3 py-2 text-xs space-y-1 min-w-[160px]">
-      <p className="font-black text-slate-500 text-[9px] uppercase tracking-widest">{label}</p>
+      <p className="font-bold text-slate-500 text-[9px] uppercase tracking-widest">{label}</p>
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center justify-between gap-4">
           <span className="font-bold" style={{ color: p.color }}>{p.name}</span>
-          <span className="font-black text-slate-800">{fmt(p.value)}</span>
+          <span className="font-bold text-slate-800">{fmt(p.value)}</span>
         </div>
       ))}
     </div>
@@ -103,10 +105,10 @@ const Section = ({ title, sub, icon, children, span2 = false }: {
 }) => (
   <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden${span2 ? ' lg:col-span-2' : ''}`}>
     <div className="p-5 border-b border-slate-100">
-      <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+      <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
         {icon} {title}
       </h3>
-      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{sub}</p>
+      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{sub}</p>
     </div>
     {children}
   </div>
@@ -135,8 +137,8 @@ const PieWithLegend = ({ data, colors }: { data: { name: string; value: number }
           <div key={i} className="flex items-center gap-2.5">
             <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
             <span className="flex-1 text-[11px] font-bold text-slate-700 truncate">{entry.name}</span>
-            <span className="text-[10px] font-black text-slate-400">{total > 0 ? Math.round((entry.value / total) * 100) : 0}%</span>
-            <span className="text-[10px] font-black text-slate-700 tabular-nums">{fmt(entry.value)}</span>
+            <span className="text-[10px] font-bold text-slate-400">{total > 0 ? Math.round((entry.value / total) * 100) : 0}%</span>
+            <span className="text-[10px] font-bold text-slate-700 tabular-nums">{fmt(entry.value)}</span>
           </div>
         ))}
       </div>
@@ -159,16 +161,16 @@ const ServiceStats = ({ services }: { services: any[] }) => {
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+          <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <BarChart3 size={16} className="text-orange-500" /> Xizmat Hajmi & O'rtacha Chek
           </h3>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Xizmat tanlang va ko'rsatkichlarni ko'ring</p>
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Xizmat tanlang va ko'rsatkichlarni ko'ring</p>
         </div>
         <div className="relative">
           <select
             value={selectedId}
             onChange={e => setSelectedId(e.target.value)}
-            className="appearance-none pl-4 pr-10 py-2 text-xs font-black border-2 border-slate-200 rounded-xl outline-none focus:border-orange-400 bg-white text-slate-700 min-w-[200px] cursor-pointer"
+            className="appearance-none pl-4 pr-10 py-2 text-xs font-bold border-2 border-slate-200 rounded-xl outline-none focus:border-orange-400 bg-white text-slate-700 min-w-[200px] cursor-pointer"
           >
             {services.map(s => (
               <option key={s.serviceName} value={s.serviceName}>{s.serviceName}</option>
@@ -181,15 +183,15 @@ const ServiceStats = ({ services }: { services: any[] }) => {
       <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Orders count */}
         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Buyurtmalar</p>
-          <p className="text-3xl font-black text-slate-900 tabular-nums">{totalTasks}</p>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Buyurtmalar</p>
+          <p className="text-3xl font-bold text-slate-900 tabular-nums">{totalTasks}</p>
           <p className="text-[10px] font-bold text-slate-400 mt-1">ta bajarilgan</p>
         </div>
 
         {/* Total revenue */}
         <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-          <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-2">Jami Daromad</p>
-          <p className="text-xl font-black text-emerald-700 tabular-nums leading-tight">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Jami Daromad</p>
+          <p className="text-xl font-bold text-emerald-700 tabular-nums leading-tight">
             {totalRevenue >= 1_000_000
               ? `${(totalRevenue / 1_000_000).toFixed(2)} M`
               : `${Math.round(totalRevenue / 1_000)} K`}
@@ -199,8 +201,8 @@ const ServiceStats = ({ services }: { services: any[] }) => {
 
         {/* Average check */}
         <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100">
-          <p className="text-[9px] font-black uppercase tracking-widest text-orange-500 mb-2">O'rtacha Chek</p>
-          <p className="text-xl font-black text-orange-700 tabular-nums leading-tight">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-orange-500 mb-2">O'rtacha Chek</p>
+          <p className="text-xl font-bold text-orange-700 tabular-nums leading-tight">
             {avgCheck >= 1_000_000
               ? `${(avgCheck / 1_000_000).toFixed(2)} M`
               : `${Math.round(avgCheck / 1_000)} K`}
@@ -210,9 +212,9 @@ const ServiceStats = ({ services }: { services: any[] }) => {
 
         {/* Share of total */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col justify-between">
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Umumiy ulushi</p>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Umumiy ulushi</p>
           <div>
-            <p className="text-3xl font-black text-slate-800 tabular-nums">{share}%</p>
+            <p className="text-3xl font-bold text-slate-800 tabular-nums">{share}%</p>
             <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-orange-500 rounded-full transition-all duration-500" style={{ width: `${share}%` }} />
             </div>
@@ -222,7 +224,7 @@ const ServiceStats = ({ services }: { services: any[] }) => {
 
       {/* Mini ranking */}
       <div className="px-5 pb-5">
-        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Barcha xizmatlar reytingi (daromad bo'yicha)</p>
+        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-3">Barcha xizmatlar reytingi (daromad bo'yicha)</p>
         <div className="space-y-2">
           {[...services].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 6).map((s, i) => {
             const pct = allRevenue > 0 ? (s.totalRevenue / allRevenue) * 100 : 0;
@@ -230,13 +232,13 @@ const ServiceStats = ({ services }: { services: any[] }) => {
             return (
               <button key={s.serviceName} onClick={() => setSelectedId(s.serviceName)}
                 className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all text-left ${isActive ? 'bg-orange-50 border border-orange-200' : 'hover:bg-slate-50 border border-transparent'}`}>
-                <span className={`text-[10px] font-black w-4 ${isActive ? 'text-orange-500' : 'text-slate-400'}`}>{i + 1}</span>
-                <span className={`flex-1 text-[11px] font-black truncate ${isActive ? 'text-orange-700' : 'text-slate-700'}`}>{s.serviceName}</span>
+                <span className={`text-[10px] font-bold w-4 ${isActive ? 'text-orange-500' : 'text-slate-400'}`}>{i + 1}</span>
+                <span className={`flex-1 text-[11px] font-bold truncate ${isActive ? 'text-orange-700' : 'text-slate-700'}`}>{s.serviceName}</span>
                 <span className="text-[10px] font-bold text-slate-400 tabular-nums w-10 text-right">{s.totalTasks} ta</span>
                 <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full transition-all ${isActive ? 'bg-orange-500' : 'bg-slate-400'}`} style={{ width: `${pct}%` }} />
                 </div>
-                <span className={`text-[10px] font-black tabular-nums w-16 text-right ${isActive ? 'text-orange-600' : 'text-slate-600'}`}>{fmt(s.totalRevenue)}</span>
+                <span className={`text-[10px] font-bold tabular-nums w-16 text-right ${isActive ? 'text-orange-600' : 'text-slate-600'}`}>{fmt(s.totalRevenue)}</span>
               </button>
             );
           })}
@@ -271,7 +273,6 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
   // Branch comes ONLY from the navbar (SSOT). No mirror, no per-page selector.
   const branchId = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : '';
-  const [departments, setDepartments] = useState<any[]>([]);
   const [departmentId, setDepartmentId] = useState('');
   // Group-by-department toggle for the local breakdown card (client-side aggregation).
   const [groupByDept, setGroupByDept] = useState(false);
@@ -279,19 +280,8 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
-  // Data
-  const [growth, setGrowth] = useState<any>(null);
-  const [dashStats, setDashStats] = useState<{ totalKirim: number; totalChiqim: number; balance: number } | null>(null);
-  const [services, setServices] = useState<any[]>([]);
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [velocity, setVelocity] = useState<any[]>([]);
-  const [kpiRows, setKpiRows] = useState<any[]>([]);
-  const [allTasks, setAllTasks] = useState<any[]>([]);
-  const [dynamics, setDynamics] = useState<any[]>([]);
-  const [dynamicsType, setDynamicsType] = useState<'daily' | 'monthly'>('monthly');
-  const [paymentStats, setPaymentStats] = useState<{ kirim: any[]; chiqim: any[] }>({ kirim: [], chiqim: [] });
-  const [expenseBreakdown, setExpenseBreakdown] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Departments — via RQ
+  const { data: departments = [] } = useDepartments(branchId || undefined);
 
   // Tannarx Kalkulyatori
   const [costingQuery, setCostingQuery] = useState('');
@@ -302,13 +292,8 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const [expenseForm, setExpenseForm] = useState({ expenseName: '', amount: '' });
   const [isAddingExpense, setIsAddingExpense] = useState(false);
 
-  // Load departments scoped to the active branch. Reset the per-page departmentId filter
-  // whenever the navbar branch flips — a department from another branch is meaningless here.
-  useEffect(() => {
-    setDepartmentId('');
-    if (!branchId) { setDepartments([]); return; }
-    departmentsApi.findAll(branchId).then(r => setDepartments(r.data || [])).catch(() => setDepartments([]));
-  }, [branchId]);
+  // Reset departmentId when branch changes (department from other branch is meaningless)
+  useEffect(() => { setDepartmentId(''); }, [branchId]);
 
   const getDateParams = useCallback((): { start?: string; end?: string; branchId?: string } => {
     const today = new Date();
@@ -341,102 +326,112 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
   const isShortPreset = preset === 'month';
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    setDynamics([]);
-    setPaymentStats({ kirim: [], chiqim: [] });
-    setExpenseBreakdown([]);
-    try {
-      const params = getDateParams();
+  // ============ RQ Queries — har biri o'z cache key bilan ============
+  const params = getDateParams();
+  const financeParams = { ...params, ...(departmentId ? { departmentId } : {}) };
+  const canRunCustom = preset !== 'custom' || (!!params.start && !!params.end);
 
-      if (preset === 'custom' && (!params.start || !params.end)) {
-        setLoading(false);
-        return;
-      }
+  // Sof Foyda dashboard stats
+  const dashStatsQuery = useQuery({
+    queryKey: ['report-dashStats', financeParams],
+    queryFn: async () => (await financeApi.getDashboard({ params: financeParams })).data,
+    enabled: needsFinanceData && canRunCustom,
+  });
+  const dashStats = dashStatsQuery.data as { totalKirim: number; totalChiqim: number; balance: number } | null;
 
-      const calls: Promise<any>[] = [];
-      // Finance params include department filter; report-level APIs don't use it
-      const financeParams = { ...params, ...(departmentId ? { departmentId } : {}) };
+  // O'sish ko'rsatkichlari
+  const growthQuery = useQuery({
+    queryKey: ['report-growth', params.branchId],
+    queryFn: async () => (await reportsApi.growthMetrics({ branchId: params.branchId })).data,
+    enabled: canViewGrowthCards && canRunCustom,
+  });
+  const growth = growthQuery.data as any;
 
-      // Sof Foyda kartochkasi uchun dashboard stats
-      if (needsFinanceData) {
-        calls.push(financeApi.getDashboard({ params: financeParams }).then(r => setDashStats(r.data)).catch(() => {}));
-      }
+  // Xizmat Hajmi & O'rtacha Chek
+  const servicesQuery = useQuery({
+    queryKey: ['report-services', params],
+    queryFn: async () => (await reportsApi.servicesPerformance(params)).data || [],
+    enabled: canViewServiceStats && canRunCustom,
+  });
+  const services = (servicesQuery.data as any[]) || [];
 
-      // O'sish ko'rsatkichlari
-      if (canViewGrowthCards) {
-        calls.push(reportsApi.growthMetrics({ branchId: params.branchId }).then(r => setGrowth(r.data)).catch(() => {}));
-      }
+  // Dinamika — daily yoki monthly (faqat biri ishlaydi)
+  const dynamicsDailyQuery = useQuery({
+    queryKey: ['report-dinamika-daily', financeParams],
+    queryFn: async () => {
+      const r = await financeApi.getDinamika({ params: financeParams });
+      return (r.data || []).map((d: any) => ({
+        label: dayLabel(d.name), kirim: d.kirim || 0, chiqim: d.chiqim || 0,
+        hamkorlar: d.hamkorlar || 0, net: (d.kirim || 0) - (d.chiqim || 0) - (d.hamkorlar || 0),
+      }));
+    },
+    enabled: canViewDynamics && isShortPreset && canRunCustom,
+  });
+  const dynamicsMonthlyQuery = useQuery({
+    queryKey: ['report-dinamika-monthly', getMonthsCount(), params.branchId],
+    queryFn: async () => {
+      const r = await reportsApi.monthlyDynamics({ months: getMonthsCount(), branchId: params.branchId });
+      return (r.data || []).map((d: any) => ({
+        label: monthLabel(d.month), kirim: d.kirim || 0, chiqim: d.chiqim || 0,
+        hamkorlar: d.hamkorlar || 0, net: d.net || 0,
+      }));
+    },
+    enabled: canViewDynamics && !isShortPreset && canRunCustom,
+  });
+  const dynamics = isShortPreset ? (dynamicsDailyQuery.data as any[] || []) : (dynamicsMonthlyQuery.data as any[] || []);
+  const dynamicsType: 'daily' | 'monthly' = isShortPreset ? 'daily' : 'monthly';
 
-      // Xizmat Hajmi & O'rtacha Chek
-      if (canViewServiceStats) {
-        calls.push(reportsApi.servicesPerformance(params).then(r => setServices(r.data || [])).catch(() => {}));
-      }
+  // Payment type stats (kirim/chiqim distribution)
+  const paymentStatsQuery = useQuery({
+    queryKey: ['report-paymentStats', financeParams],
+    queryFn: async () => (await financeApi.getStatsByPaymentType({ params: financeParams })).data || { kirim: [], chiqim: [] },
+    enabled: (canViewIncomeByType || canViewExpenseByType) && canRunCustom,
+  });
+  const paymentStats = (paymentStatsQuery.data as { kirim: any[]; chiqim: any[] }) || { kirim: [], chiqim: [] };
 
-      // Moliyaviy Dinamika grafigi
-      if (canViewDynamics) {
-        if (isShortPreset) {
-          calls.push(
-            financeApi.getDinamika({ params: financeParams }).then(r => {
-              const raw: any[] = r.data || [];
-              const normalized = raw.map(d => ({
-                label: dayLabel(d.name),
-                kirim: d.kirim || 0,
-                chiqim: d.chiqim || 0,
-                hamkorlar: d.hamkorlar || 0,
-                net: (d.kirim || 0) - (d.chiqim || 0) - (d.hamkorlar || 0),
-              }));
-              setDynamics(normalized);
-              setDynamicsType('daily');
-            }).catch(() => {})
-          );
-        } else {
-          calls.push(
-            reportsApi.monthlyDynamics({ months: getMonthsCount(), branchId: params.branchId }).then(r => {
-              const normalized = (r.data || []).map((d: any) => ({
-                label: monthLabel(d.month),
-                kirim: d.kirim || 0,
-                chiqim: d.chiqim || 0,
-                hamkorlar: d.hamkorlar || 0,
-                net: d.net || 0,
-              }));
-              setDynamics(normalized);
-              setDynamicsType('monthly');
-            }).catch(() => {})
-          );
-        }
-      }
+  // Chiqim Tahlili (Expense breakdown)
+  const expenseQuery = useQuery({
+    queryKey: ['report-expenseBreakdown', financeParams],
+    queryFn: async () => (await financeApi.getExpenseBreakdown({ params: financeParams })).data || [],
+    enabled: canViewExpenseCharts && canRunCustom,
+  });
+  const expenseBreakdown = (expenseQuery.data as any[]) || [];
 
-      // Kirim / Chiqim Turlari
-      if (canViewIncomeByType || canViewExpenseByType) {
-        calls.push(financeApi.getStatsByPaymentType({ params: financeParams }).then(r => setPaymentStats(r.data || { kirim: [], chiqim: [] })).catch(() => {}));
-      }
+  // Vendor profitability
+  const vendorsQuery = useQuery({
+    queryKey: ['report-vendors', params.start, params.end],
+    queryFn: async () => (await reportsApi.vendorProfitability({ start: params.start, end: params.end })).data || [],
+    enabled: canViewVendors && canRunCustom,
+  });
+  const vendors = (vendorsQuery.data as any[]) || [];
 
-      // Chiqim Tahlili
-      if (canViewExpenseCharts) {
-        calls.push(financeApi.getExpenseBreakdown({ params: financeParams }).then(r => setExpenseBreakdown(r.data || [])).catch(() => {}));
-      }
+  // All tasks (cost calculator + department grouping)
+  const allTasksQuery = useQuery({
+    queryKey: ['report-allTasks', params.branchId],
+    queryFn: async () => (await tasksApi.findAll(params.branchId)).data || [],
+    enabled: (canViewCostCalc || canViewGrowthCards || canViewServiceStats) && canRunCustom,
+  });
+  const allTasks = (allTasksQuery.data as any[]) || [];
 
-      if (canViewVendors) {
-        calls.push(reportsApi.vendorProfitability({ start: params.start, end: params.end }).then(r => setVendors(r.data || [])).catch(() => {}));
-      }
-      // Load tasks for cost calculator AND for the local department-grouping breakdown.
-      // Scoped to the active branch — analytics never mixes branches.
-      if (canViewCostCalc || canViewGrowthCards || canViewServiceStats) {
-        calls.push(tasksApi.findAll(params.branchId).then(r => setAllTasks(r.data || [])).catch(() => {}));
-      }
-      if (canViewKpi) {
-        calls.push(reportsApi.employeeVelocity({ start: params.start, end: params.end }).then(r => setVelocity(r.data || [])).catch(() => {}));
-        calls.push(kpiApi.list({ start: params.start, end: params.end }).then(r => setKpiRows(r.data || [])).catch(() => {}));
-      }
+  // KPI + velocity
+  const velocityQuery = useQuery({
+    queryKey: ['report-velocity', params.start, params.end],
+    queryFn: async () => (await reportsApi.employeeVelocity({ start: params.start, end: params.end })).data || [],
+    enabled: canViewKpi && canRunCustom,
+  });
+  const velocity = (velocityQuery.data as any[]) || [];
+  const kpiQuery = useQuery({
+    queryKey: ['report-kpi', params.start, params.end],
+    queryFn: async () => (await kpiApi.list({ start: params.start, end: params.end })).data || [],
+    enabled: canViewKpi && canRunCustom,
+  });
+  const kpiRows = (kpiQuery.data as any[]) || [];
 
-      await Promise.all(calls);
-    } finally {
-      setLoading(false);
-    }
-  }, [getDateParams, preset, needsFinanceData, canViewGrowthCards, canViewDynamics, canViewIncomeByType, canViewExpenseByType, canViewExpenseCharts, canViewServiceStats, canViewKpi, canViewVendors, isShortPreset, branchId, departmentId]);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // Aggregated loading state for the page
+  const loading = [
+    dashStatsQuery, growthQuery, servicesQuery, dynamicsDailyQuery, dynamicsMonthlyQuery,
+    paymentStatsQuery, expenseQuery, vendorsQuery, allTasksQuery, velocityQuery, kpiQuery,
+  ].some(q => q.isLoading && q.fetchStatus !== 'idle');
 
   const handleAddCostingExpense = async () => {
     if (!costingTask || !expenseForm.expenseName.trim() || !expenseForm.amount) return;
@@ -512,7 +507,12 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage />;
+  if (loading) return (
+    <div className="space-y-4">
+      <SkeletonStats count={4} />
+      <SkeletonCardGrid count={4} />
+    </div>
+  );
 
   return (
     <div className="space-y-5 pb-20">
@@ -520,25 +520,33 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
             <BarChart3 className="text-orange-600" size={22} /> Hisobotlar & Tahlil
           </h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
         </div>
-        <button onClick={fetchAll} className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm">
+        <button
+          onClick={() => {
+            // Force refetch all report queries
+            [dashStatsQuery, growthQuery, servicesQuery, dynamicsDailyQuery, dynamicsMonthlyQuery,
+             paymentStatsQuery, expenseQuery, vendorsQuery, allTasksQuery, velocityQuery, kpiQuery]
+              .forEach(q => q.refetch());
+          }}
+          className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
+        >
           <RefreshCw size={14} /> Yangilash
         </button>
       </div>
 
       {/* ── Filter Bar ── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+        <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
           <Calendar size={14} /> Davr:
         </div>
         <div className="flex bg-slate-100 p-0.5 rounded-lg shadow-inner">
           {(['month', '3month', '6month', 'year', 'custom'] as DatePreset[]).map((pr) => (
             <button key={pr} onClick={() => setPreset(pr)}
-              className={`px-3 py-1.5 text-[10px] font-black rounded-md transition-all ${preset === pr ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-800'}`}>
+              className={`px-3 py-1.5 text-[10px] font-bold rounded-md transition-all ${preset === pr ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-800'}`}>
               {pr === 'month' ? 'Bu oy' : pr === '3month' ? '3 oy' : pr === '6month' ? '6 oy' : pr === 'year' ? 'Bu yil' : 'Boshqa'}
             </button>
           ))}
@@ -557,7 +565,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             <>
               <div className="relative">
                 <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
-                  className="appearance-none pl-3 pr-8 py-1.5 text-xs font-black border border-slate-200 rounded-lg outline-none focus:border-orange-400 bg-white">
+                  className="appearance-none pl-3 pr-8 py-1.5 text-xs font-bold border border-slate-200 rounded-lg outline-none focus:border-orange-400 bg-white">
                   <option value="">Barcha bo'limlar</option>
                   {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
@@ -566,7 +574,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               <button
                 type="button"
                 onClick={() => setGroupByDept(v => !v)}
-                className={`px-3 py-1.5 text-xs font-black border rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-xs font-bold border rounded-lg transition-colors ${
                   groupByDept
                     ? 'bg-[#FF6B00] text-white border-[#FF6B00]'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-orange-400'
@@ -595,8 +603,8 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 <TrendingDown size={18} />
               </div>
               <div>
-                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Jami Chiqim</p>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight">{fmtFull(dashStats.totalChiqim)}</h3>
+                <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-1">Jami Chiqim</p>
+                <h3 className="text-xl font-bold text-slate-900 tracking-tight">{fmtFull(dashStats.totalChiqim)}</h3>
               </div>
             </div>
           )}
@@ -607,8 +615,8 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {canViewGrowthCards && dashStats && (
         <div className="bg-slate-900 rounded-2xl p-5 shadow-lg flex items-center justify-between">
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Sof Foyda (Davr)</p>
-            <h3 className="text-2xl font-black text-white tracking-tight">{fmtFull(dashStats.balance)}</h3>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Sof Foyda (Davr)</p>
+            <h3 className="text-2xl font-bold text-white tracking-tight">{fmtFull(dashStats.balance)}</h3>
           </div>
           <div className="w-12 h-12 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center">
             <Wallet size={22} className="text-orange-400" />
@@ -678,7 +686,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                       <span className="text-[11px] font-bold text-slate-600 truncate">{item.name}</span>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-[11px] font-black text-slate-800">{fmtFull(item.value)}</p>
+                      <p className="text-[11px] font-bold text-slate-800">{fmtFull(item.value)}</p>
                       <p className="text-[9px] font-bold text-slate-400">{pct}%</p>
                     </div>
                   </div>
@@ -696,23 +704,23 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             <table className="w-full text-xs">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="text-left p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Hamkor</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Xarajat</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Daromad</th>
-                  <th className="text-right p-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Marja</th>
+                  <th className="text-left p-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Hamkor</th>
+                  <th className="text-right p-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Xarajat</th>
+                  <th className="text-right p-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Daromad</th>
+                  <th className="text-right p-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Marja</th>
                 </tr>
               </thead>
               <tbody>
                 {vendors.slice(0, 8).map((v: any) => (
                   <tr key={v.vendorId} className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
                     <td className="p-3">
-                      <div className="font-black text-slate-800">{v.vendorName}</div>
+                      <div className="font-bold text-slate-800">{v.vendorName}</div>
                       {v.specialty && <div className="text-[10px] text-slate-400 font-bold">{v.specialty}</div>}
                     </td>
-                    <td className="p-3 text-right font-black text-rose-500 tabular-nums">{fmt(v.totalCost)}</td>
-                    <td className="p-3 text-right font-black text-emerald-600 tabular-nums">{fmt(v.linkedRevenue)}</td>
+                    <td className="p-3 text-right font-bold text-rose-500 tabular-nums">{fmt(v.totalCost)}</td>
+                    <td className="p-3 text-right font-bold text-emerald-600 tabular-nums">{fmt(v.linkedRevenue)}</td>
                     <td className="p-3 text-right">
-                      <span className={`inline-block px-2 py-0.5 rounded-md font-black text-[10px] ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'}`}>
+                      <span className={`inline-block px-2 py-0.5 rounded-md font-bold text-[10px] ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'}`}>
                         {v.marginPct >= 0 ? '+' : ''}{v.marginPct}%
                       </span>
                     </td>
@@ -746,10 +754,10 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
                 <Package size={16} className="text-orange-500" /> Bo'limlar bo'yicha taqsimot
               </h3>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                 Buyurtmalar va daromad — bo'limlarga guruhlangan
               </p>
             </div>
@@ -807,10 +815,10 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {canViewCostCalc && <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-orange-100 bg-orange-50/40 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
               <Package size={16} className="text-orange-500" /> Tannarx Kalkulyatori
             </h3>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
               Buyurtma ID, nomi yoki mijoz bo'yicha tannarx va foyda tahlili
             </p>
           </div>
@@ -819,13 +827,13 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         <div className="p-5 space-y-5">
           {/* Order Selection Dropdown */}
           <div className="space-y-2">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Buyurtmani tanlang</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Buyurtmani tanlang</p>
             <div className="flex gap-3">
               <div className="relative flex-1">
                 <select
                   value={costingTask?.id || ''}
                   onChange={(e) => handleCostingSelect(e.target.value)}
-                  className="w-full h-11 pl-4 pr-10 text-sm font-black bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all appearance-none cursor-pointer"
+                  className="w-full h-11 pl-4 pr-10 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all appearance-none cursor-pointer"
                 >
                   <option value="" className="font-sans">--- Buyurtmani tanlang (Joriy oy) ---</option>
                   {allTasks
@@ -857,7 +865,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               <button
                 onClick={handleCostingSearch}
                 disabled={isSearchingCosting || !costingQuery.trim()}
-                className="h-11 px-5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-40 hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-lg hidden sm:block"
+                className="h-11 px-5 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-lg hidden sm:block"
               >
                 {isSearchingCosting ? '...' : 'QIDIRISH'}
               </button>
@@ -867,7 +875,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           {/* Error */}
           {costingError && (
             <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
-              <span className="text-rose-500 font-black text-sm">✕</span>
+              <span className="text-rose-500 font-bold text-sm">✕</span>
               <p className="text-sm font-bold text-rose-600">{costingError}</p>
             </div>
           )}
@@ -887,11 +895,11 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
                 {/* Task identity strip */}
                 <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
-                  <span className="text-[11px] font-black font-mono bg-white border border-orange-300 text-orange-600 px-3 py-1 rounded-lg tracking-widest shrink-0">
+                  <span className="text-[11px] font-bold font-mono bg-white border border-orange-300 text-orange-600 px-3 py-1 rounded-lg tracking-widest shrink-0">
                     {costingTask.displayId || `#${costingTask.id.slice(-6).toUpperCase()}`}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-slate-800 truncate uppercase tracking-tight">
+                    <p className="text-sm font-bold text-slate-800 truncate uppercase tracking-tight">
                       {costingTask.orderName ? `${costingTask.orderName} — ` : ''}{costingTask.title}
                     </p>
                     <p className="text-[10px] font-bold text-slate-400 mt-0.5">
@@ -906,26 +914,26 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   {/* Revenue + Cost */}
                   <div className="grid grid-cols-2 divide-x divide-slate-200 border-b border-slate-200">
                     <div className="p-4">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
-                      <p className="text-xl font-black text-slate-800 font-mono tabular-nums">{revenue.toLocaleString()}</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
+                      <p className="text-xl font-bold text-slate-800 font-mono tabular-nums">{revenue.toLocaleString()}</p>
                       <p className="text-[9px] font-bold text-slate-400 mt-0.5">UZS</p>
                     </div>
                     <div className="p-4">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
-                      <p className="text-xl font-black text-slate-700 font-mono tabular-nums">{totalCost.toLocaleString()}</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
+                      <p className="text-xl font-bold text-slate-700 font-mono tabular-nums">{totalCost.toLocaleString()}</p>
                       <p className="text-[9px] font-bold text-slate-400 mt-0.5">UZS · {costingExpenses.length} ta moddа</p>
                     </div>
                   </div>
 
                   {/* Net profit hero */}
                   <div className="p-5 border-b border-slate-200">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Sof Foyda</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sof Foyda</p>
                     <div className="flex items-baseline gap-4">
-                      <p className={`text-3xl font-black font-mono tracking-tight ${netProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
+                      <p className={`text-3xl font-bold font-mono tracking-tight ${netProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
                         {netProfit.toLocaleString()} <span className="text-sm font-bold">UZS</span>
                       </p>
                       {revenue > 0 && (
-                        <span className={`text-[11px] font-black px-3 py-1 rounded-lg ${netProfit >= 0 ? 'bg-orange-50 text-orange-600 border border-orange-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
+                        <span className={`text-[11px] font-bold px-3 py-1 rounded-lg ${netProfit >= 0 ? 'bg-orange-50 text-orange-600 border border-orange-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
                           {netProfit >= 0 ? '+' : ''}{margin.toFixed(1)}% marja
                         </span>
                       )}
@@ -935,15 +943,15 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   {/* Unit metrics */}
                   <div className="grid grid-cols-2 divide-x divide-slate-200">
                     <div className="p-4">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
-                      <p className="text-lg font-black text-slate-700 font-mono tabular-nums">
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
+                      <p className="text-lg font-bold text-slate-700 font-mono tabular-nums">
                         {unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px] font-bold text-slate-400 ml-1">UZS</span>
                       </p>
                       <p className="text-[9px] font-bold text-slate-400 mt-0.5">{qty} dona asosida</p>
                     </div>
                     <div className="p-4">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
-                      <p className={`text-lg font-black font-mono tabular-nums ${unitProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
+                      <p className={`text-lg font-bold font-mono tabular-nums ${unitProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
                         {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px] font-bold text-slate-400 ml-1">UZS</span>
                       </p>
                       <p className="text-[9px] font-bold text-slate-400 mt-0.5">UZS / dona</p>
@@ -954,7 +962,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 {/* Add expense form */}
                 <div className="border border-orange-200 rounded-xl overflow-hidden">
                   <div className="bg-orange-50 px-4 py-2.5 border-b border-orange-200">
-                    <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest">Xarajat qo'shish</p>
+                    <p className="text-[9px] font-bold text-orange-600 uppercase tracking-widest">Xarajat qo'shish</p>
                   </div>
                   <div className="p-4 flex gap-3">
                     <input
@@ -976,7 +984,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                     <button
                       onClick={handleAddCostingExpense}
                       disabled={isAddingExpense || !expenseForm.expenseName.trim() || !expenseForm.amount}
-                      className="h-10 px-4 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-40 hover:bg-orange-700 transition-all active:scale-95 flex items-center gap-1.5 shadow-sm shadow-orange-500/20"
+                      className="h-10 px-4 bg-orange-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-orange-700 transition-all active:scale-95 flex items-center gap-1.5 shadow-sm shadow-orange-500/20"
                     >
                       <Plus size={13} strokeWidth={3} /> QO'SH
                     </button>
@@ -987,19 +995,19 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 {costingExpenses.length > 0 && (
                   <div className="border border-slate-200 rounded-xl overflow-hidden">
                     <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Xarajatlar ro'yxati</p>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Xarajatlar ro'yxati</p>
                     </div>
                     <div className="divide-y divide-slate-100">
                       {costingExpenses.map((exp: any) => (
                         <div key={exp.id} className="flex items-center justify-between px-4 py-3 hover:bg-orange-50/40 transition-colors group">
                           <div>
-                            <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{exp.expenseName}</p>
+                            <p className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">{exp.expenseName}</p>
                             <p className="text-[9px] text-slate-400 font-bold mt-0.5">
                               {new Date(exp.createdAt).toLocaleDateString('uz-UZ')}
                             </p>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-sm font-black text-slate-700 font-mono tabular-nums">
+                            <span className="text-sm font-bold text-slate-700 font-mono tabular-nums">
                               {Number(exp.amount).toLocaleString()} UZS
                             </span>
                             <button
@@ -1013,8 +1021,8 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                       ))}
                       {/* Total row */}
                       <div className="flex items-center justify-between px-4 py-3 bg-orange-50">
-                        <span className="text-[9px] font-black text-orange-600 uppercase tracking-widest">Jami Xarajat</span>
-                        <span className="text-sm font-black text-slate-800 font-mono tabular-nums">
+                        <span className="text-[9px] font-bold text-orange-600 uppercase tracking-widest">Jami Xarajat</span>
+                        <span className="text-sm font-bold text-slate-800 font-mono tabular-nums">
                           {totalCost.toLocaleString()} UZS
                         </span>
                       </div>
@@ -1035,7 +1043,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           {!costingTask && !costingError && !isSearchingCosting && (
             <div className="py-10 flex flex-col items-center justify-center gap-2 opacity-40">
               <Package size={32} className="text-orange-400" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                 Buyurtma ID yoki nomini kiriting
               </p>
             </div>
@@ -1046,7 +1054,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {!needsFinanceData && !canViewKpi && !canViewVendors && !canViewCostCalc && (
         <div className="text-center py-20 text-slate-400">
           <BarChart3 size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-black text-sm uppercase tracking-widest">Ruxsat yo'q</p>
+          <p className="font-bold text-sm uppercase tracking-widest">Ruxsat yo'q</p>
           <p className="text-xs font-bold mt-1">Hisobotlarni ko'rish uchun administrator bilan bog'laning</p>
         </div>
       )}

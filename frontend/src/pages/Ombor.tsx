@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Package, Plus, Trash2, Edit3, ArrowUpCircle, ArrowDownCircle,
   CheckCircle2, AlertCircle, TrendingDown, TrendingUp, BarChart2, History, X
 } from 'lucide-react';
 import { inventoryApi, servicesApi } from '../api';
+import { useMaterials, useStockMovements, useServices, useInvalidate } from '../hooks/queries';
 import Modal from '../components/Modal';
 import NumberInput from '../components/NumberInput';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { SkeletonCardGrid } from '../components/Skeleton';
 import { Search, Layers, Calculator, Save } from 'lucide-react';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
@@ -40,9 +41,14 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const canUse      = isAdmin || p.canUseInventory      || p.canManageInventory;
   const canWriteOff = isAdmin || p.canWriteOffInventory || p.canManageInventory;
 
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [movements, setMovements] = useState<Movement[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // RQ — cached fetches
+  const { data: materialsData = [], isLoading: matLoading } = useMaterials(activeBranchId);
+  const materials = materialsData as Material[];
+  const { data: movementsData = [], isLoading: movLoading } = useStockMovements();
+  const movements = movementsData as Movement[];
+  const { data: services = [] } = useServices(activeBranchId);
+  const invalidate = useInvalidate();
+  const isLoading = matLoading || movLoading;
   const [activeTab, setActiveTab] = useState<'materials' | 'history'>('materials');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -56,7 +62,6 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const [unlinkServiceId, setUnlinkServiceId] = useState<string | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [stockOp, setStockOp] = useState<'kirim' | 'chiqim' | 'brak'>('kirim');
-  const [services, setServices] = useState<any[]>([]);
   const [bomSearchTerm, setBomSearchTerm] = useState('');
   
   // Smart Calculator Form
@@ -72,33 +77,22 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     setTimeout(() => setStatusMessage(null), 3500);
   };
 
-  const fetchData = useCallback(async (refreshSelectedId?: string) => {
-    try {
-      const hasBranch = !!activeBranchId && activeBranchId !== '__main__';
-      const [matRes, movRes, svcRes] = await Promise.all([
-        inventoryApi.getMaterials(activeBranchId).catch(() => ({ data: [] })),
-        inventoryApi.getMovements().catch(() => ({ data: [] })),
-        hasBranch
-          ? servicesApi.findAll(activeBranchId!).catch(() => ({ data: [] }))
-          : Promise.resolve({ data: [] }),
-      ]);
-      const freshMaterials = matRes.data || [];
-      setMaterials(freshMaterials);
-      setMovements(movRes.data || []);
-      setServices(svcRes.data || []);
-      // Re-sync selectedMaterial so BOM list updates immediately inside the modal
-      if (refreshSelectedId) {
-        const refreshed = freshMaterials.find((m: Material) => m.id === refreshSelectedId);
-        if (refreshed) setSelectedMaterial(refreshed);
-      }
-    } catch {
-      setMaterials([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeBranchId]);
+  // Keep selectedMaterial in sync with the live materials list (RQ refetches it).
+  // Without this, BOM modal would show stale material data after a mutation.
+  useEffect(() => {
+    if (!selectedMaterial) return;
+    const fresh = materials.find(m => m.id === selectedMaterial.id);
+    if (fresh && fresh !== selectedMaterial) setSelectedMaterial(fresh);
+  }, [materials]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // fetchData() shim — invalidates relevant RQ caches; second arg ignored (RQ auto re-syncs)
+  const fetchData = async (_refreshId?: string) => {
+    invalidate.materials();
+    invalidate.movements();
+    invalidate.services();
+  };
+
+  // RQ auto-fetches on hook mount; manual initial fetch removed.
 
   useAutoRefresh(() => fetchData(selectedMaterial?.id), {
     intervalMs: 20000,
@@ -229,7 +223,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
   const lowCount = materials.filter(isLow).length;
 
-  if (isLoading) return <LoadingSpinner fullPage />;
+  if (isLoading) return <SkeletonCardGrid count={6} />;
 
   return (
     <div className="space-y-6 pb-16 animate-fade-in">
@@ -244,17 +238,17 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-base sm:text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+          <h2 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <Package size={20} className="text-orange-500" /> Ombor Boshqaruvi
           </h2>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             Xomashyo va materiallar nazorati
           </p>
         </div>
         {canAddItem && (
           <button
             onClick={() => setIsAddMaterialOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
           >
             <Plus size={16} strokeWidth={3} /> Material Qo'shish
           </button>
@@ -274,8 +268,8 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               <stat.icon size={18} />
             </div>
             <div>
-              <p className="text-xl font-black text-slate-800 leading-none">{stat.value}</p>
-              <p className={`text-[8px] font-black uppercase tracking-widest mt-1 ${stat.text}`}>{stat.label}</p>
+              <p className="text-xl font-bold text-slate-800 leading-none">{stat.value}</p>
+              <p className={`text-[8px] font-bold uppercase tracking-widest mt-1 ${stat.text}`}>{stat.label}</p>
             </div>
           </div>
         ))}
@@ -285,13 +279,13 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl w-fit">
         <button
           onClick={() => setActiveTab('materials')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'materials' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${activeTab === 'materials' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
         >
           <BarChart2 size={14} /> Materiallar
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-400 hover:text-slate-600'}`}
         >
           <History size={14} /> Harakatlar Tarixi
         </button>
@@ -301,12 +295,17 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       {activeTab === 'materials' && (
         <div className="space-y-3">
           {materials.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-slate-200 py-24 flex flex-col items-center justify-center gap-4">
-              <Package size={48} className="text-slate-200" />
-              <p className="text-slate-300 font-black uppercase tracking-widest text-xs">Hozircha materiallar yo'q</p>
+            <div className="bg-white rounded-2xl border border-slate-200 py-16 flex flex-col items-center justify-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-400">
+                <Package size={28} />
+              </div>
+              <div className="text-center">
+                <p className="text-base font-bold text-slate-800 mb-1">Hali material yo'q</p>
+                <p className="text-sm text-slate-500 max-w-sm">Bosma uchun ishlatiladigan materiallarni (qog'oz, siyoh, plyonka...) qo'shing va qoldiqlarni avtomatik kuzating.</p>
+              </div>
               {canAddItem && (
-                <button onClick={() => setIsAddMaterialOpen(true)} className="text-xs font-black text-orange-500 border-b-2 border-orange-200 pb-0.5 hover:border-orange-500 transition-colors">
-                  + Birinchi materialni qo'shing
+                <button onClick={() => setIsAddMaterialOpen(true)} className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm flex items-center gap-2 mt-2">
+                  <Plus size={16} /> Birinchi materialni qo'shish
                 </button>
               )}
             </div>
@@ -324,13 +323,13 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-sm ${
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm ${
                           isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-orange-500'
                         }`}>
                           {mat.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">{mat.name}</h4>
+                          <h4 className="text-sm font-bold text-slate-800 uppercase tracking-tight">{mat.name}</h4>
                           <p className="text-[10px] font-bold text-slate-400 uppercase">{mat.unit}</p>
                         </div>
                       </div>
@@ -363,26 +362,26 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     <div className="mb-4 space-y-3">
                       <div>
                         <div className="flex justify-between items-end mb-1">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Omborda jami:</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Omborda jami:</span>
                           {isCrit ? (
-                            <span className="text-[8px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-md animate-pulse">TUGAGAN!</span>
+                            <span className="text-[8px] font-bold bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-md animate-pulse">TUGAGAN!</span>
                           ) : isLowStock ? (
-                            <span className="text-[8px] font-black bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md">MIN: {mat.minStock}</span>
+                            <span className="text-[8px] font-bold bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md">MIN: {mat.minStock}</span>
                           ) : null}
                         </div>
-                        <p className={`text-xl font-black tabular-nums ${isCrit ? 'text-rose-500' : isLowStock ? 'text-amber-500' : 'text-slate-800'}`}>
+                        <p className={`text-xl font-bold tabular-nums ${isCrit ? 'text-rose-500' : isLowStock ? 'text-amber-500' : 'text-slate-800'}`}>
                           {formatStock(mat.currentStock, mat.unit)}
                         </p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
                         <div>
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Band (Reserved):</p>
-                          <p className="text-sm font-black text-sky-600 tabular-nums">{formatStock(mat.reservedStock || 0, mat.unit)}</p>
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Band (Reserved):</p>
+                          <p className="text-sm font-bold text-sky-600 tabular-nums">{formatStock(mat.reservedStock || 0, mat.unit)}</p>
                         </div>
                         <div>
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Sotuvda mavjud:</p>
-                          <p className="text-sm font-black text-orange-600 tabular-nums">
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Sotuvda mavjud:</p>
+                          <p className="text-sm font-bold text-orange-600 tabular-nums">
                             {formatStock(Math.max(0, mat.currentStock - (mat.reservedStock || 0)), mat.unit)}
                           </p>
                         </div>
@@ -406,7 +405,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                         {canReceive && (
                           <button
                             onClick={() => openStockOp(mat, 'kirim')}
-                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 text-[10px] font-black uppercase rounded-xl border border-orange-100 hover:border-orange-500 transition-all"
+                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 text-[10px] font-bold uppercase rounded-xl border border-orange-100 hover:border-orange-500 transition-all"
                           >
                             <ArrowUpCircle size={13} /> Kirim
                           </button>
@@ -414,7 +413,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                         {canUse && (
                           <button
                             onClick={() => openStockOp(mat, 'chiqim')}
-                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-sky-50 hover:bg-sky-500 hover:text-white text-sky-600 text-[10px] font-black uppercase rounded-xl border border-sky-100 hover:border-sky-500 transition-all"
+                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-sky-50 hover:bg-sky-500 hover:text-white text-sky-600 text-[10px] font-bold uppercase rounded-xl border border-sky-100 hover:border-sky-500 transition-all"
                           >
                             <ArrowDownCircle size={13} /> Chiqim
                           </button>
@@ -422,7 +421,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                         {canWriteOff && (
                           <button
                             onClick={() => openStockOp(mat, 'brak')}
-                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 text-[10px] font-black uppercase rounded-xl border border-rose-100 hover:border-rose-500 transition-all"
+                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 text-[10px] font-bold uppercase rounded-xl border border-rose-100 hover:border-rose-500 transition-all"
                           >
                             <X size={13} /> Brak
                           </button>
@@ -444,11 +443,11 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Sana</th>
-                  <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Material</th>
-                  <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Tur</th>
-                  <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Miqdor</th>
-                  <th className="px-6 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Izoh</th>
+                  <th className="px-6 py-4 text-left text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Sana</th>
+                  <th className="px-6 py-4 text-left text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Material</th>
+                  <th className="px-6 py-4 text-left text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tur</th>
+                  <th className="px-6 py-4 text-left text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Miqdor</th>
+                  <th className="px-6 py-4 text-left text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Izoh</th>
                 </tr>
               </thead>
               <tbody>
@@ -456,20 +455,20 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   <tr>
                     <td colSpan={5} className="py-20 text-center">
                       <History size={40} className="mx-auto text-slate-200 mb-3" />
-                      <p className="text-slate-300 font-black uppercase tracking-widest text-xs">Harakatlar tarixi bo'sh</p>
+                      <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">Harakatlar tarixi bo'sh</p>
                     </td>
                   </tr>
                 ) : (
                   movements.map(mv => (
                     <tr key={mv.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 text-[11px] font-black text-slate-400 tabular-nums whitespace-nowrap">
+                      <td className="px-6 py-4 text-[11px] font-bold text-slate-400 tabular-nums whitespace-nowrap">
                         {new Date(mv.createdAt).toLocaleString('uz-UZ', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-xs font-black text-slate-800 uppercase tracking-tight">{mv.material?.name || '—'}</span>
+                        <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">{mv.material?.name || '—'}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1 rounded-xl uppercase ${
+                        <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1 rounded-xl uppercase ${
                           mv.type === 'kirim' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
                           mv.type === 'chiqim' ? 'bg-sky-50 text-sky-600 border border-sky-100' :
                           'bg-rose-50 text-rose-600 border border-rose-100'
@@ -478,7 +477,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                           {mv.type.charAt(0).toUpperCase() + mv.type.slice(1)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-xs font-black text-slate-700 tabular-nums">
+                      <td className="px-6 py-4 text-xs font-bold text-slate-700 tabular-nums">
                         {mv.type === 'kirim' ? '+' : '-'}{mv.quantity} {mv.material?.unit}
                       </td>
                       <td className="px-6 py-4 text-xs font-medium text-slate-500 italic max-w-[200px] truncate">
@@ -497,40 +496,40 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       <Modal isOpen={isAddMaterialOpen} onClose={() => setIsAddMaterialOpen(false)} title="Yangi Material Qo'shish">
         <form onSubmit={handleAddMaterial} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Material Nomi</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Material Nomi</label>
             <input type="text" required value={newMaterialForm.name} onChange={e => setNewMaterialForm(f => ({ ...f, name: e.target.value }))} className="input-minimal" placeholder="Masalan: A4 Qog'oz, Ko'k Kraska..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">O'lchov Birligi</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">O'lchov Birligi</label>
               <select value={newMaterialForm.unit} onChange={e => setNewMaterialForm(f => ({ ...f, unit: e.target.value }))} className="select-minimal">
                 {['dona', 'kg', 'g', 'litr', 'ml', 'sm', 'metr', 'm2', 'varaq', 'quti', 'rulon'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Boshlang'ich Qoldiq</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Boshlang'ich Qoldiq</label>
               <NumberInput 
                 value={newMaterialForm.currentStock} 
                 onChange={val => setNewMaterialForm(f => ({ ...f, currentStock: val || '' }))} 
-                className="input-minimal font-black text-orange-600"
+                className="input-minimal font-bold text-orange-600"
                 placeholder="0"
                 allowDecimal={true}
               />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Minimal Qoldiq (Ogohlantirish)</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Minimal Qoldiq (Ogohlantirish)</label>
             <NumberInput 
               value={newMaterialForm.minStock} 
               onChange={val => setNewMaterialForm(f => ({ ...f, minStock: val || '' }))} 
-              className="input-minimal font-black text-amber-600" 
+              className="input-minimal font-bold text-amber-600" 
               placeholder="0 = ogohlantirish yo'q" 
               allowDecimal={true}
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" onClick={() => setIsAddMaterialOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-8 bg-orange-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-orange-700 transition-all">Qo'shish</button>
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest" onClick={() => setIsAddMaterialOpen(false)}>Bekor</button>
+            <button type="submit" className="h-12 flex-2 px-8 bg-orange-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg hover:bg-orange-700 transition-all">Qo'shish</button>
           </div>
         </form>
       </Modal>
@@ -539,30 +538,30 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       <Modal isOpen={isEditMaterialOpen} onClose={() => setIsEditMaterialOpen(false)} title="Materialni Tahrirlash">
         <form onSubmit={handleEditMaterial} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Material Nomi</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Material Nomi</label>
             <input type="text" required value={editMaterialForm.name || ''} onChange={e => setEditMaterialForm((f: any) => ({ ...f, name: e.target.value }))} className="input-minimal" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Birlik</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Birlik</label>
               <select value={editMaterialForm.unit || 'dona'} onChange={e => setEditMaterialForm((f: any) => ({ ...f, unit: e.target.value }))} className="select-minimal">
                 {['dona', 'kg', 'g', 'litr', 'ml', 'sm', 'metr', 'm2', 'varaq', 'quti', 'rulon'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Minimal Qoldiq</label>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Minimal Qoldiq</label>
               <NumberInput 
                 value={editMaterialForm.minStock ?? ''} 
                 onChange={val => setEditMaterialForm((f: any) => ({ ...f, minStock: val || '' }))} 
-                className="input-minimal font-black text-amber-600" 
+                className="input-minimal font-bold text-amber-600" 
                 placeholder="0" 
                 allowDecimal={true}
               />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" onClick={() => setIsEditMaterialOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-8 bg-sky-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-sky-700 transition-all">Saqlash</button>
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest" onClick={() => setIsEditMaterialOpen(false)}>Bekor</button>
+            <button type="submit" className="h-12 flex-2 px-8 bg-sky-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg hover:bg-sky-700 transition-all">Saqlash</button>
           </div>
         </form>
       </Modal>
@@ -583,20 +582,20 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             }`}>
               <Package size={20} className={stockOp === 'kirim' ? 'text-emerald-500' : stockOp === 'chiqim' ? 'text-sky-500' : 'text-rose-500'} />
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Material</p>
-                <p className="text-sm font-black text-slate-800">{selectedMaterial.name}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Material</p>
+                <p className="text-sm font-bold text-slate-800">{selectedMaterial.name}</p>
                 <p className="text-[10px] font-bold text-slate-500">Joriy qoldiq: {formatStock(selectedMaterial.currentStock, selectedMaterial.unit)}</p>
               </div>
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">
               Miqdor ({selectedMaterial?.unit})
             </label>
             <NumberInput
               value={stockForm.quantity}
               onChange={val => setStockForm(f => ({ ...f, quantity: val || '' }))}
-              className={`input-minimal font-black text-2xl h-16 ${
+              className={`input-minimal font-bold text-2xl h-16 ${
                 stockOp === 'kirim' ? 'focus:border-emerald-500 text-emerald-600' :
                 stockOp === 'chiqim' ? 'focus:border-sky-500 text-sky-600' :
                 'focus:border-rose-500 text-rose-600'
@@ -607,12 +606,12 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             />
           </div>
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 px-1">Izoh (ixtiyoriy)</label>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Izoh (ixtiyoriy)</label>
             <input type="text" value={stockForm.note} onChange={e => setStockForm(f => ({ ...f, note: e.target.value }))} className="input-minimal" placeholder={stockOp === 'brak' ? 'Brak sababi...' : 'Qo\'shimcha ma\'lumot...'} />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" onClick={() => setIsStockOpOpen(false)}>Bekor</button>
-            <button type="submit" className={`h-12 flex-2 px-8 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg transition-all ${
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest" onClick={() => setIsStockOpOpen(false)}>Bekor</button>
+            <button type="submit" className={`h-12 flex-2 px-8 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg transition-all ${
               stockOp === 'kirim' ? 'bg-emerald-600 hover:bg-emerald-700' :
               stockOp === 'chiqim' ? 'bg-sky-600 hover:bg-sky-700' :
               'bg-rose-600 hover:bg-rose-700'
@@ -633,7 +632,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-start gap-4">
             <AlertCircle className="text-rose-500 mt-1" size={24} />
             <div>
-              <p className="text-sm font-black text-rose-900 uppercase">Diqqat!</p>
+              <p className="text-sm font-bold text-rose-900 uppercase">Diqqat!</p>
               <p className="text-xs font-bold text-rose-700 mt-1">
                 Siz <strong>{selectedMaterial?.name}</strong> materialini o'chirmoqchisiz. Bu amalni ortga qaytarib bo'lmaydi!
               </p>
@@ -642,14 +641,14 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="flex gap-3 pt-2">
             <button 
               type="button" 
-              className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest" 
+              className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest" 
               onClick={() => setIsConfirmOpen(false)}
             >
               Bekor qilish
             </button>
             <button 
               type="button" 
-              className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all"
+              className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all"
               onClick={handleDeleteMaterial}
             >
               Ha, o'chirilsin
@@ -673,19 +672,19 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                    <Calculator size={18} />
                 </div>
                 <div>
-                   <h4 className="text-[11px] font-black text-violet-900 uppercase tracking-widest leading-none">Oson Hisoblash Kalkulyatori</h4>
-                   <p className="text-[9px] font-black text-violet-400 uppercase tracking-widest mt-1">Sarf normasini avtomatik hisoblang</p>
+                   <h4 className="text-[11px] font-bold text-violet-900 uppercase tracking-widest leading-none">Oson Hisoblash Kalkulyatori</h4>
+                   <p className="text-[9px] font-bold text-violet-400 uppercase tracking-widest mt-1">Sarf normasini avtomatik hisoblang</p>
                 </div>
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
                 <div>
-                   <label className="block text-[8px] font-black text-violet-400 uppercase mb-2 px-1 tracking-[0.1em]">Necha Dona Mahsulot Uchun?</label>
+                   <label className="block text-[8px] font-bold text-violet-400 uppercase mb-2 px-1 tracking-[0.1em]">Necha Dona Mahsulot Uchun?</label>
                    <input 
                      type="number" 
                      value={calcForm.productQty} 
                      onChange={e => setCalcForm({...calcForm, productQty: e.target.value})} 
-                     className="input-minimal h-12 bg-white border-2 border-violet-100 focus:border-violet-500 font-black text-violet-600"
+                     className="input-minimal h-12 bg-white border-2 border-violet-100 focus:border-violet-500 font-bold text-violet-600"
                      placeholder="Masalan: 10 ta vizitka"
                    />
                 </div>
@@ -693,20 +692,20 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                    <div className="w-10 h-[2px] bg-violet-200"></div>
                 </div>
                 <div>
-                   <label className="block text-[8px] font-black text-violet-400 uppercase mb-2 px-1 tracking-[0.1em]">Qancha {selectedMaterial?.unit} Ketishi Kerak?</label>
+                   <label className="block text-[8px] font-bold text-violet-400 uppercase mb-2 px-1 tracking-[0.1em]">Qancha {selectedMaterial?.unit} Ketishi Kerak?</label>
                    <input 
                      type="number" 
                      value={calcForm.materialQty} 
                      onChange={e => setCalcForm({...calcForm, materialQty: e.target.value})} 
-                     className="input-minimal h-12 bg-white border-2 border-violet-100 focus:border-violet-500 font-black text-violet-600"
+                     className="input-minimal h-12 bg-white border-2 border-violet-100 focus:border-violet-500 font-bold text-violet-600"
                      placeholder="Masalan: 1 varaq"
                    />
                 </div>
              </div>
              
              <div className="mt-4 pt-4 border-t border-violet-100 flex justify-between items-center bg-white/50 p-4 rounded-2xl">
-                <p className="text-[10px] font-black text-slate-500 uppercase">Hisoblangan Norma (1 dona uchun):</p>
-                <div className="text-xl font-black text-violet-700 bg-white px-6 py-2 rounded-xl shadow-inner border border-violet-100">
+                <p className="text-[10px] font-bold text-slate-500 uppercase">Hisoblangan Norma (1 dona uchun):</p>
+                <div className="text-xl font-bold text-violet-700 bg-white px-6 py-2 rounded-xl shadow-inner border border-violet-100">
                    {calcForm.result} <span className="text-[10px] uppercase">{selectedMaterial?.unit}</span>
                 </div>
              </div>
@@ -716,7 +715,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             {/* Services List (To be linked) */}
             <div className="flex flex-col">
               <div className="flex items-center justify-between mb-4 px-2">
-                 <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                 <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                    <Layers size={14}/> Mavjud Xizmatlar
                  </h5>
                  <div className="relative w-40">
@@ -738,13 +737,13 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     return (
                       <div key={svc.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-violet-300 transition-all">
                         <div>
-                           <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{svc.name}</p>
+                           <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{svc.name}</p>
                            <p className="text-[9px] font-bold text-slate-400 uppercase">{svc.unit}</p>
                         </div>
                         <button 
                           disabled={isLinked}
                           onClick={() => handleLinkService(svc.id, calcForm.result)}
-                          className={`h-8 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                          className={`h-8 px-4 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all ${
                             isLinked 
                              ? 'bg-slate-100 text-slate-300 pointer-events-none' 
                              : 'bg-violet-600 text-white shadow-lg shadow-violet-500/20 hover:bg-violet-700 hover:scale-105 active:scale-95'
@@ -760,21 +759,21 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
             {/* Currently Linked Services */}
             <div className="flex flex-col">
-               <h5 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
+               <h5 className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
                  <CheckCircle2 size={14}/> Biriktirilgan Xizmatlar
                </h5>
                <div className="overflow-y-auto max-h-[300px] border-2 border-orange-50 rounded-3xl bg-orange-50/20 p-2 flex flex-col gap-1.5 custom-scroll">
                   {(!selectedMaterial?.bom || (selectedMaterial.bom as any[]).length === 0) ? (
                     <div className="py-20 text-center opacity-30 flex flex-col items-center">
                        <Layers size={32} className="mb-2" />
-                       <p className="text-[9px] font-black uppercase tracking-widest">Hozircha xizmat biriktirilmagan</p>
+                       <p className="text-[9px] font-bold uppercase tracking-widest">Hozircha xizmat biriktirilmagan</p>
                     </div>
                   ) : (
                     (selectedMaterial.bom as any[]).map(b => (
                       <div key={b.id} className="bg-white p-3 rounded-2xl border border-orange-100 shadow-sm flex items-center justify-between group">
                          <div>
-                            <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{b.service?.name}</p>
-                            <p className="text-[10px] font-black text-orange-600">Norma: {b.normPerUnit} {selectedMaterial?.unit}</p>
+                            <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{b.service?.name}</p>
+                            <p className="text-[10px] font-bold text-orange-600">Norma: {b.normPerUnit} {selectedMaterial?.unit}</p>
                          </div>
                          <button 
                            onClick={() => askUnlink(b.serviceId)}
@@ -792,7 +791,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="pt-4 border-t border-slate-100">
              <button
                onClick={() => setIsBOMModalOpen(false)}
-               className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all flex items-center justify-center gap-3"
+               className="w-full h-14 bg-slate-900 text-white rounded-2xl font-bold uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all flex items-center justify-center gap-3"
              >
                SAQLASH VA TUGATISH <Save size={18}/>
              </button>
@@ -815,14 +814,14 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="flex gap-3">
             <button
               type="button"
-              className="btn-outline h-12 flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest"
+              className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
               onClick={() => { setIsUnlinkConfirmOpen(false); setUnlinkServiceId(null); }}
             >
               Bekor qilish
             </button>
             <button
               type="button"
-              className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all"
+              className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all"
               onClick={handleUnlinkService}
             >
               Ha, o'chirilsin

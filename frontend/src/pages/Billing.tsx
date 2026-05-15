@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck, Tag, Gift } from 'lucide-react';
 import { billingApi } from '../api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -8,10 +9,35 @@ const rawApiUrl = (import.meta as any).env.VITE_API_URL || ((import.meta as any)
 const API_URL = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api') : '/api';
 
 export default function Billing() {
-  const [status, setStatus] = useState<any>(null);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [cardNumbers, setCardNumbers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // RQ — billing data
+  const qc = useQueryClient();
+  const statusQuery = useQuery({
+    queryKey: ['billingStatus'],
+    queryFn: async () => (await billingApi.getStatus()).data,
+    staleTime: 60_000,
+  });
+  const plansQuery = useQuery({
+    queryKey: ['billing-plans'],
+    queryFn: async () => {
+      const r = await fetch(`${API_URL}/plans`, { cache: 'no-store' }).then(r => r.json());
+      return Array.isArray(r) ? r : (Array.isArray(r?.data) ? r.data : []);
+    },
+    staleTime: 5 * 60_000,
+  });
+  const cardsQuery = useQuery({
+    queryKey: ['billing-cards'],
+    queryFn: async () => (await fetch(`${API_URL}/billing/settings/payment-cards`).then(r => r.json())) || [],
+    staleTime: 5 * 60_000,
+  });
+  const promoQuery = useQuery({
+    queryKey: ['billing-promo'],
+    queryFn: async () => (await billingApi.getOrCreatePromoCode().catch(() => null))?.data || null,
+  });
+  const status = statusQuery.data as any;
+  const plans = (plansQuery.data as any[]) || [];
+  const cardNumbers = (cardsQuery.data as any[]) || [];
+  const myPromo = promoQuery.data as any;
+  const loading = statusQuery.isLoading || plansQuery.isLoading;
   const [submitting, setSubmitting] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [duration, setDuration] = useState(3);
@@ -23,32 +49,16 @@ export default function Billing() {
   const [promoStatus, setPromoStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [promoValidating, setPromoValidating] = useState(false);
   const [useCashback, setUseCashback] = useState(false);
-  const [myPromo, setMyPromo] = useState<any>(null);
+  // myPromo provided by promoQuery above
 
 
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [statusRes, plansResRaw, cardsRes, promoRes] = await Promise.all([
-        billingApi.getStatus(),
-        fetch(`${API_URL}/plans`, { cache: 'no-store' }).then(r => r.json()),
-        fetch(`${API_URL}/billing/settings/payment-cards`).then(r => r.json()),
-        billingApi.getOrCreatePromoCode().catch(() => null),
-      ]);
-      setStatus(statusRes.data);
-      const list = Array.isArray(plansResRaw) ? plansResRaw : (Array.isArray(plansResRaw?.data) ? plansResRaw.data : []);
-      setPlans(list);
-      setCardNumbers(cardsRes || []);
-      if (promoRes?.data) setMyPromo(promoRes.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const fetchData = () => {
+    qc.invalidateQueries({ queryKey: ['billingStatus'] });
+    qc.invalidateQueries({ queryKey: ['billing-plans'] });
+    qc.invalidateQueries({ queryKey: ['billing-cards'] });
+    qc.invalidateQueries({ queryKey: ['billing-promo'] });
   };
-
-  useEffect(() => { fetchData(); }, []);
 
   const handleValidatePromo = async () => {
     if (!promoCode.trim()) return;
@@ -119,8 +129,8 @@ export default function Billing() {
               <ShieldCheck size={22} />
            </div>
            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Joriy Holat</p>
-              <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Joriy Holat</p>
+              <h2 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
                 {status?.plan?.displayName || 'Tarif tanlanmagan'} 
                 <span className={`text-[10px] px-3 py-1 rounded-full border ${status?.status === 'TRIAL' ? 'bg-orange-50 text-orange-600 border-orange-200' : status?.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
                    {status?.status === 'TRIAL' ? 'SINOV MUDDATI' : status?.status === 'ACTIVE' ? 'FAOLLASHTIRILGAN' : 'MUDDAT TUGAGAN'}
@@ -139,14 +149,14 @@ export default function Billing() {
            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => window.location.reload()}
-                className="flex items-center justify-center gap-1.5 h-10 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                className="flex items-center justify-center gap-1.5 h-10 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all"
                 title="Admin muddatni uzaytirgan bo'lsa yangilang"
               >
                 ↻ Yangilash
               </button>
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
                  <div className="text-right">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Xizmat cheklangan</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Xizmat cheklangan</p>
                     <p className="text-[11px] font-bold text-slate-600">Davom ettirish uchun to'lov qiling</p>
                  </div>
                  <ArrowRight className="text-slate-300" size={18} />
@@ -165,9 +175,9 @@ export default function Billing() {
                   <Tag size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] font-black text-violet-500 uppercase tracking-widest mb-1">Sizning Referral Kodingiz</p>
+                  <p className="text-[9px] font-bold text-violet-500 uppercase tracking-widest mb-1">Sizning Referral Kodingiz</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-lg font-black text-violet-900 tracking-widest font-mono">{myPromo.code}</p>
+                    <p className="text-lg font-bold text-violet-900 tracking-widest font-mono">{myPromo.code}</p>
                     <button onClick={() => { navigator.clipboard.writeText(myPromo.code); toast.success('Kod nusxalandi!'); }} className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-violet-400 hover:text-violet-600 border border-violet-200 transition-all">
                       <Copy size={12} />
                     </button>
@@ -181,8 +191,8 @@ export default function Billing() {
                     <Gift size={16} className="text-white" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Cashback Balansi</p>
-                    <p className="text-lg font-black text-emerald-900">{myPromo.cashbackBalance?.toLocaleString() || 0} <span className="text-xs text-emerald-600">UZS</span></p>
+                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Cashback Balansi</p>
+                    <p className="text-lg font-bold text-emerald-900">{myPromo.cashbackBalance?.toLocaleString() || 0} <span className="text-xs text-emerald-600">UZS</span></p>
                   </div>
                 </div>
                 <div className="flex gap-4 text-xs font-bold text-emerald-700">
@@ -204,13 +214,13 @@ export default function Billing() {
           )}
           {/* Duration Switcher */}
           <div className="flex flex-col items-center gap-4 w-full">
-            <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] text-center">To'lov muddatini tanlang</h3>
+            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em] text-center">To'lov muddatini tanlang</h3>
             <div className="flex flex-wrap justify-center bg-slate-100 p-1 rounded-2xl shadow-inner w-full sm:w-auto">
                {[3, 6, 12].map(m => (
                  <button 
                     key={m} 
                     onClick={() => setDuration(m)}
-                    className={`flex-1 sm:flex-none px-2 sm:px-8 py-3 text-[10px] sm:text-xs font-black rounded-xl transition-all whitespace-nowrap ${duration === m ? 'bg-white shadow-md text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 sm:flex-none px-2 sm:px-8 py-3 text-[10px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap ${duration === m ? 'bg-white shadow-md text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
                  >
                    {m} OY {m === 6 ? '(-10%)' : m === 12 ? '(-25%)' : ''}
                  </button>
@@ -230,20 +240,20 @@ export default function Billing() {
                   className={`relative bg-white border rounded-2xl p-5 sm:p-8 flex flex-col transition-all duration-300 hover:shadow-xl ${plan.isPopular ? 'border-[#FF6B00] shadow-xl shadow-orange-500/10' : 'border-slate-200 shadow-sm'}`}
                 >
                   {plan.isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF6B00] text-white text-[9px] font-black uppercase tracking-widest px-4 py-1 rounded-full shadow-lg">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF6B00] text-white text-[9px] font-bold uppercase tracking-widest px-4 py-1 rounded-full shadow-lg">
                       🔥 Eng ommabop
                     </div>
                   )}
                   
                   <div className="mb-2">
-                    <h3 className="text-base sm:text-xl font-black text-slate-900 tracking-tight">{plan.displayName}</h3>
+                    <h3 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight">{plan.displayName}</h3>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{plan.description}</p>
                   </div>
 
                   <div className="mb-4 sm:mb-6">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums">{price.toLocaleString().replace(/,/g, ' ')}</span>
-                      <span className="text-sm font-black text-slate-400">UZS</span>
+                      <span className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">{price.toLocaleString().replace(/,/g, ' ')}</span>
+                      <span className="text-sm font-bold text-slate-400">UZS</span>
                     </div>
                     <div className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-tight">
                       {duration} oylik / Xodimlar: {plan.maxEmployees === 0 ? 'Cheksiz' : plan.maxEmployees}
@@ -290,7 +300,7 @@ export default function Billing() {
 
                   <button 
                     onClick={() => { setSelectedPlan(plan); setStep('form'); }}
-                    className={`w-full py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-lg ${plan.isPopular ? 'bg-[#FF6B00] text-white hover:bg-[#E65A00] shadow-orange-500/30' : 'bg-[#0f172a] text-white hover:bg-black shadow-slate-900/20'}`}
+                    className={`w-full py-4 rounded-xl font-bold text-[11px] uppercase tracking-[0.2em] transition-all shadow-lg ${plan.isPopular ? 'bg-[#FF6B00] text-white hover:bg-[#E65A00] shadow-orange-500/30' : 'bg-[#0f172a] text-white hover:bg-black shadow-slate-900/20'}`}
                   >
                     Boshlash →
                   </button>
@@ -303,10 +313,10 @@ export default function Billing() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 animate-fade-in">
            {/* Payment Details */}
            <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-sm space-y-6 sm:space-y-8">
-              <button onClick={() => setStep('plans')} className="text-[10px] font-black text-[#FF6B00] uppercase tracking-widest hover:translate-x-[-4px] transition-transform flex items-center gap-2 mb-4">← Tariflarga qaytish</button>
+              <button onClick={() => setStep('plans')} className="text-[10px] font-bold text-[#FF6B00] uppercase tracking-widest hover:translate-x-[-4px] transition-transform flex items-center gap-2 mb-4">← Tariflarga qaytish</button>
               
               <div>
-                 <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">To'lov ma'lumotlari</h2>
+                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">To'lov ma'lumotlari</h2>
                  <p className="text-sm font-bold text-slate-500">Quyidagi karta raqamlariga summani o'tkazing va chekni yuklang</p>
               </div>
 
@@ -316,8 +326,8 @@ export default function Billing() {
                       <div className="absolute top-0 right-0 w-24 h-24 bg-orange-100 opacity-20 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125"></div>
                       <div className="relative flex items-center justify-between">
                          <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{c.name}</p>
-                            <p className="text-lg font-black text-slate-800 tracking-wider font-mono">{c.number}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{c.name}</p>
+                            <p className="text-lg font-bold text-slate-800 tracking-wider font-mono">{c.number}</p>
                             <p className="text-[10px] font-bold text-slate-500 mt-1">{c.owner}</p>
                          </div>
                          <button onClick={() => handleCopy(c.number)} className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#FF6B00] hover:border-[#FF6B00] transition-all shadow-sm">
@@ -337,44 +347,44 @@ export default function Billing() {
            {/* Confirmation Form */}
            <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-sm flex flex-col">
               <div className="mb-6 sm:mb-10 text-center lg:text-left">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Yuborish shakli</p>
-                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Tasdiqlash so'rovi</h2>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 italic">Yuborish shakli</p>
+                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Tasdiqlash so'rovi</h2>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6 flex-1">
                  <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 px-1">Yuboruvchi ism-familiyasi</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 px-1">Yuboruvchi ism-familiyasi</label>
                     <input 
                       type="text" 
                       required 
                       value={sender} 
                       onChange={e => setSender(e.target.value)} 
                       placeholder="Masalan: Sardor Rustamov"
-                      className="input-minimal !h-14 font-black tracking-tight !text-base"
+                      className="input-minimal !h-14 font-bold tracking-tight !text-base"
                     />
                  </div>
 
                  <div className="grid grid-cols-2 gap-4">
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tarif</p>
-                       <p className="text-xs font-black text-slate-800">{selectedPlan.displayName}</p>
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tarif</p>
+                       <p className="text-xs font-bold text-slate-800">{selectedPlan.displayName}</p>
                     </div>
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Summa</p>
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Summa</p>
                        {getDiscountedPrice(selectedPlan) !== getPrice(selectedPlan) ? (
                          <div>
                            <p className="text-[10px] font-bold text-slate-400 line-through mb-0.5">{getPrice(selectedPlan).toLocaleString()} UZS</p>
-                           <p className="text-xs font-black text-emerald-600">{getDiscountedPrice(selectedPlan).toLocaleString()} UZS</p>
+                           <p className="text-xs font-bold text-emerald-600">{getDiscountedPrice(selectedPlan).toLocaleString()} UZS</p>
                          </div>
                        ) : (
-                         <p className="text-xs font-black text-emerald-600">{getPrice(selectedPlan).toLocaleString()} UZS</p>
+                         <p className="text-xs font-bold text-emerald-600">{getPrice(selectedPlan).toLocaleString()} UZS</p>
                        )}
                     </div>
                  </div>
 
                  {/* Promo Code Input */}
                  <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 px-1">Promo Kod (Chegirma uchun)</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 px-1">Promo Kod (Chegirma uchun)</label>
                     <div className="flex gap-2">
                       <input 
                         type="text" 
@@ -382,10 +392,10 @@ export default function Billing() {
                         onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus('idle'); }}
                         disabled={promoStatus === 'valid' || promoValidating}
                         placeholder="KODNI KIRITING"
-                        className="input-minimal !h-12 font-black tracking-widest !text-sm uppercase flex-1"
+                        className="input-minimal !h-12 font-bold tracking-widest !text-sm uppercase flex-1"
                       />
                       {promoStatus === 'valid' ? (
-                        <div className="h-12 px-4 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl flex items-center justify-center font-black text-[10px] uppercase tracking-widest gap-2">
+                        <div className="h-12 px-4 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl flex items-center justify-center font-bold text-[10px] uppercase tracking-widest gap-2">
                           <Check size={16} strokeWidth={3} /> TASDIQLANDI
                         </div>
                       ) : (
@@ -393,7 +403,7 @@ export default function Billing() {
                           type="button"
                           onClick={handleValidatePromo}
                           disabled={!promoCode || promoValidating}
-                          className="h-12 px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors"
+                          className="h-12 px-6 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-colors"
                         >
                           {promoValidating ? '...' : 'TEKSHIRISH'}
                         </button>
@@ -412,7 +422,7 @@ export default function Billing() {
                          <Gift className="text-emerald-600" size={18} />
                        </div>
                        <div>
-                         <p className="text-[11px] font-black text-emerald-800 tracking-tight mb-0.5">Cashback ishlatish</p>
+                         <p className="text-[11px] font-bold text-emerald-800 tracking-tight mb-0.5">Cashback ishlatish</p>
                          <p className="text-[9px] font-bold text-emerald-600">Sizda {myPromo.cashbackBalance.toLocaleString()} UZS mavjud</p>
                        </div>
                      </div>
@@ -427,7 +437,7 @@ export default function Billing() {
                  )}
 
                  <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 px-1">To'lov cheki (Image)</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 px-1">To'lov cheki (Image)</label>
                     <div className="relative">
                        <input 
                          type="file" 
@@ -443,12 +453,12 @@ export default function Billing() {
                           {receipt ? (
                             <>
                                <Check className="text-emerald-500 mb-1" size={24} strokeWidth={3} />
-                               <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{receipt.name}</p>
+                               <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">{receipt.name}</p>
                             </>
                           ) : (
                             <>
                                <Upload className="text-slate-400 mb-1" size={24} />
-                               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Rasm tanlash uchun bosing</p>
+                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">Rasm tanlash uchun bosing</p>
                             </>
                           )}
                        </label>
@@ -459,7 +469,7 @@ export default function Billing() {
                     <button 
                       type="submit" 
                       disabled={submitting}
-                      className="w-full h-16 bg-[#FF6B00] hover:bg-[#E65A00] text-white font-black uppercase tracking-[0.3em] rounded-2xl transition-all shadow-xl shadow-orange-500/30 disabled:bg-slate-300 disabled:shadow-none flex items-center justify-center gap-3"
+                      className="w-full h-16 bg-[#FF6B00] hover:bg-[#E65A00] text-white font-bold uppercase tracking-[0.3em] rounded-2xl transition-all shadow-xl shadow-orange-500/30 disabled:bg-slate-300 disabled:shadow-none flex items-center justify-center gap-3"
                     >
                       {submitting ? (
                         <>
