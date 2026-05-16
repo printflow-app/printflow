@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Layers } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Layers, Briefcase, PieChart, Sliders } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi, billingApi } from '../api';
 import logo from '../assets/logo.png';
@@ -114,7 +114,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         setActiveBranchId(list[0].id);
         localStorage.setItem('pf_active_branch', list[0].id);
       }
-      if (activeBranchId && activeBranchId !== '__main__' && !list.some((b: any) => b.id === activeBranchId)) {
+      if (activeBranchId && !list.some((b: any) => b.id === activeBranchId)) {
         setActiveBranchId('');
         localStorage.removeItem('pf_active_branch');
       }
@@ -325,13 +325,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
   // Sidebar grouped into 3 logical sections for visual hierarchy.
   // Sections render with a small caps label between them.
-  const navGroups: { label: string; items: { id: string; label: string; icon: any; show: boolean; sub: string }[] }[] = [
+  const navGroups: { label: string; icon: any; items: { id: string; label: string; icon: any; show: boolean; sub: string }[] }[] = [
     {
       label: 'Operatsiya',
+      icon: Briefcase,
       items: [
         { id: 'kassa', label: 'Kassa', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
         { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
-        { id: 'xizmatlar-katalog', label: 'Xizmatlar katalogi', icon: Layers, show: (p.canViewServices || p.canManageServices || isAdmin), sub: 'Narxlar va opsiyalar' },
         { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: "Qarzlar va hamkorlar" },
         { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && tf.warehouse, sub: 'Materiallar va qoldiqlar' },
         { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
@@ -339,6 +339,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     },
     {
       label: 'Tahlil',
+      icon: PieChart,
       items: [
         { id: 'moliya', label: 'Statistika', icon: TrendingUp, show: (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && tf.finance, sub: 'Daromad va hisobotlar' },
         { id: 'hisobotlar', label: 'Hisobotlar', icon: BarChart3, show: isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports, sub: 'Biznes tahlil' },
@@ -346,6 +347,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     },
     {
       label: 'Boshqaruv',
+      icon: Sliders,
       items: [
         { id: 'hodimlar', label: 'Xodimlar', icon: Users, show: (p.canViewEmployees || isAdmin) && tf.employees, sub: "Jamoa ro'yxati" },
         { id: 'admins', label: "Ma'muriyat", icon: ShieldCheck, show: isAdmin, sub: 'Raxbarlar boshqaruvi' },
@@ -519,18 +521,23 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   data-tour-group={group.label.toLowerCase()}
                   data-tour-open={isOpen ? '1' : '0'}
                   onClick={() => toggleGroup(group.label)}
-                  className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${
-                    containsActive ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'
-                  } ${isOpen ? '' : 'hover:bg-slate-50'}`}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+                    containsActive 
+                      ? 'bg-slate-100/80 text-slate-800 shadow-sm border border-slate-200/60' 
+                      : 'bg-slate-50/50 text-slate-500 hover:bg-slate-100/50 hover:text-slate-700 border border-transparent'
+                  }`}
                 >
-                  <span className="flex items-center gap-2">
-                    {group.label}
+                  <span className="flex items-center gap-2.5">
+                    <group.icon size={16} className={containsActive ? 'text-orange-600' : 'text-slate-400'} />
+                    <span>{group.label}</span>
                     {/* Tiny badge: count of items in this group */}
-                    <span className="text-[9px] font-bold text-slate-300 normal-case tracking-normal">({visibleItems.length})</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${containsActive ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'} normal-case tracking-normal`}>
+                      {visibleItems.length}
+                    </span>
                   </span>
                   <ChevronDown
-                    size={12}
-                    className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    size={14}
+                    className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-700' : 'text-slate-400'}`}
                   />
                 </button>
 
@@ -692,7 +699,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
             >
               <option value="">Barcha filiallar</option>
-              <option value="__main__">Bosh ofis (asosiy)</option>
               {branches.map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}

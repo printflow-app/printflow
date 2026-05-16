@@ -17,7 +17,7 @@ const api = axios.create({
 // Throws if no branch is currently selected. Use before calling servicesApi / vendorsApi —
 // the backend will 400 anyway, but failing fast on the client gives a friendlier message.
 export function assertActiveBranchId(branchId: string | undefined | null): string {
-  if (!branchId || branchId === '__main__') {
+  if (!branchId) {
     throw new Error('Aktiv filial tanlanmagan');
   }
   return branchId;
@@ -196,13 +196,13 @@ export const tasksApi = {
 
   getColumns: (branchId?: string) => {
     const params: any = {};
-    if (branchId && branchId !== '__main__') params.branchId = branchId;
+    if (branchId) params.branchId = branchId;
     return api.get('/tasks/columns', { params });
   },
   createColumn: (data: any) => api.post('/tasks/columns', data),
   updateColumn: (id: string, data: any) => api.put(`/tasks/columns/${id}`, data),
   deleteColumn: (id: string, branchId?: string) =>
-    api.post(`/tasks/columns/${id}/delete`, null, { params: branchId && branchId !== '__main__' ? { branchId } : {} }),
+    api.post(`/tasks/columns/${id}/delete`, null, { params: branchId ? { branchId } : {} }),
 };
 
 // =============================================
@@ -221,7 +221,7 @@ export const taskExpensesApi = {
 // VENDORS / HAMKORLAR (Subcontractors)
 // =============================================
 // Strict isolation — every call must carry activeBranchId. The backend now
-// returns 400 if branchId is missing or '__main__'.
+// returns 400 if branchId is missing.
 export const vendorsApi = {
   findAll: (branchId: string) =>
     api.get('/vendors', { params: { branchId } }),

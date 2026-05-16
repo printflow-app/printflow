@@ -89,7 +89,7 @@ export function useExpenseTypes() {
 }
 
 // -------- DEPARTMENTS (branch-scoped) --------
-// `branchId` must be a real UUID or '__main__'. Disabled until provided.
+// `branchId` must be a real UUID. Disabled until provided.
 export function useDepartments(branchId: string | undefined) {
   return useQuery({
     queryKey: qk.departments(branchId || ''),
@@ -100,7 +100,7 @@ export function useDepartments(branchId: string | undefined) {
 
 // -------- VENDORS (branch-scoped, strict isolation) --------
 export function useVendors(branchId: string | undefined) {
-  const valid = !!branchId && branchId !== '__main__';
+  const valid = !!branchId;
   return useQuery({
     queryKey: qk.vendors(branchId || ''),
     queryFn: async () => (await vendorsApi.findAll(branchId!)).data as any[],
@@ -110,7 +110,7 @@ export function useVendors(branchId: string | undefined) {
 
 // -------- SERVICES (branch-scoped, strict isolation) --------
 export function useServices(branchId: string | undefined) {
-  const valid = !!branchId && branchId !== '__main__';
+  const valid = !!branchId;
   return useQuery({
     queryKey: qk.services(branchId || ''),
     queryFn: async () => (await servicesApi.findAll(branchId!)).data as any[],

@@ -188,7 +188,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
   const handleLinkService = async (serviceId: string, norm: number) => {
     if (!selectedMaterial) return;
-    if (!activeBranchId || activeBranchId === '__main__') {
+    if (!activeBranchId) {
       showStatus('error', 'Avval aktiv filialni tanlang');
       return;
     }
@@ -202,7 +202,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
   const handleUnlinkService = async () => {
     if (!selectedMaterial || !unlinkServiceId) return;
-    if (!activeBranchId || activeBranchId === '__main__') return;
+    if (!activeBranchId) return;
     try {
       await servicesApi.deleteMaterial(unlinkServiceId, selectedMaterial.id, activeBranchId);
       showStatus('success', 'Bog\'liqlik olib tashlandi!');

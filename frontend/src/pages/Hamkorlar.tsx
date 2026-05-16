@@ -61,7 +61,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
     setIsDetailOpen(true);
     setIsDetailLoading(true);
     try {
-      if (!activeBranchId || activeBranchId === '__main__') throw new Error('no branch');
+      if (!activeBranchId) throw new Error('no branch');
       const res = await vendorsApi.findOne(v.id, activeBranchId);
       setDetailData(res.data);
     } catch {
@@ -74,7 +74,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    if (!activeBranchId || activeBranchId === '__main__') {
+    if (!activeBranchId) {
       showStatus('error', 'Avval aktiv filialni tanlang');
       return;
     }
@@ -95,7 +95,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
 
   const handleDelete = async () => {
     if (!confirmId) return;
-    if (!activeBranchId || activeBranchId === '__main__') return;
+    if (!activeBranchId) return;
     try {
       await vendorsApi.remove(confirmId, activeBranchId);
       showStatus('success', "Hamkor o'chirildi.");

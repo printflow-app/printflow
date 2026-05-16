@@ -50,7 +50,7 @@ const Kpi: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentU
   const prevEnd = new Date(startDate); prevEnd.setDate(prevEnd.getDate() - 1);
   const prevStart = new Date(prevEnd); prevStart.setDate(prevStart.getDate() - periodDays + 1);
 
-  const bId = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : undefined;
+  const bId = activeBranchId || undefined;
   const params = { start: localYMD(startDate), end: localYMD(today), branchId: bId };
   const prevParams = { start: localYMD(prevStart), end: localYMD(prevEnd), branchId: bId };
 

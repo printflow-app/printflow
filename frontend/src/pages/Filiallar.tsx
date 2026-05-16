@@ -274,9 +274,6 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Synthetic "Bosh ofis" card removed — register flow now creates a real
-            "Bosh Ofis (Asosiy)" branch for every tenant, making the synthetic redundant. */}
-
         {branches.map((b) => {
           const manager = employees.find((e) => e.id === b.managerEmployeeId);
           return (

@@ -272,7 +272,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const needsFinanceData = canViewGrowthCards || canViewDynamics || canViewIncomeByType || canViewExpenseByType || canViewExpenseCharts || canViewServiceStats;
 
   // Branch comes ONLY from the navbar (SSOT). No mirror, no per-page selector.
-  const branchId = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : '';
+  const branchId = activeBranchId || '';
   const [departmentId, setDepartmentId] = useState('');
   // Group-by-department toggle for the local breakdown card (client-side aggregation).
   const [groupByDept, setGroupByDept] = useState(false);

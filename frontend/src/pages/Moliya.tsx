@@ -22,7 +22,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
   const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
   // Branch comes ONLY from the navbar (single source of truth via Dashboard prop).
-  const effectiveBranchId = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : '';
+  const effectiveBranchId = activeBranchId || '';
 
   const dashParams: any = {};
   if (startDate) dashParams.start = startDate;

@@ -219,7 +219,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const handleAddRole = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const branchScope = activeBranchId && activeBranchId !== '__main__' ? activeBranchId : null;
+      const branchScope = activeBranchId || null;
       await rolesApi.create({ ...newRole, branchId: branchScope });
       setIsRoleModalOpen(false);
       setNewRole(initialRoleForm);
@@ -1335,7 +1335,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   };
 
   const requireActiveBranch = (): string | null => {
-    if (!activeBranchId || activeBranchId === '__main__') {
+    if (!activeBranchId) {
       showStatus('error', 'Avval aktiv filialni tanlang');
       return null;
     }

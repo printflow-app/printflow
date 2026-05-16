@@ -124,7 +124,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   // Departments — RQ hook bilan, manual fetch effect o'rniga
   const { data: departments = [] } = useDepartments(
-    activeBranchId && activeBranchId !== '__main__' ? activeBranchId : undefined
+    activeBranchId || undefined
   );
   // Reset selected department when active branch changes
   useEffect(() => { setSelectedDepartmentId(''); }, [activeBranchId]);
@@ -482,7 +482,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         await tasksApi.createColumn({
           title: newColumnTitle,
           orderIdx: columns.length,
-          ...(activeBranchId && activeBranchId !== '__main__' ? { branchId: activeBranchId } : {}),
+          ...(activeBranchId ? { branchId: activeBranchId } : {}),
         });
         setNewColumnTitle('');
         setIsNewColumnModalOpen(false);
@@ -649,7 +649,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const handleAddServiceOption = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentOrderService.serviceId || !newOptionForm.name || !newOptionForm.value) return;
-    if (!activeBranchId || activeBranchId === '__main__') {
+    if (!activeBranchId) {
       showStatus('error', 'Avval aktiv filialni tanlang');
       return;
     }
@@ -1283,7 +1283,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         .filter(e => e.fullName.toLowerCase().includes(empSearchTerm.toLowerCase()))
                         .filter(e => {
                           if (executorType === 'branch' && executorBranchId) return e.branchId === executorBranchId;
-                          if (activeBranchId && activeBranchId !== '__main__') return e.branchId === activeBranchId;
+                          if (activeBranchId) return e.branchId === activeBranchId;
                           return true;
                         })
                         .map(emp => {
