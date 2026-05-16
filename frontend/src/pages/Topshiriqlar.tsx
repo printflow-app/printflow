@@ -3,8 +3,9 @@ import {
   Plus, Search, UserPlus, CheckCircle2, Clock,
   Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle,
   Users, AlertTriangle, ExternalLink, Package, Building2,
-  Archive, ArchiveRestore, Handshake, AlertOctagon
+  Archive, ArchiveRestore, Handshake, AlertOctagon, Download
 } from 'lucide-react';
+import { exportToXlsx } from '../utils/exportToXlsx';
 import { tasksApi, taskExpensesApi, servicesApi, settingsApi } from '../api';
 import {
   useBranches, useEmployees, useCustomers, usePaymentTypes,
@@ -700,6 +701,41 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     })
     : visibleTasks;
 
+  // EXPORT — ko'rinayotgan topshiriqlarni Excel'ga (search/permission filtri qo'llanilgan)
+  const handleExport = () => {
+    if (filteredTasks.length === 0) {
+      showStatus('error', "Eksport qilish uchun ma'lumot yo'q");
+      return;
+    }
+    const stamp = new Date().toLocaleDateString('en-CA');
+    const colTitleById = new Map(columns.map((c: Column) => [c.id, c.title]));
+    const empById = new Map((rawEmployees as any[]).map((e: any) => [e.id, e.fullName]));
+    exportToXlsx({
+      filename: `topshiriqlar_${stamp}`,
+      sheetName: 'Topshiriqlar',
+      rows: filteredTasks,
+      columns: [
+        { header: 'ID', accessor: (t: Task) => t.displayId || t.id.slice(0, 8) },
+        { header: 'Buyurtma nomi', accessor: (t: Task) => t.orderName || t.title },
+        { header: 'Mijoz', accessor: (t: Task) => t.customerName || '' },
+        { header: 'Telefon', accessor: (t: Task) => t.customerPhone || '' },
+        { header: 'Bosqich', accessor: (t: Task) => colTitleById.get(t.columnId) || '' },
+        { header: 'Soni', accessor: (t: Task) => Number(t.quantity || 1) },
+        { header: 'Jami (UZS)', accessor: (t: Task) => Number(t.totalAmount || 0) },
+        { header: 'Zakolat (UZS)', accessor: (t: Task) => Number(t.depositAmount || 0) },
+        { header: 'Qoldiq (UZS)', accessor: (t: Task) => Number(t.remainingAmount || 0) },
+        { header: "To'lov turi", accessor: (t: Task) => t.paymentType?.name || '' },
+        { header: 'Bajaruvchilar', accessor: (t: Task) => {
+          try { return (JSON.parse(t.assignees || '[]') as string[]).map((id) => empById.get(id) || id).join(', '); }
+          catch { return ''; }
+        }},
+        { header: 'Muddat', accessor: (t: Task) => t.deadlineAt ? new Date(t.deadlineAt).toLocaleDateString('uz-UZ') : '' },
+        { header: 'Yaratilgan', accessor: (t: Task) => t.createdAt ? new Date(t.createdAt).toLocaleDateString('uz-UZ') : '' },
+      ],
+    });
+    showStatus('success', `${filteredTasks.length} ta topshiriq eksport qilindi`);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 flex flex-col h-full animate-fade-in">
 
@@ -739,6 +775,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         <div className="flex flex-row flex-wrap items-center gap-2">
           <button onClick={openArxivModal} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-violet-400 hover:text-violet-500 transition-all flex items-center gap-1.5 whitespace-nowrap">
             <Archive size={12} /> ARXIV
+          </button>
+          <button onClick={handleExport} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-emerald-400 hover:text-emerald-500 transition-all flex items-center gap-1.5 whitespace-nowrap" title="Topshiriqlarni Excel'ga eksport qilish">
+            <Download size={12} /> EKSPORT
           </button>
           {p.canManageColumns && (
             <button data-tour-id="kanban-add-column" onClick={() => setIsNewColumnModalOpen(true)} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">

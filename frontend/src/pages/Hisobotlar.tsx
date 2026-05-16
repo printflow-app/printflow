@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart3, TrendingUp, TrendingDown, Users, ShoppingBag,
   Minus, RefreshCw, Calendar, ChevronDown,
-  Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2,
+  Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2, Download,
 } from 'lucide-react';
+import { exportMultiSheetXlsx, ExportSheet } from '../utils/exportToXlsx';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, PieChart, Pie, Cell,
@@ -507,6 +508,89 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     }
   };
 
+  // EXPORT — barcha tahliliy jadvallarni bitta .xlsx faylga (har biri alohida sheet)
+  const handleExport = () => {
+    const sheets: ExportSheet<any>[] = [];
+
+    if (services.length > 0) {
+      sheets.push({
+        sheetName: 'Xizmatlar',
+        rows: services,
+        columns: [
+          { header: 'Xizmat', accessor: (s: any) => s.serviceName || s.name || '' },
+          { header: 'Buyurtmalar', accessor: (s: any) => Number(s.totalTasks || s.count || 0) },
+          { header: 'Daromad (UZS)', accessor: (s: any) => Number(s.totalRevenue || 0) },
+          { header: "O'rtacha chek (UZS)", accessor: (s: any) => Number(s.avgCheck || 0) },
+        ],
+      });
+    }
+
+    if (expenseBreakdown.length > 0) {
+      const total = expenseBreakdown.reduce((s, x: any) => s + Number(x.value || 0), 0);
+      sheets.push({
+        sheetName: 'Xarajatlar',
+        rows: expenseBreakdown,
+        columns: [
+          { header: 'Kategoriya', accessor: (x: any) => x.name || '' },
+          { header: 'Summa (UZS)', accessor: (x: any) => Number(x.value || 0) },
+          { header: 'Ulush (%)', accessor: (x: any) => total > 0 ? Number(((Number(x.value || 0) / total) * 100).toFixed(2)) : 0 },
+        ],
+      });
+    }
+
+    if (vendors.length > 0) {
+      sheets.push({
+        sheetName: 'Hamkorlar',
+        rows: vendors,
+        columns: [
+          { header: 'Hamkor', accessor: (v: any) => v.name || v.vendorName || '' },
+          { header: 'Buyurtmalar', accessor: (v: any) => Number(v.taskCount || v.orders || 0) },
+          { header: 'Daromad (UZS)', accessor: (v: any) => Number(v.revenue || 0) },
+          { header: 'Xarajat (UZS)', accessor: (v: any) => Number(v.cost || 0) },
+          { header: 'Foyda (UZS)', accessor: (v: any) => Number(v.profit || (Number(v.revenue || 0) - Number(v.cost || 0))) },
+        ],
+      });
+    }
+
+    if (kpiRows.length > 0) {
+      sheets.push({
+        sheetName: 'KPI',
+        rows: kpiRows,
+        columns: [
+          { header: 'Xodim', accessor: (k: any) => k.employeeName || k.employee?.fullName || '' },
+          { header: 'Lavozim', accessor: (k: any) => k.role || k.employee?.role?.name || '' },
+          { header: 'Buyurtmalar', accessor: (k: any) => Number(k.taskCount || k.completedTasks || 0) },
+          { header: 'Daromad (UZS)', accessor: (k: any) => Number(k.revenue || 0) },
+          { header: 'Maosh (UZS)', accessor: (k: any) => Number(k.salary || 0) },
+        ],
+      });
+    }
+
+    if (dynamics.length > 0) {
+      sheets.push({
+        sheetName: dynamicsType === 'daily' ? 'Kunlik' : 'Oylik',
+        rows: dynamics,
+        columns: [
+          { header: dynamicsType === 'daily' ? 'Kun' : 'Oy', accessor: (d: any) => d.label || '' },
+          { header: 'Kirim (UZS)', accessor: (d: any) => Number(d.kirim || 0) },
+          { header: 'Chiqim (UZS)', accessor: (d: any) => Number(d.chiqim || 0) },
+          { header: 'Hamkorlar (UZS)', accessor: (d: any) => Number(d.hamkorlar || 0) },
+          { header: 'Sof daromad (UZS)', accessor: (d: any) => Number(d.net || 0) },
+        ],
+      });
+    }
+
+    if (sheets.length === 0) {
+      alert("Eksport qilish uchun ma'lumot yo'q (filtrni o'zgartirib ko'ring)");
+      return;
+    }
+
+    exportMultiSheetXlsx({
+      filename: `hisobot_${params.start}_${params.end}`,
+      sheets,
+    });
+  };
+
   if (loading) return (
     <div className="space-y-4">
       <SkeletonStats count={4} />
@@ -525,17 +609,26 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           </h1>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
         </div>
-        <button
-          onClick={() => {
-            // Force refetch all report queries
-            [dashStatsQuery, growthQuery, servicesQuery, dynamicsDailyQuery, dynamicsMonthlyQuery,
-             paymentStatsQuery, expenseQuery, vendorsQuery, allTasksQuery, velocityQuery, kpiQuery]
-              .forEach(q => q.refetch());
-          }}
-          className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
-        >
-          <RefreshCw size={14} /> Yangilash
-        </button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
+            title="Tahliliy ma'lumotlarni Excel'ga eksport qilish"
+          >
+            <Download size={14} /> Eksport
+          </button>
+          <button
+            onClick={() => {
+              // Force refetch all report queries
+              [dashStatsQuery, growthQuery, servicesQuery, dynamicsDailyQuery, dynamicsMonthlyQuery,
+               paymentStatsQuery, expenseQuery, vendorsQuery, allTasksQuery, velocityQuery, kpiQuery]
+                .forEach(q => q.refetch());
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
+          >
+            <RefreshCw size={14} /> Yangilash
+          </button>
+        </div>
       </div>
 
       {/* ── Filter Bar ── */}

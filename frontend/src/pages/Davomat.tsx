@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Clock, UserCheck, Calendar, CheckCircle2, AlertCircle,
-  LogIn, LogOut, Users, MapPin, AlarmClock, ThumbsUp, ThumbsDown, Activity,
+  LogIn, LogOut, Users, MapPin, AlarmClock, ThumbsUp, ThumbsDown, Activity, Download,
 } from 'lucide-react';
 import { attendanceApi, settingsApi, overtimeApi } from '../api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,8 @@ import { useEmployees } from '../hooks/queries';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { exportToXlsx } from '../utils/exportToXlsx';
+import { toast } from 'react-toastify';
 
 interface AttendanceRecord {
   id: string;
@@ -141,6 +143,48 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   // ── Shim functions — invalidate RQ caches, RQ auto-refetches ─────
   const fetchMyToday = async () => { await myTodayQuery.refetch(); };
   const fetchMyRecords = async () => { await myRecordsQuery.refetch(); };
+
+  // ── EXPORT: tanlangan oyning davomat yozuvlarini Excel'ga ─────
+  // Long format — bitta yozuv bitta qator. Faqat checkIn bo'lgan kunlar chiqadi
+  // (kelmagan kunlar matrix'da nuqta sifatida ko'rinadi, lekin DB'da rekord yo'q).
+  const handleExportMonthly = () => {
+    if (monthlyRecords.length === 0) {
+      toast.info("Bu oy uchun davomat yozuvlari yo'q");
+      return;
+    }
+    const monthName = new Date(matrixDate.year, matrixDate.month - 1, 1)
+      .toLocaleString('uz-UZ', { month: 'long' });
+    const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '';
+    const statusOf = (r: AttendanceRecord) => {
+      if (!r.checkIn) return 'Kelmagan';
+      const parts: string[] = [r.lateMinutes > 0 ? `Kech (${r.lateMinutes}m)` : 'Vaqtida'];
+      if (r.overtimeMinutes && r.overtimeMinutes > 0) parts.push(`Ortiqcha +${r.overtimeMinutes}m`);
+      return parts.join(', ');
+    };
+    // Xodim nomi ↔ records sortlash uchun
+    const sorted = [...monthlyRecords].sort((a, b) => {
+      const aN = a.employee?.fullName || '';
+      const bN = b.employee?.fullName || '';
+      return aN.localeCompare(bN) || a.date.localeCompare(b.date);
+    });
+
+    exportToXlsx({
+      filename: `davomat_${matrixDate.year}-${String(matrixDate.month).padStart(2, '0')}`,
+      sheetName: `${monthName} ${matrixDate.year}`,
+      rows: sorted,
+      columns: [
+        { header: 'Sana', accessor: (r: AttendanceRecord) => r.date },
+        { header: 'Xodim', accessor: (r: AttendanceRecord) => r.employee?.fullName || '' },
+        { header: 'Lavozim', accessor: (r: AttendanceRecord) => r.employee?.role?.name || '' },
+        { header: 'Kelgan vaqti', accessor: (r: AttendanceRecord) => fmtTime(r.checkIn) },
+        { header: 'Ketgan vaqti', accessor: (r: AttendanceRecord) => fmtTime(r.checkOut) },
+        { header: 'Kech kelgan (min)', accessor: (r: AttendanceRecord) => r.lateMinutes || 0 },
+        { header: 'Ortiqcha (min)', accessor: (r: AttendanceRecord) => r.overtimeMinutes || 0 },
+        { header: 'Holat', accessor: (r: AttendanceRecord) => statusOf(r) },
+      ],
+    });
+    toast.success(`${sorted.length} ta yozuv eksport qilindi`);
+  };
 
   const handleSelfMark = async () => {
     if (isMarking) return;
@@ -722,6 +766,13 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     return <option key={y} value={y}>{y}</option>;
                   })}
                 </select>
+                <button
+                  onClick={handleExportMonthly}
+                  className="flex items-center gap-2 h-9 px-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+                  title="Tanlangan oy davomatini Excel'ga eksport qilish"
+                >
+                  <Download size={13} strokeWidth={2.5}/> EKSPORT
+                </button>
               </div>
             </div>
             <div className="overflow-x-auto p-4">

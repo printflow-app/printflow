@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2, Download, Search } from 'lucide-react';
 import { financeApi, customersApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -11,6 +11,8 @@ import SearchableSelect from '../components/SearchableSelect';
 import CurrencyInput from '../components/CurrencyInput';
 import { SkeletonTable, SkeletonStats } from '../components/Skeleton';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { exportToXlsx } from '../utils/exportToXlsx';
+import { toast } from 'react-toastify';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
@@ -20,9 +22,23 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const p = currentUser.permissions || {};
 
   const [page, setPage] = useState(1);
-  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
+  const today = new Date().toLocaleDateString('en-CA');
+  // "Applied" filtr — so'rovlarga ulashadi. Faqat lupa bosilganda yangilanadi.
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
+  // "Draft" input qiymatlari — har bosishda yangilanadi, lekin so'rov yubormaydi.
+  const [draftStart, setDraftStart] = useState(today);
+  const [draftEnd, setDraftEnd] = useState(today);
   const [departmentId, setDepartmentId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const applyDateFilter = () => {
+    setStartDate(draftStart);
+    setEndDate(draftEnd);
+    setPage(1);
+  };
+  const draftDiffers = draftStart !== startDate || draftEnd !== endDate;
 
   // Reset selected department when active branch changes
   useEffect(() => { setDepartmentId(''); }, [activeBranchId]);
@@ -35,19 +51,19 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const { data: vendors = [] } = useVendors(activeBranchId);
   const { data: departments = [] } = useDepartments(activeBranchId);
 
-  // Transactions & summary — branch+date+dept+page dependent, custom cache keys
+  // Transactions & summary — branch+range+dept+page dependent, custom cache keys
   const transactionsQuery = useQuery({
-    queryKey: ['kassa-transactions', activeBranchId, selectedDate, departmentId, page],
+    queryKey: ['kassa-transactions', activeBranchId, startDate, endDate, departmentId, page],
     queryFn: async () => {
-      const params = { branchId: activeBranchId, page, limit: 20, start: selectedDate, end: selectedDate, ...(departmentId ? { departmentId } : {}) };
+      const params = { branchId: activeBranchId, page, limit: 20, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}) };
       const r = await financeApi.getTransactions({ params });
       return r.data;
     },
   });
   const summaryQuery = useQuery({
-    queryKey: ['kassa-summary', activeBranchId, selectedDate, departmentId],
+    queryKey: ['kassa-summary', activeBranchId, startDate, endDate, departmentId],
     queryFn: async () => {
-      const params = { branchId: activeBranchId, start: selectedDate, end: selectedDate, ...(departmentId ? { departmentId } : {}) };
+      const params = { branchId: activeBranchId, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}) };
       const r = await financeApi.getDailySummary({ params });
       return r.data;
     },
@@ -64,6 +80,49 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     transactionsQuery.refetch();
     summaryQuery.refetch();
     invalidate.customers(); // debt could have changed
+  };
+
+  // EXPORT — joriy filtr oralig'idagi barcha tranzaksiyalarni .xlsx faylga yozadi.
+  // Sahifalashni chetlab o'tib limit=10000 bilan bir martalik so'rov yuboramiz.
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const params = {
+        branchId: activeBranchId,
+        page: 1,
+        limit: 10000,
+        start: startDate,
+        end: endDate,
+        ...(departmentId ? { departmentId } : {}),
+      };
+      const res = await financeApi.getTransactions({ params });
+      const all = (res.data?.data || []) as any[];
+      if (all.length === 0) {
+        toast.info("Tanlangan oraliqda ma'lumot yo'q");
+        return;
+      }
+
+      exportToXlsx({
+        filename: `kassa_${startDate}_${endDate}`,
+        sheetName: 'Kassa',
+        rows: all,
+        columns: [
+          { header: 'Sana', accessor: (t) => new Date(t.date || t.createdAt).toLocaleString('uz-UZ') },
+          { header: 'Turi', accessor: (t) => t.type === 'kirim' ? 'Kirim' : 'Chiqim' },
+          { header: 'Summa (UZS)', accessor: (t) => t.amount },
+          { header: "To'lov turi", accessor: (t) => t.paymentType?.name || '' },
+          { header: 'Mijoz / Hamkor', accessor: (t) => t.vendor?.name || t.customer?.name || t.customerName || '' },
+          { header: 'Xizmat / Sabab', accessor: (t) => t.serviceType || t.expenseReason || t.expenseType?.name || '' },
+          { header: 'Xodim', accessor: (t) => t.employee?.fullName || '' },
+          { header: "Bo'lim", accessor: (t) => t.department?.name || '' },
+        ],
+      });
+      toast.success(`${all.length} ta yozuv eksport qilindi`);
+    } catch {
+      toast.error('Eksportda xatolik');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Modals
@@ -175,7 +234,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kirim ({selectedDate})</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kirim {startDate === endDate ? `(${startDate})` : `(${startDate} → ${endDate})`}</span>
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><TrendingUp size={16}/></div>
           </div>
           <p className="text-xl font-bold text-emerald-600 tracking-tight">{formatCurrency(summary?.totalKirim || 0)}</p>
@@ -192,7 +251,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chiqim ({selectedDate})</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chiqim {startDate === endDate ? `(${startDate})` : `(${startDate} → ${endDate})`}</span>
             <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><TrendingDown size={16}/></div>
           </div>
           <p className="text-xl font-bold text-rose-600 tracking-tight">{formatCurrency(summary?.totalChiqim || 0)}</p>
@@ -229,7 +288,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               {formatCurrency(summary?.balance || 0)}
             </p>
             <div className="mt-2 px-3 py-1 bg-slate-100 rounded-full">
-               <span className="text-[9px] font-bold text-slate-500 uppercase">{new Date(selectedDate).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+               <span className="text-[9px] font-bold text-slate-500 uppercase">{startDate === endDate ? new Date(startDate).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) : `${startDate} → ${endDate}`}</span>
             </div>
         </div>
       </div>
@@ -245,14 +304,33 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </div>
             
             <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-               <input 
-                 type="date" 
-                 value={selectedDate} 
-                 onChange={(e) => { setSelectedDate(e.target.value); setPage(1); }}
+               <input
+                 type="date"
+                 value={draftStart}
+                 max={draftEnd}
+                 onChange={(e) => setDraftStart(e.target.value)}
+                 onKeyDown={(e) => { if (e.key === 'Enter') applyDateFilter(); }}
                  className="text-[10px] font-bold uppercase tracking-widest text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
                />
-               <button 
-                 onClick={() => { setSelectedDate(new Date().toLocaleDateString('en-CA')); setPage(1); }}
+               <span className="text-[10px] font-bold text-slate-400">→</span>
+               <input
+                 type="date"
+                 value={draftEnd}
+                 min={draftStart}
+                 onChange={(e) => setDraftEnd(e.target.value)}
+                 onKeyDown={(e) => { if (e.key === 'Enter') applyDateFilter(); }}
+                 className="text-[10px] font-bold uppercase tracking-widest text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
+               />
+               <button
+                 onClick={applyDateFilter}
+                 disabled={!draftDiffers}
+                 title="Qidirish"
+                 className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${draftDiffers ? 'bg-orange-500 hover:bg-orange-600 text-white shadow' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+               >
+                 <Search size={13} strokeWidth={2.5} />
+               </button>
+               <button
+                 onClick={() => { const t = new Date().toLocaleDateString('en-CA'); setDraftStart(t); setDraftEnd(t); setStartDate(t); setEndDate(t); setPage(1); }}
                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-[8px] font-bold uppercase tracking-widest rounded-lg transition-colors text-slate-500"
                >
                  BUGUN
@@ -270,6 +348,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </select>
           )}
           <div className="flex gap-2">
+             <button
+               onClick={handleExport}
+               disabled={isExporting}
+               className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all disabled:opacity-50"
+               title="Joriy oraliqdagi tranzaksiyalarni Excel'ga eksport qilish"
+             >
+               <Download size={14} strokeWidth={2.5}/> {isExporting ? 'EKSPORT...' : 'EKSPORT'}
+             </button>
              {p.canAddIncome && (
                <button onClick={() => setIsKirimModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-6 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
                  <TrendingUp size={14} strokeWidth={2.5}/> KIRIM

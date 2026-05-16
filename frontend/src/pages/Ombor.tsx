@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Package, Plus, Trash2, Edit3, ArrowUpCircle, ArrowDownCircle,
-  CheckCircle2, AlertCircle, TrendingDown, TrendingUp, BarChart2, History, X
+  CheckCircle2, AlertCircle, TrendingDown, TrendingUp, BarChart2, History, X, Download
 } from 'lucide-react';
 import { inventoryApi, servicesApi } from '../api';
 import { useMaterials, useStockMovements, useServices, useInvalidate } from '../hooks/queries';
@@ -10,6 +10,7 @@ import NumberInput from '../components/NumberInput';
 import { SkeletonCardGrid } from '../components/Skeleton';
 import { Search, Layers, Calculator, Save } from 'lucide-react';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { exportToXlsx } from '../utils/exportToXlsx';
 
 interface Material {
   id: string;
@@ -90,6 +91,51 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     invalidate.materials();
     invalidate.movements();
     invalidate.services();
+  };
+
+  // EXPORT — joriy tab'ga qarab: materiallar yoki harakatlar tarixi
+  const handleExport = () => {
+    const stamp = new Date().toLocaleDateString('en-CA');
+    if (activeTab === 'materials') {
+      if (materials.length === 0) { showStatus('error', "Eksport qilish uchun material yo'q"); return; }
+      exportToXlsx({
+        filename: `ombor_materiallar_${stamp}`,
+        sheetName: 'Materiallar',
+        rows: materials,
+        columns: [
+          { header: 'Material', accessor: (m: Material) => m.name },
+          { header: 'Birlik', accessor: (m: Material) => m.unit },
+          { header: 'Joriy qoldiq', accessor: (m: Material) => Number(m.currentStock || 0) },
+          { header: 'Band (bron)', accessor: (m: Material) => Number(m.reservedStock || 0) },
+          { header: 'Mavjud', accessor: (m: Material) => Number(m.currentStock || 0) - Number(m.reservedStock || 0) },
+          { header: 'Minimum chegara', accessor: (m: Material) => Number(m.minStock || 0) },
+          { header: 'Holat', accessor: (m: Material) => {
+            const avail = Number(m.currentStock || 0) - Number(m.reservedStock || 0);
+            if (avail <= 0) return 'Tugagan';
+            if (avail < Number(m.minStock || 0)) return 'Kam qolgan';
+            return 'Normal';
+          }},
+        ],
+      });
+      showStatus('success', `${materials.length} ta material eksport qilindi`);
+    } else {
+      if (movements.length === 0) { showStatus('error', "Tarixda yozuv yo'q"); return; }
+      const typeLabel: Record<string, string> = { kirim: 'Kirim', chiqim: 'Chiqim', brak: 'Brak' };
+      exportToXlsx({
+        filename: `ombor_tarix_${stamp}`,
+        sheetName: 'Harakatlar tarixi',
+        rows: movements,
+        columns: [
+          { header: 'Sana', accessor: (mv: Movement) => new Date(mv.createdAt).toLocaleString('uz-UZ') },
+          { header: 'Material', accessor: (mv: Movement) => mv.material?.name || '' },
+          { header: 'Turi', accessor: (mv: Movement) => typeLabel[mv.type] || mv.type },
+          { header: 'Miqdor', accessor: (mv: Movement) => Number(mv.quantity || 0) },
+          { header: 'Birlik', accessor: (mv: Movement) => mv.material?.unit || '' },
+          { header: 'Izoh', accessor: (mv: Movement) => mv.note || '' },
+        ],
+      });
+      showStatus('success', `${movements.length} ta yozuv eksport qilindi`);
+    }
   };
 
   // RQ auto-fetches on hook mount; manual initial fetch removed.
@@ -245,14 +291,23 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             Xomashyo va materiallar nazorati
           </p>
         </div>
-        {canAddItem && (
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <button
-            onClick={() => setIsAddMaterialOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+            title={activeTab === 'materials' ? "Materiallarni Excel'ga eksport qilish" : "Harakatlar tarixini eksport qilish"}
           >
-            <Plus size={16} strokeWidth={3} /> Material Qo'shish
+            <Download size={13} strokeWidth={2.5}/> EKSPORT
           </button>
-        )}
+          {canAddItem && (
+            <button
+              onClick={() => setIsAddMaterialOpen(true)}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
+            >
+              <Plus size={16} strokeWidth={3} /> Material Qo'shish
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats */}

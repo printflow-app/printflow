@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, UserPlus, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, Download } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, billingApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
@@ -7,6 +7,7 @@ import { useEmployees, useRoles, useBranches, useInvalidate } from '../hooks/que
 import Modal from '../components/Modal';
 import { SkeletonTable } from '../components/Skeleton';
 import CurrencyInput from '../components/CurrencyInput';
+import { exportToXlsx } from '../utils/exportToXlsx';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
@@ -132,6 +133,35 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     setIsCredentialsModalOpen(true);
   };
 
+  const handleExport = () => {
+    if (employees.length === 0) {
+      toast.info("Eksport qilish uchun xodim yo'q");
+      return;
+    }
+    const branchById = new Map((branches as any[]).map((b: any) => [b.id, b.name]));
+    const showSalary = isAdmin || p.canViewSalary;
+    const cols: any[] = [
+      { header: 'F.I.SH', accessor: (e: any) => e.fullName || '' },
+      { header: 'Telefon', accessor: (e: any) => e.phone || '' },
+      { header: 'Login', accessor: (e: any) => e.login || '' },
+      { header: 'Lavozim', accessor: (e: any) => e.role?.name || '' },
+      { header: 'Filial', accessor: (e: any) => branchById.get(e.branchId) || '' },
+    ];
+    if (showSalary) {
+      cols.push({ header: 'Asosiy maosh (UZS)', accessor: (e: any) => Number(e.baseSalary || 0) });
+    }
+    cols.push({ header: 'Yaratilgan', accessor: (e: any) => e.createdAt ? new Date(e.createdAt).toLocaleDateString('uz-UZ') : '' });
+
+    const stamp = new Date().toLocaleDateString('en-CA');
+    exportToXlsx({
+      filename: `hodimlar_${stamp}`,
+      sheetName: 'Hodimlar',
+      rows: employees,
+      columns: cols,
+    });
+    toast.success(`${employees.length} ta xodim eksport qilindi`);
+  };
+
   if (isLoading) return <SkeletonTable rows={5} cols={5} />;
 
   return (
@@ -149,21 +179,30 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               )}
             </p>
           </div>
-          {canAdd && (() => {
-            const atLimit = maxEmployees > 0 && employees.length >= maxEmployees;
-            return (
-              <button
-                data-tour-id="hodim-add"
-                disabled={atLimit}
-                onClick={() => !atLimit && setIsEmployeeModalOpen(true)}
-                className={`w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
-                title={atLimit ? `Limit to'ldi: ${maxEmployees} ta xodim (tarifni yangilang)` : ''}
-              >
-                <UserPlus size={16} strokeWidth={2.5} />
-                {atLimit ? `Limit to'ldi (${maxEmployees}/${maxEmployees})` : "Yangi Xodim"}
-              </button>
-            );
-          })()}
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              onClick={handleExport}
+              className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+              title="Xodimlar ro'yxatini Excel'ga eksport qilish"
+            >
+              <Download size={13} strokeWidth={2.5}/> EKSPORT
+            </button>
+            {canAdd && (() => {
+              const atLimit = maxEmployees > 0 && employees.length >= maxEmployees;
+              return (
+                <button
+                  data-tour-id="hodim-add"
+                  disabled={atLimit}
+                  onClick={() => !atLimit && setIsEmployeeModalOpen(true)}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-5 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
+                  title={atLimit ? `Limit to'ldi: ${maxEmployees} ta xodim (tarifni yangilang)` : ''}
+                >
+                  <UserPlus size={16} strokeWidth={2.5} />
+                  {atLimit ? `Limit to'ldi (${maxEmployees}/${maxEmployees})` : "Yangi Xodim"}
+                </button>
+              );
+            })()}
+          </div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">

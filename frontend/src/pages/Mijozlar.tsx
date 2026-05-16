@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
   FileText, AlertCircle, Trophy, Package, ClipboardList, Plus, Edit3,
-  Building2, UserPlus, Mail, Briefcase, CheckCircle2, AlertTriangle
+  Building2, UserPlus, Mail, Briefcase, CheckCircle2, AlertTriangle, Download
 } from 'lucide-react';
 import { customersApi } from '../api';
 import { useCustomers, useTopCustomers, useInvalidate } from '../hooks/queries';
@@ -11,6 +11,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { SkeletonTable } from '../components/Skeleton';
 import { toast } from 'react-toastify';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { exportToXlsx } from '../utils/exportToXlsx';
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + ' UZS';
@@ -74,6 +75,30 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     (c.phone || '').includes(searchTerm) ||
     (c.companyInfo || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleExport = () => {
+    const rows = activeView === 'top' ? (topCustomers as any[]) : filteredCustomers;
+    if (rows.length === 0) {
+      toast.info("Eksport qilish uchun ma'lumot yo'q");
+      return;
+    }
+    const stamp = new Date().toLocaleDateString('en-CA');
+    exportToXlsx({
+      filename: activeView === 'top' ? `mijozlar_top10_${stamp}` : `mijozlar_${stamp}`,
+      sheetName: 'Mijozlar',
+      rows,
+      columns: [
+        { header: 'Mijoz', accessor: (c: any) => c.name || '' },
+        { header: 'Telefon', accessor: (c: any) => c.phone || '' },
+        { header: 'Kompaniya / Info', accessor: (c: any) => c.companyInfo || '' },
+        { header: 'Jami qarzdorlik (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) },
+        { header: "Jami to'langan (UZS)", accessor: (c: any) => Number(c.totalPaid || 0) },
+        { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) - Number(c.totalPaid || 0) },
+        { header: 'Yaratilgan', accessor: (c: any) => c.createdAt ? new Date(c.createdAt).toLocaleDateString('uz-UZ') : '' },
+      ],
+    });
+    toast.success(`${rows.length} ta mijoz eksport qilindi`);
+  };
 
   // =============================================
   // Customer CRUD
@@ -239,6 +264,13 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               />
             </div>
           )}
+          <button
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+            title="Joriy ro'yxatni Excel'ga eksport qilish"
+          >
+            <Download size={13} strokeWidth={2.5}/> EKSPORT
+          </button>
           {canAdd && (
             <button
               onClick={openAdd}
