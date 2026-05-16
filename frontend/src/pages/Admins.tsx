@@ -127,6 +127,7 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
         ].map(tab => (
           <button
             key={tab.id}
+            data-tour-id={`admin-tab-${tab.id}`}
             onClick={() => setActiveAdminTab(tab.id as any)}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
               activeAdminTab === tab.id

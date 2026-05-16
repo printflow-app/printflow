@@ -52,24 +52,33 @@ const STEPS: Step[] = [
       O'zingiz amaliy harakat qiling, men kuzatib boraman. Tayyormisiz?`,
   },
 
-  // ===== 1. FILIAL =====
+  // ===== 1. FILIAL (Ma'muriyat → Filiallar sub-tab) =====
   {
-    id: 'nav-filiallar',
+    id: 'nav-admins',
     kind: 'nav',
-    target: '[data-tour-id="nav-filiallar"]',
-    title: "1️⃣ Qadam: Filiallar sahifasiga o'tamiz",
-    description: `Avval filialingizni sozlaymiz.<br><br>
-      👉 Chap menyudan <b>"Filiallar"</b> tugmasini bosing
+    target: '[data-tour-id="nav-admins"]',
+    title: "1️⃣ Qadam: Ma'muriyat sahifasiga o'tamiz",
+    description: `Avval filialingizni sozlaymiz. Filiallar Ma'muriyat sahifasi ichida joylashgan.<br><br>
+      👉 Chap menyudan <b>"Ma'muriyat"</b> tugmasini bosing
       (atrofida turtinayotgan orange chiziq).`,
+  },
+  {
+    id: 'tab-filiallar',
+    kind: 'nav',
+    target: '[data-tour-id="admin-tab-branches"]',
+    requiredTab: 'admins',
+    rewindToId: 'nav-admins',
+    title: "Endi 'Filiallar' tabini oching",
+    description: `Yuqorida ikkita tab bor: <b>"Ma'murlar"</b> va <b>"Filiallar"</b>.<br><br>
+      👉 <b>"Filiallar"</b> tabini bosing (atrofida orange chiziq turtinmoqda).`,
   },
   {
     id: 'do-filiallar',
     kind: 'manual',
-    requiredTab: 'filiallar',
-    rewindToId: 'nav-filiallar',
-    title: "Filiallar sahifasidasiz",
-    description: `Bu yerda <b>"Bosh Ofis (Asosiy)"</b> filiali avtomatik
-      yaratilganini ko'rasiz.<br><br>
+    requiredTab: 'admins',
+    rewindToId: 'tab-filiallar',
+    title: "Filiallar tabidasiz",
+    description: `Bu yerda <b>asosiy filialingiz</b> avtomatik yaratilganini ko'rasiz.<br><br>
       Hozir sizda <b>1 ta filial</b> kifoya — agar kelajakda yangi filial
       kerak bo'lsa, <b>"+ Yangi filial"</b> tugmasi orqali qo'shishingiz mumkin.<br><br>
       Tushundingizmi? Pastdagi <b>"Davom →"</b> tugmasini bosing.`,
@@ -244,11 +253,41 @@ interface Props {
   onComplete: () => void;
 }
 
+// Tooltip o'lchamlari — pozitsiya hisoblash uchun
+const TOOLTIP_W = 360;
+const TOOLTIP_H = 240;
+const GAP = 16;
+
+// Target elementning yonida bo'sh joy topib, tooltip joylashtiradi.
+// Tartib: o'ng → chap → past → tepa. Hech qaysisi sig'masa, o'ngga klemmlangan.
+function computeTooltipPos(target: HTMLElement): { top: number; left: number } {
+  const r = target.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(v, max));
+
+  // Right
+  if (r.right + GAP + TOOLTIP_W <= vw - GAP) {
+    return { top: clamp(r.top, GAP, vh - TOOLTIP_H - GAP), left: r.right + GAP };
+  }
+  // Left
+  if (r.left - GAP - TOOLTIP_W >= GAP) {
+    return { top: clamp(r.top, GAP, vh - TOOLTIP_H - GAP), left: r.left - GAP - TOOLTIP_W };
+  }
+  // Below
+  if (r.bottom + GAP + TOOLTIP_H <= vh - GAP) {
+    return { top: r.bottom + GAP, left: clamp(r.left, GAP, vw - TOOLTIP_W - GAP) };
+  }
+  // Above
+  return { top: Math.max(GAP, r.top - TOOLTIP_H - GAP), left: clamp(r.left, GAP, vw - TOOLTIP_W - GAP) };
+}
+
 export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
   const [stepId, setStepId] = useState<string>(() => {
     return localStorage.getItem(STEP_KEY(tenantId)) || 'welcome';
   });
   const [confirmClose, setConfirmClose] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
 
   const current = useMemo(() => STEPS.find((s) => s.id === stepId), [stepId]);
   const stepIndex = useMemo(() => STEPS.findIndex((s) => s.id === stepId), [stepId]);
@@ -288,14 +327,24 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, activeTab]);
 
-  // Target atrofida ring qo'shish/olib tashlash
+  // Target atrofida ring qo'shish/olib tashlash + tooltip pozitsiyasini hisoblash
   useEffect(() => {
-    if (!current?.target) return;
+    if (!current?.target) { setTooltipPos(null); return; }
     if (current.kind === 'welcome' || current.kind === 'done') return;
     const el = document.querySelector(current.target) as HTMLElement | null;
-    if (!el) return;
+    if (!el) { setTooltipPos(null); return; }
     el.classList.add('pf-tour-target');
-    return () => el.classList.remove('pf-tour-target');
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+    const update = () => setTooltipPos(computeTooltipPos(el));
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      el.classList.remove('pf-tour-target');
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
   }, [current, activeTab]);
 
   function advance() {
@@ -359,12 +408,20 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
     );
   }
 
-  // -------------------- Action qadamlar — bottom-right floating card --------------------
+  // -------------------- Action qadamlar — target yonidagi floating card --------------------
+  // Agar target topilmasa (yoki hali rect hisoblanmagan) — chap pastdan ko'rsatamiz (fallback).
+  const pos = tooltipPos ?? { top: window.innerHeight - TOOLTIP_H - GAP, left: GAP };
   return (
     <>
       <div
-        className="fixed bottom-6 right-6 z-[9999] w-[380px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
-        style={{ animation: 'pf-tour-slide-in 0.3s ease-out' }}
+        className="fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+        style={{
+          top: pos.top,
+          left: pos.left,
+          width: TOOLTIP_W,
+          maxWidth: `calc(100vw - ${GAP * 2}px)`,
+          animation: 'pf-tour-slide-in 0.3s ease-out',
+        }}
       >
         {/* Progress bar */}
         <div className="h-1 bg-slate-100">
