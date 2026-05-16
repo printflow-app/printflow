@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 
 // Bitta jadval (sheet) bilan .xlsx fayl yaratib brauzer orqali yuklaydi.
 // columns'da har bir ustun uchun: header (sarlavha) va accessor (qator → qiymat).
@@ -13,19 +13,84 @@ export interface ExportSheet<T> {
   columns: ExportColumn<T>[];
 }
 
+// Stillar — header uchun to'q ko'k fon + oq qalin matn, body uchun nozik border + markazlash.
+const THIN_BORDER = {
+  top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+  bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+  left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+  right: { style: 'thin', color: { rgb: 'CBD5E1' } },
+} as const;
+
+const HEADER_STYLE = {
+  font: { name: 'Calibri', sz: 12, bold: true, color: { rgb: 'FFFFFF' } },
+  fill: { patternType: 'solid', fgColor: { rgb: '1E40AF' } }, // to'q ko'k
+  alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+  border: {
+    top: { style: 'thin', color: { rgb: '1E3A8A' } },
+    bottom: { style: 'thin', color: { rgb: '1E3A8A' } },
+    left: { style: 'thin', color: { rgb: '1E3A8A' } },
+    right: { style: 'thin', color: { rgb: '1E3A8A' } },
+  },
+};
+
+const BODY_STYLE = {
+  font: { name: 'Calibri', sz: 11, color: { rgb: '0F172A' } },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+  border: THIN_BORDER,
+};
+
+// Juft qatorlar uchun engil zebra-fon — o'qishni osonlashtiradi.
+const BODY_STYLE_ALT = {
+  ...BODY_STYLE,
+  fill: { patternType: 'solid', fgColor: { rgb: 'F1F5F9' } },
+};
+
+function isNumeric(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
 function buildSheet<T>(rows: T[], columns: ExportColumn<T>[]): XLSX.WorkSheet {
   const aoa: (string | number | null | undefined)[][] = [
     columns.map((c) => c.header),
     ...rows.map((r) => columns.map((c) => c.accessor(r))),
   ];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Har bir hujayraga stil berish.
+  for (let r = 0; r < aoa.length; r++) {
+    for (let c = 0; c < columns.length; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      const value = aoa[r][c];
+      if (!ws[cellRef]) {
+        ws[cellRef] = { t: 's', v: '' };
+      }
+      if (r === 0) {
+        ws[cellRef].s = HEADER_STYLE;
+      } else {
+        const base = r % 2 === 0 ? BODY_STYLE_ALT : BODY_STYLE;
+        // Raqamlarni o'ngga tekislash.
+        ws[cellRef].s = isNumeric(value)
+          ? { ...base, alignment: { ...base.alignment, horizontal: 'right' } }
+          : base;
+      }
+    }
+  }
+
+  // Ustun kengligi — eng uzun matnga qarab.
   ws['!cols'] = columns.map((_, idx) => {
     const maxLen = aoa.reduce((m, row) => {
       const v = row[idx];
       return Math.max(m, v == null ? 0 : String(v).length);
     }, 0);
-    return { wch: Math.min(60, Math.max(10, maxLen + 2)) };
+    return { wch: Math.min(60, Math.max(12, maxLen + 2)) };
   });
+
+  // Header qatori biroz balandroq.
+  ws['!rows'] = aoa.map((_, idx) => ({ hpt: idx === 0 ? 24 : 20 }));
+
+  // Birinchi qatorni muzlatish — uzun jadvalda header har doim ko'rinadi.
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
   return ws;
 }
 

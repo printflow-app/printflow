@@ -1,13 +1,55 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
+import { TenantContext } from '../../common/tenant/tenant.context';
 
 @Injectable()
-export class FinanceService {
+export class FinanceService implements OnApplicationBootstrap {
   constructor(
     private prisma: PrismaService,
     private telegramService: TelegramService,
   ) {}
+
+  async onApplicationBootstrap() {
+    try {
+      // Self-healing routine: If a tenant has branches, ensure any orphaned records
+      // (Transactions, Tasks, Customers) created from "Barcha filiallar" (branchId: null)
+      // are assigned to the tenant's primary branch so they don't disappear from Kassa/Mijozlar.
+      const tenants = await this.prisma.tenant.findMany({ select: { id: true } });
+      for (const t of tenants) {
+        const branches = await this.prisma.branch.findMany({
+          where: { tenantId: t.id },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true },
+        });
+
+        if (branches.length > 0) {
+          const primaryBranchId = branches[0].id;
+
+          // 1. Transactions
+          await this.prisma.transaction.updateMany({
+            where: { tenantId: t.id, branchId: null },
+            data: { branchId: primaryBranchId },
+          });
+
+          // 2. Tasks
+          await this.prisma.task.updateMany({
+            where: { tenantId: t.id, branchId: null },
+            data: { branchId: primaryBranchId },
+          });
+
+          // 3. Customers
+          await this.prisma.customer.updateMany({
+            where: { tenantId: t.id, branchId: null },
+            data: { branchId: primaryBranchId },
+          });
+        }
+      }
+      console.log('[FinanceService] Self-healing branch backfill completed successfully.');
+    } catch (e) {
+      console.error('[FinanceService] Self-healing branch backfill failed:', e);
+    }
+  }
 
   /**
    * Treat date-only strings (YYYY-MM-DD) as a calendar day in the SERVER's local
@@ -130,7 +172,31 @@ export class FinanceService {
   }
 
   async createTransaction(data: any) {
-    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, vendorId, departmentId } = data;
+    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, vendorId, departmentId, branchId } = data;
+
+    let finalBranchId = branchId || null;
+
+    if (!finalBranchId) {
+      const tenantId = TenantContext.tryGetTenantId();
+      if (tenantId) {
+        if (customerId) {
+          const c = await this.prisma.customer.findUnique({ where: { id: customerId }, select: { branchId: true } });
+          if (c?.branchId) finalBranchId = c.branchId;
+        }
+        if (!finalBranchId && vendorId) {
+          const v = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { branchId: true } });
+          if (v?.branchId) finalBranchId = v.branchId;
+        }
+        if (!finalBranchId && employeeId) {
+          const e = await this.prisma.employee.findUnique({ where: { id: employeeId }, select: { branchId: true } });
+          if (e?.branchId) finalBranchId = e.branchId;
+        }
+        if (!finalBranchId) {
+          const b = await this.prisma.branch.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' }, select: { id: true } });
+          if (b) finalBranchId = b.id;
+        }
+      }
+    }
 
     const transaction = await this.prisma.$transaction(async (tx) => {
       const createdTransaction = await tx.transaction.create({
@@ -146,6 +212,8 @@ export class FinanceService {
           employeeId: vendorId ? null : employeeId,
           vendorId: vendorId || null,
           departmentId: departmentId || null,
+          // Filial scope — bo'lmasa Kassa filiali filtri tranzaksiyani yashiradi.
+          branchId: finalBranchId,
           ...(data.date ? { date: new Date(data.date) } : {}),
         } as any,
       });

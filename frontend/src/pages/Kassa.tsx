@@ -173,6 +173,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         type: 'kirim',
         vendorId: kirimForm.vendorId || null,
         customerId: kirimForm.vendorId ? null : kirimForm.customerId,
+        branchId: activeBranchId || null,
       });
       setIsKirimModalOpen(false);
       setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '' });
@@ -195,6 +196,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         employeeId: chiqimForm.isEmployeeExpense ? chiqimForm.employeeId : null,
         vendorId: chiqimForm.isVendorExpense ? chiqimForm.vendorId : null,
         expenseTypeId: chiqimForm.isVendorExpense || chiqimForm.isEmployeeExpense ? null : chiqimForm.expenseTypeId,
+        branchId: activeBranchId || null,
       });
       setIsChiqimModalOpen(false);
       setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });

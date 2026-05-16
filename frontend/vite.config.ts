@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -9,6 +10,13 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        // xlsx-js-style brauzerda kerak bo'lmagan Node 'stream' modulini import qiladi.
+        // Bo'sh stub bilan almashtirish konsoldagi ogohlantirishni jim qiladi.
+        stream: path.resolve(__dirname, 'src/utils/empty-stream-stub.js'),
+      },
+    },
     build: {
       rollupOptions: {
         output: {

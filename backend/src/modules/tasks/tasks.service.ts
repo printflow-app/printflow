@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
-import { buildDisplayId, parseDisplayIdSequence } from './task-id.util';
+import {
+  buildDisplayId,
+  buildDisplayIdFromService,
+  parseDisplayIdSequence,
+} from './task-id.util';
 
 @Injectable()
 export class TasksService {
@@ -97,12 +101,18 @@ export class TasksService {
         where: { id: TenantContext.getTenantId() },
         select: { name: true },
       });
-      const maxTask = await (tx.task.findFirst as any)({
-        orderBy: { displayId: 'desc' },
+      // Prefiks endi har xil bo'lgani uchun (har xil xizmatlar), max sequence'ni
+      // butun tenant tasklari ichidan numerik tarzda topamiz.
+      const allDisplayIds = await (tx.task.findMany as any)({
         select: { displayId: true },
       });
-      const nextSeq = (maxTask ? parseDisplayIdSequence(maxTask.displayId) + 1 : 10001) + retryCount;
-      const displayId = buildDisplayId(tenant?.name ?? 'X', nextSeq - 10001);
+      const maxSeq = allDisplayIds.reduce(
+        (m: number, t: { displayId: string | null }) =>
+          Math.max(m, parseDisplayIdSequence(t.displayId || '')),
+        10000,
+      );
+      const nextSeq = maxSeq + 1 + retryCount;
+      const displayId = buildDisplayIdFromService(title, tenant?.name ?? 'X', nextSeq - 10001);
 
       const createdTask = await tx.task.create({
         data: {
@@ -154,6 +164,9 @@ export class TasksService {
             taskId: createdTask.id,
             serviceType: title,
             departmentId: departmentId || null,
+            // Filial scope — taskning origin branch'iga moslash, aks holda Kassa filiali
+            // filtri kirim tranzaksiyani yashiradi.
+            branchId: data.branchId || data.targetBranchId || null,
           } as any
         });
       }
@@ -232,12 +245,19 @@ export class TasksService {
         where: { id: TenantContext.getTenantId() },
         select: { name: true },
       });
-      // Find the current max displayId across the entire tenant to avoid collisions.
-      const maxBulkTask = await (tx.task.findFirst as any)({
-        orderBy: { displayId: 'desc' },
+      // Prefiks turli xil bo'lgani uchun (birinchi xizmat nomidan), max sequence'ni
+      // butun tenant tasklari ichidan numerik tarzda topamiz — alfavit tartibi yaramaydi.
+      const allBulkDisplayIds = await (tx.task.findMany as any)({
         select: { displayId: true },
       });
-      let nextBulkSeq = (maxBulkTask ? parseDisplayIdSequence(maxBulkTask.displayId) + 1 : 10001) + bulkRetry;
+      const maxBulkSeq = allBulkDisplayIds.reduce(
+        (m: number, t: { displayId: string | null }) =>
+          Math.max(m, parseDisplayIdSequence(t.displayId || '')),
+        10000,
+      );
+      let nextBulkSeq = maxBulkSeq + 1 + bulkRetry;
+      // Barcha bulk tasklar uchun bir xil prefiks — birinchi xizmatdan.
+      const bulkPrefixSource = items[0]?.title ?? null;
 
       const createdTasks = [];
       let totalOrderAmount = 0;
@@ -252,7 +272,11 @@ export class TasksService {
           ? (perTaskDepositFloor + remainder)
           : perTaskDepositFloor;
 
-        const displayId = buildDisplayId(bulkTenant?.name ?? 'X', nextBulkSeq++ - 10001);
+        const displayId = buildDisplayIdFromService(
+          bulkPrefixSource,
+          bulkTenant?.name ?? 'X',
+          nextBulkSeq++ - 10001,
+        );
 
         const task = await tx.task.create({
           data: {
@@ -321,6 +345,9 @@ export class TasksService {
             taskId: createdTasks[0].id,
             serviceType: items.length > 1 ? `${items[0].title} (+${items.length - 1} ta)` : items[0].title,
             departmentId: departmentId || null,
+            // Filial scope — bulk orderning origin branch'iga moslash, aks holda Kassa
+            // filiali filtri kirim tranzaksiyani yashiradi.
+            branchId: branchId || null,
           } as any
         });
       }
@@ -461,13 +488,14 @@ export class TasksService {
       taskWhere = { ...taskBase, branchId: null, executorBranchId: null };
     }
 
-    // Multi-Branch isolation: columns are now branch-scoped.
-    //   '__main__' or undefined → branchId IS NULL (Bosh ofis / legacy)
+    // Multi-Branch isolation:
+    //   '__main__'              → branchId IS NULL (Bosh ofis / legacy)
     //   real UUID               → branchId = <UUID>
+    //   undefined / ''          → no filter (Barcha filiallar — all columns across tenant)
     const colWhere: any = {};
-    if (branchId === '__main__' || !branchId) {
+    if (branchId === '__main__') {
       colWhere.branchId = null;
-    } else {
+    } else if (branchId) {
       colWhere.branchId = branchId;
     }
 
