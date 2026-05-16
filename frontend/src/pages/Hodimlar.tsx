@@ -153,6 +153,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             const atLimit = maxEmployees > 0 && employees.length >= maxEmployees;
             return (
               <button
+                data-tour-id="hodim-add"
                 disabled={atLimit}
                 onClick={() => !atLimit && setIsEmployeeModalOpen(true)}
                 className={`w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}

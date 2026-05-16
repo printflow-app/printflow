@@ -588,7 +588,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Sahifalar va funksiyalarga dostupni sozlash</p>
             </div>
             {(isAdmin || p.canManageRoles) && (
-              <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-6 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all" onClick={() => setIsRoleModalOpen(true)}>
+              <button data-tour-id="lavozim-add" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-6 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all" onClick={() => setIsRoleModalOpen(true)}>
                 <Plus size={16} strokeWidth={3} /> Yangi Lavozim
               </button>
             )}
@@ -735,14 +735,14 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {(isAdmin || p.canManagePaymentTypes) && (
         <section className="space-y-4">
            <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm transition-all hover:shadow-md">
-              <form onSubmit={handleAddPT} className="flex flex-col md:flex-row gap-3 mb-6 pb-6 border-b border-slate-100">
+              <form data-tour-id="payment-type-form" onSubmit={handleAddPT} className="flex flex-col md:flex-row gap-3 mb-6 pb-6 border-b border-slate-100">
                  <div className="flex-1 relative">
-                    <input 
-                       type="text" 
-                       required 
-                       value={newPT} 
-                       onChange={(e) => setNewPT(e.target.value)} 
-                       className="w-full h-12 text-base font-bold bg-slate-50 border-2 border-slate-50 rounded-xl px-5 outline-none focus:bg-white focus:border-sky-500 transition-all placeholder:text-slate-300 shadow-inner" 
+                    <input
+                       type="text"
+                       required
+                       value={newPT}
+                       onChange={(e) => setNewPT(e.target.value)}
+                       className="w-full h-12 text-base font-bold bg-slate-50 border-2 border-slate-50 rounded-xl px-5 outline-none focus:bg-white focus:border-sky-500 transition-all placeholder:text-slate-300 shadow-inner"
                        placeholder="Yangi usul nomi (Click, Uzcard...)"
                     />
                  </div>
@@ -1505,6 +1505,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
         </div>
         {canAdd && (
           <button
+            data-tour-id="xizmat-add"
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-5 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all"
             onClick={() => setIsAddOpen(true)}
           >

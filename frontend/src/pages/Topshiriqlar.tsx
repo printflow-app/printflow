@@ -741,7 +741,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <Archive size={12} /> ARXIV
           </button>
           {p.canManageColumns && (
-            <button onClick={() => setIsNewColumnModalOpen(true)} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
+            <button data-tour-id="kanban-add-column" onClick={() => setIsNewColumnModalOpen(true)} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
               + BOSQICH
             </button>
           )}

@@ -261,6 +261,7 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           const atLimit = maxBranches > 0 && branches.length >= maxBranches;
           return (
             <button
+              data-tour-id="filial-add"
               disabled={atLimit}
               onClick={() => !atLimit && openCreate()}
               className={`flex items-center gap-2 h-10 px-6 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-orange-500/20'}`}

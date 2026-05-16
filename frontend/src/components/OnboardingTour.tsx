@@ -75,81 +75,66 @@ const STEPS: Step[] = [
   {
     id: 'do-filiallar',
     kind: 'manual',
+    target: '[data-tour-id="filial-add"]',
     requiredTab: 'admins',
     rewindToId: 'tab-filiallar',
     title: "Filiallar tabidasiz",
     description: `Bu yerda <b>asosiy filialingiz</b> avtomatik yaratilganini ko'rasiz.<br><br>
-      Hozir sizda <b>1 ta filial</b> kifoya — agar kelajakda yangi filial
-      kerak bo'lsa, <b>"+ Yangi filial"</b> tugmasi orqali qo'shishingiz mumkin.<br><br>
-      Tushundingizmi? Pastdagi <b>"Davom →"</b> tugmasini bosing.`,
+      Yangi filial qo'shish kerak bo'lsa, orange ring atrofidagi <b>"+ Yangi filial"</b> tugmasini bosing.<br><br>
+      Hozir 1 ta filial kifoya — <b>"Davom →"</b> bosing.`,
   },
 
-  // ===== 2. LAVOZIM =====
+  // ===== 2. SOZLAMALAR (one long page — Lavozim, To'lov turlari, Xizmatlar Katalogi) =====
   {
-    id: 'nav-sozlamalar-role',
+    id: 'nav-sozlamalar',
     kind: 'nav',
     target: '[data-tour-id="nav-sozlamalar"]',
-    title: "2️⃣ Qadam: Lavozim yaratish",
-    description: `Xodim qo'shishdan oldin lavozim (role) yaratish kerak.<br><br>
-      👉 Chap menyudan <b>"Sozlamalar"</b> tugmasini bosing.`,
+    title: "2️⃣ Qadam: Sozlamalar sahifasiga o'tamiz",
+    description: `Endi Sozlamalar'da uchta narsa qilamiz: lavozim, to'lov turi va xizmat qo'shamiz.<br><br>
+      👉 Chap menyudan <b>"Tizim Sozlamalari"</b> tugmasini bosing.`,
   },
   {
     id: 'do-lavozim',
     kind: 'manual',
+    target: '[data-tour-id="lavozim-add"]',
     requiredTab: 'sozlamalar',
-    rewindToId: 'nav-sozlamalar-role',
+    rewindToId: 'nav-sozlamalar',
     title: "Lavozim qo'shing",
-    description: `Hozir Sozlamalar sahifasidasiz. Quyidagilarni qiling:<br><br>
-      1. <b>"Lavozimlar"</b> bo'limini toping (yuqorida tab/qism shaklida)<br>
-      2. <b>"+ Yangi lavozim"</b> tugmasini bosing<br>
-      3. Lavozim nomini kiriting — masalan: <b>"Operator"</b>, <b>"Menejer"</b>, <b>"Dizayner"</b><br>
-      4. Bu lavozim qaysi sahifani ko'ra olishi va nima qila olishini <b>checkbox</b>'lar bilan belgilang<br>
-      5. <b>"Saqlash"</b> tugmasini bosing<br><br>
-      Tugatdingizmi? <b>"Davom →"</b> bosing.`,
+    description: `Yuqorida <b>Lavozimlar & Ruxsatlar</b> bo'limi. Orange ring'dagi
+      <b>"+ Yangi Lavozim"</b> tugmasini bosing — modal ochiladi:<br><br>
+      • Lavozim nomi: <b>"Operator"</b> / <b>"Menejer"</b> / <b>"Dizayner"</b><br>
+      • Ruxsatlarni checkbox'lar bilan belgilang<br>
+      • <b>"Saqlash"</b> bosing<br><br>
+      Yaratdingizmi? <b>"Davom →"</b> bosing.`,
   },
-
-  // ===== 3. TO'LOV TURLARI =====
   {
     id: 'do-payment-types',
     kind: 'manual',
+    target: '[data-tour-id="payment-type-form"]',
     requiredTab: 'sozlamalar',
-    rewindToId: 'nav-sozlamalar-role',
-    title: "3️⃣ Qadam: To'lov turlari",
-    description: `Hozir ham Sozlamalar sahifasidasiz. Endi to'lov turlarini qo'shamiz.<br><br>
-      1. <b>"To'lov turlari"</b> bo'limini toping<br>
-      2. <b>"+ Yangi to'lov turi"</b> tugmasini bosing<br>
-      3. Biznesingizdagi to'lov usullarini kiriting:<br>
-      &nbsp;&nbsp;• <b>Naqd</b><br>
-      &nbsp;&nbsp;• <b>Karta</b><br>
-      &nbsp;&nbsp;• <b>Click / Payme</b><br><br>
-      Bu turlar keyinchalik Kassa'da buyurtma yaratganda <b>dropdown'da paydo bo'ladi</b>.<br><br>
-      Qo'shdingizmi? <b>"Davom →"</b> bosing.`,
-  },
-
-  // ===== 4. XIZMATLAR KATALOGI =====
-  {
-    id: 'nav-services',
-    kind: 'nav',
-    target: '[data-tour-id="nav-xizmatlar-katalog"]',
-    title: '4️⃣ Qadam: Xizmatlar katalogi',
-    description: `Endi mahsulot/xizmatlaringizni kiritamiz.<br><br>
-      👉 Chap menyudan <b>"Xizmatlar katalogi"</b> tabini bosing
-      (Operatsiya guruhida).`,
+    rewindToId: 'nav-sozlamalar',
+    title: "3️⃣ To'lov turlari",
+    description: `Pastga aylantiring — <b>To'lov turlari</b> bo'limini toping.
+      Orange ring ichida katta input va <b>QO'SHISH</b> tugmasi bor.<br><br>
+      Input'ga nom yozib (masalan: <b>Naqd</b>, <b>Karta</b>, <b>Click</b>),
+      <b>QO'SHISH</b> bosing — avtomatik qo'shiladi. Bir nechta usul qo'shing.<br><br>
+      Bu turlar Kassa'da buyurtma yaratganda dropdown'da chiqadi.<br><br>
+      Tugatdingizmi? <b>"Davom →"</b> bosing.`,
   },
   {
     id: 'do-services',
     kind: 'manual',
-    requiredTab: 'xizmatlar-katalog',
-    rewindToId: 'nav-services',
-    title: "Yangi xizmat qo'shing",
-    description: `Quyidagilarni qiling:<br><br>
-      1. <b>"+ Yangi xizmat"</b> tugmasini bosing<br>
-      2. Xizmat nomini kiriting — masalan: <b>"Banner Bosma"</b><br>
-      3. <b>Asosiy narx</b> kiriting — masalan: <b>50000</b><br>
-      4. <b>Birlik</b> tanlang — dona / m² / metr<br>
-      5. Agar kerak bo'lsa <b>opsiyalar</b> qo'shing (qog'oz turi, rang, lak) —
-         har biri narxga foiz qo'shadi<br>
-      6. <b>"Saqlash"</b> tugmasini bosing<br><br>
+    target: '[data-tour-id="xizmat-add"]',
+    requiredTab: 'sozlamalar',
+    rewindToId: 'nav-sozlamalar',
+    title: "4️⃣ Xizmatlar katalogi",
+    description: `Yana pastroqqa aylantiring — <b>Xizmatlar Katalogi</b> bo'limi.
+      Orange ring'dagi <b>"+ Yangi Xizmat"</b> tugmasini bosing — modal ochiladi:<br><br>
+      • Nomi: <b>"Banner Bosma"</b><br>
+      • Asosiy narx: <b>50000</b><br>
+      • Birlik: dona / m² / metr<br>
+      • (Ixtiyoriy) opsiyalar: qog'oz turi, rang, lak<br>
+      • <b>"Saqlash"</b> bosing<br><br>
       Qo'shdingizmi? <b>"Davom →"</b> bosing.`,
   },
 
@@ -160,20 +145,19 @@ const STEPS: Step[] = [
     target: '[data-tour-id="nav-hodimlar"]',
     title: "5️⃣ Qadam: Birinchi xodim",
     description: `Lavozim tayyor — endi xodim qo'shamiz.<br><br>
-      👉 Chap menyudan <b>"Xodimlar"</b> tabini bosing.`,
+      👉 Chap menyudan <b>"Xodimlar"</b> tugmasini bosing.`,
   },
   {
     id: 'do-hodimlar',
     kind: 'manual',
+    target: '[data-tour-id="hodim-add"]',
     requiredTab: 'hodimlar',
     rewindToId: 'nav-hodimlar',
     title: "Yangi xodim qo'shing",
-    description: `Quyidagilarni qiling:<br><br>
-      1. <b>"+ Yangi xodim"</b> tugmasini bosing<br>
-      2. <b>Ism, telefon, lavozim</b>'ni tanlang (oldin yaratgan lavozimingiz dropdown'da bor)<br>
-      3. <b>"Saqlash"</b> bosing<br><br>
-      Tizim avtomatik <b>login va parol</b> yaratadi — uni xodimga uzating,
-      u shu ma'lumotlar bilan PrintFlow'ga kira oladi.<br><br>
+    description: `Orange ring'dagi <b>"Yangi Xodim"</b> tugmasini bosing — modal ochiladi:<br><br>
+      • Ism, telefon, lavozim (oldin yaratgan lavozimingiz dropdown'da bor)<br>
+      • <b>"Saqlash"</b> bosing<br><br>
+      Tizim avtomatik <b>login va parol</b> yaratadi — xodimga uzating, u shu ma'lumotlar bilan kira oladi.<br><br>
       Qo'shdingizmi? <b>"Davom →"</b> bosing.`,
   },
 
@@ -182,23 +166,22 @@ const STEPS: Step[] = [
     id: 'nav-kanban',
     kind: 'nav',
     target: '[data-tour-id="nav-topshiriqlar"]',
-    title: "6️⃣ Qadam: Kanban ustunlari",
+    title: "6️⃣ Qadam: Kanban bosqichlari",
     description: `Oxirgi qadam — buyurtma jarayonining bosqichlari.<br><br>
-      👉 Chap menyudan <b>"Xizmatlar (Kanban)"</b> tabini bosing.`,
+      👉 Chap menyudan <b>"Xizmatlar (Kanban)"</b> tugmasini bosing.`,
   },
   {
     id: 'do-kanban',
     kind: 'manual',
+    target: '[data-tour-id="kanban-add-column"]',
     requiredTab: 'topshiriqlar',
     rewindToId: 'nav-kanban',
     title: "Bosqichlarni yarating",
-    description: `Buyurtmalar shu ustunlar bo'ylab drag-and-drop bilan harakatlanadi.<br><br>
-      <b>"+ BOSQICH"</b> tugmasi orqali ustunlar qo'shing — masalan:<br>
+    description: `Yuqorida orange ring'dagi <b>+ BOSQICH</b> tugmasini bir necha marta bosing —
+      har bosishda yangi ustun qo'shiladi:<br><br>
       • <b>Yangi buyurtma</b><br>
-      • <b>Dizayn</b><br>
-      • <b>Bosma</b><br>
-      • <b>Tayyor</b><br>
-      • <b>Yetkazildi</b><br><br>
+      • <b>Dizayn</b> → <b>Bosma</b> → <b>Tayyor</b> → <b>Yetkazildi</b><br><br>
+      Buyurtmalar shu ustunlar bo'ylab drag-and-drop bilan harakatlanadi.<br><br>
       Yaratdingizmi? <b>"Davom →"</b> bosing.`,
   },
 
@@ -259,12 +242,13 @@ const TOOLTIP_H = 240;
 const GAP = 16;
 
 // Target elementning yonida bo'sh joy topib, tooltip joylashtiradi.
-// Tartib: o'ng → chap → past → tepa. Hech qaysisi sig'masa, o'ngga klemmlangan.
+// Tartib: o'ng → chap → past → tepa. Below/above tushganda target markaziga to'g'rilaymiz.
 function computeTooltipPos(target: HTMLElement): { top: number; left: number } {
   const r = target.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(v, max));
+  const centeredLeft = clamp(r.left + r.width / 2 - TOOLTIP_W / 2, GAP, vw - TOOLTIP_W - GAP);
 
   // Right
   if (r.right + GAP + TOOLTIP_W <= vw - GAP) {
@@ -274,12 +258,12 @@ function computeTooltipPos(target: HTMLElement): { top: number; left: number } {
   if (r.left - GAP - TOOLTIP_W >= GAP) {
     return { top: clamp(r.top, GAP, vh - TOOLTIP_H - GAP), left: r.left - GAP - TOOLTIP_W };
   }
-  // Below
+  // Below — keng target'lar uchun gorizontal markazga to'g'rilaymiz
   if (r.bottom + GAP + TOOLTIP_H <= vh - GAP) {
-    return { top: r.bottom + GAP, left: clamp(r.left, GAP, vw - TOOLTIP_W - GAP) };
+    return { top: r.bottom + GAP, left: centeredLeft };
   }
   // Above
-  return { top: Math.max(GAP, r.top - TOOLTIP_H - GAP), left: clamp(r.left, GAP, vw - TOOLTIP_W - GAP) };
+  return { top: Math.max(GAP, r.top - TOOLTIP_H - GAP), left: centeredLeft };
 }
 
 export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
@@ -313,38 +297,61 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
     }
   }, [activeTab, current]);
 
-  // Nav qadami: target bosilganda avtomatik advance
-  useEffect(() => {
-    if (!current || current.kind !== 'nav' || !current.target) return;
-    const el = document.querySelector(current.target) as HTMLElement | null;
-    if (!el) return;
+  // Target elementni topish — lazy-rendered saxifalar uchun polling.
+  // Admins.tsx React.lazy bilan yuklanadi, shuning uchun click'dan keyin
+  // darhol querySelector qaytaradi null. ~3 soniya davomida kutamiz.
+  function waitForTarget(selector: string, timeoutMs = 3000): Promise<HTMLElement | null> {
+    return new Promise((resolve) => {
+      const start = Date.now();
+      const tick = () => {
+        const el = document.querySelector(selector) as HTMLElement | null;
+        if (el) return resolve(el);
+        if (Date.now() - start >= timeoutMs) return resolve(null);
+        requestAnimationFrame(tick);
+      };
+      tick();
+    });
+  }
 
-    const onClick = () => {
-      setTimeout(() => advance(), 400);
-    };
-    el.addEventListener('click', onClick);
-    return () => el.removeEventListener('click', onClick);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current, activeTab]);
-
-  // Target atrofida ring qo'shish/olib tashlash + tooltip pozitsiyasini hisoblash
+  // Nav qadami: target bosilganda avtomatik advance + ring + tooltip pozitsiya
   useEffect(() => {
     if (!current?.target) { setTooltipPos(null); return; }
     if (current.kind === 'welcome' || current.kind === 'done') return;
-    const el = document.querySelector(current.target) as HTMLElement | null;
-    if (!el) { setTooltipPos(null); return; }
-    el.classList.add('pf-tour-target');
-    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
-    const update = () => setTooltipPos(computeTooltipPos(el));
-    update();
-    window.addEventListener('resize', update);
-    window.addEventListener('scroll', update, true);
+    let el: HTMLElement | null = null;
+    let cleanup: (() => void) | null = null;
+    let cancelled = false;
+
+    waitForTarget(current.target).then((found) => {
+      if (cancelled || !found) return;
+      el = found;
+      el.classList.add('pf-tour-target');
+      // Instant scroll + center — smooth + 'nearest' eski rect bilan pozitsiya
+      // hisoblanishiga olib kelardi, target tooltipni qoplab qo'yardi.
+      el.scrollIntoView({ block: 'center', behavior: 'auto' });
+
+      const update = () => el && setTooltipPos(computeTooltipPos(el));
+      // Skrol tugagach (2 ta rAF kifoya) qayta hisoblaymiz — rect aniq joyida bo'ladi.
+      requestAnimationFrame(() => requestAnimationFrame(update));
+      window.addEventListener('resize', update);
+      window.addEventListener('scroll', update, true);
+
+      const onClick = () => { setTimeout(() => advance(), 400); };
+      if (current.kind === 'nav') el.addEventListener('click', onClick);
+
+      cleanup = () => {
+        el?.classList.remove('pf-tour-target');
+        window.removeEventListener('resize', update);
+        window.removeEventListener('scroll', update, true);
+        if (current.kind === 'nav') el?.removeEventListener('click', onClick);
+      };
+    });
+
     return () => {
-      el.classList.remove('pf-tour-target');
-      window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update, true);
+      cancelled = true;
+      cleanup?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, activeTab]);
 
   function advance() {
@@ -409,8 +416,11 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
   }
 
   // -------------------- Action qadamlar — target yonidagi floating card --------------------
-  // Agar target topilmasa (yoki hali rect hisoblanmagan) — chap pastdan ko'rsatamiz (fallback).
-  const pos = tooltipPos ?? { top: window.innerHeight - TOOLTIP_H - GAP, left: GAP };
+  // Agar target topilmasa (yoki hali rect hisoblanmagan) — o'ng yon, vertikal markazda.
+  const pos = tooltipPos ?? {
+    top: Math.max(GAP, (window.innerHeight - TOOLTIP_H) / 2),
+    left: window.innerWidth - TOOLTIP_W - GAP,
+  };
   return (
     <>
       <div
