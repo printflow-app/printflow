@@ -292,13 +292,15 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <button
-            onClick={handleExport}
-            className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
-            title={activeTab === 'materials' ? "Materiallarni Excel'ga eksport qilish" : "Harakatlar tarixini eksport qilish"}
-          >
-            <Download size={13} strokeWidth={2.5}/> EKSPORT
-          </button>
+          {(isAdmin || p.canExportInventory) && (
+            <button
+              onClick={handleExport}
+              className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+              title={activeTab === 'materials' ? "Materiallarni Excel'ga eksport qilish" : "Harakatlar tarixini eksport qilish"}
+            >
+              <Download size={13} strokeWidth={2.5}/> EKSPORT
+            </button>
+          )}
           {canAddItem && (
             <button
               onClick={() => setIsAddMaterialOpen(true)}

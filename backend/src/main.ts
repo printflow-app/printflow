@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 
 // =============================================
 // PRINTFLOW BACKEND BOOTSTRAP
@@ -23,6 +24,11 @@ async function bootstrap() {
 
   // API prefix for all routes
   app.setGlobalPrefix('api');
+
+  // Body limit oshirildi — task biriktirmalari (CDR/TIF) base64 sifatida saqlanadi,
+  // base64 esa fayl hajmidan ~1.33x katta. 50MB limit ~37MB xom faylgacha imkon beradi.
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
 
   // Enable cookie parsing (for httpOnly JWT cookies)
   app.use(cookieParser());

@@ -167,13 +167,15 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
               className="w-full pl-9 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-400 transition-all"
             />
           </div>
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
-            title="Joriy ro'yxatni Excel'ga eksport qilish"
-          >
-            <Download size={13} strokeWidth={2.5}/> EKSPORT
-          </button>
+          {(isAdmin || currentUser.permissions?.canExportVendors) && (
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+              title="Joriy ro'yxatni Excel'ga eksport qilish"
+            >
+              <Download size={13} strokeWidth={2.5}/> EKSPORT
+            </button>
+          )}
           {canManageVendors && (
             <button
               onClick={openAdd}

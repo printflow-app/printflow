@@ -6,11 +6,9 @@ export class InventoryService {
   constructor(private prisma: PrismaService) {}
 
   async findAllMaterials(branchId?: string) {
-    const where: any = {};
-    if (branchId === '__main__') where.branchId = null;
-    else if (branchId) where.branchId = branchId;
+    // Material jadvali tenant-wide (butun workspace uchun umumiy ombor).
+    // Filial bo'yicha filtr qilinmaydi.
     return this.prisma.material.findMany({
-      where: Object.keys(where).length ? where : undefined,
       include: {
         movements: { orderBy: { createdAt: 'desc' }, take: 5 },
         bom: { include: { service: true } },
@@ -30,11 +28,13 @@ export class InventoryService {
   }
 
   async createMaterial(data: any) {
-    return this.prisma.material.create({ data });
+    const { branchId, ...materialData } = data;
+    return this.prisma.material.create({ data: materialData });
   }
 
   async updateMaterial(id: string, data: any) {
-    return this.prisma.material.update({ where: { id }, data });
+    const { branchId, ...materialData } = data;
+    return this.prisma.material.update({ where: { id }, data: materialData });
   }
 
   async removeMaterial(id: string) {

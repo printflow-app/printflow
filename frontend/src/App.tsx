@@ -10,6 +10,7 @@ import Landing from './pages/Landing';
 import CookieConsent from './components/CookieConsent';
 
 const Billing = React.lazy(() => import('./pages/Billing'));
+const PublicPriceList = React.lazy(() => import('./pages/PublicPriceList'));
 import { authApi, billingApi } from './api';
 import logo from './assets/logo.png';
 
@@ -71,21 +72,54 @@ export interface User {
     canManageExpenseTypes: boolean;
     canManageKanbanColumns: boolean;
     canManageGeneralSettings: boolean;
+    // Excel eksport ruxsatlari — sahifa-bo'yicha
+    canExportFinance: boolean;
+    canExportTasks: boolean;
+    canExportCustomers: boolean;
+    canExportInventory: boolean;
+    canExportEmployees: boolean;
+    canExportAttendance: boolean;
+    canExportVendors: boolean;
+    canExportReports: boolean;
   };
 }
 
 const SESSION_KEY = 'pf_user_info';
 
+// =============================================
+// User cache — localStorage'da saqlanadi.
+//
+// Nega sessionStorage emas? iOS Safari va "Add to Home Screen" PWA rejimida
+// OS xotirani bo'shatsa, sessionStorage tozalanadi va user har ochishda qayta
+// login qilishga majbur bo'ladi. localStorage iOS background terminate'da
+// saqlanib qoladi. Bu yerda hech qanday sir yo'q — faqat user metadatasi;
+// haqiqiy auth token httpOnly cookie + localStorage Bearer fallback'da.
+//
+// Eski sessionStorage qiymatini bir martalik migratsiya qilamiz (pastda).
+// =============================================
 function saveSession(user: User) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(user)); } catch { /* quota / private mode */ }
 }
 
 function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY);
-  sessionStorage.removeItem('pf_session_expired');
+  try { localStorage.removeItem(SESSION_KEY); } catch {}
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {} // eski qiymat
+  try { sessionStorage.removeItem('pf_session_expired'); } catch {}
   // Bearer fallback uchun saqlangan tokenni ham tozalaymiz
-  localStorage.removeItem('pf_token');
+  try { localStorage.removeItem('pf_token'); } catch {}
 }
+
+// Eski sessionStorage qiymatini localStorage'ga ko'chiramiz — bir martalik.
+// Foydalanuvchi deploy'dan oldin login qilgan bo'lsa, qaytadan kirmasligi uchun.
+(function migrateSessionToLocal() {
+  try {
+    const oldVal = sessionStorage.getItem(SESSION_KEY);
+    if (oldVal && !localStorage.getItem(SESSION_KEY)) {
+      localStorage.setItem(SESSION_KEY, oldVal);
+    }
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch { /* ignore */ }
+})();
 
 const App: React.FC = () => {
   const navigate = useNavigate();
@@ -274,11 +308,14 @@ const App: React.FC = () => {
   };
 
   const isScanPage = location.pathname.startsWith('/attendance/scan');
+  const isPublicPricePage = location.pathname.startsWith('/price/');
+  const isAlwaysPublic = isScanPage || isPublicPricePage;
 
   // After auth init: if user is loaded and they're on a public route, send to dashboard.
   // If user is null and they're on a protected route, send to landing/login.
   useEffect(() => {
     if (loading) return;
+    if (isAlwaysPublic) return; // don't redirect off scan/price pages
     const path = location.pathname;
     const isPublic = path === '/' || path.startsWith('/login') || path.startsWith('/register');
     if (currentUser && isPublic) {
@@ -286,9 +323,9 @@ const App: React.FC = () => {
     } else if (!currentUser && path.startsWith('/dashboard')) {
       navigate('/', { replace: true });
     }
-  }, [currentUser, loading, location.pathname, navigate]);
+  }, [currentUser, loading, location.pathname, navigate, isAlwaysPublic]);
 
-  if (loading && !isScanPage) {
+  if (loading && !isAlwaysPublic) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-slate-900 font-sans">
         <div className="relative mb-8">
@@ -371,6 +408,16 @@ const App: React.FC = () => {
         <Routes>
           {/* Attendance QR scan — public, no auth */}
           <Route path="/attendance/scan" element={<ScanAttendance currentUser={currentUser} />} />
+
+          {/* Public price list — mijozga ulashish uchun, auth talab qilmaydi */}
+          <Route
+            path="/price/:slug"
+            element={
+              <React.Suspense fallback={null}>
+                <PublicPriceList />
+              </React.Suspense>
+            }
+          />
 
           {/* Authenticated routes */}
           {currentUser ? (
@@ -494,6 +541,15 @@ export function buildUser(emp: any): User {
       canManageExpenseTypes: role.canManageExpenseTypes ?? false,
       canManageKanbanColumns: role.canManageKanbanColumns ?? false,
       canManageGeneralSettings: role.canManageGeneralSettings ?? false,
+      // Excel eksport ruxsatlari
+      canExportFinance: role.canExportFinance ?? false,
+      canExportTasks: role.canExportTasks ?? false,
+      canExportCustomers: role.canExportCustomers ?? false,
+      canExportInventory: role.canExportInventory ?? false,
+      canExportEmployees: role.canExportEmployees ?? false,
+      canExportAttendance: role.canExportAttendance ?? false,
+      canExportVendors: role.canExportVendors ?? false,
+      canExportReports: role.canExportReports ?? false,
     },
   };
 }

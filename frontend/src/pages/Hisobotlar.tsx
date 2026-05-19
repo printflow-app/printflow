@@ -610,13 +610,15 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
-            title="Tahliliy ma'lumotlarni Excel'ga eksport qilish"
-          >
-            <Download size={14} /> Eksport
-          </button>
+          {(isAdmin || p.canExportReports) && (
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
+              title="Tahliliy ma'lumotlarni Excel'ga eksport qilish"
+            >
+              <Download size={14} /> Eksport
+            </button>
+          )}
           <button
             onClick={() => {
               // Force refetch all report queries

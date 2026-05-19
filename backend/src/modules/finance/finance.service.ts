@@ -11,44 +11,49 @@ export class FinanceService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    try {
-      // Self-healing routine: If a tenant has branches, ensure any orphaned records
-      // (Transactions, Tasks, Customers) created from "Barcha filiallar" (branchId: null)
-      // are assigned to the tenant's primary branch so they don't disappear from Kassa/Mijozlar.
-      const tenants = await this.prisma.tenant.findMany({ select: { id: true } });
-      for (const t of tenants) {
-        const branches = await this.prisma.branch.findMany({
-          where: { tenantId: t.id },
-          orderBy: { createdAt: 'asc' },
-          select: { id: true },
-        });
-
-        if (branches.length > 0) {
-          const primaryBranchId = branches[0].id;
-
-          // 1. Transactions
-          await this.prisma.transaction.updateMany({
-            where: { tenantId: t.id, branchId: null },
-            data: { branchId: primaryBranchId },
+    // Dastur ishga tushganda (boot bo'lganda) tranzaksiya va ulanishlar puli (pool 10)
+    // band bo'lib qolmasligi va frontend so'rovlari taymautga uchramasligi uchun,
+    // self-healing jarayonini NestJS to'liq yongandan so'ng 5 soniyadan keyin asinxron ishga tushiramiz.
+    setTimeout(async () => {
+      try {
+        // Self-healing routine: If a tenant has branches, ensure any orphaned records
+        // (Transactions, Tasks, Customers) created from "Barcha filiallar" (branchId: null)
+        // are assigned to the tenant's primary branch so they don't disappear from Kassa/Mijozlar.
+        const tenants = await this.prisma.tenant.findMany({ select: { id: true } });
+        for (const t of tenants) {
+          const branches = await this.prisma.branch.findMany({
+            where: { tenantId: t.id },
+            orderBy: { createdAt: 'asc' },
+            select: { id: true },
           });
 
-          // 2. Tasks
-          await this.prisma.task.updateMany({
-            where: { tenantId: t.id, branchId: null },
-            data: { branchId: primaryBranchId },
-          });
+          if (branches.length > 0) {
+            const primaryBranchId = branches[0].id;
 
-          // 3. Customers
-          await this.prisma.customer.updateMany({
-            where: { tenantId: t.id, branchId: null },
-            data: { branchId: primaryBranchId },
-          });
+            // 1. Transactions
+            await this.prisma.transaction.updateMany({
+              where: { tenantId: t.id, branchId: null },
+              data: { branchId: primaryBranchId },
+            });
+
+            // 2. Tasks
+            await this.prisma.task.updateMany({
+              where: { tenantId: t.id, branchId: null },
+              data: { branchId: primaryBranchId },
+            });
+
+            // 3. Customers
+            await this.prisma.customer.updateMany({
+              where: { tenantId: t.id, branchId: null },
+              data: { branchId: primaryBranchId },
+            });
+          }
         }
+        console.log('[FinanceService] Self-healing branch backfill completed successfully.');
+      } catch (e) {
+        console.error('[FinanceService] Self-healing branch backfill failed:', e);
       }
-      console.log('[FinanceService] Self-healing branch backfill completed successfully.');
-    } catch (e) {
-      console.error('[FinanceService] Self-healing branch backfill failed:', e);
-    }
+    }, 5000);
   }
 
   /**
@@ -104,8 +109,9 @@ export class FinanceService implements OnApplicationBootstrap {
     return where;
   }
 
-  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string) {
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string, vendorId?: string) {
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+    if (vendorId) where.vendorId = vendorId;
 
     const [transactions, total] = await Promise.all([
       this.prisma.transaction.findMany({
@@ -172,7 +178,7 @@ export class FinanceService implements OnApplicationBootstrap {
   }
 
   async createTransaction(data: any) {
-    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, vendorId, departmentId, branchId } = data;
+    const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, vendorId, departmentId, branchId, taskId } = data;
 
     let finalBranchId = branchId || null;
 
@@ -212,6 +218,7 @@ export class FinanceService implements OnApplicationBootstrap {
           employeeId: vendorId ? null : employeeId,
           vendorId: vendorId || null,
           departmentId: departmentId || null,
+          taskId: taskId || null,
           // Filial scope — bo'lmasa Kassa filiali filtri tranzaksiyani yashiradi.
           branchId: finalBranchId,
           ...(data.date ? { date: new Date(data.date) } : {}),
@@ -223,6 +230,24 @@ export class FinanceService implements OnApplicationBootstrap {
           where: { id: customerId },
           data: { totalPaid: { increment: Number(amount) } },
         });
+      }
+
+      // Agar kirim aniq topshiriqqa biriktirilgan bo'lsa — task.remainingAmount va
+      // task.depositAmount yangilanadi. Kanban shu sababli "eski qarz"ni emas,
+      // hozirgi mavjud qoldiqni ko'rsata oladi.
+      if (type === 'kirim' && taskId) {
+        const t = await tx.task.findUnique({
+          where: { id: taskId },
+          select: { remainingAmount: true, depositAmount: true },
+        });
+        if (t) {
+          const newRemaining = Math.max(0, Math.round(Number(t.remainingAmount || 0) - Number(amount)));
+          const newDeposit = Math.round(Number(t.depositAmount || 0) + Number(amount));
+          await tx.task.update({
+            where: { id: taskId },
+            data: { remainingAmount: newRemaining, depositAmount: newDeposit },
+          });
+        }
       }
 
       if (type === 'chiqim' && employeeId && !vendorId) {
@@ -248,6 +273,161 @@ export class FinanceService implements OnApplicationBootstrap {
     }
 
     return transaction;
+  }
+
+  /**
+   * Revert the side effects of a transaction inside a Prisma tx.
+   * Used by both delete and update flows (update = revert old, then apply new).
+   */
+  private async revertTransactionSideEffects(tx: any, t: any) {
+    if (t.type === 'kirim' && t.customerId) {
+      await tx.customer.update({
+        where: { id: t.customerId },
+        data: { totalPaid: { decrement: Number(t.amount) } },
+      });
+    }
+    if (t.type === 'kirim' && t.taskId) {
+      const task = await tx.task.findUnique({
+        where: { id: t.taskId },
+        select: { remainingAmount: true, depositAmount: true },
+      });
+      if (task) {
+        await tx.task.update({
+          where: { id: t.taskId },
+          data: {
+            remainingAmount: Math.round(Number(task.remainingAmount || 0) + Number(t.amount)),
+            depositAmount: Math.max(0, Math.round(Number(task.depositAmount || 0) - Number(t.amount))),
+          },
+        });
+      }
+    }
+    if (t.type === 'chiqim' && t.employeeId && !t.vendorId) {
+      await tx.employee.update({
+        where: { id: t.employeeId },
+        data: { givenAmount: { decrement: Number(t.amount) } },
+      });
+    }
+  }
+
+  /**
+   * Apply the side effects of a transaction inside a Prisma tx.
+   * Mirrors the side-effect logic from createTransaction.
+   */
+  private async applyTransactionSideEffects(tx: any, t: {
+    type: string; amount: number; customerId?: string | null;
+    taskId?: string | null; employeeId?: string | null; vendorId?: string | null;
+  }) {
+    if (t.type === 'kirim' && t.customerId) {
+      await tx.customer.update({
+        where: { id: t.customerId },
+        data: { totalPaid: { increment: Number(t.amount) } },
+      });
+    }
+    if (t.type === 'kirim' && t.taskId) {
+      const task = await tx.task.findUnique({
+        where: { id: t.taskId },
+        select: { remainingAmount: true, depositAmount: true },
+      });
+      if (task) {
+        await tx.task.update({
+          where: { id: t.taskId },
+          data: {
+            remainingAmount: Math.max(0, Math.round(Number(task.remainingAmount || 0) - Number(t.amount))),
+            depositAmount: Math.round(Number(task.depositAmount || 0) + Number(t.amount)),
+          },
+        });
+      }
+    }
+    if (t.type === 'chiqim' && t.employeeId && !t.vendorId) {
+      await tx.employee.update({
+        where: { id: t.employeeId },
+        data: { givenAmount: { increment: Number(t.amount) } },
+      });
+    }
+  }
+
+  async deleteTransaction(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.transaction.findUnique({ where: { id } });
+      if (!existing) {
+        return { success: false, message: 'Tranzaksiya topilmadi' };
+      }
+      await this.revertTransactionSideEffects(tx, existing);
+      await tx.transaction.delete({ where: { id } });
+      return { success: true, id };
+    });
+  }
+
+  /**
+   * Full-field edit: revert old side effects, apply new ones, then persist the new row.
+   * Treat undefined fields as "keep existing"; allow explicit null to clear links
+   * (e.g. detaching a customer or task).
+   */
+  async updateTransaction(id: string, data: any) {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.transaction.findUnique({ where: { id } });
+      if (!existing) {
+        return { success: false, message: 'Tranzaksiya topilmadi' };
+      }
+
+      const pick = <T>(value: T | undefined, fallback: T): T =>
+        value === undefined ? fallback : value;
+
+      const nextType = pick(data.type, existing.type);
+      const nextAmount = data.amount !== undefined ? Number(data.amount) : Number(existing.amount);
+      const nextCustomerId = pick(data.customerId, existing.customerId);
+      const nextVendorId = pick(data.vendorId, existing.vendorId);
+      const nextEmployeeId = pick(data.employeeId, existing.employeeId);
+      const nextTaskId = pick(data.taskId, existing.taskId);
+      const nextExpenseTypeId = pick(data.expenseTypeId, existing.expenseTypeId);
+      const nextPaymentTypeId = pick(data.paymentTypeId, existing.paymentTypeId);
+      const nextDepartmentId = pick(data.departmentId, existing.departmentId);
+      const nextBranchId = pick(data.branchId, existing.branchId);
+      const nextServiceType = pick(data.serviceType, existing.serviceType);
+      const nextExpenseReason = pick(data.expenseReason, existing.expenseReason);
+      const nextCustomerName = pick(data.customerName, existing.customerName);
+      const nextDate = data.date !== undefined ? new Date(data.date) : existing.date;
+
+      // Vendor-linked transactions can't simultaneously be employee/expense-type expenses.
+      // Mirror create logic: when vendorId is set, null out employeeId and expenseTypeId.
+      const finalEmployeeId = nextVendorId ? null : nextEmployeeId;
+      const finalExpenseTypeId = nextVendorId ? null : nextExpenseTypeId;
+      // customerName is only used for unknown walk-in customers (no customerId, no vendorId).
+      const finalCustomerName = !nextCustomerId && !nextVendorId ? nextCustomerName : null;
+
+      await this.revertTransactionSideEffects(tx, existing);
+
+      const updated = await tx.transaction.update({
+        where: { id },
+        data: {
+          type: nextType,
+          amount: nextAmount,
+          paymentTypeId: nextPaymentTypeId,
+          customerId: nextCustomerId,
+          customerName: finalCustomerName,
+          serviceType: nextServiceType,
+          expenseReason: nextExpenseReason,
+          expenseTypeId: finalExpenseTypeId,
+          employeeId: finalEmployeeId,
+          vendorId: nextVendorId,
+          departmentId: nextDepartmentId,
+          taskId: nextTaskId,
+          branchId: nextBranchId,
+          date: nextDate,
+        } as any,
+      });
+
+      await this.applyTransactionSideEffects(tx, {
+        type: nextType,
+        amount: nextAmount,
+        customerId: nextCustomerId,
+        taskId: nextTaskId,
+        employeeId: finalEmployeeId,
+        vendorId: nextVendorId,
+      });
+
+      return updated;
+    });
   }
 
   async getDinamika(start?: string, end?: string, branchId?: string, departmentId?: string) {
@@ -360,8 +540,9 @@ export class FinanceService implements OnApplicationBootstrap {
       .slice(0, 10); // Top 10 categories
   }
 
-  async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string) {
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+  async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string, vendorId?: string) {
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+    if (vendorId) where.vendorId = vendorId;
 
     const [transactions, dashboard, allPaymentTypes] = await Promise.all([
       this.prisma.transaction.findMany({

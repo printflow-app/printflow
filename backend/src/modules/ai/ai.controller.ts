@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AiService } from './ai.service';
+import { RequireFeature } from '../../common/decorators/feature.decorator';
 
 // SDK v6: UIMessage format sent by DefaultChatTransport
 interface UIMessagePart {
@@ -30,6 +31,7 @@ interface ChatRequestBody {
   messageId?: string;
 }
 
+@RequireFeature('ai_chat')
 @Controller('ai')
 export class AiController {
   constructor(private readonly aiService: AiService) {}

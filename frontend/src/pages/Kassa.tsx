@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2, Download, Search } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2, Download, Search, Pencil, Trash2 } from 'lucide-react';
 import { financeApi, customersApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -20,16 +20,28 @@ const formatCurrency = (amount: number) => {
 
 const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
+  // Admin / super-admin can edit & delete transactions to fix mistakes.
+  // Mirrors backend canManageFinance check (admin role bypasses that gate).
+  const canManageFinance = currentUser.role?.name?.toLowerCase() === 'admin'
+    || currentUser.role?.name?.toLowerCase() === 'superadmin'
+    || !!p.canManageFinance;
 
   const [page, setPage] = useState(1);
   const today = new Date().toLocaleDateString('en-CA');
+  // Default — oxirgi 1 oy. "Bugun" filtri bosilgandagina bugungi kun ko'rinadi.
+  const oneMonthAgo = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toLocaleDateString('en-CA');
+  })();
   // "Applied" filtr — so'rovlarga ulashadi. Faqat lupa bosilganda yangilanadi.
-  const [startDate, setStartDate] = useState(today);
+  const [startDate, setStartDate] = useState(oneMonthAgo);
   const [endDate, setEndDate] = useState(today);
   // "Draft" input qiymatlari — har bosishda yangilanadi, lekin so'rov yubormaydi.
-  const [draftStart, setDraftStart] = useState(today);
+  const [draftStart, setDraftStart] = useState(oneMonthAgo);
   const [draftEnd, setDraftEnd] = useState(today);
   const [departmentId, setDepartmentId] = useState('');
+  const [vendorFilterId, setVendorFilterId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -41,7 +53,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const draftDiffers = draftStart !== startDate || draftEnd !== endDate;
 
   // Reset selected department when active branch changes
-  useEffect(() => { setDepartmentId(''); }, [activeBranchId]);
+  useEffect(() => { setDepartmentId(''); setVendorFilterId(''); }, [activeBranchId]);
 
   // Static/reference data — long staleTime via RQ defaults
   const { data: paymentTypes = [] } = usePaymentTypes();
@@ -53,17 +65,17 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
   // Transactions & summary — branch+range+dept+page dependent, custom cache keys
   const transactionsQuery = useQuery({
-    queryKey: ['kassa-transactions', activeBranchId, startDate, endDate, departmentId, page],
+    queryKey: ['kassa-transactions', activeBranchId, startDate, endDate, departmentId, vendorFilterId, page],
     queryFn: async () => {
-      const params = { branchId: activeBranchId, page, limit: 20, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}) };
+      const params = { branchId: activeBranchId, page, limit: 20, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}), ...(vendorFilterId ? { vendorId: vendorFilterId } : {}) };
       const r = await financeApi.getTransactions({ params });
       return r.data;
     },
   });
   const summaryQuery = useQuery({
-    queryKey: ['kassa-summary', activeBranchId, startDate, endDate, departmentId],
+    queryKey: ['kassa-summary', activeBranchId, startDate, endDate, departmentId, vendorFilterId],
     queryFn: async () => {
-      const params = { branchId: activeBranchId, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}) };
+      const params = { branchId: activeBranchId, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}), ...(vendorFilterId ? { vendorId: vendorFilterId } : {}) };
       const r = await financeApi.getDailySummary({ params });
       return r.data;
     },
@@ -128,6 +140,10 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   // Modals
   const [isKirimModalOpen, setIsKirimModalOpen] = useState(false);
   const [isChiqimModalOpen, setIsChiqimModalOpen] = useState(false);
+  // editingTx — when set, the matching modal is in edit mode (PATCH) instead of create (POST).
+  const [editingTx, setEditingTx] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   useAutoRefresh(() => fetchData(true), {
@@ -136,12 +152,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   });
 
   // Forms
-  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '' });
+  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '' });
   const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
   const [customerTasks, setCustomerTasks] = useState<any[]>([]);
 
   const handleCustomerChange = async (cid: string) => {
-    setKirimForm((f: any) => ({ ...f, customerId: cid, customerName: '', serviceType: '' }));
+    setKirimForm((f: any) => ({ ...f, customerId: cid, customerName: '', serviceType: '', taskId: '' }));
     if (!cid) {
       setCustomerTasks([]);
       return;
@@ -164,23 +180,43 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     }
   }, [hasDebt]);
 
+  const resetKirimForm = () => setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '' });
+  const resetChiqimForm = () => setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
+
+  const closeKirimModal = () => {
+    setIsKirimModalOpen(false);
+    setEditingTx(null);
+    resetKirimForm();
+  };
+  const closeChiqimModal = () => {
+    setIsChiqimModalOpen(false);
+    setEditingTx(null);
+    resetChiqimForm();
+  };
+
   const handleAddKirim = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      await financeApi.createTransaction({
+      const payload = {
         ...kirimForm,
         type: 'kirim',
-        vendorId: kirimForm.vendorId || null,
-        customerId: kirimForm.vendorId ? null : kirimForm.customerId,
+        vendorId: kirimForm.vendorId && kirimForm.vendorId !== '_' ? kirimForm.vendorId : null,
+        customerId: kirimForm.vendorId ? null : (kirimForm.customerId || null),
+        taskId: kirimForm.taskId || null,
         branchId: activeBranchId || null,
-      });
-      setIsKirimModalOpen(false);
-      setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', forExistingDebt: false, vendorId: '' });
-      showStatus('success', "Kirim muvaffaqiyatli amalga oshirildi!");
+      };
+      if (editingTx) {
+        await financeApi.updateTransaction(editingTx.id, payload);
+        showStatus('success', "Kirim yangilandi!");
+      } else {
+        await financeApi.createTransaction(payload);
+        showStatus('success', "Kirim muvaffaqiyatli amalga oshirildi!");
+      }
+      closeKirimModal();
       fetchData(true);
     } catch (err) {
-      showStatus('error', "Kirim qo'shishda xatolik yuz berdi.");
+      showStatus('error', editingTx ? "Tahrirlashda xatolik" : "Kirim qo'shishda xatolik yuz berdi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -190,22 +226,84 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      await financeApi.createTransaction({
+      const payload = {
         ...chiqimForm,
         type: 'chiqim',
-        employeeId: chiqimForm.isEmployeeExpense ? chiqimForm.employeeId : null,
-        vendorId: chiqimForm.isVendorExpense ? chiqimForm.vendorId : null,
-        expenseTypeId: chiqimForm.isVendorExpense || chiqimForm.isEmployeeExpense ? null : chiqimForm.expenseTypeId,
+        employeeId: chiqimForm.isEmployeeExpense ? (chiqimForm.employeeId || null) : null,
+        vendorId: chiqimForm.isVendorExpense ? (chiqimForm.vendorId || null) : null,
+        expenseTypeId: chiqimForm.isVendorExpense || chiqimForm.isEmployeeExpense ? null : (chiqimForm.expenseTypeId || null),
         branchId: activeBranchId || null,
-      });
-      setIsChiqimModalOpen(false);
-      setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
-      showStatus('success', "Chiqim muvaffaqiyatli amalga oshirildi!");
+      };
+      if (editingTx) {
+        await financeApi.updateTransaction(editingTx.id, payload);
+        showStatus('success', "Chiqim yangilandi!");
+      } else {
+        await financeApi.createTransaction(payload);
+        showStatus('success', "Chiqim muvaffaqiyatli amalga oshirildi!");
+      }
+      closeChiqimModal();
       fetchData(true);
     } catch (err) {
-      showStatus('error', "Chiqim qo'shishda xatolik yuz berdi.");
+      showStatus('error', editingTx ? "Tahrirlashda xatolik" : "Chiqim qo'shishda xatolik yuz berdi.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Pre-fill the matching modal with the row's data and open it in edit mode.
+  // We don't allow type switch in edit (kirim ↔ chiqim) — for that, delete & re-add.
+  const openEditModal = async (t: any) => {
+    setEditingTx(t);
+    if (t.type === 'kirim') {
+      setKirimForm({
+        amount: t.amount != null ? String(t.amount) : '',
+        paymentTypeId: t.paymentTypeId || '',
+        customerId: t.customerId || '',
+        customerName: t.customerName || '',
+        serviceType: t.serviceType || '',
+        taskId: t.taskId || '',
+        forExistingDebt: false,
+        vendorId: t.vendorId || '',
+      });
+      // Preload customer's task list so the "bog'liq buyurtma" select works in edit mode.
+      if (t.customerId) {
+        try {
+          const res = await customersApi.getCustomerTasks(t.customerId);
+          setCustomerTasks(res.data || []);
+        } catch {
+          setCustomerTasks([]);
+        }
+      } else {
+        setCustomerTasks([]);
+      }
+      setIsKirimModalOpen(true);
+    } else {
+      setChiqimForm({
+        amount: t.amount != null ? String(t.amount) : '',
+        paymentTypeId: t.paymentTypeId || '',
+        expenseReason: t.expenseReason || '',
+        expenseTypeId: t.expenseTypeId || '',
+        employeeId: t.employeeId || '',
+        isEmployeeExpense: !!t.employeeId && !t.vendorId,
+        isVendorExpense: !!t.vendorId,
+        vendorId: t.vendorId || '',
+      });
+      setIsChiqimModalOpen(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setIsDeleting(true);
+      await financeApi.deleteTransaction(deleteTarget.id);
+      showStatus('success', "Tranzaksiya o'chirildi");
+      setDeleteTarget(null);
+      fetchData(true);
+    } catch {
+      showStatus('error', "O'chirishda xatolik");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -349,15 +447,29 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           )}
+          {/* Hamkor filtri — hamkorlarga oid kirim/chiqimlarni ko'rish uchun */}
+          {(vendors as any[]).length > 0 && (
+            <select
+              value={vendorFilterId}
+              onChange={e => { setVendorFilterId(e.target.value); setPage(1); }}
+              className="text-[10px] font-bold border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-orange-400 bg-white text-slate-700"
+              title="Ma'lum hamkorga oid kirim/chiqimlar"
+            >
+              <option value="">Barcha hamkorlar</option>
+              {(vendors as any[]).map((v: any) => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+          )}
           <div className="flex gap-2">
-             <button
-               onClick={handleExport}
-               disabled={isExporting}
-               className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all disabled:opacity-50"
-               title="Joriy oraliqdagi tranzaksiyalarni Excel'ga eksport qilish"
-             >
-               <Download size={14} strokeWidth={2.5}/> {isExporting ? 'EKSPORT...' : 'EKSPORT'}
-             </button>
+             {(currentUser.role?.name?.toLowerCase() === 'admin' || p.canExportFinance) && (
+               <button
+                 onClick={handleExport}
+                 disabled={isExporting}
+                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all disabled:opacity-50"
+                 title="Joriy oraliqdagi tranzaksiyalarni Excel'ga eksport qilish"
+               >
+                 <Download size={14} strokeWidth={2.5}/> {isExporting ? 'EKSPORT...' : 'EKSPORT'}
+               </button>
+             )}
              {p.canAddIncome && (
                <button onClick={() => setIsKirimModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-6 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
                  <TrendingUp size={14} strokeWidth={2.5}/> KIRIM
@@ -380,6 +492,9 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 <th className="py-3 px-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right">Summa</th>
                 <th className="py-3 px-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center hidden md:table-cell">To'lov</th>
                 <th className="py-3 px-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right pr-6">Sana</th>
+                {canManageFinance && (
+                  <th className="py-3 px-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center w-24">Amallar</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -413,14 +528,34 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                       <p className="text-[10px] font-bold text-slate-400 tabular-nums">{new Date(t.date).toLocaleDateString('uz-UZ')}</p>
                       <p className="text-[9px] font-medium text-slate-300 mt-0.5 tabular-nums">{new Date(t.date).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p>
                   </td>
+                  {canManageFinance && (
+                    <td className="py-3 px-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => openEditModal(t)}
+                          title="Tahrirlash"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                        >
+                          <Pencil size={13} strokeWidth={2.5} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(t)}
+                          title="O'chirish"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        >
+                          <Trash2 size={13} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {transactions.length === 0 && (
                 <tr>
-                   <td colSpan={5} className="py-20 text-center">
+                   <td colSpan={canManageFinance ? 6 : 5} className="py-20 text-center">
                      <div className="flex flex-col items-center justify-center opacity-30">
                        <Wallet size={40} className="mb-4" />
-                       <p className="font-bold uppercase text-xs">Bugun amaliyotlar yo'q</p>
+                       <p className="font-bold uppercase text-xs">Tanlangan davrda amaliyotlar yo'q</p>
                      </div>
                    </td>
                 </tr>
@@ -453,11 +588,11 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         )}
       </div>
 
-      {/* Modal: Kirim Qo'shish */}
-      <Modal 
-        isOpen={isKirimModalOpen} 
-        onClose={() => setIsKirimModalOpen(false)} 
-        title="Kirim Amaliyoti"
+      {/* Modal: Kirim Qo'shish / Tahrirlash */}
+      <Modal
+        isOpen={isKirimModalOpen}
+        onClose={closeKirimModal}
+        title={editingTx ? "Kirimni Tahrirlash" : "Kirim Amaliyoti"}
         type="success"
       >
         <form onSubmit={handleAddKirim} className="space-y-4">
@@ -495,10 +630,28 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {!kirimForm.vendorId && customerTasks.length > 0 && (
             <div className="animate-fade-in">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1 text-orange-500">Bog'liq xizmat (Mijoz nomiga)</label>
-              <select value={kirimForm.serviceType} onChange={e => setKirimForm(f => ({ ...f, serviceType: e.target.value }))} className="select-minimal font-bold text-orange-700 h-11 border-orange-100 bg-orange-50/30">
-                <option value="">— Xizmatni tanlang (ixtiyoriy) —</option>
-                {customerTasks.map((t, idx) => <option key={idx} value={t.orderName || t.title}>{t.orderName || t.title}</option>)}
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1 text-orange-500">Bog'liq buyurtma (qarzni shu task'ga belgilash)</label>
+              <select
+                value={kirimForm.taskId}
+                onChange={e => {
+                  const selectedId = e.target.value;
+                  const selectedTask = customerTasks.find((t: any) => t.id === selectedId);
+                  setKirimForm(f => ({
+                    ...f,
+                    taskId: selectedId,
+                    serviceType: selectedTask ? (selectedTask.orderName || selectedTask.title) : '',
+                  }));
+                }}
+                className="select-minimal font-bold text-orange-700 h-11 border-orange-100 bg-orange-50/30"
+              >
+                <option value="">— Buyurtmani tanlang (ixtiyoriy) —</option>
+                {customerTasks
+                  .filter((t: any) => Number(t.remainingAmount || 0) > 0)
+                  .map((t: any) => (
+                    <option key={t.id} value={t.id}>
+                      {t.orderName || t.title} — qoldiq: {new Intl.NumberFormat('uz-UZ').format(Number(t.remainingAmount || 0))}
+                    </option>
+                  ))}
               </select>
             </div>
           )}
@@ -540,19 +693,19 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
 
           <div className="flex gap-3 pt-4">
-            <button type="button" onClick={() => setIsKirimModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
+            <button type="button" onClick={closeKirimModal} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
             <button type="submit" disabled={isSubmitting} className="flex-1 btn-success h-11 shadow-emerald-500/20">
-              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : "TASDIQLASH"}
+              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : (editingTx ? "SAQLASH" : "TASDIQLASH")}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal: Chiqim Qo'shish */}
-      <Modal 
-        isOpen={isChiqimModalOpen} 
-        onClose={() => setIsChiqimModalOpen(false)} 
-        title="Chiqim / Xarajat"
+      {/* Modal: Chiqim Qo'shish / Tahrirlash */}
+      <Modal
+        isOpen={isChiqimModalOpen}
+        onClose={closeChiqimModal}
+        title={editingTx ? "Chiqimni Tahrirlash" : "Chiqim / Xarajat"}
         type="danger"
       >
         <form onSubmit={handleAddChiqim} className="space-y-4">
@@ -616,12 +769,60 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
 
           <div className="flex gap-3 pt-4">
-            <button type="button" onClick={() => setIsChiqimModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
+            <button type="button" onClick={closeChiqimModal} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
             <button type="submit" disabled={isSubmitting} className="flex-1 btn-danger h-11 shadow-rose-500/20">
-              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : "TASDIQLASH"}
+              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : (editingTx ? "SAQLASH" : "TASDIQLASH")}
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete confirmation */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
+        title="O'chirishni tasdiqlang"
+        type="danger"
+      >
+        {deleteTarget && (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Quyidagi {deleteTarget.type === 'kirim' ? 'kirim' : 'chiqim'} tranzaksiyasi o'chiriladi va u qilgan barcha o'zgarishlar (mijoz to'lovi, xodimga berilgan summa, buyurtma qoldig'i) qaytariladi. Bu amalni qaytarib bo'lmaydi.
+            </p>
+            <div className={`p-4 rounded-2xl border ${deleteTarget.type === 'kirim' ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Summa</span>
+                <span className={`font-bold text-lg ${deleteTarget.type === 'kirim' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {(deleteTarget.type === 'kirim' ? '+' : '-') + formatCurrency(deleteTarget.amount)}
+                </span>
+              </div>
+              <p className="text-xs font-medium text-slate-700 truncate">
+                {deleteTarget.vendor?.name
+                  ? `Hamkor: ${deleteTarget.vendor.name}`
+                  : (deleteTarget.customer?.name || deleteTarget.customerName || deleteTarget.serviceType || deleteTarget.expenseReason || deleteTarget.expenseType?.name || '—')}
+              </p>
+              <p className="text-[10px] font-medium text-slate-400 mt-1">{new Date(deleteTarget.date).toLocaleString('uz-UZ')}</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="flex-1 btn-outline h-11"
+              >
+                BEKOR QILISH
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="flex-1 btn-danger h-11 shadow-rose-500/20"
+              >
+                {isDeleting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : "O'CHIRISH"}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
     </>)}

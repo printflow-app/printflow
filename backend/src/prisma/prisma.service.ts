@@ -17,6 +17,7 @@ const TENANT_SCOPED_MODELS = new Set([
   'kanbanColumn',
   'task',
   'taskHistory',
+  'taskAttachment',
   'taskExpense',
   'service',
   'serviceOption',
@@ -59,8 +60,11 @@ export class PrismaService
    * ECONNRESET. Prisma's pool then drains the dead socket — a second attempt
    * succeeds with a fresh one.
    *
-   * Only retried on connection-level errors. Application errors (validation,
-   * P2002 unique, etc.) propagate immediately.
+   * Pool timeout (P2024) atayin retry qilinmaydi — pool to'lib qolgan bo'lsa
+   * yana shu pool'dan kutib hech narsa o'zgarmaydi, faqat foydalanuvchining
+   * kutish vaqti 2x bo'ladi. Connection pool sozlamasi katta qilingan (30),
+   * shuning uchun P2024 endi mavjud konkurensiya muammosi (boshqa yondashuv
+   * kerak), retry yordam bermaydi.
    */
   private async withRetry<T>(op: () => Promise<T>, attempts = 2): Promise<T> {
     let lastErr: any;
@@ -74,14 +78,12 @@ export class PrismaService
         const transient =
           code === 'P1001' ||                              // can't reach DB
           code === 'P1017' ||                              // server closed connection
-          code === 'P2024' ||                              // pool timeout
           msg.includes('Server has closed the connection') ||
           msg.includes('ECONNRESET') ||
           msg.includes('Connection reset') ||
           msg.includes('Connection terminated');
         if (!transient || i === attempts - 1) throw e;
         console.warn(`[Prisma] Transient connection error, retrying once (${msg.split('\n')[0]})`);
-        // Small backoff so the pool can recycle the dead socket before retrying.
         await new Promise(r => setTimeout(r, 200));
       }
     }

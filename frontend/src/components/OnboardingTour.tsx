@@ -297,6 +297,38 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
     }
   }, [activeTab, current]);
 
+  // Sidebar nav-item → uning kollapsiruvchi parent guruhi.
+  // Dashboard.tsx navGroups labellariga mos (lowercase).
+  const NAV_PARENT_GROUP: Record<string, string> = {
+    kassa: 'operatsiya',
+    topshiriqlar: 'operatsiya',
+    mijozlar: 'operatsiya',
+    ombor: 'operatsiya',
+    davomat: 'operatsiya',
+    moliya: 'tahlil',
+    hisobotlar: 'tahlil',
+    hodimlar: 'boshqaruv',
+    admins: 'boshqaruv',
+    hamkorlar: 'boshqaruv',
+    sozlamalar: 'boshqaruv',
+  };
+
+  // Agar target sidebar nav-item bo'lsa va uning parent guruhi yopiq bo'lsa,
+  // headerni dasturiy bosib ochamiz. Aks holda element DOM'da bo'lmaydi va
+  // tour orange ring chiqara olmaydi (driver.js'siz custom implementation).
+  function ensureParentGroupOpen(selector: string) {
+    const m = selector.match(/nav-([a-z-]+)/);
+    if (!m) return;
+    const parent = NAV_PARENT_GROUP[m[1]];
+    if (!parent) return;
+    const header = document.querySelector(
+      `[data-tour-group="${parent}"]`,
+    ) as HTMLElement | null;
+    if (header && header.getAttribute('data-tour-open') === '0') {
+      header.click();
+    }
+  }
+
   // Target elementni topish — lazy-rendered saxifalar uchun polling.
   // Admins.tsx React.lazy bilan yuklanadi, shuning uchun click'dan keyin
   // darhol querySelector qaytaradi null. ~3 soniya davomida kutamiz.
@@ -321,6 +353,10 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
     let el: HTMLElement | null = null;
     let cleanup: (() => void) | null = null;
     let cancelled = false;
+
+    // Sidebar nav-* target bo'lsa, parent guruhini ochib qo'yamiz —
+    // aks holda element render qilinmaydi va target topilmaydi.
+    ensureParentGroupOpen(current.target);
 
     waitForTarget(current.target).then((found) => {
       if (cancelled || !found) return;

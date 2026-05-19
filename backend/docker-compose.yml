@@ -1,0 +1,31 @@
+# =============================================
+# PrintFlow — Lokal Postgres (Docker variant)
+# =============================================
+# Docker Desktop o'rnatilgan bo'lsa:
+#   docker compose up -d
+# Postgres localhost:5432 da ishga tushadi (user=postgres, pass=postgres, db=printflow_dev)
+#
+# To'xtatish:    docker compose down
+# Data tozalash: docker compose down -v
+# =============================================
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: printflow-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: printflow_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - printflow_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d printflow_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  printflow_pg_data:

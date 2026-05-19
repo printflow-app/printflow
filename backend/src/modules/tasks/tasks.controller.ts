@@ -111,6 +111,23 @@ export class TasksController {
     return this.tasksService.logView(id, body.employeeId);
   }
 
+  // Yangi attachment qo'shish — alohida TaskAttachment row sifatida.
+  // Body: { name, url } (url = base64 data URL).
+  @Post(':id/attachments')
+  appendAttachment(
+    @Param('id') id: string,
+    @Body() body: { name: string; url: string },
+  ) {
+    return this.tasksService.appendAttachment(id, body);
+  }
+
+  // Bitta attachmentni o'chirish (mas: foydalanuvchi noto'g'ri faylni yukladi).
+  // taskId URL'da REST aniqligi uchun — handler attachmentId orqali boradi.
+  @Delete(':taskId/attachments/:attachmentId')
+  deleteAttachment(@Param('attachmentId') attachmentId: string) {
+    return this.tasksService.deleteAttachment(attachmentId);
+  }
+
   // ── Task Expense Endpoints (Tannarx xarajatlari) ──────────────────────────
   @Get(':taskId/expenses')
   getExpenses(@Param('taskId') taskId: string) {

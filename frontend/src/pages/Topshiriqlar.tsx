@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, Search, UserPlus, CheckCircle2, Clock,
   Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle,
@@ -19,13 +20,27 @@ import { SkeletonKanban } from '../components/Skeleton';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { TaskIdentityBadges, TaskDeadlineBadges } from './Topshiriqlar/TaskBadges';
 
+interface AttachmentRecord {
+  id: string;
+  name: string;
+  mimeType?: string | null;
+  data: string; // base64 data URL
+  size?: number;
+  createdAt?: string;
+  _legacy?: boolean; // server eski JSON ustun'dan synthesize qilgan bo'lsa true — delete imkonsiz
+}
+
 interface Task {
   id: string;
   orderName?: string;
   title: string;
   description: string;
   columnId: string;
-  attachments: string; // JSON string in DB
+  // Eski JSON TEXT ustun — list endpoint'lar endi qaytarmaydi. findOne'da ham
+  // backwards-compat sifatida bor; manba sifatida attachmentRecords ishlatiladi.
+  attachments?: string;
+  attachmentRecords?: AttachmentRecord[];
+  hasAttachments?: boolean; // List endpoint shu bayroqni qaytaradi (kartada belgi)
 
   customerId?: string;
   customerName?: string;
@@ -89,12 +104,24 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   const isLoading = colsLoading || tasksLoading;
   const invalidate = useInvalidate();
+  const queryClient = useQueryClient();
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  // Attachment upload progress (% 0..100). null = upload aktiv emas.
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, type: 'task' | 'column', id: string, title: string }>({ isOpen: false, type: 'task', id: '', title: '' });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Sprint 2: Prepayment rule
-  const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
+  // Sprint 2: Prepayment rule — RQ cache bilan, 5 daqiqa stale time.
+  // Oldin har Topshiriqlar mount'da useEffect orqali fetch qilinardi (StrictMode
+  // bilan ikki marta) — endi tab almashganda cache'dan darhol keladi.
+  const { data: minPrepaymentPct = 70 } = useQuery({
+    queryKey: ['settings', 'MIN_PREPAYMENT_PERCENTAGE'],
+    queryFn: async () => {
+      const r = await settingsApi.get('MIN_PREPAYMENT_PERCENTAGE');
+      return r.data?.value ? Number(r.data.value) : 70;
+    },
+    staleTime: 5 * 60_000,
+  });
   const [prepaymentWarningAccepted, setPrepaymentWarningAccepted] = useState(false);
 
   const [vendorCostForm, setVendorCostForm] = useState({ vendorId: '', amount: '' });
@@ -115,12 +142,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   // fetchData() — backward-compat shim. Mutation handler'lar buni chaqirib qoladi.
   // Endi state setlamaydi; RQ cache'ini invalidate qiladi va RQ avtomatik refetch qiladi.
+  // Customers'ni atayin invalidate qilmaymiz — task mutation customers state'ini
+  // o'zgartirmaydi va har 12 sek customers fetch qilish ortiqcha trafik edi.
   const fetchData = async (_silent = false) => {
     invalidate.tasks();
     invalidate.taskColumns();
-    invalidate.customers();
-    // Other resources (employees, services, vendors, branches, paymentTypes) rarely
-    // change as side-effect of task mutations — they self-refresh on their own staleTime.
   };
 
   // Departments — RQ hook bilan, manual fetch effect o'rniga
@@ -129,13 +155,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   );
   // Reset selected department when active branch changes
   useEffect(() => { setSelectedDepartmentId(''); }, [activeBranchId]);
-
-  // Fetch min prepayment threshold from system settings (one-time, not branch-scoped)
-  useEffect(() => {
-    settingsApi.get('MIN_PREPAYMENT_PERCENTAGE')
-      .then(r => { if (r.data?.value) setMinPrepaymentPct(Number(r.data.value)); })
-      .catch(() => setMinPrepaymentPct(70));
-  }, []);
 
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text });
@@ -158,7 +177,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     isOverrideModalOpen || isNewColumnModalOpen || isArxivModalOpen ||
     confirmModal.isOpen || isNewOptionModalOpen;
   useAutoRefresh(() => fetchData(true), {
-    intervalMs: 12000,
+    intervalMs: 25000,
     paused: isAnyModalOpen,
   });
 
@@ -200,6 +219,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [priceBreakdown, setPriceBreakdown] = useState<any>(null);
   const [moveForm, setMoveForm] = useState({ columnId: '', assigneeIds: [] as string[], note: '', newFiles: [] as { name: string; url: string }[] });
   const moveFileInputRef = useRef<HTMLInputElement>(null);
+  const [isMoveDragOver, setIsMoveDragOver] = useState(false);
   const [empSearchTerm, setEmpSearchTerm] = useState('');
   const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
   const [newOptionForm, setNewOptionForm] = useState({ name: '', value: '', priceAdd: '' });
@@ -250,15 +270,49 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     e.preventDefault();
     setDragOverColId(null);
     if (!draggedTaskId || !canMoveTask) return;
+    const taskId = draggedTaskId;
+    setDraggedTaskId(null);
+
+    // Optimistic update — kartani darhol yangi ustun'ga ko'chiramiz, server javobini
+    // kutmasdan. Network sekin bo'lsa ham foydalanuvchi natijani darhol ko'radi.
+    // Server failure'da quyida invalidate qilamiz va kartani asl joyiga qaytaradi.
+    const tasksKey = ['tasks', activeBranchId ?? 'all'];
+    const colsKey = ['taskColumns', activeBranchId ?? 'all'];
+
+    const prevTasks = queryClient.getQueryData<any[]>(tasksKey);
+    const prevCols = queryClient.getQueryData<any[]>(colsKey);
+
+    if (prevTasks) {
+      queryClient.setQueryData<any[]>(tasksKey, prevTasks.map((t: any) =>
+        t.id === taskId ? { ...t, columnId: targetColumnId } : t
+      ));
+    }
+    if (prevCols) {
+      queryClient.setQueryData<any[]>(colsKey, prevCols.map((col: any) => {
+        // Eski ustundan olib tashlash
+        const filteredTasks = (col.tasks || []).filter((t: any) => t.id !== taskId);
+        if (col.id === targetColumnId) {
+          // Yangi ustunga qo'shish (boshiga)
+          const movingTask = prevCols.flatMap((c: any) => c.tasks || []).find((t: any) => t.id === taskId);
+          if (movingTask) {
+            return { ...col, tasks: [{ ...movingTask, columnId: targetColumnId }, ...filteredTasks] };
+          }
+        }
+        return { ...col, tasks: filteredTasks };
+      }));
+    }
 
     try {
-      await tasksApi.update(draggedTaskId, { columnId: targetColumnId }, currentUser.id);
+      await tasksApi.update(taskId, { columnId: targetColumnId }, currentUser.id);
+      // Muvaffaqiyat — server javobi bilan sinxron qilish uchun invalidate.
+      // Optimistik holat allaqachon to'g'ri, refetch'gacha kartani jovida turadi.
       fetchData(true);
     } catch (err) {
+      // Rollback — optimistik o'zgarishlarni qaytarib olamiz.
+      if (prevTasks) queryClient.setQueryData(tasksKey, prevTasks);
+      if (prevCols) queryClient.setQueryData(colsKey, prevCols);
       showStatus('error', "Bosqichni o'zgartirishda xatolik!");
       console.error(err);
-    } finally {
-      setDraggedTaskId(null);
     }
   };
 
@@ -362,6 +416,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       showStatus('error', "Hamkorni tanlang!");
       return;
     }
+    // Agar tenant'da bo'limlar bo'lsa — bo'lim tanlash majburiy
+    if (departments.length > 0 && !selectedDepartmentId) {
+      showStatus('error', "Bo'limni tanlang!");
+      return;
+    }
 
     // Check if justification is needed for price override
     const calculatedTotal = Number(newTaskForm.totalAmount);
@@ -431,49 +490,147 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     }
   };
 
+  // Buyurtmaga biriktiriladigan fayl formatlari — faqat TIF va CorelDRAW.
+  // MIME atayin tekshirilmaydi: CDR uchun brauzerlar ko'pincha bo'sh yoki
+  // 'application/octet-stream' qaytaradi; haqiqiy filtr — kengaytma.
+  const ALLOWED_ATTACHMENT_EXT = ['.tif', '.tiff', '.cdr'];
+  const ALLOWED_ATTACHMENT_ACCEPT = '.tif,.tiff,.cdr,image/tiff';
+  // Backend body limiti 50MB. Base64 ~1.33x kattalashtirgani uchun xom fayl ~36MB.
+  // Xavfsiz chegara — 35MB.
+  const MAX_ATTACHMENT_BYTES = 35 * 1024 * 1024;
+  const isAllowedAttachment = (file: File): boolean => {
+    const name = (file.name || '').toLowerCase();
+    return ALLOWED_ATTACHMENT_EXT.some(ext => name.endsWith(ext));
+  };
+  const isTooLarge = (file: File): boolean => file.size > MAX_ATTACHMENT_BYTES;
+  const formatMb = (bytes: number) => (bytes / 1024 / 1024).toFixed(1) + ' MB';
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !selectedTask) return;
+    if (!isAllowedAttachment(file)) {
+      showStatus('error', "Faqat .tif yoki .cdr fayllar yuklash mumkin");
+      e.target.value = '';
+      return;
+    }
+    if (isTooLarge(file)) {
+      showStatus('error', `Fayl juda katta (${formatMb(file.size)}). Maksimal: ${formatMb(MAX_ATTACHMENT_BYTES)}`);
+      e.target.value = '';
+      return;
+    }
+
+    // Darhol progress ko'rsatamiz — FileReader ham 30MB fayl uchun 2-5 sek
+    // ketishi mumkin, foydalanuvchi "qotib qolgan" deb o'ylamasin.
+    setUploadProgress(0);
 
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64String = reader.result as string;
+      // Append-only endpoint — alohida TaskAttachment row sifatida saqlaydi.
+      // Body: faqat yangi fayl (eski fayllar serverda qoladi, ulardan birortasi
+      // re-uploaded bo'lmaydi).
       try {
-        const currentAttachments = parseJson(selectedTask.attachments);
-        const updatedAttachments = [...currentAttachments, base64String];
-        await tasksApi.update(selectedTask.id, { attachments: JSON.stringify(updatedAttachments) }, currentUser.id);
-        setSelectedTask({ ...selectedTask, attachments: JSON.stringify(updatedAttachments) });
-        showStatus('success', "Rasm yuklandi!");
+        const res = await tasksApi.appendAttachment(
+          selectedTask.id,
+          { name: file.name, url: base64String },
+          (pct) => setUploadProgress(pct),
+        );
+        // Server yangi row qaytarayotgan bo'lsa, optimistik tarzda qo'shamiz.
+        const newRecord: AttachmentRecord = res?.data
+          ? { id: res.data.id, name: res.data.name, mimeType: res.data.mimeType, data: res.data.data, size: res.data.size, createdAt: res.data.createdAt }
+          : { id: `tmp-${Date.now()}`, name: file.name, data: base64String };
+        setSelectedTask({
+          ...selectedTask,
+          attachmentRecords: [...(selectedTask.attachmentRecords || []), newRecord],
+          hasAttachments: true,
+        });
+        showStatus('success', "Fayl yuklandi!");
         fetchData(true);
       } catch (err) {
         showStatus('error', "Yuklashda xato!");
+      } finally {
+        setUploadProgress(null);
       }
     };
     reader.readAsDataURL(file);
   };
 
-  // Normalizes old (plain base64 string) and new ({name,url} object) attachment formats
-  const parseAttachmentItem = (item: any): { name: string; url: string; isImage: boolean } => {
-    if (typeof item === 'string') {
-      const isImage = item.startsWith('data:image') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(item);
-      return { name: 'Rasm', url: item, isImage };
-    }
+  // TaskAttachment row'ni render uchun shaklga keltiradi (rasm/non-rasm).
+  // NOTE: TIFF (.tif/.tiff) data URLlari `data:image/tiff` bilan boshlanadi, lekin
+  // brauzerlar ularni <img>'da render qilmaydi — shuning uchun `isImage: false`
+  // qilib download card'ga yo'naltiramiz.
+  const parseAttachmentItem = (item: AttachmentRecord): { id: string; name: string; url: string; isImage: boolean; isLegacy: boolean } => {
+    const url = item.data || '';
     const name = item.name || 'Fayl';
-    const url = item.url || '';
-    const isImage = url.startsWith('data:image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
-    return { name, url, isImage };
+    const isTiff = /\.tiff?$/i.test(name) || url.startsWith('data:image/tif');
+    const isImage = (url.startsWith('data:image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(name)) && !isTiff;
+    return { id: item.id, name, url, isImage, isLegacy: !!item._legacy };
   };
 
-  const handleMoveFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
+  // Reliable download for base64 data URLs — some browsers ignore <a download> on
+  // very large data URIs or when navigating cross-origin, so we always go through
+  // an explicit blob + anchor click.
+  const downloadAttachment = (att: { name: string; url: string }) => {
+    try {
+      const m = /^data:([^;,]+);base64,(.*)$/.exec(att.url);
+      if (m) {
+        const mime = m[1] || 'application/octet-stream';
+        const binary = atob(m[2]);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: mime });
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = att.name || 'fayl';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      } else {
+        const a = document.createElement('a');
+        a.href = att.url;
+        a.download = att.name || 'fayl';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    } catch {
+      showStatus('error', "Yuklab olishda xato");
+    }
+  };
+
+  const processMoveFiles = (files: File[]) => {
+    const wrongFormat = files.filter(f => !isAllowedAttachment(f));
+    const tooLarge = files.filter(f => isAllowedAttachment(f) && isTooLarge(f));
+    const allowed = files.filter(f => isAllowedAttachment(f) && !isTooLarge(f));
+    if (wrongFormat.length > 0) {
+      showStatus('error', `${wrongFormat.length} ta fayl rad etildi: faqat .tif yoki .cdr formatlari qabul qilinadi`);
+    }
+    if (tooLarge.length > 0) {
+      showStatus('error', `${tooLarge.length} ta fayl juda katta (max ${formatMb(MAX_ATTACHMENT_BYTES)})`);
+    }
+    allowed.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setMoveForm(f => ({ ...f, newFiles: [...f.newFiles, { name: file.name, url: reader.result as string }] }));
       };
       reader.readAsDataURL(file);
     });
+  };
+
+  const handleMoveFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    processMoveFiles(files);
     e.target.value = '';
+  };
+
+  const handleMoveDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMoveDragOver(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    processMoveFiles(files);
   };
 
   const handleAddColumn = async (e: React.FormEvent) => {
@@ -508,6 +665,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   };
 
   const openDetailModal = async (task: Task) => {
+    // Kanban list endpoint endi attachments qaytarmaydi (katta base64 CDR/TIF
+    // fayllarini 12 sek polling'da qayta yuklamaslik uchun). Detail ochilganda
+    // to'liq taskni alohida olamiz — shu joyda attachments ham keladi.
     setSelectedTask(task);
     setIsDetailModalOpen(true);
     setActiveTab('details');
@@ -515,8 +675,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       vendorId: (task as any).vendorId || '',
       amount: (task as any).vendorCost ? String((task as any).vendorCost) : ''
     });
-    // Load overrides from task if exists, or initialize from some base logic
-    // Backend likely stores it in a field we can use. Assuming 'overrides' field.
     try {
       const taskOverrides = (task as any).overrides;
       if (taskOverrides) {
@@ -524,9 +682,19 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       } else {
         setOverrides([]);
       }
-      await tasksApi.logView(task.id, currentUser.id);
+      // logView va to'liq task'ni parallel chaqiramiz.
+      const [fullRes] = await Promise.all([
+        tasksApi.findOne(task.id),
+        tasksApi.logView(task.id, currentUser.id).catch(() => null),
+      ]);
+      if (fullRes?.data) {
+        // Faqat attachments'ni qo'shamiz — boshqa maydonlar list'dan qoldirilgan
+        // versiya bilan ustun bo'lishi mumkin (eskirgan), shuning uchun to'liq
+        // server javobini ishlatamiz.
+        setSelectedTask(fullRes.data);
+      }
     } catch (err) {
-      console.warn("View log fail", err);
+      console.warn("Detail load fail", err);
     }
   };
 
@@ -541,21 +709,32 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     if (!selectedTask || !moveForm.columnId) return;
 
     try {
-      const currentAttachments = parseJson(selectedTask.attachments);
-      const updatedAttachments = moveForm.newFiles.length > 0
-        ? [...currentAttachments, ...moveForm.newFiles]
-        : currentAttachments;
+      // Yangi fayllarni alohida append qilamiz — bu eski attachments massivini qayta
+      // yubormaslik uchun. Har bir fayl uchun upload progress ko'rsatiladi.
+      if (moveForm.newFiles.length > 0) {
+        for (let i = 0; i < moveForm.newFiles.length; i++) {
+          const f = moveForm.newFiles[i];
+          setUploadProgress(0);
+          await tasksApi.appendAttachment(
+            selectedTask.id,
+            f,
+            (pct) => setUploadProgress(pct),
+          );
+        }
+        setUploadProgress(null);
+      }
 
+      // Endi attachmentsiz move/assignees update'ini jo'natamiz — body kichik.
       await tasksApi.update(selectedTask.id, {
         columnId: moveForm.columnId,
         assignees: JSON.stringify(moveForm.assigneeIds),
         historyNote: moveForm.note,
-        ...(moveForm.newFiles.length > 0 && { attachments: JSON.stringify(updatedAttachments) }),
       }, currentUser.id);
       setIsMoveTaskModalOpen(false);
       showStatus('success', "Buyurtma ko'chirildi.");
       fetchData(true);
     } catch (err) {
+      setUploadProgress(null);
       showStatus('error', "Ko'chirishda xatolik!");
     }
   };
@@ -776,9 +955,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           <button onClick={openArxivModal} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-violet-400 hover:text-violet-500 transition-all flex items-center gap-1.5 whitespace-nowrap">
             <Archive size={12} /> ARXIV
           </button>
-          <button onClick={handleExport} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-emerald-400 hover:text-emerald-500 transition-all flex items-center gap-1.5 whitespace-nowrap" title="Topshiriqlarni Excel'ga eksport qilish">
-            <Download size={12} /> EKSPORT
-          </button>
+          {(isAdmin || p.canExportTasks) && (
+            <button onClick={handleExport} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-emerald-400 hover:text-emerald-500 transition-all flex items-center gap-1.5 whitespace-nowrap" title="Topshiriqlarni Excel'ga eksport qilish">
+              <Download size={12} /> EKSPORT
+            </button>
+          )}
           {p.canManageColumns && (
             <button data-tour-id="kanban-add-column" onClick={() => setIsNewColumnModalOpen(true)} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
               + BOSQICH
@@ -1263,23 +1444,27 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 </div>
               )}
 
-              {/* Department (Bo'lim) — optional analytical tag.
+              {/* Department (Bo'lim) — bo'lim bor bo'lsa MAJBURIY (buyurtmani filtrash uchun).
                   Visible only if the active branch has at least one department defined. */}
               {departments.length > 0 && (
                 <div className="space-y-2 mt-5 mb-7">
                   <label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                    <Layers size={11} /> Bo'lim (ixtiyoriy)
+                    <Layers size={11} /> Bo'lim <span className="text-rose-500">*</span>
                   </label>
                   <select
+                    required
                     value={selectedDepartmentId}
                     onChange={e => setSelectedDepartmentId(e.target.value)}
-                    className="select-minimal h-10 font-bold w-full"
+                    className={`select-minimal h-10 font-bold w-full ${!selectedDepartmentId ? 'border-rose-200 bg-rose-50/40' : ''}`}
                   >
-                    <option value="">— Bo'limsiz —</option>
+                    <option value="">— Bo'limni tanlang —</option>
                     {departments.map((d: any) => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
+                  {!selectedDepartmentId && (
+                    <p className="text-[10px] text-rose-500 font-bold">Buyurtma uchun bo'lim tanlash majburiy</p>
+                  )}
                 </div>
               )}
 
@@ -1450,39 +1635,67 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                   <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
                     <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
-                    <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-bold text-sky-500 uppercase hover:text-sky-700 transition-colors flex items-center gap-1">
-                      <Plus size={11} /> Fayl yuklash
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadProgress !== null}
+                      className="text-[10px] font-bold text-sky-500 uppercase hover:text-sky-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Faqat .tif yoki .cdr"
+                    >
+                      {uploadProgress !== null
+                        ? <><Clock size={11} className="animate-spin" /> Yuklanmoqda... {uploadProgress}%</>
+                        : <><Plus size={11} /> Fayl yuklash (.tif, .cdr)</>
+                      }
                     </button>
-                    <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} />
+                    <input type="file" hidden ref={fileInputRef} accept={ALLOWED_ATTACHMENT_ACCEPT} onChange={handleFileUpload} />
                   </div>
                   <p className="text-xs sm:text-sm font-medium text-slate-700 whitespace-pre-wrap leading-relaxed mb-4">{selectedTask.description || "Izox kiritilmagan..."}</p>
 
-                  {/* Attached files */}
-                  {parseJson(selectedTask.attachments).length > 0 && (
+                  {/* Attached files — endi alohida TaskAttachment row'lardan. parseJson
+                      o'rniga to'g'ridan-to'g'ri array ishlatamiz, har re-render'da 30MB
+                      JSON parse qilish yo'q. */}
+                  {(selectedTask.attachmentRecords?.length ?? 0) > 0 && (
                     <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Yuklangan fayllar ({parseJson(selectedTask.attachments).length})</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Yuklangan fayllar ({selectedTask.attachmentRecords!.length})</p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {parseJson(selectedTask.attachments).map((raw: any, i: number) => {
+                        {selectedTask.attachmentRecords!.map((raw) => {
                           const att = parseAttachmentItem(raw);
+                          // CDR/TIF — non-renderable in browser, always download.
+                          // Other images (jpg/png/...) — preview + dedicated download button.
                           return att.isImage ? (
-                            <a key={i} href={att.url} target="_blank" rel="noreferrer" download={att.name}
-                              className="aspect-video rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-sky-300 transition-all group relative">
+                            <div key={att.id} className="aspect-video rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-sky-300 transition-all group relative">
                               <img src={att.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={att.name} />
-                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                <ExternalLink size={16} className="text-white" />
+                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                <a href={att.url} target="_blank" rel="noreferrer" title="Yangi oynada ochish" className="p-2 rounded-lg bg-white/90 hover:bg-white">
+                                  <ExternalLink size={14} className="text-slate-700" />
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => downloadAttachment(att)}
+                                  title="Yuklab olish"
+                                  className="p-2 rounded-lg bg-white/90 hover:bg-white"
+                                >
+                                  <Download size={14} className="text-slate-700" />
+                                </button>
                               </div>
-                            </a>
+                            </div>
                           ) : (
-                            <a key={i} href={att.url} download={att.name}
-                              className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-sm transition-all group">
+                            <div key={att.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-sm transition-all group">
                               <div className="w-9 h-9 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" /></svg>
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-bold text-slate-700 truncate">{att.name}</p>
-                                <p className="text-[9px] text-slate-400 font-bold uppercase">Yuklab olish</p>
+                                <p className="text-[10px] font-bold text-slate-700 truncate" title={att.name}>{att.name}</p>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase">{/\.cdr$/i.test(att.name) ? 'CorelDRAW' : /\.tiff?$/i.test(att.name) ? 'TIFF rasm' : 'Fayl'}</p>
                               </div>
-                            </a>
+                              <button
+                                type="button"
+                                onClick={() => downloadAttachment(att)}
+                                title="Yuklab olish"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-colors shrink-0"
+                              >
+                                <Download size={14} strokeWidth={2.5} />
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
@@ -1513,6 +1726,38 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Oldingi izohlar — bosqich o'zgartirishlarda yozilgan barcha kommentlar.
+                    Tarixi tabga o'tmasdan ham hammasi ko'rinib turadi. */}
+                {(() => {
+                  const notes = (selectedTask.histories || [])
+                    .filter((h: any) => h.note && String(h.note).trim().length > 0);
+                  if (notes.length === 0) return null;
+                  return (
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                      <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
+                        <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                          <ClipboardList size={14} /> IZOHLAR ({notes.length})
+                        </h4>
+                      </div>
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scroll pr-1">
+                        {notes.map((h: any, i: number) => (
+                          <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">
+                                {h.employee?.fullName || 'Tizim'}
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-300 tabular-nums">
+                                {new Date(h.createdAt).toLocaleDateString('uz-UZ')} {new Date(h.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <p className="text-xs font-medium text-slate-700 italic">"{h.note}"</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {canDeleteTask && (
                   <div className="flex justify-end pt-2">
@@ -1846,13 +2091,22 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </div>
             <div
               onClick={() => moveFileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all min-h-[80px]"
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsMoveDragOver(true); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsMoveDragOver(false); }}
+              onDrop={handleMoveDrop}
+              className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all min-h-[100px] ${
+                isMoveDragOver
+                  ? 'border-orange-500 bg-orange-50/50 scale-[1.01]'
+                  : 'border-slate-200 hover:border-orange-400 hover:bg-orange-50/30'
+              }`}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fayl yuklash uchun bosing</p>
-              <p className="text-[9px] text-slate-300 font-bold">PDF, AI, PSD, PNG, JPG va boshqalar</p>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={isMoveDragOver ? "#f97316" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-colors"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider text-center">
+                Faylni shu yerga tashlang yoki <span className="text-orange-500 underline">tanlash uchun bosing</span>
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium text-center">Faqat .tif va .cdr (CorelDRAW) formatlari</p>
             </div>
-            <input type="file" hidden multiple ref={moveFileInputRef} onChange={handleMoveFileSelect} />
+            <input type="file" hidden multiple accept={ALLOWED_ATTACHMENT_ACCEPT} ref={moveFileInputRef} onChange={handleMoveFileSelect} />
 
             {moveForm.newFiles.length > 0 && (
               <div className="mt-3 space-y-1.5">
@@ -1872,8 +2126,23 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-slate-100 items-end justify-end">
-            <button type="button" className="btn-outline h-14 flex-1 rounded-2xl font-bold uppercase tracking-widest text-[10px] px-8" onClick={() => setIsMoveTaskModalOpen(false)}>BEKOR</button>
-            <button type="submit" className="btn-primary h-14 flex-[2] rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-sky-500/20 px-10">O'ZGARTIRISHNI SAQLASH</button>
+            <button
+              type="button"
+              disabled={uploadProgress !== null}
+              className="btn-outline h-14 flex-1 rounded-2xl font-bold uppercase tracking-widest text-[10px] px-8 disabled:opacity-50"
+              onClick={() => setIsMoveTaskModalOpen(false)}
+            >
+              BEKOR
+            </button>
+            <button
+              type="submit"
+              disabled={uploadProgress !== null}
+              className="btn-primary h-14 flex-[2] rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-sky-500/20 px-10 disabled:opacity-60"
+            >
+              {uploadProgress !== null
+                ? `YUKLANMOQDA... ${uploadProgress}%`
+                : "O'ZGARTIRISHNI SAQLASH"}
+            </button>
           </div>
         </form>
       </Modal>

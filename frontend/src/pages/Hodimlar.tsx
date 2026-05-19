@@ -180,13 +180,15 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <button
-              onClick={handleExport}
-              className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
-              title="Xodimlar ro'yxatini Excel'ga eksport qilish"
-            >
-              <Download size={13} strokeWidth={2.5}/> EKSPORT
-            </button>
+            {(isAdmin || p.canExportEmployees) && (
+              <button
+                onClick={handleExport}
+                className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+                title="Xodimlar ro'yxatini Excel'ga eksport qilish"
+              >
+                <Download size={13} strokeWidth={2.5}/> EKSPORT
+              </button>
+            )}
             {canAdd && (() => {
               const atLimit = maxEmployees > 0 && employees.length >= maxEmployees;
               return (

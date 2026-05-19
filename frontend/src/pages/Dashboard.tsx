@@ -10,6 +10,7 @@ import AICopilot from '../components/AICopilot/AICopilot';
 import { OnboardingWizard, isOnboardingComplete } from '../components/OnboardingWizard';
 import { OnboardingTour, isTourComplete } from '../components/OnboardingTour';
 import { CommandPalette } from '../components/CommandPalette';
+import { useSidebarCounts, markTabSeen } from '../hooks/useSidebarCounts';
 
 const Moliya       = React.lazy(() => import('./Moliya'));
 const Hodimlar     = React.lazy(() => import('./Hodimlar'));
@@ -93,12 +94,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isAICopilotOpen, setIsAICopilotOpen] = useState(false);
-  const [aiCopilotEnabled, setAiCopilotEnabled] = useState(false);
+  // Platforma darajasidagi global ON/OFF (super-admin nazoratida)
+  const [aiCopilotGlobalEnabled, setAiCopilotGlobalEnabled] = useState(false);
 
   useEffect(() => {
     billingApi.getSetting('AI_COPILOT_ENABLED')
-      .then(r => setAiCopilotEnabled(!!r.data?.value))
-      .catch(() => setAiCopilotEnabled(false));
+      .then(r => setAiCopilotGlobalEnabled(!!r.data?.value))
+      .catch(() => setAiCopilotGlobalEnabled(false));
   }, []);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -323,6 +325,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     ? currentUser.tenantFeatures
     : { finance: true, kanban: true, customers: true, employees: true, warehouse: true, attendance: true };
 
+  // AI Copilot ko'rinishi 2 ta shartga bog'liq:
+  //   1) platforma'da global yoqilgan (super-admin)
+  //   2) tenant'ning tarifi (plan) AI Copilot'ni o'z ichiga oladi
+  // Tarif aliaslari: ai_chat | telegram_bot | advancedBot (backend FeatureGuard bilan mos)
+  const planHasAiCopilot = !!(tf.ai_chat || tf.telegram_bot || tf.advancedBot);
+  const aiCopilotEnabled = aiCopilotGlobalEnabled && planHasAiCopilot;
+
   // Sidebar grouped into 3 logical sections for visual hierarchy.
   // Sections render with a small caps label between them.
   const navGroups: { label: string; icon: any; items: { id: string; label: string; icon: any; show: boolean; sub: string }[] }[] = [
@@ -373,10 +382,24 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  // Sidebar notification badges — har bir tab ustida "yangi" elementlar soni
+  const { counts: sidebarCounts, refresh: refreshSidebarCounts } = useSidebarCounts(activeBranchId);
+
+  // Aktiv tab har safar o'zgarganda uni "ko'rilgan" deb belgilaymiz va sanoqlarni yangilaymiz.
+  // Bu URL orqali sahifaga to'g'ridan kelganda (browser back/forward) ham ishlaydi.
+  useEffect(() => {
+    markTabSeen(activeTab);
+    refreshSidebarCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   const handleTabChange = (id: any) => {
     setActiveTab(id);
     localStorage.setItem('pf_active_tab', id);
     setIsSidebarOpen(false);
+    // Tabni ochganda uni "ko'rilgan" deb belgilaymiz va badge'larni yangilaymiz.
+    markTabSeen(id);
+    refreshSidebarCounts();
     navigate(`/dashboard/${id}`);
   };
 
@@ -512,6 +535,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             if (visibleItems.length === 0) return null;
             const isOpen = openGroups.has(group.label);
             const containsActive = visibleItems.some(it => it.id === activeTab);
+            // Group-level notification count = sum of all item counts in this group.
+            // Faqat aktiv tab'dan tashqari sonlarni qo'shamiz — aktiv tab "ko'rilgan" hisoblanadi.
+            const groupNotifications = visibleItems.reduce((sum, it) => {
+              if (it.id === activeTab) return sum;
+              return sum + ((sidebarCounts as any)[it.id] || 0);
+            }, 0);
             return (
               <React.Fragment key={group.label}>
                 {gi > 0 && <div className="my-1.5 border-t border-slate-100" />}
@@ -522,8 +551,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   data-tour-open={isOpen ? '1' : '0'}
                   onClick={() => toggleGroup(group.label)}
                   className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
-                    containsActive 
-                      ? 'bg-slate-100/80 text-slate-800 shadow-sm border border-slate-200/60' 
+                    containsActive
+                      ? 'bg-slate-100/80 text-slate-800 shadow-sm border border-slate-200/60'
                       : 'bg-slate-50/50 text-slate-500 hover:bg-slate-100/50 hover:text-slate-700 border border-transparent'
                   }`}
                 >
@@ -534,6 +563,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${containsActive ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'} normal-case tracking-normal`}>
                       {visibleItems.length}
                     </span>
+                    {/* Group-level notification badge — collapsed bo'lganda ham ko'rinadi */}
+                    {!isOpen && groupNotifications > 0 && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-orange-500 text-white shadow-sm shadow-orange-500/30 normal-case tracking-normal min-w-[18px] text-center animate-pulse">
+                        {groupNotifications > 99 ? '99+' : groupNotifications}
+                      </span>
+                    )}
                   </span>
                   <ChevronDown
                     size={14}
@@ -542,7 +577,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 </button>
 
                 {/* Group items — only render when open */}
-                {isOpen && visibleItems.map(item => (
+                {isOpen && visibleItems.map(item => {
+                  const itemCount = (sidebarCounts as any)[item.id] || 0;
+                  const showBadge = itemCount > 0 && item.id !== activeTab;
+                  return (
                   <button
                     key={item.id}
                     data-tour-id={`nav-${item.id}`}
@@ -558,6 +596,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                       <p className={`text-[8px] font-semibold mt-0.5 uppercase tracking-tighter ${activeTab === item.id ? 'text-orange-100' : 'text-slate-400 opacity-60'}`}>{item.sub}</p>
                     </div>
 
+                    {/* Per-item notification badge — yangilik soni */}
+                    {showBadge && (
+                      <span
+                        className={`text-[9px] font-bold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-sm ${
+                          activeTab === item.id
+                            ? 'bg-white text-orange-600'
+                            : 'bg-orange-500 text-white shadow-orange-500/30 animate-pulse'
+                        }`}
+                        title={`${itemCount} ta yangi`}
+                      >
+                        {itemCount > 99 ? '99+' : itemCount}
+                      </span>
+                    )}
+
                     <div
                       onClick={(e) => toggleTabLock(item.id, e)}
                       className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${lockedTabs.has(item.id)
@@ -568,7 +620,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                       {lockedTabs.has(item.id) ? <Lock size={10} strokeWidth={3} /> : <Unlock size={10} />}
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </React.Fragment>
             );
           })}
@@ -690,19 +743,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               <kbd className="text-[9px] font-bold bg-slate-100 px-1.5 py-0.5 rounded">Ctrl K</kbd>
             </button>
 
-            <select
-              value={activeBranchId}
-              onChange={e => {
-                setActiveBranchId(e.target.value);
-                localStorage.setItem('pf_active_branch', e.target.value);
-              }}
-              className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
-            >
-              <option value="">Barcha filiallar</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+            {/* Filial filtri faqat: bir nechta filial bor + foydalanuvchining filiallar ruxsati bor bo'lsa */}
+            {branches.length > 1 && (isAdmin || p.canViewBranches || p.canManageBranches) && (
+              <select
+                value={activeBranchId}
+                onChange={e => {
+                  setActiveBranchId(e.target.value);
+                  localStorage.setItem('pf_active_branch', e.target.value);
+                }}
+                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
+              >
+                <option value="">Barcha filiallar</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            )}
 
             <button
               onClick={(e) => toggleTabLock(activeTab, e)}
@@ -763,14 +819,23 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'xizmatlar-katalog' && (p.canViewServices || p.canManageServices || isAdmin) && <Sozlamalar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'qollanma' && <Qollanma />}
 
-              {/* Unauthorized message if tab is set but permission removed */}
-              {!navItems.find(i => i.id === activeTab)?.show && (
-                <div className="flex flex-col items-center justify-center h-full text-center p-10 bg-white rounded-3xl border border-slate-200">
-                  <Lock size={48} className="text-slate-200 mb-4" />
-                  <h3 className="text-xl font-bold text-slate-800 uppercase italic">Kirish cheklangan</h3>
-                  <p className="text-xs font-bold text-slate-400 mt-2">Ushbu bo'limni ko'rish uchun ruxsatingiz yo'q.</p>
-                </div>
-              )}
+              {/* Unauthorized message if tab is set but permission removed.
+                  Special tabs (qollanma, xizmatlar-katalog, filiallar, billing)
+                  yashirin — navGroups'da yo'q, lekin permission o'z render shartida tekshiriladi.
+                  Shularni unauthorized fallback'dan istisno qilamiz. */}
+              {(() => {
+                const SPECIAL_TABS = new Set(['qollanma', 'xizmatlar-katalog', 'filiallar', 'billing']);
+                if (SPECIAL_TABS.has(activeTab)) return null;
+                const item = navItems.find(i => i.id === activeTab);
+                if (item?.show) return null;
+                return (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-10 bg-white rounded-3xl border border-slate-200">
+                    <Lock size={48} className="text-slate-200 mb-4" />
+                    <h3 className="text-xl font-bold text-slate-800 uppercase italic">Kirish cheklangan</h3>
+                    <p className="text-xs font-bold text-slate-400 mt-2">Ushbu bo'limni ko'rish uchun ruxsatingiz yo'q.</p>
+                  </div>
+                );
+              })()}
             </React.Suspense>
           )}
         </div>

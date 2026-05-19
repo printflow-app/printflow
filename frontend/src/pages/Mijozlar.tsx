@@ -264,13 +264,15 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               />
             </div>
           )}
-          <button
-            onClick={handleExport}
-            className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
-            title="Joriy ro'yxatni Excel'ga eksport qilish"
-          >
-            <Download size={13} strokeWidth={2.5}/> EKSPORT
-          </button>
+          {(isAdmin || p.canExportCustomers) && (
+            <button
+              onClick={handleExport}
+              className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+              title="Joriy ro'yxatni Excel'ga eksport qilish"
+            >
+              <Download size={13} strokeWidth={2.5}/> EKSPORT
+            </button>
+          )}
           {canAdd && (
             <button
               onClick={openAdd}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, Bell, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake } from 'lucide-react';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, Bell, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake, FileText, Image as ImageIcon } from 'lucide-react';
+import { PriceListModal } from '../components/PriceListModal';
+import { ImageUpload } from '../components/ImageUpload';
 import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, branchesApi } from '../api';
 import { useRoles, usePaymentTypes, useExpenseTypes, useTaskColumns, useServices, useEmployees, useInvalidate } from '../hooks/queries';
 import { useQuery } from '@tanstack/react-query';
@@ -37,11 +39,36 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     },
     staleTime: 5 * 60_000,
   });
-  const [notifPrefs, setNotifPrefs] = useState<{ hisobotReceivers: string[]; newOrderReceivers: string[]; reminderReceivers: string[] }>({ hisobotReceivers: [], newOrderReceivers: [], reminderReceivers: [] });
+  const [notifPrefs, setNotifPrefs] = useState<{
+    hisobotReceivers: string[];
+    newOrderReceivers: string[];
+    reminderReceivers: string[];
+    hisobotEnabled: boolean;
+    newOrderEnabled: boolean;
+    reminderEnabled: boolean;
+  }>({
+    hisobotReceivers: [],
+    newOrderReceivers: [],
+    reminderReceivers: [],
+    hisobotEnabled: true,
+    newOrderEnabled: true,
+    reminderEnabled: true,
+  });
 
-  // Sync notifPrefs with RQ data
+  // Sync notifPrefs with RQ data — merge with defaults to ensure new enable fields
+  // are present even when server returned an older settings shape.
   useEffect(() => {
-    if (notifPrefsQuery.data) setNotifPrefs(notifPrefsQuery.data);
+    if (notifPrefsQuery.data) {
+      const d = notifPrefsQuery.data as any;
+      setNotifPrefs({
+        hisobotReceivers: d.hisobotReceivers ?? [],
+        newOrderReceivers: d.newOrderReceivers ?? [],
+        reminderReceivers: d.reminderReceivers ?? [],
+        hisobotEnabled: d.hisobotEnabled !== false,
+        newOrderEnabled: d.newOrderEnabled !== false,
+        reminderEnabled: d.reminderEnabled !== false,
+      });
+    }
   }, [notifPrefsQuery.data]);
   const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
   const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
@@ -213,6 +240,9 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     canAddEmployee: false, canEditEmployee: false, canDeleteEmployee: false, canResetEmployeePassword: false,
     canAddInventoryItem: false, canReceiveInventory: false, canUseInventory: false, canWriteOffInventory: false,
     canManageVendors: false, canViewBranches: false, canViewBillingStatus: false,
+    // Excel eksport ruxsatlari — sahifa-bo'yicha
+    canExportFinance: false, canExportTasks: false, canExportCustomers: false, canExportInventory: false,
+    canExportEmployees: false, canExportAttendance: false, canExportVendors: false, canExportReports: false,
   };
   const [newRole, setNewRole] = useState(initialRoleForm);
 
@@ -368,6 +398,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         canViewTotalBalance:   { label: "Umumiy kassa balansini ko'rish",             detail: "Sahifa yuqorisidagi 'Jami Balans' kartochkasi ko'rinadi. Ruxsat yo'q bo'lsa summa '★★★★★' bilan yashiriladi va faqat o'z tranzaksiyalarini ko'rish mumkin bo'ladi." },
         canAddIncome:          { label: "Kirim (tushum) qo'shish",                   detail: "'+ Kirim' tugmasi faol bo'ladi. Mijozdan to'lov qabul qilish, buyurtma bilan bog'lash, to'lov turini tanlash — bularning barchasi kiritiladi." },
         canAddExpense:         { label: "Chiqim (xarajat) qo'shish",                 detail: "'+ Chiqim' tugmasi faol bo'ladi. Xarajat turi, summa, izoh va to'lov usuli bilan chiqim kiritish. Xodim maoshi uchun esa alohida 'Maosh' turi mavjud." },
+        canExportFinance:      { label: "Excel'ga eksport qilish",                   detail: "Kassa sahifasida 'EKSPORT' tugmasi ko'rinadi. Joriy filtr (sana oralig'i, qidiruv) bo'yicha barcha tranzaksiyalarni .xlsx faylga yuklab olish imkoni." },
       }
     },
     {
@@ -383,6 +414,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         canDeleteTask:            { label: "Buyurtmani o'chirish yoki arxivlash",              detail: "'O'chirish' va 'Arxivlash' tugmalari ko'rinadi. Ruxsat yo'q bo'lsa bu tugmalar umuman ko'rinmaydi." },
         canMoveTask:              { label: "Buyurtmani bosqichdan bosqichga ko'chirish",       detail: "'Bosqichni o'zgartirish' tugmasi faol bo'ladi. Buyurtmani keyingi yoki oldingi kanban ustuniga ko'chirish va izoh qoldirish mumkin." },
         canManageColumns:         { label: "Kanban ustunlarini (bosqichlarni) boshqarish",    detail: "Yangi bosqich (ustun) qo'shish, mavjudini nomini o'zgartirish va tartibini belgilash imkoni." },
+        canExportTasks:           { label: "Excel'ga eksport qilish",                         detail: "Kanban sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha buyurtmalarni bosqich, mijoz, summa va deadline ma'lumotlari bilan .xlsx faylga yuklab olish." },
       }
     },
     {
@@ -404,6 +436,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         canEditCustomer:    { label: "Mijoz ma'lumotlarini tahrirlash",            detail: "Har bir mijoz qatorida 'Tahrirlash' tugmasi ko'rinadi. Ism, telefon, manzil, telegram va boshqa ma'lumotlarni o'zgartirish mumkin." },
         canDeleteCustomer:  { label: "Mijozni tizimdan o'chirish",                 detail: "Mijoz qatorida 'O'chirish' tugmasi ko'rinadi. Mijozni tizimdan butunlay o'chirish — bu amalni ortga qaytarish mumkin emas." },
         canManageCustomers: { label: "Kontaktlar, buyurtmalar va to'lovlar tarixi", detail: "Mijoz detali modalida: barcha buyurtmalar ro'yxati, to'lov tarixi, qarz holati va kontakt raqamlarini ko'rish va boshqarish imkoni." },
+        canExportCustomers: { label: "Excel'ga eksport qilish",                     detail: "Mijozlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha mijozlarni ism, telefon, qarz, jami to'lov va buyurtmalar soni bilan .xlsx faylga yuklab olish." },
       }
     },
     {
@@ -417,6 +450,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         canUseInventory:     { label: "Chiqim — sarflanish kiritish",                   detail: "Material kartasida 'Chiqim' tugmasi ko'rinadi. Ishlab chiqarishga sarflangan material miqdorini kiritish va xarajat sifatida qayd etish." },
         canWriteOffInventory:{ label: "Brak — yaroqsiz materiallarni hisobdan chiqarish", detail: "Material kartasida 'Brak' tugmasi ko'rinadi. Yaroqsiz yoki yo'qolgan materiallarni hisobdan o'chirish. Sabab va miqdor ko'rsatiladi." },
         canManageInventory:  { label: "Material ma'lumotlarini tahrirlash va o'chirish", detail: "Material nomini, o'lchov birligini va minimum zaxira miqdorini o'zgartirish. Keraksiz materialni ro'yxatdan o'chirish imkoni." },
+        canExportInventory:  { label: "Excel'ga eksport qilish",                         detail: "Ombor sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha materiallarni nomi, birligi, joriy zaxira va minimum chegara bilan .xlsx faylga yuklab olish." },
       }
     },
     {
@@ -427,6 +461,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         canViewAttendance:    { label: "Sahifaga kirish — o'z davomatini ko'rish va belgilash", detail: "Menyu'da 'Davomat' ko'rinadi. Xodim o'z keldi/ketti vaqtini QR kod yoki 'Keldim' tugmasi bilan belgilaydi. Faqat o'z tarixi ko'rinadi." },
         canViewAllAttendance: { label: "Barcha xodimlar davomatini ko'rish",                   detail: "Barcha xodimlarning kunlik davomat jadvali, oylik matritsa ko'rinishi, kech qolish daqiqalari statistikasi va xodim bo'yicha filtrlash." },
         canManageAttendance:  { label: "Qo'lda davomat kiritish va tizim sozlamalari",        detail: "Qurilmasiz xodimlar uchun admin keldi/ketti vaqtini qo'lda kiritadi. Ofis Wi-Fi IP manzillar allowlist (ruxsat etilgan tarmoqlar) sozlamasi." },
+        canExportAttendance:  { label: "Excel'ga eksport qilish",                            detail: "Davomat sahifasida 'EKSPORT' tugmasi ko'rinadi. Oylik davomat matritsasini xodimlar bo'yicha kun-kun .xlsx faylga yuklab olish." },
       }
     },
 
@@ -452,6 +487,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         canViewExpenseCharts:  { label: "Chiqim Tahlili (kategoriyalar bo'yicha)", detail: "Har bir xarajat kategoriyasi bo'yicha aniq summa va umumiy chiqimdagi ulushi. Eng ko'p sarflangan yo'nalishlarni tezda aniqlash." },
         canViewServiceReports: { label: "Xizmat Hajmi & O'rtacha Chek",            detail: "Xizmat tanlash orqali: buyurtmalar soni, jami daromad, o'rtacha chek va barcha daromaddagi ulushi ko'rsatiladi. Xizmatlar daromad bo'yicha reytingi ham ko'rinadi." },
         canViewCostCalculator: { label: "Tannarx Kalkulyatori",                    detail: "Buyurtma ID yoki nomi bo'yicha qidirish. Xarajat qatorlarini qo'shish, 1 donaga tannarx va sof foyda/marja foizini real vaqtda hisoblash." },
+        canExportReports:      { label: "Excel'ga eksport qilish",                detail: "Hisobotlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Joriy hisobot ma'lumotlari (xizmatlar, hamkorlar, dinamika va h.k.) .xlsx faylga yuklab olinadi." },
       }
     },
 
@@ -467,6 +503,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         canDeleteEmployee:       { label: "Xodim hisobini o'chirish",            detail: "Xodim qatorida 'O'chirish' tugmasi ko'rinadi. Xodim tizimdan chiqariladi va uning hisobiga kirish bloklanadi." },
         canResetEmployeePassword:{ label: "Login va parol yangilash",            detail: "'Yangi parol' tugmasi ko'rinadi. Xodim parolini qayta generatsiya qilish va yangi login ma'lumotlarini ko'rish imkoni." },
         canViewSalary:           { label: "Xodim maosh summalarini ko'rish",     detail: "Xodimlar jadvalida va profilida boshlang'ich maosh, berilgan avans va qarz summasi ko'rinadi. Ruxsat yo'q bo'lsa bu raqamlar yashiriladi." },
+        canExportEmployees:      { label: "Excel'ga eksport qilish",             detail: "Xodimlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha xodimlarni ism, lavozim, telefon, login va filial ma'lumotlari bilan .xlsx faylga yuklab olish." },
       }
     },
     {
@@ -484,6 +521,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       permissions: {
         canViewVendors:   { label: "Hamkorlar ro'yxatini ko'rish",               detail: "Menyu'da 'Hamkorlar' bo'limi ko'rinadi. Hamkorlar (subpudratchilar) kartochkalari: ism, mutaxassislik, telefon, joriy qarz holati va jami buyurtmalar soni. Hamkor detalini ochish mumkin." },
         canManageVendors: { label: "Hamkorlarni qo'shish, tahrirlash, o'chirish va to'lov", detail: "'+ Hamkor' tugmasi ko'rinadi. Yangi hamkor yaratish. Mavjud hamkor ma'lumotlarini o'zgartirish. Hamkorga to'lov kiritish (qarzni kamaytirish). Hamkorni o'chirish." },
+        canExportVendors: { label: "Excel'ga eksport qilish",                              detail: "Hamkorlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha hamkorlarni ism, mutaxassislik, telefon va qarz holati bilan .xlsx faylga yuklab olish." },
       }
     },
     {
@@ -1123,12 +1161,22 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
            <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-3">
-                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Hisobotlar (Kunlik/Haftalik)</label>
-                   <div className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1">
+                   <div className="flex items-center justify-between">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Hisobotlar (Kunlik/Haftalik)</label>
+                     <button
+                       type="button"
+                       onClick={() => setNotifPrefs(prev => ({ ...prev, hisobotEnabled: !prev.hisobotEnabled }))}
+                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${notifPrefs.hisobotEnabled ? 'bg-sky-500' : 'bg-slate-300'}`}
+                       title={notifPrefs.hisobotEnabled ? "Yoqilgan — bosish o'chiradi" : "O'chiq — bosish yoqadi"}
+                     >
+                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${notifPrefs.hisobotEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                     </button>
+                   </div>
+                   <div className={`w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1 ${!notifPrefs.hisobotEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
                      {employees.map(emp => (
                        <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
-                         <input 
-                           type="checkbox" 
+                         <input
+                           type="checkbox"
                            className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
                            checked={notifPrefs.hisobotReceivers.includes(emp.id)}
                            onChange={(e) => {
@@ -1147,12 +1195,22 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 </div>
 
                 <div className="space-y-3">
-                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Yangi Buyurtmalar</label>
-                   <div className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1">
+                   <div className="flex items-center justify-between">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Yangi Buyurtmalar</label>
+                     <button
+                       type="button"
+                       onClick={() => setNotifPrefs(prev => ({ ...prev, newOrderEnabled: !prev.newOrderEnabled }))}
+                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${notifPrefs.newOrderEnabled ? 'bg-sky-500' : 'bg-slate-300'}`}
+                       title={notifPrefs.newOrderEnabled ? "Yoqilgan — bosish o'chiradi" : "O'chiq — bosish yoqadi"}
+                     >
+                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${notifPrefs.newOrderEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                     </button>
+                   </div>
+                   <div className={`w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1 ${!notifPrefs.newOrderEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
                      {employees.map(emp => (
                        <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
-                         <input 
-                           type="checkbox" 
+                         <input
+                           type="checkbox"
                            className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
                            checked={notifPrefs.newOrderReceivers.includes(emp.id)}
                            onChange={(e) => {
@@ -1171,12 +1229,22 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 </div>
 
                 <div className="space-y-3">
-                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Muddat Eslatmalari</label>
-                   <div className="w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1">
+                   <div className="flex items-center justify-between">
+                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Muddat Eslatmalari</label>
+                     <button
+                       type="button"
+                       onClick={() => setNotifPrefs(prev => ({ ...prev, reminderEnabled: !prev.reminderEnabled }))}
+                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${notifPrefs.reminderEnabled ? 'bg-sky-500' : 'bg-slate-300'}`}
+                       title={notifPrefs.reminderEnabled ? "Yoqilgan — bosish o'chiradi" : "O'chiq — bosish yoqadi"}
+                     >
+                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${notifPrefs.reminderEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                     </button>
+                   </div>
+                   <div className={`w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1 ${!notifPrefs.reminderEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
                      {employees.map(emp => (
                        <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
-                         <input 
-                           type="checkbox" 
+                         <input
+                           type="checkbox"
                            className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
                            checked={notifPrefs.reminderReceivers.includes(emp.id)}
                            onChange={(e) => {
@@ -1299,11 +1367,14 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isOptionOpen, setIsOptionOpen] = useState(false);
+  const [isPriceListOpen, setIsPriceListOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
 
-  const [newSvcForm, setNewSvcForm] = useState({ name: '', description: '', basePrice: '', unit: 'dona' });
+  const [newSvcForm, setNewSvcForm] = useState<{ name: string; description: string; basePrice: string; unit: string; imageUrl: string | null }>({ name: '', description: '', basePrice: '', unit: 'dona', imageUrl: null });
+  // Image edit modal — mavjud xizmat rasmini almashtirish uchun
+  const [imageEditSvc, setImageEditSvc] = useState<{ id: string; name: string; imageUrl?: string | null } | null>(null);
   const [editSvcId, setEditSvcId] = useState<string | null>(null);
   const [editSvcForm, setEditSvcForm] = useState<any>({});
   const [newOptionForm, setNewOptionForm] = useState({ name: '', value: '', percentageMarkup: '' });
@@ -1371,9 +1442,22 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
       await servicesApi.create({ ...newSvcForm, basePrice: Number(newSvcForm.basePrice), branchId: bId });
       showStatus('success', 'Xizmat qo\'shildi!');
       setIsAddOpen(false);
-      setNewSvcForm({ name: '', description: '', basePrice: '', unit: 'dona' });
+      setNewSvcForm({ name: '', description: '', basePrice: '', unit: 'dona', imageUrl: null });
       onRefresh();
     } catch { showStatus('error', 'Xizmat qo\'shishda xatolik!'); }
+  };
+
+  // Rasmni saqlash — image edit modaldan chaqiriladi
+  const handleSaveServiceImage = async (imageUrl: string | null) => {
+    if (!imageEditSvc) return;
+    const bId = requireActiveBranch();
+    if (!bId) return;
+    try {
+      await servicesApi.update(imageEditSvc.id, { imageUrl }, bId);
+      showStatus('success', 'Rasm yangilandi');
+      setImageEditSvc(null);
+      onRefresh();
+    } catch { showStatus('error', 'Rasmni saqlashda xatolik'); }
   };
 
   const handleDeleteService = async (id: string) => {
@@ -1503,15 +1587,26 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           </h3>
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Pricing Engine — xizmat va opsiyalar narxlari</p>
         </div>
-        {canAdd && (
-          <button
-            data-tour-id="xizmat-add"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-5 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all"
-            onClick={() => setIsAddOpen(true)}
-          >
-            <Plus size={16} strokeWidth={3} /> Yangi Xizmat
-          </button>
-        )}
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {services.length > 0 && (
+            <button
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 h-10 px-4 text-xs font-bold uppercase tracking-widest rounded-xl border-2 border-slate-200 hover:border-orange-300 transition-all"
+              onClick={() => setIsPriceListOpen(true)}
+              title="Mijozga jo'natish uchun price list"
+            >
+              <FileText size={14} strokeWidth={2.5} /> Price list
+            </button>
+          )}
+          {canAdd && (
+            <button
+              data-tour-id="xizmat-add"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-5 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+              onClick={() => setIsAddOpen(true)}
+            >
+              <Plus size={16} strokeWidth={3} /> Yangi Xizmat
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -1529,9 +1624,17 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
               {/* Service header */}
               <div className="flex items-center justify-between p-3 sm:p-5 cursor-pointer" onClick={() => !isEditing && setExpandedId(isExpanded ? null : svc.id)}>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 bg-orange-100 text-orange-700 rounded-xl flex items-center justify-center font-bold text-sm sm:text-base border border-orange-200 shrink-0">
-                    {svc.name.charAt(0).toUpperCase()}
-                  </div>
+                  {svc.imageUrl ? (
+                    <img
+                      src={svc.imageUrl}
+                      alt=""
+                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl object-cover border border-orange-200 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 bg-orange-100 text-orange-700 rounded-xl flex items-center justify-center font-bold text-sm sm:text-base border border-orange-200 shrink-0">
+                      {svc.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="min-w-0">
                     {isEditing ? (
                       <div className="flex flex-wrap items-center gap-2" onClick={e => e.stopPropagation()}>
@@ -1568,6 +1671,11 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                     <>
                       {canManageOptions && (
                         <button onClick={() => { setSelectedService(svc); setNewOptionForm(f => ({ ...f, percentageMarkup: '0' })); setIsOptionOpen(true); }} className="h-8 px-2 sm:px-3 text-[10px] font-bold text-violet-600 bg-violet-50 border border-violet-100 rounded-lg hover:bg-violet-100 transition-all flex items-center gap-1"><Plus size={11}/> <span className="hidden sm:inline">Optsiya</span></button>
+                      )}
+                      {canEdit && (
+                        <button onClick={() => setImageEditSvc({ id: svc.id, name: svc.name, imageUrl: svc.imageUrl })} title="Rasm" className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-orange-500 hover:text-white transition-all">
+                          <ImageIcon size={15}/>
+                        </button>
                       )}
                       {canEdit && (
                         <button onClick={() => { setEditSvcId(svc.id); setEditSvcForm({ name: svc.name, basePrice: String(svc.basePrice), unit: svc.unit }); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-all"><Edit3 size={15}/></button>
@@ -1665,6 +1773,12 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
       {/* Add Service Modal */}
       <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Yangi Xizmat Qo'shish">
         <form onSubmit={handleAddService} className="space-y-5">
+          <ImageUpload
+            value={newSvcForm.imageUrl}
+            onChange={(url) => setNewSvcForm(f => ({ ...f, imageUrl: url }))}
+            size="lg"
+            label="Rasm (ixtiyoriy — price list'da ko'rinadi)"
+          />
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Xizmat Nomi</label>
             <input type="text" required value={newSvcForm.name} onChange={e => setNewSvcForm(f => ({ ...f, name: e.target.value }))} className="input-minimal text-lg font-bold" placeholder="Masalan: Banner Bosish, Vizitka..." />
@@ -1875,6 +1989,49 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
               </div>
             </>
           )}
+        </div>
+      </Modal>
+
+      {/* Price list — mijozga ulashish uchun preview + eksport */}
+      <PriceListModal
+        isOpen={isPriceListOpen}
+        onClose={() => setIsPriceListOpen(false)}
+        tenantSlug={currentUser?.workspaceSlug || ''}
+        defaultBranchId={activeBranchId}
+      />
+
+      {/* Service image edit modal */}
+      <Modal
+        isOpen={!!imageEditSvc}
+        onClose={() => setImageEditSvc(null)}
+        title={`Rasm: ${imageEditSvc?.name || ''}`}
+        maxWidth="max-w-sm"
+      >
+        <div className="space-y-5">
+          <ImageUpload
+            value={imageEditSvc?.imageUrl}
+            onChange={(url) => setImageEditSvc(prev => prev ? { ...prev, imageUrl: url } : prev)}
+            size="lg"
+          />
+          <p className="text-[10px] text-slate-400 px-1">
+            Bu rasm xizmatlar ro'yxatida va Price List'da ko'rinadi. Mijozga jo'natiladigan formatlarda ham chiqadi.
+          </p>
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
+              onClick={() => setImageEditSvc(null)}
+            >
+              Bekor
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSaveServiceImage(imageEditSvc?.imageUrl ?? null)}
+              className="h-12 flex-1 bg-orange-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
+            >
+              Saqlash
+            </button>
+          </div>
         </div>
       </Modal>
       </section>

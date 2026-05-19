@@ -531,40 +531,61 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
   async sendMessage(telegramId: string, text: string) {
     if (!this.bot) return;
-    try {
-      await this.bot.telegram.sendMessage(telegramId, text, { parse_mode: 'Markdown' });
-    } catch (err) {
-      console.warn(`Telegram xabar yuborilmadi (${telegramId}):`, err.message);
-    }
+    setTimeout(async () => {
+      try {
+        await this.bot.telegram.sendMessage(telegramId, text, { parse_mode: 'Markdown' });
+      } catch (err: any) {
+        console.warn(`Telegram xabar yuborilmadi (${telegramId}):`, err?.message);
+      }
+    }, 0);
   }
 
   async sendNotification(employeeId: string, message: string) {
-    const emp = await this.prisma.employee.findUnique({ where: { id: employeeId } });
-    if (emp?.telegramId) {
-      await this.sendMessage(emp.telegramId, `🔔 *Yangi bildirishnoma:*\n\n${message}`);
-    }
+    setTimeout(async () => {
+      try {
+        const emp = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+        if (emp?.telegramId) {
+          await this.sendMessage(emp.telegramId, `🔔 *Yangi bildirishnoma:*\n\n${message}`);
+        }
+      } catch (err: any) {
+        console.warn('sendNotification xatosi:', err?.message);
+      }
+    }, 0);
   }
 
   async notifyAdmins(tenantId: string, message: string) {
-    const admins = await this.prisma.employee.findMany({
-      where: { tenantId, role: { canViewFinance: true } },
-    });
-    for (const admin of admins) {
-      if (admin.telegramId) {
-        await this.sendMessage(admin.telegramId, `📢 *Admin bildirishnomasi:*\n\n${message}`);
+    setTimeout(async () => {
+      try {
+        const admins = await this.prisma.employee.findMany({
+          where: { tenantId, role: { canViewFinance: true } },
+        });
+        for (const admin of admins) {
+          if (admin.telegramId) {
+            await this.sendMessage(admin.telegramId, `📢 *Admin bildirishnomasi:*\n\n${message}`);
+          }
+        }
+      } catch (err: any) {
+        console.warn('notifyAdmins xatosi:', err?.message);
       }
-    }
+    }, 0);
   }
 
   async notifyNewOrder(tenantId: string, message: string) {
-    const prefs = await this.getNotifPrefs(tenantId);
-    if (!prefs.newOrderReceivers?.length) return;
-    for (const empId of prefs.newOrderReceivers) {
-      const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
-      if (emp?.telegramId) {
-        await this.sendMessage(emp.telegramId, `🆕 *Yangi Buyurtma tushdi!*\n\n${message}`);
+    setTimeout(async () => {
+      try {
+        const prefs = await this.getNotifPrefs(tenantId);
+        if (!prefs.newOrderEnabled) return;
+        if (!prefs.newOrderReceivers?.length) return;
+        for (const empId of prefs.newOrderReceivers) {
+          const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
+          if (emp?.telegramId) {
+            await this.sendMessage(emp.telegramId, `🆕 *Yangi Buyurtma tushdi!*\n\n${message}`);
+          }
+        }
+      } catch (err: any) {
+        console.warn('notifyNewOrder xatosi:', err?.message);
       }
-    }
+    }, 0);
   }
 
   // =============================================
@@ -612,11 +633,23 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     hisobotReceivers: string[];
     newOrderReceivers: string[];
     reminderReceivers: string[];
+    // Per-event ON/OFF toggles. Default `true` for backward compat with
+    // existing tenants whose settings were saved before this field existed.
+    hisobotEnabled: boolean;
+    newOrderEnabled: boolean;
+    reminderEnabled: boolean;
   }> {
     const setting = await this.prisma.systemSetting.findFirst({
       where: { tenantId, key: 'TELEGRAM_BOT_PREFS' },
     });
-    const defaults = { hisobotReceivers: [], newOrderReceivers: [], reminderReceivers: [] };
+    const defaults = {
+      hisobotReceivers: [],
+      newOrderReceivers: [],
+      reminderReceivers: [],
+      hisobotEnabled: true,
+      newOrderEnabled: true,
+      reminderEnabled: true,
+    };
     if (!setting) return defaults;
     try {
       return { ...defaults, ...JSON.parse(setting.value) };
@@ -632,6 +665,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     for (const t of tenants) {
       await this.cleanupCronLocks(t.id);
       const prefs = await this.getNotifPrefs(t.id);
+      if (!prefs.hisobotEnabled) continue;
       if (!prefs.hisobotReceivers?.length) continue;
       const report = await this.generateReportForTenant(t.id);
       for (const empId of prefs.hisobotReceivers) {
@@ -650,6 +684,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const hourStr = `${utc5.toISOString().slice(0, 13)}`; // "2025-01-14T09"
     for (const t of tenants) {
       const prefs = await this.getNotifPrefs(t.id);
+      if (!prefs.reminderEnabled) continue;
       if (!prefs.reminderReceivers?.length) continue;
 
       const cols = await this.prisma.kanbanColumn.findMany({

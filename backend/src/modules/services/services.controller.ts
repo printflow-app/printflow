@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('services')
 export class ServicesController {
@@ -10,6 +11,17 @@ export class ServicesController {
   @RequirePermissions('canViewServices')
   findAll(@Query('branchId') branchId?: string) {
     return this.servicesService.findAll(branchId);
+  }
+
+  // Public price list — mijozga ulashish uchun. Auth talab qilmaydi.
+  // /:id'dan oldin turishi shart, aks holda Nest 'public' so'zini id sifatida qabul qiladi.
+  @Public()
+  @Get('public/:slug')
+  getPublicPriceList(
+    @Param('slug') slug: string,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.servicesService.getPublicPriceList(slug, branchId);
   }
 
   @Get(':id')

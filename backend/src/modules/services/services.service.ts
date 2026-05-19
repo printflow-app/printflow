@@ -61,6 +61,62 @@ export class ServicesService {
     return updatedService;
   }
 
+  // Public price list — auth'siz mijozga ko'rinadigan ro'yxat.
+  // Tenant slug + ixtiyoriy branchId. Tenant interceptor public route'larda
+  // o'tkazib yuborilganligi sababli tenantId'ni qo'lda WHERE'da ko'rsatamiz.
+  async getPublicPriceList(slug: string, branchId?: string) {
+    if (!slug) throw new BadRequestException('Slug majburiy');
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug: slug.toLowerCase() },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        isActive: true,
+        status: true,
+        branches: {
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, name: true, phone: true, address: true },
+        },
+      },
+    });
+
+    if (!tenant) throw new NotFoundException('Workspace topilmadi');
+    if (!tenant.isActive || tenant.status === 'EXPIRED') {
+      throw new NotFoundException('Bu workspace faol emas');
+    }
+
+    const branch = branchId
+      ? tenant.branches.find((b) => b.id === branchId)
+      : tenant.branches[0];
+    if (!branch) throw new NotFoundException('Filial topilmadi');
+
+    const services = await this.prisma.service.findMany({
+      where: { tenantId: tenant.id, branchId: branch.id },
+      select: {
+        id: true,
+        name: true,
+        basePrice: true,
+        unit: true,
+        imageUrl: true,
+        options: { select: { id: true, name: true, value: true, priceAdd: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return {
+      tenant: { name: tenant.name, slug: tenant.slug },
+      branch: {
+        id: branch.id,
+        name: branch.name,
+        phone: branch.phone,
+        address: branch.address,
+      },
+      branches: tenant.branches.map((b) => ({ id: b.id, name: b.name })),
+      services,
+    };
+  }
+
   async remove(id: string, branchId?: string) {
     const bId = requireBranchId(branchId, 'DELETE /services/:id');
     const existing = await this.prisma.service.findFirst({ where: { id, branchId: bId } });

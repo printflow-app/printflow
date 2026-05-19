@@ -39,6 +39,7 @@ export function useEmployees() {
   return useQuery({
     queryKey: qk.employees,
     queryFn: async () => (await employeesApi.findAll()).data as any[],
+    staleTime: 60_000,
   });
 }
 
@@ -58,6 +59,7 @@ export function useCustomers(branchId?: string, includeDetails = false) {
       ? ['customers', branchId ?? 'all', 'detailed']
       : qk.customers(branchId),
     queryFn: async () => (await customersApi.findAll(branchId, includeDetails)).data as any[],
+    staleTime: 60_000,
   });
 }
 
@@ -95,6 +97,7 @@ export function useDepartments(branchId: string | undefined) {
     queryKey: qk.departments(branchId || ''),
     queryFn: async () => (await departmentsApi.findAll(branchId!)).data as any[],
     enabled: !!branchId,
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -105,6 +108,7 @@ export function useVendors(branchId: string | undefined) {
     queryKey: qk.vendors(branchId || ''),
     queryFn: async () => (await vendorsApi.findAll(branchId!)).data as any[],
     enabled: valid,
+    staleTime: 2 * 60_000,
   });
 }
 
@@ -115,14 +119,18 @@ export function useServices(branchId: string | undefined) {
     queryKey: qk.services(branchId || ''),
     queryFn: async () => (await servicesApi.findAll(branchId!)).data as any[],
     enabled: valid,
+    staleTime: 2 * 60_000,
   });
 }
 
 // -------- TASK KANBAN COLUMNS (branch-scoped) --------
+// staleTime — Topshiriqlar tabini yopib qaytganda darhol cache'dan ko'rsatish uchun.
+// invalidate qachon chaqirilsa, baribir refetch bo'ladi (mutatsiya va auto-refresh).
 export function useTaskColumns(branchId?: string) {
   return useQuery({
     queryKey: qk.taskColumns(branchId),
     queryFn: async () => (await tasksApi.getColumns(branchId)).data as any[],
+    staleTime: 10_000,
   });
 }
 
@@ -131,6 +139,7 @@ export function useTasks(branchId?: string) {
   return useQuery({
     queryKey: qk.tasks(branchId),
     queryFn: async () => (await tasksApi.findAll(branchId)).data as any[],
+    staleTime: 10_000,
   });
 }
 

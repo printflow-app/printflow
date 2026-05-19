@@ -24,10 +24,12 @@ export function assertActiveBranchId(branchId: string | undefined | null): strin
 }
 
 // Request interceptor: attach X-Tenant-Id from session (defense-in-depth)
-// + optional Authorization Bearer for non-cookie clients (mobile, embeds).
+// + optional Authorization Bearer for non-cookie clients (iOS Safari, PWA, embeds).
+// User cache localStorage'da — iOS PWA background terminate'da saqlanib qolishi uchun
+// (eski sessionStorage variantni fallback sifatida ham o'qiymiz).
 api.interceptors.request.use((config) => {
   try {
-    const raw = sessionStorage.getItem('pf_user_info');
+    const raw = localStorage.getItem('pf_user_info') || sessionStorage.getItem('pf_user_info');
     if (raw) {
       const user = JSON.parse(raw);
       if (user?.tenantId) {
@@ -38,7 +40,7 @@ api.interceptors.request.use((config) => {
     if (bearer && !(config.headers as any).Authorization) {
       (config.headers as any).Authorization = `Bearer ${bearer}`;
     }
-  } catch { /* sessionStorage might be blocked in private mode */ }
+  } catch { /* storage might be blocked in private mode */ }
   return config;
 });
 
@@ -192,6 +194,20 @@ export const tasksApi = {
   getArchived: () => api.get('/tasks/archived'),
   logView: (id: string, employeeId: string) =>
     api.post(`/tasks/${id}/view`, { employeeId }),
+  // Yangi attachment qo'shish — butun massiv qayta yuborilmaydi, faqat yangi fayl.
+  // onProgress callback upload jarayonining % ni qaytaradi (0..100).
+  appendAttachment: (
+    id: string,
+    attachment: { name: string; url: string },
+    onProgress?: (pct: number) => void,
+  ) =>
+    api.post(`/tasks/${id}/attachments`, attachment, {
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      },
+    }),
   backfillIds: () => api.post('/tasks/backfill-ids'),
 
   getColumns: (branchId?: string) => {
@@ -241,6 +257,8 @@ export const financeApi = {
   getDashboard: (config?: any) => api.get('/finance/dashboard', config),
   getTransactions: (config?: any) => api.get('/finance/transactions', config),
   createTransaction: (data: any) => api.post('/finance/transactions', data),
+  updateTransaction: (id: string, data: any) => api.patch(`/finance/transactions/${id}`, data),
+  deleteTransaction: (id: string) => api.delete(`/finance/transactions/${id}`),
   getDinamika: (config?: any) => api.get('/finance/dinamika', config),
   getStatsByPaymentType: (config?: any) => api.get('/finance/stats-by-payment-type', config),
   getExpenseBreakdown: (config?: any) => api.get('/finance/expense-breakdown', config),
@@ -442,6 +460,23 @@ export const reportsApi = {
 
 
 // =============================================
+// SIDEBAR NOTIFICATIONS
+// =============================================
+export const notificationsApi = {
+  /**
+   * Sidebar tab'lari uchun "yangilik" sonlari.
+   * Har bir tab uchun localStorage'dagi lastSeen sanasini yuboramiz,
+   * backend shu sanadan keyin paydo bo'lgan elementlarni sanaydi.
+   */
+  getSidebarCounts: (params: {
+    branchId?: string;
+    topshiriqlarSince?: string;
+    mijozlarSince?: string;
+    hamkorlarSince?: string;
+  }) => api.get('/notifications/sidebar', { params }),
+};
+
+// =============================================
 // AI COPILOT
 // =============================================
 export const departmentsApi = {
@@ -457,7 +492,7 @@ export const aiApi = {
    * with SSE streaming. Use this with a ReadableStream reader.
    */
   streamChat: async (messages: Array<{ role: string; content: string }>) => {
-    const raw = sessionStorage.getItem('pf_user_info');
+    const raw = localStorage.getItem('pf_user_info') || sessionStorage.getItem('pf_user_info');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };

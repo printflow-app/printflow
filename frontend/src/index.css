@@ -1114,3 +1114,32 @@ html, body {
 .contact-container {
   animation: fadeIn 0.6s ease-out forwards;
 }
+
+/* =============================================
+   Print — faqat price list (#price-list-printable) chiqsin.
+   Hamma boshqa narsalar (modal chrome, dashboard, toastlar) yashirin.
+   visibility ishlatamiz, display:none emas — chunki target element
+   modal ichida joylashgan, ota-onaning display:none'i bolani ham yashiradi.
+   ============================================= */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #price-list-printable,
+  #price-list-printable * {
+    visibility: visible !important;
+  }
+  #price-list-printable {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  @page {
+    margin: 0;
+    size: A4;
+  }
+}

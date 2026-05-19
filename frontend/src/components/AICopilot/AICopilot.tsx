@@ -31,7 +31,7 @@ const chatTransport = new DefaultChatTransport({
   headers: () => {
     const h: Record<string, string> = {};
     try {
-      const raw = sessionStorage.getItem('pf_user_info');
+      const raw = localStorage.getItem('pf_user_info') || sessionStorage.getItem('pf_user_info');
       if (raw) {
         const u = JSON.parse(raw);
         if (u?.tenantId) h['X-Tenant-Id'] = u.tenantId;

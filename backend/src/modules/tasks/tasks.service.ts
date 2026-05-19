@@ -35,7 +35,7 @@ export class TasksService {
       };
     }
 
-    return this.prisma.task.findMany({
+    const tasks = await this.prisma.task.findMany({
       where: { ...base, ...branchClause },
       include: {
         column: true,
@@ -46,19 +46,53 @@ export class TasksService {
         histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } }
       },
     });
+
+    // Kanban kartasi attachmentlarni ko'rsatmaydi. Base64 CDR/TIF fayllar TEXT
+    // ustunida 30MB+ bo'lishi mumkin — har 12 sekundlik polling'da ularni qaytarish
+    // tarmoq va brauzer asosiy thread'ini blok qiladi. Faqat detail modal kerak,
+    // u esa alohida findOne() chaqiradi.
+    return tasks.map((t: any) => ({ ...t, attachments: undefined, hasAttachments: !!t.attachments && t.attachments !== '[]' }));
   }
 
   async findOne(id: string) {
-    return this.prisma.task.findUnique({
+    const task = await this.prisma.task.findUnique({
       where: { id },
-      include: { 
-        column: true, 
+      include: {
+        column: true,
         customer: true,
         paymentType: true,
         vendor: { select: { id: true, name: true } },
-        histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } }
+        histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } },
+        attachmentRecords: { orderBy: { createdAt: 'asc' } },
       },
     });
+    if (!task) return null;
+
+    // Fallback — agar yangi jadval'da row yo'q-u, eski JSON ustun'da data bor bo'lsa
+    // (ya'ni migratsiya skripti hali ishlatilmagan), o'qish vaqtida synthesize qilamiz.
+    // Bu read-only fallback — DB yozish yo'q. Migratsiya ishlatilgach bu blok ishga tushmaydi.
+    const records: any[] = (task as any).attachmentRecords || [];
+    if (records.length === 0 && (task as any).attachments && (task as any).attachments !== '[]') {
+      try {
+        const legacy: any[] = JSON.parse((task as any).attachments);
+        const synth = legacy.map((it: any, idx: number) => {
+          const url = typeof it === 'string' ? it : (it?.url || '');
+          const name = typeof it === 'string' ? `Fayl-${idx + 1}` : (it?.name || `Fayl-${idx + 1}`);
+          return {
+            id: `legacy-${idx}`,
+            name,
+            mimeType: null,
+            data: url,
+            size: 0,
+            createdAt: task.createdAt,
+            _legacy: true, // Frontend ekranda DELETE imkonsizligini bilishi uchun
+          };
+        });
+        (task as any).attachmentRecords = synth;
+      } catch { /* JSON buzilgan — bo'sh massiv qoldiramiz */ }
+    }
+
+    return task;
   }
 
   async create(data: any, employeeId?: string) {
@@ -194,11 +228,12 @@ export class TasksService {
       }
     }
 
-    // Telegram Notification
+    // Telegram Notification — summa ko'rsatilmaydi, faqat buyurtma/xizmat/bosqich
     this.notifyAssignees(task, '🆕 Yangi topshiriq');
     const tId = TenantContext.getTenantId();
     if (tId) {
-      this.telegramService.notifyNewOrder(tId, `📌 *${title}*\n💰 ${totalAmount} UZS\n📍 Bosqich: Yangi Buyurtma`);
+      const orderLine = orderName ? `📌 *Buyurtma:* ${orderName}\n🛠 *Xizmat:* ${title}` : `🛠 *Xizmat:* ${title}`;
+      this.telegramService.notifyNewOrder(tId, `${orderLine}\n📍 *Bosqich:* Yangi Buyurtma`);
     }
 
     return task;
@@ -366,12 +401,13 @@ export class TasksService {
       }
     }
 
-    // Notify for each task
+    // Notify for each task — summa ko'rsatilmaydi
     const tId = TenantContext.getTenantId();
     for (const t of tasks) {
       this.notifyAssignees(t, '🆕 Yangi topshiriq (Guruhli)');
       if (tId) {
-        this.telegramService.notifyNewOrder(tId, `📌 *${t.title}* (Guruhli)\n💰 ${t.totalAmount} UZS\n📍 Bosqich: Yangi Buyurtma`);
+        const orderLine = (t as any).orderName ? `📌 *Buyurtma:* ${(t as any).orderName}\n🛠 *Xizmat:* ${t.title}` : `🛠 *Xizmat:* ${t.title}`;
+        this.telegramService.notifyNewOrder(tId, `${orderLine} (Guruhli)\n📍 *Bosqich:* Yangi Buyurtma`);
       }
     }
 
@@ -379,26 +415,36 @@ export class TasksService {
   }
 
   async update(id: string, data: any, employeeId?: string) {
-    const oldTask = await this.prisma.task.findUnique({ where: { id } });
+    const oldTask = await this.prisma.task.findUnique({
+      where: { id },
+      include: { service: { include: { materials: true } } },
+    });
     if (!oldTask) throw new Error('Task topilmadi');
 
     const { historyNote, ...taskData } = data;
 
+    // Fetch static columns and existing stock movement concurrently BEFORE transaction
+    // to minimize transaction duration and network round-trips over remote Railway proxy.
+    const [oldCol, newCol, existingMovement] = await Promise.all([
+      taskData.columnId && oldTask.columnId ? this.prisma.kanbanColumn.findUnique({ where: { id: oldTask.columnId } }) : Promise.resolve(null),
+      taskData.columnId ? this.prisma.kanbanColumn.findUnique({ where: { id: taskData.columnId } }) : Promise.resolve(null),
+      oldTask.serviceId ? this.prisma.stockMovement.findFirst({ where: { taskId: id, type: 'chiqim' } }) : Promise.resolve(null),
+    ]);
+
+    // Katta attachment'lar (CDR/TIF base64) yozilishi 5s'dan uzunroq vaqt olishi mumkin —
+    // Prisma'ning default transaction timeout'i (5000ms) bilan ishlamaydi. Limitni oshiramiz.
     const updatedTask = await this.prisma.$transaction(async (tx) => {
       const task = await tx.task.update({
         where: { id },
         data: {
           ...taskData,
-          remainingAmount: (taskData.totalAmount !== undefined || taskData.depositAmount !== undefined) 
+          remainingAmount: (taskData.totalAmount !== undefined || taskData.depositAmount !== undefined)
             ? (Number(taskData.totalAmount ?? oldTask.totalAmount) - Number(taskData.depositAmount ?? oldTask.depositAmount))
             : undefined
         }
       });
 
       if (taskData.columnId && taskData.columnId !== oldTask.columnId) {
-        const oldCol = await tx.kanbanColumn.findUnique({ where: { id: oldTask.columnId } });
-        const newCol = await tx.kanbanColumn.findUnique({ where: { id: taskData.columnId } });
-        
         await tx.taskHistory.create({
           data: {
             taskId: id,
@@ -413,10 +459,41 @@ export class TasksService {
         const finishedKeywords = ['tayyor', 'topshirildi', 'yakunlandi', 'bajarildi'];
         const isFinished = finishedKeywords.some(k => newCol?.title?.toLowerCase().includes(k));
 
-        if (isFinished) {
-          if (oldTask.serviceId) {
-            await this.deductStock(tx, id);
-          }
+        if (isFinished && oldTask.serviceId && !existingMovement && oldTask.service?.materials) {
+          const taskOverrides = JSON.parse(oldTask.materialOverrides || "[]");
+          // Execute all material stock deductions concurrently inside transaction
+          await Promise.all(oldTask.service.materials.map(async (sm: any) => {
+            const override = taskOverrides.find((o: any) => o.materialId === sm.materialId);
+            const amount = override 
+              ? Number(override.quantity) 
+              : (Number(sm.normPerUnit) * Number(oldTask.quantity));
+            
+            const updatedMaterial = await tx.material.update({
+              where: { id: sm.materialId },
+              data: {
+                currentStock: { decrement: amount },
+                reservedStock: { decrement: amount }
+              }
+            });
+
+            await tx.stockMovement.create({
+              data: {
+                materialId: sm.materialId,
+                taskId: id,
+                type: 'chiqim',
+                quantity: amount,
+                note: `Buyurtma yakunlandi: ${oldTask.title}`
+              } as any
+            });
+
+            if (updatedMaterial.currentStock <= updatedMaterial.minStock) {
+              const warningMessage = `⚠️ *OMBOR OGOHLANTIRISHI*\n\n📌 *Mahsulot:* ${updatedMaterial.name}\n📊 *Qoldiq:* ${updatedMaterial.currentStock} ${updatedMaterial.unit}\n📉 *Minimal qoldiq:* ${updatedMaterial.minStock} ${updatedMaterial.unit}\n\n_Iltimos, zaxirani to'ldiring!_`;
+              const tenantId = TenantContext.getTenantId();
+              if (tenantId) {
+                this.telegramService.notifyAdmins(tenantId, warningMessage);
+              }
+            }
+          }));
         }
       } else if (data.title || data.description) {
         await tx.taskHistory.create({
@@ -430,6 +507,9 @@ export class TasksService {
       }
 
       return task;
+    }, {
+      maxWait: 10_000,
+      timeout: 60_000,
     });
 
     // Telegram Notification if assignees changed or task moved
@@ -442,11 +522,54 @@ export class TasksService {
     return updatedTask;
   }
 
+  // Yangi normalized model — har attachment bitta INSERT (30MB TEXT UPDATE emas).
+  // - Race condition yo'q (har row alohida)
+  // - Task'ni o'qiganda boshqa fayllar o'qilmaydi
+  // - Bitta faylni o'chirish = DELETE WHERE id (boshqa fayllarga tegmaydi)
+  async appendAttachment(id: string, attachment: { name: string; url: string }) {
+    // Task mavjudligini va tenant scope'ni tasdiqlaymiz — middleware tenantId'ni
+    // findUnique where'ga avtomatik qo'shadi, shuning uchun cross-tenant kirib bo'lmaydi.
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!task) throw new Error('Task topilmadi');
+
+    // data URL'dan MIME aniqlash (masalan "data:image/tiff;base64,..." → "image/tiff")
+    const mimeMatch = /^data:([^;,]+);/i.exec(attachment.url);
+    const mimeType = mimeMatch?.[1] || null;
+
+    // Asl fayl hajmini taxminlash (base64 ~1.33x katta)
+    const commaIdx = attachment.url.indexOf(',');
+    const b64Len = commaIdx === -1 ? 0 : attachment.url.length - commaIdx - 1;
+    const size = Math.floor(b64Len * 0.75);
+
+    return this.prisma.taskAttachment.create({
+      data: {
+        taskId: id,
+        name: attachment.name,
+        mimeType,
+        data: attachment.url,
+        size,
+      } as any, // tenantId Prisma middleware tomonidan avtomatik qo'shiladi
+    });
+  }
+
+  // Yagona attachmentni o'chirish — yangi modelda kichik DELETE row, eski JSON
+  // TEXT yondashuvida butun ustun qayta yozilardi.
+  async deleteAttachment(attachmentId: string) {
+    return this.prisma.taskAttachment.delete({ where: { id: attachmentId } });
+  }
+
   private async notifyAssignees(task: any, prefix: string) {
     try {
       const assigneeIds = JSON.parse(task.assignees || "[]");
-      const message = `*${prefix}*\n\n📌 *Nomi:* ${task.title}\n📝 *Tafsilot:* ${task.description || '-'}\n💰 *Summa:* ${task.totalAmount} UZS\n\nIltimos, platformaga kirib batafsil ko'ring.`;
-      
+      // Summa atayin ko'rsatilmaydi — faqat buyurtma nomi, xizmat va tafsilot.
+      const orderLine = task.orderName
+        ? `📌 *Buyurtma:* ${task.orderName}\n🛠 *Xizmat:* ${task.title}`
+        : `🛠 *Xizmat:* ${task.title}`;
+      const message = `*${prefix}*\n\n${orderLine}\n📝 *Tafsilot:* ${task.description || '-'}\n\nIltimos, platformaga kirib batafsil ko'ring.`;
+
       for (const empId of assigneeIds) {
         await this.telegramService.sendNotification(empId, message);
       }
@@ -499,7 +622,7 @@ export class TasksService {
       colWhere.branchId = branchId;
     }
 
-    return this.prisma.kanbanColumn.findMany({
+    const cols = await this.prisma.kanbanColumn.findMany({
       where: colWhere,
       orderBy: { orderIdx: 'asc' },
       include: {
@@ -513,6 +636,13 @@ export class TasksService {
         },
       },
     });
+
+    // Kanban view'da attachments kerak emas (qarang: findAll izohi). Detail modal
+    // findOne orqali alohida yuklaydi.
+    return cols.map((c: any) => ({
+      ...c,
+      tasks: (c.tasks || []).map((t: any) => ({ ...t, attachments: undefined, hasAttachments: !!t.attachments && t.attachments !== '[]' })),
+    }));
   }
 
   async archive(id: string) {
@@ -635,59 +765,6 @@ export class TasksService {
     }
   }
 
-  private async deductStock(tx: any, taskId: string) {
-    const task = await tx.task.findUnique({
-      where: { id: taskId },
-      include: { service: { include: { materials: true } } }
-    });
-
-    if (!task || !task.serviceId) return;
-
-    // Check if already deducted to avoid double deduction
-    const existingMovement = await tx.stockMovement.findFirst({
-      where: { taskId: taskId, type: 'chiqim' }
-    });
-    if (existingMovement) return;
-
-    const taskOverrides = JSON.parse(task.materialOverrides || "[]");
-
-    for (const sm of task.service.materials) {
-      // Find if this specific material has an override for this task
-      const override = taskOverrides.find((o: any) => o.materialId === sm.materialId);
-      const amount = override 
-        ? Number(override.quantity) 
-        : (Number(sm.normPerUnit) * Number(task.quantity));
-      
-      // Decrement both current and reserved
-      const updatedMaterial = await tx.material.update({
-        where: { id: sm.materialId },
-        data: {
-          currentStock: { decrement: amount },
-          reservedStock: { decrement: amount }
-        }
-      });
-
-      // Record movement
-      await tx.stockMovement.create({
-        data: {
-          materialId: sm.materialId,
-          taskId: taskId,
-          type: 'chiqim',
-          quantity: amount,
-          note: `Buyurtma yakunlandi: ${task.title}`
-        } as any
-      });
-
-      // Check minStock and notify admins
-      if (updatedMaterial.currentStock <= updatedMaterial.minStock) {
-        const warningMessage = `⚠️ *OMBOR OGOHLANTIRISHI*\n\n📌 *Mahsulot:* ${updatedMaterial.name}\n📊 *Qoldiq:* ${updatedMaterial.currentStock} ${updatedMaterial.unit}\n📉 *Minimal qoldiq:* ${updatedMaterial.minStock} ${updatedMaterial.unit}\n\n_Iltimos, zaxirani to'ldiring!_`;
-        const tenantId = TenantContext.getTenantId();
-        if (tenantId) {
-          this.telegramService.notifyAdmins(tenantId, warningMessage);
-        }
-      }
-    }
-  }
 
 
 }

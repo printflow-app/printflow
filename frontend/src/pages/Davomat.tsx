@@ -766,13 +766,15 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     return <option key={y} value={y}>{y}</option>;
                   })}
                 </select>
-                <button
-                  onClick={handleExportMonthly}
-                  className="flex items-center gap-2 h-9 px-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
-                  title="Tanlangan oy davomatini Excel'ga eksport qilish"
-                >
-                  <Download size={13} strokeWidth={2.5}/> EKSPORT
-                </button>
+                {(isAdmin || currentUser.permissions?.canExportAttendance) && (
+                  <button
+                    onClick={handleExportMonthly}
+                    className="flex items-center gap-2 h-9 px-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+                    title="Tanlangan oy davomatini Excel'ga eksport qilish"
+                  >
+                    <Download size={13} strokeWidth={2.5}/> EKSPORT
+                  </button>
+                )}
               </div>
             </div>
             <div className="overflow-x-auto p-4">
