@@ -23,7 +23,6 @@ type UserInfo = {
   languageCode?: string;
   isPremium?: boolean;
   isBot?: boolean;
-  bio?: string;
 };
 type Session = {
   state: 'IDLE' | 'COLLECTING';
@@ -120,21 +119,6 @@ export class SupportBotService implements OnModuleInit, OnModuleDestroy {
       s.user = { ...s.user, ...fresh };
     }
     return s;
-  }
-
-  /** Bio va boshqa profil maydonlarini Telegram API'dan tortib oladi (best-effort). */
-  private async enrichUserFromTelegram(chatId: number, user: UserInfo): Promise<void> {
-    if (!this.bot) return;
-    try {
-      const chat: any = await this.bot.telegram.getChat(chatId);
-      if (chat?.bio) user.bio = chat.bio;
-      if (!user.firstName && chat?.first_name) user.firstName = chat.first_name;
-      if (!user.lastName && chat?.last_name) user.lastName = chat.last_name;
-      if (!user.username && chat?.username) user.username = chat.username;
-    } catch (err: any) {
-      // getChat ba'zan rate-limit yoki access muammosi beradi — header bezovta bo'lmasin
-      this.logger.warn(`getChat muvaffaqiyatsiz (chat=${chatId}): ${err?.message}`);
-    }
   }
 
   private mainKeyboard() {
@@ -265,22 +249,22 @@ export class SupportBotService implements OnModuleInit, OnModuleDestroy {
   private formatUserHeader(s: Session, total: number): string {
     const u = s.user;
     const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ') || 'Noma\'lum';
-    const contact = u.username ? `@${u.username}` : `[Direkt chat](tg://user?id=${u.id})`;
 
     const lines: string[] = [
       '📨 *Yangi qo\'llab-quvvatlash murojaati*',
       '',
       `👤 *Ism familiya:* ${this.escapeMd(fullName)}`,
     ];
-    if (u.firstName) lines.push(`• Ism: ${this.escapeMd(u.firstName)}`);
-    if (u.lastName) lines.push(`• Familiya: ${this.escapeMd(u.lastName)}`);
-    lines.push(`🔗 *Username:* ${u.username ? '@' + u.username : '—'}`);
-    lines.push(`💬 *Kontakt:* ${contact}`);
+    // Username — agar mavjud bo'lsa @username sifatida (Telegram'da bosib o'tish mumkin).
+    // Yo'q bo'lsa tg:// link orqali to'g'ridan-to'g'ri chat manzili.
+    if (u.username) {
+      lines.push(`🔗 *Username:* @${u.username}`);
+    } else {
+      lines.push(`🔗 *Kontakt:* [Direkt chat](tg://user?id=${u.id})`);
+    }
     lines.push(`🆔 *Telegram ID:* \`${u.id}\``);
-    if (u.languageCode) lines.push(`🌐 *Til:* ${u.languageCode}`);
     if (u.isPremium) lines.push('⭐ *Premium:* ha');
     if (u.isBot) lines.push('🤖 *Bot:* ha');
-    if (u.bio) lines.push(`📝 *Bio:* ${this.escapeMd(u.bio)}`);
     lines.push(`📦 *Xabarlar soni:* ${total}`);
     lines.push('');
     lines.push('⤵️ Quyida murojaat mazmuni:');
@@ -316,8 +300,6 @@ export class SupportBotService implements OnModuleInit, OnModuleDestroy {
     }
 
     const fromChatId = ctx.chat.id;
-    // Telegram'dan qo'shimcha ochiq ma'lumotlarni tortib olamiz (bio va h.k.)
-    await this.enrichUserFromTelegram(fromChatId, s.user);
     const header = this.formatUserHeader(s, s.items.length);
     let successAdmins = 0;
     let failed = 0;
