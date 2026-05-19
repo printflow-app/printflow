@@ -251,29 +251,19 @@ export class SupportBotService implements OnModuleInit, OnModuleDestroy {
     const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ') || 'Noma\'lum';
 
     const lines: string[] = [
-      '📨 *Yangi qo\'llab-quvvatlash murojaati*',
+      '📨 Yangi qo\'llab-quvvatlash murojaati',
       '',
-      `👤 *Ism familiya:* ${this.escapeMd(fullName)}`,
+      `👤 Ism familiya: ${fullName}`,
     ];
-    // Username — agar mavjud bo'lsa @username sifatida (Telegram'da bosib o'tish mumkin).
-    // Yo'q bo'lsa tg:// link orqali to'g'ridan-to'g'ri chat manzili.
     if (u.username) {
-      lines.push(`🔗 *Username:* @${u.username}`);
-    } else {
-      lines.push(`🔗 *Kontakt:* [Direkt chat](tg://user?id=${u.id})`);
+      lines.push(`🔗 Username: @${u.username}`);
     }
-    lines.push(`🆔 *Telegram ID:* \`${u.id}\``);
-    if (u.isPremium) lines.push('⭐ *Premium:* ha');
-    if (u.isBot) lines.push('🤖 *Bot:* ha');
-    lines.push(`📦 *Xabarlar soni:* ${total}`);
+    lines.push(`🆔 Telegram ID: ${u.id}`);
+    lines.push(`📦 Xabarlar soni: ${total}`);
     lines.push('');
     lines.push('⤵️ Quyida murojaat mazmuni:');
 
     return lines.join('\n');
-  }
-
-  private escapeMd(s: string): string {
-    return s.replace(/([_*`\[\]])/g, '\\$1');
   }
 
   private async sendAll(ctx: any) {
@@ -306,7 +296,7 @@ export class SupportBotService implements OnModuleInit, OnModuleDestroy {
 
     for (const adminId of this.adminChatIds) {
       try {
-        await this.bot.telegram.sendMessage(adminId, header, { parse_mode: 'Markdown' });
+        await this.bot.telegram.sendMessage(adminId, header);
         for (const item of s.items) {
           try {
             await this.bot.telegram.copyMessage(adminId, fromChatId, item.messageId);
