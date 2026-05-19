@@ -92,6 +92,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     transactionsQuery.refetch();
     summaryQuery.refetch();
     invalidate.customers(); // debt could have changed
+    invalidate.tasks(); // task remainingAmount could have changed
   };
 
   // EXPORT — joriy filtr oralig'idagi barcha tranzaksiyalarni .xlsx faylga yozadi.

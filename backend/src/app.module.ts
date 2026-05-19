@@ -40,6 +40,7 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
 import { AiModule } from './modules/ai/ai.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SupportBotModule } from './modules/support-bot/support-bot.module';
 
 // =============================================
 // APP MODULE — PrintFlow Multi-Tenant SaaS
@@ -95,6 +96,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     AiModule,
     DepartmentsModule,
     NotificationsModule,
+    SupportBotModule,
   ],
   providers: [
     // Global rate limiting guard

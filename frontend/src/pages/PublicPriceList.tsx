@@ -6,9 +6,8 @@ import { PriceListView, PriceListData } from '../components/PriceListView';
 
 // =============================================
 // Public price list — /price/:slug
-// Auth talab qilmaydi. Backend /api/services/public/:slug ga so'rov yuboradi.
-// Bir tenant'da bir nechta filial bo'lsa, ?branch=<id> bilan tanlash mumkin.
-// Mijoz uchun foydalanish: link nusxalash → Telegram / WhatsApp / SMS.
+// Mijozga ko'rinadigan narxlar varaqasi. Buyurtma takliflari sotuvchi admin
+// modalidan (Xizmatlar Katalogi > Price list > Buyurtma taklifi tab) tuziladi.
 // =============================================
 
 const PUBLIC_API = (() => {
@@ -38,6 +37,7 @@ export default function PublicPriceList() {
           tenant: r.data.tenant,
           branch: r.data.branch,
           services: r.data.services || [],
+          branding: r.data.branding || null,
         });
         setBranches(r.data.branches || []);
       })

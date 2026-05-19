@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import { toast } from 'react-toastify';
 import {
-  X, Printer, Download, Loader2, Building2, CheckSquare, Square,
+  X, Printer, Download, Loader2, Building2, CheckSquare, Square, FileText, Calculator,
 } from 'lucide-react';
 import { PriceListView, PriceListData, PriceService } from './PriceListView';
+import { QuoteBuilder } from './QuoteBuilder';
 import axios from 'axios';
 
 // Public endpoint — mijoz ham aynan shu data'ni ko'radi.
@@ -38,6 +40,9 @@ export const PriceListModal: React.FC<Props> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [branding, setBranding] = useState<PriceListData['branding']>(null);
+  const [exportFormat, setExportFormat] = useState<'png' | 'pdf'>('png');
+  const [activeTab, setActiveTab] = useState<'overview' | 'quote'>('overview');
 
   const printableRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +59,7 @@ export const PriceListModal: React.FC<Props> = ({
         setBranchInfo(r.data.branch);
         setAllServices(services);
         setBranches(r.data.branches || []);
+        setBranding(r.data.branding || null);
         // Default: barcha xizmatlar tanlangan
         setSelectedIds(new Set(services.map(s => s.id)));
         if (!selectedBranchId && r.data.branch?.id) {
@@ -71,8 +77,9 @@ export const PriceListModal: React.FC<Props> = ({
       tenant,
       branch: branchInfo,
       services: allServices.filter(s => selectedIds.has(s.id)),
+      branding,
     };
-  }, [tenant, branchInfo, allServices, selectedIds]);
+  }, [tenant, branchInfo, allServices, selectedIds, branding]);
 
   if (!isOpen) return null;
 
@@ -96,23 +103,58 @@ export const PriceListModal: React.FC<Props> = ({
     window.print();
   };
 
-  const handleDownloadPng = async () => {
+  const handleDownload = async () => {
     if (!printableRef.current) return;
     setExporting(true);
+    const date = new Date().toISOString().split('T')[0];
     try {
+      // Avval canvas/PNG dataUrl olamiz — ikkala formatga ham kerak
       const dataUrl = await toPng(printableRef.current, {
         pixelRatio: 2,
         cacheBust: true,
         backgroundColor: '#ffffff',
       });
-      const link = document.createElement('a');
-      const date = new Date().toISOString().split('T')[0];
-      link.download = `narxlar-${tenantSlug}-${date}.png`;
-      link.href = dataUrl;
-      link.click();
-      toast.success('Rasm yuklab olindi');
-    } catch {
-      toast.error('Rasm yaratishda xatolik');
+
+      if (exportFormat === 'png') {
+        const link = document.createElement('a');
+        link.download = `narxlar-${tenantSlug}-${date}.png`;
+        link.href = dataUrl;
+        link.click();
+        toast.success('PNG yuklab olindi');
+        return;
+      }
+
+      // PDF — jspdf orqali, A4 portrait, rasmni butun sahifaga joylashtiramiz.
+      // Rasm balandligi A4 dan kattaroq bo'lsa, ko'p sahifaga bo'linadi.
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+      });
+
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pageWidthMm = 210;
+      const pageHeightMm = 297;
+      const imgWidthMm = pageWidthMm;
+      const imgHeightMm = (img.height * imgWidthMm) / img.width;
+
+      if (imgHeightMm <= pageHeightMm) {
+        pdf.addImage(dataUrl, 'PNG', 0, 0, imgWidthMm, imgHeightMm);
+      } else {
+        // Multi-page: rasmni vertikal qismlarga bo'lib, har sahifaga 1 qism joylaymiz
+        let yOffsetMm = 0;
+        while (yOffsetMm < imgHeightMm) {
+          pdf.addImage(dataUrl, 'PNG', 0, -yOffsetMm, imgWidthMm, imgHeightMm);
+          yOffsetMm += pageHeightMm;
+          if (yOffsetMm < imgHeightMm) pdf.addPage();
+        }
+      }
+      pdf.save(`narxlar-${tenantSlug}-${date}.pdf`);
+      toast.success('PDF yuklab olindi');
+    } catch (err) {
+      console.error('Eksport xatosi:', err);
+      toast.error(exportFormat === 'pdf' ? 'PDF yaratishda xatolik' : 'Rasm yaratishda xatolik');
     } finally {
       setExporting(false);
     }
@@ -126,40 +168,92 @@ export const PriceListModal: React.FC<Props> = ({
       <div className="bg-slate-100 w-full max-w-6xl rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-screen sm:max-h-[95vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-white border-b border-slate-200">
-          <div className="min-w-0">
-            <h2 className="text-base font-bold text-slate-900 uppercase tracking-tight truncate">
-              Price list — mijoz uchun
-            </h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-              Xizmatlarni tanlang, eksport qiling
-            </p>
+        <div className="bg-white border-b border-slate-200">
+          <div className="flex items-center justify-between px-5 sm:px-6 py-4">
+            <div className="min-w-0">
+              <h2 className="text-base font-bold text-slate-900 uppercase tracking-tight truncate">
+                Price list — mijoz uchun
+              </h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                {activeTab === 'overview'
+                  ? 'Umumiy narxlar — xizmatlarni tanlang, eksport qiling'
+                  : "Buyurtma taklifi — mijoz so'roviga ko'ra narx hisoblang"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {branches.length > 1 && (
+                <div className="relative">
+                  <Building2 size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <select
+                    value={selectedBranchId}
+                    onChange={e => setSelectedBranchId(e.target.value)}
+                    className="h-9 pl-8 pr-3 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-orange-400"
+                  >
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <button
+                onClick={onClose}
+                className="w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {branches.length > 1 && (
-              <div className="relative">
-                <Building2 size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <select
-                  value={selectedBranchId}
-                  onChange={e => setSelectedBranchId(e.target.value)}
-                  className="h-9 pl-8 pr-3 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-orange-400"
-                >
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <button
-              onClick={onClose}
-              className="w-9 h-9 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500"
-            >
-              <X size={18} />
-            </button>
+
+          {/* Tab switcher */}
+          <div className="px-5 sm:px-6 pb-3">
+            <div className="inline-flex bg-slate-100 rounded-xl p-1">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  activeTab === 'overview'
+                    ? 'bg-white text-slate-800 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <FileText size={13} /> Umumiy narxlar
+              </button>
+              <button
+                onClick={() => setActiveTab('quote')}
+                className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  activeTab === 'quote'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <Calculator size={13} /> Buyurtma taklifi
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Body: chap panel (checkboxes) + preview */}
+        {/* Body — tab'ga ko'ra alohida ko'rinish */}
+        {activeTab === 'quote' ? (
+          <div className="flex-1 overflow-y-auto custom-scroll p-4 sm:p-6 bg-slate-100">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 size={28} className="text-orange-500 animate-spin" />
+              </div>
+            ) : tenant && branchInfo ? (
+              <QuoteBuilder
+                data={{
+                  tenant,
+                  branch: branchInfo,
+                  services: allServices,
+                  branding,
+                }}
+              />
+            ) : (
+              <div className="text-center py-20 text-slate-400">
+                <p className="text-sm font-bold">Yuklanmoqda...</p>
+              </div>
+            )}
+          </div>
+        ) : (
         <div className="flex-1 overflow-hidden flex flex-col lg:flex-row min-h-0">
 
           {/* Xizmat tanlash paneli */}
@@ -236,26 +330,43 @@ export const PriceListModal: React.FC<Props> = ({
             )}
           </div>
         </div>
+        )}
 
-        {/* Action bar — faqat Print va PNG */}
-        <div className="bg-white border-t border-slate-200 px-5 sm:px-6 py-3 flex items-center justify-end gap-2">
-          <button
-            onClick={handlePrint}
-            disabled={!hasSelection}
-            className="h-10 px-4 rounded-lg border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50 text-xs font-bold text-slate-700 uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Printer size={13} /> Print
-          </button>
-          <button
-            onClick={handleDownloadPng}
-            disabled={exporting || !hasSelection}
-            className="h-10 px-4 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {exporting
-              ? <Loader2 size={13} className="animate-spin" />
-              : <Download size={13} />} PNG yuklab olish
-          </button>
-        </div>
+        {/* Action bar — faqat "Umumiy narxlar" tab'da. "Buyurtma taklifi"da
+            QuoteBuilder'ning o'z yuklash tugmasi bor. */}
+        {activeTab === 'overview' && (
+          <div className="bg-white border-t border-slate-200 px-5 sm:px-6 py-3 flex items-center justify-end gap-2">
+            <button
+              onClick={handlePrint}
+              disabled={!hasSelection}
+              className="h-10 px-4 rounded-lg border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50 text-xs font-bold text-slate-700 uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Printer size={13} /> Print
+            </button>
+
+            {/* Format select + Yuklab olish — bitta kombinatsiya */}
+            <div className="flex h-10 rounded-lg overflow-hidden shadow-md shadow-orange-500/20">
+              <select
+                value={exportFormat}
+                onChange={e => setExportFormat(e.target.value as 'png' | 'pdf')}
+                disabled={exporting}
+                className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold uppercase tracking-wider px-3 border-r border-orange-700 focus:outline-none cursor-pointer disabled:opacity-60"
+              >
+                <option value="png">PNG</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <button
+                onClick={handleDownload}
+                disabled={exporting || !hasSelection}
+                className="px-4 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {exporting
+                  ? <Loader2 size={13} className="animate-spin" />
+                  : <Download size={13} />} Yuklab olish
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

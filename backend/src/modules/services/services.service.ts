@@ -104,6 +104,22 @@ export class ServicesService {
       orderBy: { createdAt: 'asc' },
     });
 
+    // Price list branding sozlamalari — admin Sozlamalar'da saqlangan.
+    // Tenant interceptor public route'da ishlamasligi sababli raw SQL bilan o'qiymiz.
+    let branding: any = null;
+    try {
+      const rows = await this.prisma.$queryRaw<Array<{ value: string }>>`
+        SELECT value FROM "SystemSetting"
+        WHERE "tenantId" = ${tenant.id} AND key = 'PRICE_LIST_BRANDING'
+        LIMIT 1
+      `;
+      if (rows.length > 0) {
+        branding = JSON.parse(rows[0].value);
+      }
+    } catch {
+      // Branding yo'q yoki noto'g'ri JSON — default rang'lar bilan ishlaymiz
+    }
+
     return {
       tenant: { name: tenant.name, slug: tenant.slug },
       branch: {
@@ -114,6 +130,7 @@ export class ServicesService {
       },
       branches: tenant.branches.map((b) => ({ id: b.id, name: b.name })),
       services,
+      branding,
     };
   }
 

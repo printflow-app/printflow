@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, Bell, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake, FileText, Image as ImageIcon } from 'lucide-react';
 import { PriceListModal } from '../components/PriceListModal';
+import { PriceListBrandingSection } from '../components/PriceListBrandingSection';
 import { ImageUpload } from '../components/ImageUpload';
 import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, branchesApi } from '../api';
 import { useRoles, usePaymentTypes, useExpenseTypes, useTaskColumns, useServices, useEmployees, useInvalidate } from '../hooks/queries';
@@ -1279,6 +1280,11 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {/* Services Catalog Section */}
       {(isAdmin || p.canViewServices || p.canAddService || p.canEditService || p.canDeleteService) && (
         <ServicesCatalogSection services={services} onRefresh={() => fetchData(true)} showStatus={showStatus} currentUser={currentUser} activeBranchId={activeBranchId} />
+      )}
+
+      {/* Narx Ro'yxati Brandingi */}
+      {(isAdmin || p.canManageServices) && (
+        <PriceListBrandingSection tenantSlug={currentUser?.tenant?.slug} activeBranchId={activeBranchId} />
       )}
 
       {/* Role Modal */}

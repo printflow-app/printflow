@@ -230,23 +230,15 @@ export class FinanceService implements OnApplicationBootstrap {
           where: { id: customerId },
           data: { totalPaid: { increment: Number(amount) } },
         });
-      }
-
-      // Agar kirim aniq topshiriqqa biriktirilgan bo'lsa — task.remainingAmount va
-      // task.depositAmount yangilanadi. Kanban shu sababli "eski qarz"ni emas,
-      // hozirgi mavjud qoldiqni ko'rsata oladi.
-      if (type === 'kirim' && taskId) {
-        const t = await tx.task.findUnique({
-          where: { id: taskId },
-          select: { remainingAmount: true, depositAmount: true },
-        });
-        if (t) {
-          const newRemaining = Math.max(0, Math.round(Number(t.remainingAmount || 0) - Number(amount)));
-          const newDeposit = Math.round(Number(t.depositAmount || 0) + Number(amount));
-          await tx.task.update({
-            where: { id: taskId },
-            data: { remainingAmount: newRemaining, depositAmount: newDeposit },
+        await this.syncCustomerTasksDebt(tx, customerId);
+      } else if (type === 'kirim' && taskId && !customerId) {
+        const t = await tx.task.findUnique({ where: { id: taskId }, select: { customerId: true } });
+        if (t?.customerId) {
+          await tx.customer.update({
+            where: { id: t.customerId },
+            data: { totalPaid: { increment: Number(amount) } },
           });
+          await this.syncCustomerTasksDebt(tx, t.customerId);
         }
       }
 
@@ -276,30 +268,60 @@ export class FinanceService implements OnApplicationBootstrap {
   }
 
   /**
+   * Deterministically synchronize depositAmount and remainingAmount across all active tasks
+   * of a customer based on their totalPaid balance.
+   */
+  private async syncCustomerTasksDebt(tx: any, customerId: string) {
+    if (!customerId) return;
+    const customer = await tx.customer.findUnique({
+      where: { id: customerId },
+      select: { totalPaid: true },
+    });
+    if (!customer) return;
+
+    // Barcha aktiv (arxivlanmagan) topshiriqlarni yaratilgan vaqti bo'yicha olamiz
+    const tasks = await tx.task.findMany({
+      where: { customerId, isArchived: false },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, totalAmount: true },
+    });
+
+    let availablePaid = Number(customer.totalPaid || 0);
+
+    for (const task of tasks) {
+      const taskTotal = Number(task.totalAmount || 0);
+      const allocatedDeposit = Math.min(taskTotal, availablePaid);
+      const remainingAmount = Math.max(0, Math.round(taskTotal - allocatedDeposit));
+
+      await tx.task.update({
+        where: { id: task.id },
+        data: {
+          depositAmount: Math.round(allocatedDeposit),
+          remainingAmount,
+        },
+      });
+
+      availablePaid = Math.max(0, availablePaid - allocatedDeposit);
+    }
+  }
+
+  /**
    * Revert the side effects of a transaction inside a Prisma tx.
    * Used by both delete and update flows (update = revert old, then apply new).
    */
   private async revertTransactionSideEffects(tx: any, t: any) {
-    if (t.type === 'kirim' && t.customerId) {
+    let cid = t.customerId;
+    if (!cid && t.taskId) {
+      const task = await tx.task.findUnique({ where: { id: t.taskId }, select: { customerId: true } });
+      if (task?.customerId) cid = task.customerId;
+    }
+
+    if (t.type === 'kirim' && cid) {
       await tx.customer.update({
-        where: { id: t.customerId },
+        where: { id: cid },
         data: { totalPaid: { decrement: Number(t.amount) } },
       });
-    }
-    if (t.type === 'kirim' && t.taskId) {
-      const task = await tx.task.findUnique({
-        where: { id: t.taskId },
-        select: { remainingAmount: true, depositAmount: true },
-      });
-      if (task) {
-        await tx.task.update({
-          where: { id: t.taskId },
-          data: {
-            remainingAmount: Math.round(Number(task.remainingAmount || 0) + Number(t.amount)),
-            depositAmount: Math.max(0, Math.round(Number(task.depositAmount || 0) - Number(t.amount))),
-          },
-        });
-      }
+      await this.syncCustomerTasksDebt(tx, cid);
     }
     if (t.type === 'chiqim' && t.employeeId && !t.vendorId) {
       await tx.employee.update({
@@ -317,26 +339,18 @@ export class FinanceService implements OnApplicationBootstrap {
     type: string; amount: number; customerId?: string | null;
     taskId?: string | null; employeeId?: string | null; vendorId?: string | null;
   }) {
-    if (t.type === 'kirim' && t.customerId) {
+    let cid = t.customerId;
+    if (!cid && t.taskId) {
+      const task = await tx.task.findUnique({ where: { id: t.taskId }, select: { customerId: true } });
+      if (task?.customerId) cid = task.customerId;
+    }
+
+    if (t.type === 'kirim' && cid) {
       await tx.customer.update({
-        where: { id: t.customerId },
+        where: { id: cid },
         data: { totalPaid: { increment: Number(t.amount) } },
       });
-    }
-    if (t.type === 'kirim' && t.taskId) {
-      const task = await tx.task.findUnique({
-        where: { id: t.taskId },
-        select: { remainingAmount: true, depositAmount: true },
-      });
-      if (task) {
-        await tx.task.update({
-          where: { id: t.taskId },
-          data: {
-            remainingAmount: Math.max(0, Math.round(Number(task.remainingAmount || 0) - Number(t.amount))),
-            depositAmount: Math.round(Number(task.depositAmount || 0) + Number(t.amount)),
-          },
-        });
-      }
+      await this.syncCustomerTasksDebt(tx, cid);
     }
     if (t.type === 'chiqim' && t.employeeId && !t.vendorId) {
       await tx.employee.update({
