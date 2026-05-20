@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Building2, Package, CreditCard, Users, Tag, Image, LogOut } from 'lucide-react';
+import { LayoutDashboard, Building2, Package, CreditCard, Users, Tag, Image, LogOut, ListChecks } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 interface NavGroup {
@@ -22,6 +22,12 @@ const NAV_GROUPS: NavGroup[] = [
       { path: '/payments',    icon: CreditCard, label: "To'lovlar" },
       { path: '/leads',       icon: Users,      label: "So'rovlar" },
       { path: '/promo-codes', icon: Tag,        label: 'Promo Kodlar' },
+    ],
+  },
+  {
+    label: 'Ish boshqaruvi',
+    items: [
+      { path: '/task-manager', icon: ListChecks, label: 'Task Menejer' },
     ],
   },
   {

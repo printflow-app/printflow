@@ -195,9 +195,9 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                     const state: string = part.state;
 
                     if (state === 'output-available') {
-                      if (toolName === 'createOrder') return <SuccessBadge key={toolCallId} text="✅ Buyurtma yaratildi" />;
-                      if (toolName === 'createService') return <SuccessBadge key={toolCallId} text="✅ Xizmat qo'shildi" />;
-                      if (toolName === 'createServiceOption') return <SuccessBadge key={toolCallId} text="✅ Optsiya saqlandi" />;
+                      if (toolName === 'createOrder') return <SuccessBadge key={toolCallId} text="Buyurtma yaratildi" />;
+                      if (toolName === 'createService') return <SuccessBadge key={toolCallId} text="Xizmat qo'shildi" />;
+                      if (toolName === 'createServiceOption') return <SuccessBadge key={toolCallId} text="Optsiya saqlandi" />;
                       return null;
                     }
 

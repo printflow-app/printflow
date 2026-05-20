@@ -75,21 +75,36 @@ export class KpiService {
     });
     const finalColumnId = columns.length ? columns[columns.length - 1].id : null;
 
+    // task'ni include qilmaymiz — kod uni o'qimaydi va Task'dagi bir nechta
+    // qatorda Prisma engine hal qila olmaydigan baytlar bor (Railway PG18'dan
+    // PG16'ga dump-restore vaqtida ba'zi text bayt-ketma-ketliklari napi
+    // string'ga o'tmaydi). Faqat zaruriy ustunlarni `select` qilamiz.
     const histories = await this.prisma.taskHistory.findMany({
       where: { createdAt: { gte: from, lte: to } },
-      include: { task: true },
+      select: {
+        id: true, employeeId: true, taskId: true, action: true, createdAt: true,
+      },
     });
 
+    // Tasks — KPI uchun faqat bir nechta ustun kerak. `description`, `notes`
+    // kabi tekst maydonlar olib tashlandi.
     const tasks = await this.prisma.task.findMany({
       where: { updatedAt: { gte: from, lte: to } },
+      select: {
+        id: true, assignees: true, columnId: true, createdAt: true, updatedAt: true,
+      },
     });
 
     const attendance = await this.prisma.attendanceRecord.findMany({
       where: { createdAt: { gte: from, lte: to } },
+      select: {
+        id: true, employeeId: true, lateMinutes: true, checkIn: true, createdAt: true,
+      },
     });
 
     const activeTasks = await this.prisma.task.findMany({
       where: finalColumnId ? { columnId: { not: finalColumnId } } : {},
+      select: { id: true, assignees: true, columnId: true },
     });
 
     const rows: KpiRow[] = employees.map((emp) => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart3, TrendingUp, TrendingDown, Users, ShoppingBag,
   Minus, RefreshCw, Calendar, ChevronDown,
-  Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2, Download,
+  Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2, Download, X,
 } from 'lucide-react';
 import { exportMultiSheetXlsx, ExportSheet } from '../utils/exportToXlsx';
 import {
@@ -171,7 +171,7 @@ const ServiceStats = ({ services }: { services: any[] }) => {
           <select
             value={selectedId}
             onChange={e => setSelectedId(e.target.value)}
-            className="appearance-none pl-4 pr-10 py-2 text-xs font-bold border-2 border-slate-200 rounded-xl outline-none focus:border-orange-400 bg-white text-slate-700 min-w-[200px] cursor-pointer"
+            className="select-minimal text-xs font-bold min-w-[200px]"
           >
             {services.map(s => (
               <option key={s.serviceName} value={s.serviceName}>{s.serviceName}</option>
@@ -660,11 +660,10 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             <>
               <div className="relative">
                 <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
-                  className="appearance-none pl-3 pr-8 py-1.5 text-xs font-bold border border-slate-200 rounded-lg outline-none focus:border-orange-400 bg-white">
+                  className="select-minimal h-9 text-xs font-bold">
                   <option value="">Barcha bo'limlar</option>
                   {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
-                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
               <button
                 type="button"
@@ -928,7 +927,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 <select
                   value={costingTask?.id || ''}
                   onChange={(e) => handleCostingSelect(e.target.value)}
-                  className="w-full h-11 pl-4 pr-10 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all appearance-none cursor-pointer"
+                  className="select-minimal h-11 font-bold"
                 >
                   <option value="" className="font-sans">--- Buyurtmani tanlang (Joriy oy) ---</option>
                   {allTasks
@@ -970,7 +969,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           {/* Error */}
           {costingError && (
             <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
-              <span className="text-rose-500 font-bold text-sm">✕</span>
+              <X size={16} strokeWidth={2.5} className="text-rose-500" />
               <p className="text-sm font-bold text-rose-600">{costingError}</p>
             </div>
           )}

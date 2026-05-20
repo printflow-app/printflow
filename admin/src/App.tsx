@@ -11,6 +11,7 @@ import Payments from './pages/Payments';
 import Leads from './pages/Leads';
 import Logos from './pages/Logos';
 import PromoCodes from './pages/PromoCodes';
+import TaskManager from './pages/TaskManager';
 
 // =============================================
 // Super Admin entry — auth gate + router
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="/payments" element={<Payments />} />
               <Route path="/leads" element={<Leads />} />
               <Route path="/promo-codes" element={<PromoCodes />} />
+              <Route path="/task-manager" element={<TaskManager />} />
               <Route path="/logos" element={<Logos />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Check, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, X, Check, Trash2, AlertCircle, Flame, Star } from 'lucide-react';
 import { plansApi } from '../api';
 import { usePlans, useInvalidate } from '../hooks/queries';
 import { ALLOWED_MODULES, defaultPlanForm as defaultForm } from '../shared/constants';
@@ -74,7 +74,11 @@ function Plans() {
           <div key={p.id} className="stat-card" style={{ cursor: 'pointer', border: p.isPopular ? '2px solid var(--primary)' : undefined }} onClick={() => openEdit(p)}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <div className="stat-title">{p.displayName}</div>
-              {p.isPopular && <span className="badge active">🔥 OMMABOP</span>}
+              {p.isPopular && (
+                <span className="badge active" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Flame size={11} strokeWidth={2.5} /> OMMABOP
+                </span>
+              )}
             </div>
             <div style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 4 }}>{p.price3m?.toLocaleString()} UZS <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/ 3 oy</span></div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Xodimlar: {p.maxEmployees === 0 ? 'Cheksiz' : p.maxEmployees} ta</div>
@@ -120,7 +124,9 @@ function Plans() {
               <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 24, border: '1px solid #e2e8f0', marginTop: 10 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
                   <input type="checkbox" checked={form.isPopular} onChange={e => setForm({ ...form, isPopular: e.target.checked })} style={{ width: 18, height: 18, accentColor: '#FF6B00' }} />
-                  <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>🔥 ENG OMMABOP REJA (HIGHLIGHT)</span>
+                  <span style={{ fontWeight: 800, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Star size={14} strokeWidth={2.5} fill="#FF6B00" color="#FF6B00" /> ENG OMMABOP REJA (HIGHLIGHT)
+                  </span>
                 </label>
               </div>
 
@@ -129,6 +135,7 @@ function Plans() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 12 }}>
                   {ALLOWED_MODULES.map(mod => {
                     const active = form.allowedModules.includes(mod.key);
+                    const ModIcon = mod.icon;
                     return (
                       <div
                         key={mod.key}
@@ -141,7 +148,14 @@ function Plans() {
                           boxShadow: active ? '0 4px 10px rgba(255,107,0,0.1)' : 'none',
                         }}
                       >
-                        <div style={{ fontSize: '1.5rem' }}>{mod.icon}</div>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: active ? 'rgba(255,107,0,0.12)' : '#f1f5f9',
+                          color: active ? '#FF6B00' : '#64748b',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }}>
+                          <ModIcon size={18} strokeWidth={2.2} />
+                        </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '0.8rem', fontWeight: 800, color: active ? '#FF6B00' : '#0f172a', lineHeight: 1.1 }}>{mod.label}</div>
                           <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: 2 }}>{mod.desc}</div>
@@ -170,7 +184,7 @@ function Plans() {
         {showDeleteConfirm && (
           <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: 420, textAlign: 'center', padding: 32 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+              <AlertCircle size={48} color="#f59e0b" style={{ margin: '0 auto 16px' }} />
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>Tarifni o'chirish</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 24 }}>
                 <strong>{editing?.displayName}</strong> tarifini o'chirmoqchisiz. Unga ulangan workspacelar ta'sirlanishi mumkin!

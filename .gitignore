@@ -4,3 +4,13 @@ build/
 .env
 .DS_Store
 *.log
+
+# DB dumps va backup'lar — git'ga commit qilinmaydi (GitHub'da 100 MB limit)
+# Root'dagi *.sql faqat (backend/prisma/sql/*.sql loyiha fayllari saqlanadi).
+/*.sql
+*.dump
+*.bak
+railway_backup*
+pg_dump_err.log
+restore.log
+kpi_test.json

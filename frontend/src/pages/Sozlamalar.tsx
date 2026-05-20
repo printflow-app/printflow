@@ -368,7 +368,13 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const handleUpdateColumn = async (id: string) => {
     if (!editColTitle) return;
     try {
-      await tasksApi.updateColumn(id, { title: editColTitle });
+      // branchId — backend ustun shu filialga tegishlimi tekshiradi.
+      // Aktiv filtr bo'lmasa (Barcha filiallar), ustunning O'Z branchId'ini
+      // topib yuboramiz — aks holda backend `branchId IS NULL` ni qidirib
+      // topa olmaydi va "Bosqich topilmadi" xatosini qaytaradi.
+      const col = (kanbanColumns as any[]).find((c: any) => c.id === id);
+      const branchId = activeBranchId || col?.branchId || undefined;
+      await tasksApi.updateColumn(id, { title: editColTitle, branchId });
       setEditingColId(null);
       fetchData(true);
     } catch (err) {
@@ -396,7 +402,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       icon: <Wallet size={15} />,
       permissions: {
         canViewFinance:        { label: "Sahifaga kirish — tranzaksiyalar ro'yxati",  detail: "Menyu'da 'Kassa' bo'limi ko'rinadi. Kirim va chiqim tranzaksiyalari sanasi, summasi, turi bilan ro'yxati ko'rsatiladi. Sana bo'yicha filtrlash va qidirish ishlaydi." },
-        canViewTotalBalance:   { label: "Umumiy kassa balansini ko'rish",             detail: "Sahifa yuqorisidagi 'Jami Balans' kartochkasi ko'rinadi. Ruxsat yo'q bo'lsa summa '★★★★★' bilan yashiriladi va faqat o'z tranzaksiyalarini ko'rish mumkin bo'ladi." },
+        canViewTotalBalance:   { label: "Umumiy kassa balansini ko'rish",             detail: "Sahifa yuqorisidagi 'Jami Balans' kartochkasi ko'rinadi. Ruxsat yo'q bo'lsa summa '•••••' bilan yashiriladi va faqat o'z tranzaksiyalarini ko'rish mumkin bo'ladi." },
         canAddIncome:          { label: "Kirim (tushum) qo'shish",                   detail: "'+ Kirim' tugmasi faol bo'ladi. Mijozdan to'lov qabul qilish, buyurtma bilan bog'lash, to'lov turini tanlash — bularning barchasi kiritiladi." },
         canAddExpense:         { label: "Chiqim (xarajat) qo'shish",                 detail: "'+ Chiqim' tugmasi faol bo'ladi. Xarajat turi, summa, izoh va to'lov usuli bilan chiqim kiritish. Xodim maoshi uchun esa alohida 'Maosh' turi mavjud." },
         canExportFinance:      { label: "Excel'ga eksport qilish",                   detail: "Kassa sahifasida 'EKSPORT' tugmasi ko'rinadi. Joriy filtr (sana oralig'i, qidiruv) bo'yicha barcha tranzaksiyalarni .xlsx faylga yuklab olish imkoni." },
@@ -948,7 +954,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                                     <button onClick={() => { setEditingColId(col.id); setEditColTitle(col.title); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-orange-500 hover:border-orange-200 border border-slate-100 flex items-center justify-center transition-all">
                                        <Edit3 size={12}/>
                                     </button>
-                                    <button onClick={() => { setConfirmModal({ isOpen: true, title: "Bosqichni o'chirish", message: "${col.title} bosqichi o'chirilsinmi?", onConfirm: () => { tasksApi.deleteColumn(col.id, activeBranchId).then(() => fetchData(true)); setConfirmModal(null); } }); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:border-rose-200 border border-slate-100 flex items-center justify-center transition-all">
+                                    <button onClick={() => { setConfirmModal({ isOpen: true, title: "Bosqichni o'chirish", message: "${col.title} bosqichi o'chirilsinmi?", onConfirm: () => { tasksApi.deleteColumn(col.id, activeBranchId || col.branchId).then(() => fetchData(true)); setConfirmModal(null); } }); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:border-rose-200 border border-slate-100 flex items-center justify-center transition-all">
                                        <Trash2 size={12}/>
                                     </button>
                                  </div>
@@ -1374,6 +1380,14 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isOptionOpen, setIsOptionOpen] = useState(false);
   const [isPriceListOpen, setIsPriceListOpen] = useState(false);
+
+  // Dashboard global Ctrl+P listener'i 'pf:open-price-list' eventini yuboradi —
+  // shu joyda ushlab Price List modalni ochamiz.
+  useEffect(() => {
+    const onOpen = () => setIsPriceListOpen(true);
+    window.addEventListener('pf:open-price-list', onOpen);
+    return () => window.removeEventListener('pf:open-price-list', onOpen);
+  }, []);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -1651,7 +1665,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                           colorClass="text-violet-600"
                           className="h-9 px-3 w-36 text-sm font-bold border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white"
                         />
-                        <select value={editSvcForm.unit} onChange={e => setEditSvcForm({ ...editSvcForm, unit: e.target.value })} className="h-9 px-3 text-sm font-bold border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white">
+                        <select value={editSvcForm.unit} onChange={e => setEditSvcForm({ ...editSvcForm, unit: e.target.value })} className="select-minimal h-9 font-bold">
                           {['dona', 'metr', 'sm', 'm2', 'kg', 'litr', 'soat', 'rulon', 'varaq'].map(u => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </div>

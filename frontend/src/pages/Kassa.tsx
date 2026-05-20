@@ -27,19 +27,20 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     || !!p.canManageFinance;
 
   const [page, setPage] = useState(1);
-  const today = new Date().toLocaleDateString('en-CA');
-  // Default — oxirgi 1 oy. "Bugun" filtri bosilgandagina bugungi kun ko'rinadi.
-  const oneMonthAgo = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    return d.toLocaleDateString('en-CA');
+  // Default — joriy oyning 1-sanasidan oxirgi sanasigacha (turg'un oy oralig'i,
+  // sirpanuvchi 30 kun emas). User filtrni qo'lda o'zgartirib qidirishi mumkin.
+  const { monthStart, monthEnd } = (() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { monthStart: start.toLocaleDateString('en-CA'), monthEnd: end.toLocaleDateString('en-CA') };
   })();
   // "Applied" filtr — so'rovlarga ulashadi. Faqat lupa bosilganda yangilanadi.
-  const [startDate, setStartDate] = useState(oneMonthAgo);
-  const [endDate, setEndDate] = useState(today);
+  const [startDate, setStartDate] = useState(monthStart);
+  const [endDate, setEndDate] = useState(monthEnd);
   // "Draft" input qiymatlari — har bosishda yangilanadi, lekin so'rov yubormaydi.
-  const [draftStart, setDraftStart] = useState(oneMonthAgo);
-  const [draftEnd, setDraftEnd] = useState(today);
+  const [draftStart, setDraftStart] = useState(monthStart);
+  const [draftEnd, setDraftEnd] = useState(monthEnd);
   const [departmentId, setDepartmentId] = useState('');
   const [vendorFilterId, setVendorFilterId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -442,7 +443,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             <select
               value={departmentId}
               onChange={e => { setDepartmentId(e.target.value); setPage(1); }}
-              className="text-[10px] font-bold border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-orange-400 bg-white text-slate-700"
+              className="select-minimal h-9 text-[10px] font-bold"
             >
               <option value="">Barcha bo'limlar</option>
               {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -453,7 +454,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             <select
               value={vendorFilterId}
               onChange={e => { setVendorFilterId(e.target.value); setPage(1); }}
-              className="text-[10px] font-bold border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-orange-400 bg-white text-slate-700"
+              className="select-minimal h-9 text-[10px] font-bold"
               title="Ma'lum hamkorga oid kirim/chiqimlar"
             >
               <option value="">Barcha hamkorlar</option>
@@ -643,7 +644,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     serviceType: selectedTask ? (selectedTask.orderName || selectedTask.title) : '',
                   }));
                 }}
-                className="select-minimal font-bold text-orange-700 h-11 border-orange-100 bg-orange-50/30"
+                className="select-minimal h-11 font-bold text-orange-700"
               >
                 <option value="">— Buyurtmani tanlang (ixtiyoriy) —</option>
                 {customerTasks

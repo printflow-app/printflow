@@ -627,7 +627,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       <Modal
         isOpen={isStockOpOpen}
         onClose={() => setIsStockOpOpen(false)}
-        title={stockOp === 'kirim' ? '📦 Kirim' : stockOp === 'chiqim' ? '📤 Chiqim' : '🚫 Brak'}
+        title={stockOp === 'kirim' ? 'Kirim' : stockOp === 'chiqim' ? 'Chiqim' : 'Brak'}
         type={stockOp === 'brak' ? 'danger' : stockOp === 'chiqim' ? 'warning' : 'default'}
       >
         <form onSubmit={handleStockOp} className="space-y-5">

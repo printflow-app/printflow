@@ -228,7 +228,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
                   <select
                     value={serviceUnit}
                     onChange={(e) => setServiceUnit(e.target.value)}
-                    className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                    className="select-minimal mt-1 h-11 font-bold"
                   >
                     <option value="dona">dona</option>
                     <option value="m2">m²</option>

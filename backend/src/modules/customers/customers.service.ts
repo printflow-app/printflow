@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // NOTE: `as any` casts on new Prisma models/fields (CustomerContact, isArchived)
@@ -6,47 +6,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 // the dev server is running. The schema + DB are correct; casts are safe.
 
 @Injectable()
-export class CustomersService implements OnApplicationBootstrap {
+export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  // Runs once on server start — fixes any customers where totalDebt was
-  // incorrectly decremented by kassa payments (forExistingDebt bug).
-  async onApplicationBootstrap() {
-    try {
-      const customers = await this.prisma.customer.findMany({
-        select: { id: true, totalDebt: true, tenantId: true },
-      });
-      for (const c of customers) {
-        const agg = await this.prisma.task.aggregate({
-          where: { customerId: c.id },
-          _sum: { totalAmount: true },
-        });
-        const correct = agg._sum.totalAmount ?? 0;
-        if (Math.abs(c.totalDebt - correct) > 0.01) {
-          await this.prisma.customer.update({
-            where: { id: c.id },
-            data: { totalDebt: correct },
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Customer debt recalc on startup failed:', e);
-    }
-  }
-
-  async findAll(branchId?: string, includeDetails = false) {
-    const include: any = {
-      contacts: { orderBy: { isPrimary: 'desc' } },
-    };
-
-    if (includeDetails) {
-      include.transactions = {
-        include: { paymentType: true },
-        orderBy: { date: 'desc' },
-      };
-      include.tasks = { where: { isArchived: false } as any };
-    }
-
+  // `includeDetails` is kept for backwards compat with old clients, but no
+  // longer hydrates tasks/transactions in the list payload — those are loaded
+  // on-demand via /customers/:id/details when a row is expanded. Returning
+  // them per-customer in the list caused multi-MB payloads on Railway/Vercel.
+  async findAll(branchId?: string, _includeDetails = false) {
     return this.prisma.customer.findMany({
       where:
         branchId === '__main__'
@@ -55,8 +22,33 @@ export class CustomersService implements OnApplicationBootstrap {
           ? { branchId }
           : undefined,
       orderBy: { updatedAt: 'desc' },
-      include,
+      include: {
+        contacts: { orderBy: { isPrimary: 'desc' } },
+      },
     });
+  }
+
+  // Lazy-loaded expanded row payload — recent tasks + recent transactions.
+  // Caps applied because some customers have hundreds of records and the
+  // expanded panel only ever shows the most recent ones.
+  async getDetails(id: string) {
+    const [tasks, transactions] = await Promise.all([
+      this.prisma.task.findMany({
+        where: { customerId: id, isArchived: false } as any,
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true, title: true, totalAmount: true, createdAt: true,
+        },
+      }),
+      this.prisma.transaction.findMany({
+        where: { customerId: id },
+        orderBy: { date: 'desc' },
+        take: 50,
+        include: { paymentType: { select: { name: true } } },
+      }),
+    ]);
+    return { tasks, transactions };
   }
 
   async findOne(id: string) {

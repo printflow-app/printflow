@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Plus, X } from 'lucide-react';
+import { Building2, Plus, X, AlertTriangle, Clock, Calendar, Trash2 } from 'lucide-react';
 import { tenantsApi } from '../api';
 import { useUI } from '../ui';
 import { useTenants, usePlans, useInvalidate } from '../hooks/queries';
@@ -154,11 +154,15 @@ function Tenants() {
               <div style={{ padding: '10px 18px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   {expDate ? (
-                    <span style={{ fontSize: '10px', color: isExpiringSoon ? '#f59e0b' : '#94a3b8', fontWeight: 700 }}>
-                      {isExpiringSoon ? '⚠ ' : ''}{t.status === 'TRIAL' ? '⏱ Trial: ' : '📅 '}{new Date(expDate).toLocaleDateString('uz-UZ')}
+                    <span style={{ fontSize: '10px', color: isExpiringSoon ? '#f59e0b' : '#94a3b8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {isExpiringSoon && <AlertTriangle size={11} strokeWidth={2.5} />}
+                      {t.status === 'TRIAL' ? <Clock size={11} strokeWidth={2.5} /> : <Calendar size={11} strokeWidth={2.5} />}
+                      {t.status === 'TRIAL' ? 'Trial: ' : ''}{new Date(expDate).toLocaleDateString('uz-UZ')}
                     </span>
                   ) : (
-                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>📅 {new Date(t.createdAt).toLocaleDateString('uz-UZ')}</span>
+                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Calendar size={11} strokeWidth={2.5} /> {new Date(t.createdAt).toLocaleDateString('uz-UZ')}
+                    </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 5 }}>
@@ -175,7 +179,9 @@ function Tenants() {
                     if (!ok) return;
                     try { await tenantsApi.delete(t.id); toast('Workspace o\'chirildi', 'success'); load(); }
                     catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
-                  }} style={{ padding: '5px 9px', fontSize: '10px', fontWeight: 900, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, cursor: 'pointer', color: '#ef4444', fontFamily: 'inherit' }}>✕</button>
+                  }} style={{ padding: '5px 9px', fontSize: '10px', fontWeight: 900, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, cursor: 'pointer', color: '#ef4444', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center' }}>
+                    <Trash2 size={12} strokeWidth={2.5} />
+                  </button>
                 </div>
               </div>
             </div>

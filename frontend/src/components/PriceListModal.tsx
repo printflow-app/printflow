@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { toast } from 'react-toastify';
@@ -163,9 +164,15 @@ export const PriceListModal: React.FC<Props> = ({
   const allChecked = allServices.length > 0 && selectedIds.size === allServices.length;
   const hasSelection = filteredData?.services.length;
 
-  return (
-    <div className="fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-slate-100 w-full max-w-6xl rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-screen sm:max-h-[95vh]">
+  // Modalni document.body'ga portallaymiz — Dashboard daraxti ichidagi
+  // backdrop-filter / overflow / transform xususiyatlari `position: fixed`
+  // qoplama oralig'ini buzmasligi uchun. 100dvh — mobile URL bar bilan to'g'ri ishlash.
+  return createPortal(
+    <div
+      className="fixed top-0 left-0 right-0 bottom-0 z-[1000] bg-slate-900/70 backdrop-blur-md flex items-stretch sm:items-center justify-center p-0 sm:p-4"
+      style={{ height: '100dvh', width: '100vw' }}
+    >
+      <div className="relative bg-slate-100 w-full max-w-6xl rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-screen sm:max-h-[95vh] animate-slide-up">
 
         {/* Header */}
         <div className="bg-white border-b border-slate-200">
@@ -183,11 +190,11 @@ export const PriceListModal: React.FC<Props> = ({
             <div className="flex items-center gap-2">
               {branches.length > 1 && (
                 <div className="relative">
-                  <Building2 size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <Building2 size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
                   <select
                     value={selectedBranchId}
                     onChange={e => setSelectedBranchId(e.target.value)}
-                    className="h-9 pl-8 pr-3 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-orange-400"
+                    className="select-minimal h-9 pl-8 text-xs font-bold"
                   >
                     {branches.map(b => (
                       <option key={b.id} value={b.id}>{b.name}</option>
@@ -368,6 +375,7 @@ export const PriceListModal: React.FC<Props> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

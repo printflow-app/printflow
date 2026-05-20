@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Search, UserPlus, CheckCircle2, Clock,
+  Plus, Search, UserPlus, CheckCircle2, Clock, X,
   Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle,
   Users, AlertTriangle, ExternalLink, Package, Building2,
   Archive, ArchiveRestore, Handshake, AlertOctagon, Download
@@ -946,8 +946,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors text-xs font-bold"
-            >✕</button>
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors flex items-center"
+              title="Tozalash"
+            ><X size={12} strokeWidth={2.5}/></button>
           )}
         </div>
 

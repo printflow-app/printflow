@@ -98,10 +98,10 @@ function TenantDetailsModal({ tenant, plans, onClose, onSaved, toast }: {
               <label style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', display: 'block', marginBottom: 6 }}>Status</label>
               <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
                 style={{ width: '100%', height: 40, border: '1px solid #e2e8f0', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: '12px', fontWeight: 700, background: '#fff', outline: 'none', cursor: 'pointer' }}>
-                <option value="ACTIVE">✅ Faol (ACTIVE)</option>
-                <option value="TRIAL">🔵 Trial</option>
-                <option value="EXPIRED">❌ Muddati tugagan</option>
-                <option value="PENDING_PAYMENT">⏳ To'lov kutilmoqda</option>
+                <option value="ACTIVE">Faol (ACTIVE)</option>
+                <option value="TRIAL">Trial</option>
+                <option value="EXPIRED">Muddati tugagan</option>
+                <option value="PENDING_PAYMENT">To'lov kutilmoqda</option>
               </select>
             </div>
 
@@ -147,7 +147,7 @@ function TenantDetailsModal({ tenant, plans, onClose, onSaved, toast }: {
 
           <button onClick={handleSave} disabled={saving}
             style={{ width: '100%', height: 42, background: saving ? '#94a3b8' : '#FF6B00', color: '#fff', border: 'none', borderRadius: 10, fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxShadow: saving ? 'none' : '0 4px 12px rgba(255,107,0,0.25)', transition: 'all 0.2s' }}>
-            {saving ? 'SAQLANMOQDA...' : '✓ SAQLASH'}
+            {saving ? 'SAQLANMOQDA...' : 'SAQLASH'}
           </button>
         </div>
 

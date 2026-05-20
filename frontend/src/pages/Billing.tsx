@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck, Tag, Gift } from 'lucide-react';
+import { AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck, Tag, Gift, Flame } from 'lucide-react';
 import { billingApi } from '../api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -240,8 +240,8 @@ export default function Billing() {
                   className={`relative bg-white border rounded-2xl p-5 sm:p-8 flex flex-col transition-all duration-300 hover:shadow-xl ${plan.isPopular ? 'border-[#FF6B00] shadow-xl shadow-orange-500/10' : 'border-slate-200 shadow-sm'}`}
                 >
                   {plan.isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF6B00] text-white text-[9px] font-bold uppercase tracking-widest px-4 py-1 rounded-full shadow-lg">
-                      🔥 Eng ommabop
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF6B00] text-white text-[9px] font-bold uppercase tracking-widest px-4 py-1 rounded-full shadow-lg flex items-center gap-1.5">
+                      <Flame size={11} strokeWidth={2.5} /> Eng ommabop
                     </div>
                   )}
                   

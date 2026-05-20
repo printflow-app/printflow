@@ -498,7 +498,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                           <div style={{ fontSize: 8, fontWeight: 900, color: '#1e293b' }}>{c.amount}</div>
-                          <div style={{ fontSize: 7, fontWeight: 700, color: c.debt ? '#ef4444' : '#10b981' }}>{c.debt ? '⚠ Qarzdor' : '✓ Toza'}</div>
+                          <div style={{ fontSize: 7, fontWeight: 700, color: c.debt ? '#ef4444' : '#10b981' }}>{c.debt ? 'Qarzdor' : 'Toza'}</div>
                         </div>
                       </div>
                     ))}
@@ -633,7 +633,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                     boxShadow: plan.isPopular ? '0 20px 25px -5px rgba(255,107,0,0.15), 0 10px 10px -5px rgba(255,107,0,0.06)' : '0 2px 12px rgba(0,0,0,0.06)',
                     borderRadius: 16, padding: 'clamp(20px, 5vw, 32px)', position: 'relative', transition: 'transform 0.3s',
                   }}>
-                    {plan.isPopular && <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#FF6B00', color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '4px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1 }}>🔥 Eng ommabop</div>}
+                    {plan.isPopular && <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#FF6B00', color: '#fff', fontSize: '0.65rem', fontWeight: 900, padding: '4px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1 }}>Eng ommabop</div>}
                     <h3 style={{ color: '#0f172a', fontSize: 'clamp(1.1rem, 2vw, 1.25rem)', fontWeight: 800, marginBottom: 4 }}>{plan.displayName}</h3>
                     <p style={{ color: '#64748b', fontSize: 'clamp(0.8rem, 1.5vw, 0.85rem)', marginBottom: 20 }}>{plan.description}</p>
                     <div style={{ color: '#0f172a', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 900, marginBottom: 4 }}>{price.toLocaleString()} <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>UZS</span></div>

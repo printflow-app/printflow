@@ -81,6 +81,12 @@ export class CustomersController {
     return this.customersService.getOrderHistory(id);
   }
 
+  // Expanded-row payload (lazy-loaded) — tasks + transactions
+  @Get(':id/details')
+  getDetails(@Param('id') id: string) {
+    return this.customersService.getDetails(id);
+  }
+
   // Recalculate totalDebt for all customers from actual task amounts
   @Post('fix-debts')
   fixDebts(@Req() req: any) {

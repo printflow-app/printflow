@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
 import { settingsApi } from '../api';
 import { useTenants, useTenantStats } from '../hooks/queries';
@@ -50,8 +51,8 @@ function Dashboard() {
       {/* Global Feature Toggles */}
       <div style={{ background: '#fff', borderRadius: 16, padding: '18px 22px', border: '1px solid #f1f5f9', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: aiCopilotEnabled ? 'linear-gradient(135deg,#FF6B00,#ff8533)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, transition: 'all 0.3s' }}>
-            <span style={{ filter: aiCopilotEnabled ? 'none' : 'grayscale(1)', opacity: aiCopilotEnabled ? 1 : 0.5 }}>🤖</span>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: aiCopilotEnabled ? 'linear-gradient(135deg,#FF6B00,#ff8533)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', color: aiCopilotEnabled ? '#fff' : '#94a3b8' }}>
+            <Sparkles size={20} strokeWidth={2.2} />
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.2px' }}>AI Copilot (Global)</div>

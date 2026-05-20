@@ -76,4 +76,32 @@ export const platformApi = {
   setClientLogos: (logos: string[]) => api.post('/super-admin/tenants/platform-settings/client-logos', { logos }),
 };
 
+export const taskManagerApi = {
+  listFunnels: () => api.get('/super-admin/task-manager/funnels'),
+  createFunnel: (data: { name: string; color?: string }) =>
+    api.post('/super-admin/task-manager/funnels', data),
+  updateFunnel: (id: string, data: { name?: string; color?: string; sortOrder?: number }) =>
+    api.put(`/super-admin/task-manager/funnels/${id}`, data),
+  deleteFunnel: (id: string) => api.delete(`/super-admin/task-manager/funnels/${id}`),
+
+  createTask: (data: {
+    funnelId: string;
+    title: string;
+    description?: string;
+    deadlineAt?: string | null;
+    status?: string;
+  }) => api.post('/super-admin/task-manager/tasks', data),
+  updateTask: (
+    id: string,
+    data: {
+      title?: string;
+      description?: string;
+      deadlineAt?: string | null;
+      status?: string;
+      funnelId?: string;
+    },
+  ) => api.put(`/super-admin/task-manager/tasks/${id}`, data),
+  deleteTask: (id: string) => api.delete(`/super-admin/task-manager/tasks/${id}`),
+};
+
 export default api;

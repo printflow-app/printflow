@@ -3,6 +3,13 @@
 // Extracted from the original App.tsx monolith.
 // =============================================
 
+import {
+  Wallet, TrendingUp, BarChart3, ClipboardList, UserSquare2, Users,
+  ShieldCheck, PackageOpen, Clock, Handshake, Settings, Building2,
+  CreditCard, Sparkles,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
 export const STATUS_COLORS: Record<string, string> = {
   TRIAL: '#3b82f6',
   ACTIVE: '#10b981',
@@ -33,21 +40,22 @@ export const getActiveModules = (t: any) =>
   ].filter(Boolean).length;
 
 // ========== UNIFIED PAGE & MODULE ACCESS ==========
-export const ALLOWED_MODULES = [
-  { key: 'finance',       label: 'Kassa (Moliya)',      icon: '💰', desc: 'Tranzaksiyalar va kassa' },
-  { key: 'statistics',    label: 'Statistika',         icon: '📈', desc: 'Tahliliy grafiklar' },
-  { key: 'reports',       label: 'Hisobotlar',         icon: '📊', desc: 'KPI va chuqur tahlillar' },
-  { key: 'kanban',        label: 'Kanban (Xizmatlar)',  icon: '📋', desc: 'Buyurtmalar ish oqimi' },
-  { key: 'customers',     label: 'Mijozlar bazasi',     icon: '👥', desc: 'CRM va mijozlar hisobi' },
-  { key: 'employees',     label: 'Xodimlar',           icon: '👨‍🔧', desc: 'Xodimlar va rollar' },
-  { key: 'administration', label: 'Ma\'muriyat',        icon: '🛡️', desc: 'Tizim nazorati' },
-  { key: 'inventory',     label: 'Ombor',              icon: '📦', desc: 'Materiallar va stok' },
-  { key: 'attendance',    label: 'Davomat',            icon: '🕐', desc: 'Keldi-ketdi nazorati' },
-  { key: 'partners',      label: 'Hamkorlar',          icon: '🤝', desc: 'Vendor va hamkorlar' },
-  { key: 'settings',      label: 'Tizim sozlamalari',   icon: '⚙️', desc: 'Tizim konfiguratsiyasi' },
-  { key: 'branches',      label: 'Filiallar',          icon: '🏢', desc: 'Filiallar boshqaruvi' },
-  { key: 'subscriptions', label: 'Obuna va to\'lovlar', icon: '💳', desc: 'Billing va tariflar' },
-  { key: 'ai_chat',       label: 'AI Copilot',         icon: '🤖', desc: 'AI chatbot yordamchisi' },
+// `icon` — Lucide component (rendered by callers as <mod.icon size={...} />)
+export const ALLOWED_MODULES: { key: string; label: string; icon: LucideIcon; desc: string }[] = [
+  { key: 'finance',       label: 'Kassa (Moliya)',      icon: Wallet,        desc: 'Tranzaksiyalar va kassa' },
+  { key: 'statistics',    label: 'Statistika',          icon: TrendingUp,    desc: 'Tahliliy grafiklar' },
+  { key: 'reports',       label: 'Hisobotlar',          icon: BarChart3,     desc: 'KPI va chuqur tahlillar' },
+  { key: 'kanban',        label: 'Kanban (Xizmatlar)',  icon: ClipboardList, desc: 'Buyurtmalar ish oqimi' },
+  { key: 'customers',     label: 'Mijozlar bazasi',     icon: UserSquare2,   desc: 'CRM va mijozlar hisobi' },
+  { key: 'employees',     label: 'Xodimlar',            icon: Users,         desc: 'Xodimlar va rollar' },
+  { key: 'administration', label: 'Ma\'muriyat',        icon: ShieldCheck,   desc: 'Tizim nazorati' },
+  { key: 'inventory',     label: 'Ombor',               icon: PackageOpen,   desc: 'Materiallar va stok' },
+  { key: 'attendance',    label: 'Davomat',             icon: Clock,         desc: 'Keldi-ketdi nazorati' },
+  { key: 'partners',      label: 'Hamkorlar',           icon: Handshake,     desc: 'Vendor va hamkorlar' },
+  { key: 'settings',      label: 'Tizim sozlamalari',   icon: Settings,      desc: 'Tizim konfiguratsiyasi' },
+  { key: 'branches',      label: 'Filiallar',           icon: Building2,     desc: 'Filiallar boshqaruvi' },
+  { key: 'subscriptions', label: 'Obuna va to\'lovlar', icon: CreditCard,    desc: 'Billing va tariflar' },
+  { key: 'ai_chat',       label: 'AI Copilot',          icon: Sparkles,      desc: 'AI chatbot yordamchisi' },
 ];
 
 export const defaultPlanForm = () => ({

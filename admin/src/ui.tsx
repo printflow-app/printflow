@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
+import { AlertTriangle, HelpCircle } from 'lucide-react';
 
 // =============================================
 // Lightweight UI helpers for the admin panel:
@@ -75,7 +76,9 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       {confirmReq && (
         <div className="modal-overlay" style={{ zIndex: 99998 }}>
           <div className="modal-content" style={{ maxWidth: 420, padding: 28, textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>{confirmReq.danger ? '⚠️' : '❓'}</div>
+            <div style={{ marginBottom: 12, color: confirmReq.danger ? '#ef4444' : '#3b82f6', display: 'flex', justifyContent: 'center' }}>
+              {confirmReq.danger ? <AlertTriangle size={40} strokeWidth={2.2} /> : <HelpCircle size={40} strokeWidth={2.2} />}
+            </div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 8 }}>{confirmReq.title}</h3>
             {confirmReq.message && (
               <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: 20 }}>{confirmReq.message}</p>

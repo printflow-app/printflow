@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
   FileText, AlertCircle, Trophy, Package, ClipboardList, Plus, Edit3,
-  Building2, UserPlus, Mail, Briefcase, CheckCircle2, AlertTriangle, Download
+  Building2, UserPlus, Mail, Briefcase, CheckCircle2, AlertTriangle, Download,
+  Crown, Medal, Award
 } from 'lucide-react';
 import { customersApi } from '../api';
 import { useCustomers, useTopCustomers, useInvalidate } from '../hooks/queries';
@@ -26,12 +27,16 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const canDelete          = p.canDeleteCustomer || p.canManageCustomers || isAdmin;
   const canManageContacts  = p.canManageCustomers || isAdmin;
 
-  // RQ — cache'lanadi, mutatsiyalardan keyin invalidate.customers() chaqiraman
-  const { data: customers = [], isLoading } = useCustomers(activeBranchId, true);
+  // RQ — cache'lanadi, mutatsiyalardan keyin invalidate.customers() chaqiraman.
+  // includeDetails=false: list payload faqat asosiy ma'lumotlar (totalDebt/Paid + contacts).
+  // Tasks va transactions har bir mijoz yoyilganda /customers/:id/details orqali yuklanadi.
+  const { data: customers = [], isLoading } = useCustomers(activeBranchId, false);
   const { data: topCustomers = [] } = useTopCustomers(10);
   const invalidate = useInvalidate();
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Lazy-loaded per-customer details (tasks + transactions) keyed by customer.id
+  const [detailsCache, setDetailsCache] = useState<Record<string, { tasks: any[]; transactions: any[] } | 'loading'>>({});
   const [activeView, setActiveView] = useState<'all' | 'top'>('all');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -213,7 +218,23 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     }
   };
 
-  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id);
+  const toggleExpand = (id: string) => {
+    const next = expandedId === id ? null : id;
+    setExpandedId(next);
+    if (next && !detailsCache[next]) {
+      setDetailsCache(prev => ({ ...prev, [next]: 'loading' }));
+      customersApi.getDetails(next)
+        .then(res => setDetailsCache(prev => ({ ...prev, [next]: res.data })))
+        .catch(() => {
+          setDetailsCache(prev => {
+            const copy = { ...prev };
+            delete copy[next];
+            return copy;
+          });
+          toast.error("Mijoz tafsilotlarini yuklashda xatolik!");
+        });
+    }
+  };
 
   // Stats
   const totalDebtors = customers.filter(c => (c.totalDebt - c.totalPaid) > 0).length;
@@ -225,7 +246,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
 
   if (isLoading) return <SkeletonTable rows={8} cols={6} />;
 
-  const MEDAL_LABELS = ['🥇', '🥈', '🥉'];
+  const MEDAL_ICONS = [Crown, Medal, Award];
   const MEDAL_COLORS = ['#f59e0b', '#94a3b8', '#cd7c2f'];
 
   return (
@@ -314,7 +335,14 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           <div className="space-y-3">
             {topCustomers.map((c, i) => (
               <div key={c.id} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
-                <div className="text-2xl flex-shrink-0 w-10 text-center">{MEDAL_LABELS[i] || `${i + 1}`}</div>
+                <div className="flex-shrink-0 w-10 text-center flex items-center justify-center">
+                  {(() => {
+                    const Ic = MEDAL_ICONS[i];
+                    return Ic
+                      ? <Ic size={22} strokeWidth={2.2} color={MEDAL_COLORS[i]} fill={MEDAL_COLORS[i] + '33'} />
+                      : <span className="text-base font-bold text-slate-400">{i + 1}</span>;
+                  })()}
+                </div>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-lg" style={{ background: MEDAL_COLORS[i] || '#6366f1' }}>
                   {c.name.charAt(0)}
                 </div>
@@ -385,8 +413,10 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   filteredCustomers.map(c => {
                     const balance = c.totalDebt - c.totalPaid;
                     const isExpanded = expandedId === c.id;
-                    const transactions = c.transactions || [];
-                    const tasks = c.tasks || [];
+                    const details = detailsCache[c.id];
+                    const isLoadingDetails = details === 'loading';
+                    const transactions = (details && details !== 'loading') ? details.transactions : [];
+                    const tasks = (details && details !== 'loading') ? details.tasks : [];
                     const contactCount = (c.contacts || []).length;
                     return (
                       <React.Fragment key={c.id}>
@@ -458,6 +488,11 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                           <tr>
                             <td colSpan={7} className="p-0">
                               <div className="bg-slate-50/80 px-8 py-6 border-t border-slate-100 animate-fade-in">
+                                {isLoadingDetails ? (
+                                  <div className="flex items-center justify-center py-12">
+                                    <LoadingSpinner />
+                                  </div>
+                                ) : (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                   {/* Buyurtmalar */}
                                   <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
@@ -510,6 +545,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                     )}
                                   </div>
                                 </div>
+                                )}
                               </div>
                             </td>
                           </tr>

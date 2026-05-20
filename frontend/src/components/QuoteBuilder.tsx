@@ -69,10 +69,12 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
   const [exportFormat, setExportFormat] = useState<'png' | 'pdf'>('pdf');
 
   // Har xizmat uchun lokal "tanlangan opsiyalar + miqdor" holati (savatga qo'shilmagan).
-  // optionIds — guruh nomi (option.name) → tanlangan option.id
+  // quantity — STRING, bo'sh ham bo'lishi mumkin (user yozayotgan paytda). Validatsiya
+  // faqat "Qo'shish"da bo'ladi — aks holda Math.max(1, ...) "0" ni darhol 1 ga snap qilib,
+  // foydalanuvchiga inputni tozalashga imkon bermaydi.
   interface ServiceDraft {
     optionIds: Record<string, string>;
-    quantity: number;
+    quantity: string;
   }
   const [drafts, setDrafts] = useState<Record<string, ServiceDraft>>({});
 
@@ -80,19 +82,24 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
   const quoteRef = useRef<HTMLDivElement>(null);
 
   const getDraft = (serviceId: string): ServiceDraft =>
-    drafts[serviceId] ?? { optionIds: {}, quantity: 1 };
+    drafts[serviceId] ?? { optionIds: {}, quantity: '' };
 
-  const setDraftQuantity = (serviceId: string, quantity: number) => {
+  /** Inputga raqamlardan tashqari hech narsa o'tmaydi, bo'sh ham qabul qilinadi. */
+  const setDraftQuantity = (serviceId: string, raw: string) => {
+    const cleaned = raw.replace(/[^0-9]/g, '');
     setDrafts(prev => {
-      const current = prev[serviceId] ?? { optionIds: {}, quantity: 1 };
-      return { ...prev, [serviceId]: { ...current, quantity: Math.max(1, Math.floor(quantity) || 1) } };
+      const current = prev[serviceId] ?? { optionIds: {}, quantity: '' };
+      return { ...prev, [serviceId]: { ...current, quantity: cleaned } };
     });
   };
+
+  /** Draft quantity'ni son sifatida olish — bo'sh bo'lsa 0. */
+  const draftQtyNum = (d: ServiceDraft) => Number(d.quantity) || 0;
 
   /** Bir guruhdan opsiya tanlash. Agar shu opsiya allaqachon tanlangan bo'lsa — bekor qilinadi (toggle). */
   const toggleDraftOption = (serviceId: string, groupName: string, optionId: string) => {
     setDrafts(prev => {
-      const current = prev[serviceId] ?? { optionIds: {}, quantity: 1 };
+      const current = prev[serviceId] ?? { optionIds: {}, quantity: '' };
       const nextIds = { ...current.optionIds };
       if (nextIds[groupName] === optionId) {
         delete nextIds[groupName];
@@ -105,7 +112,11 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
 
   const addToCart = (service: PriceService) => {
     const d = getDraft(service.id);
-    const qty = Math.max(1, Number(d.quantity) || 1);
+    const qty = draftQtyNum(d);
+    if (qty < 1) {
+      toast.warning('Avval soni kiriting (1 yoki undan ko\'p)');
+      return;
+    }
     // Tanlangan opsiyalar (har guruhdan max 1 ta)
     const selectedOptions: PriceOption[] = [];
     for (const groupName of Object.keys(d.optionIds)) {
@@ -122,17 +133,17 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
   const updateLineQty = (lineId: string, delta: number) => {
     setCart(prev => prev.map(l => {
       if (l.id !== lineId) return l;
-      const next = Math.max(1, l.quantity + delta);
+      const next = Math.max(0, l.quantity + delta);
       return { ...l, quantity: next };
     }));
   };
 
-  const setLineQty = (lineId: string, value: number) => {
-    setCart(prev => prev.map(l => {
-      if (l.id !== lineId) return l;
-      const next = Math.max(1, Math.floor(value) || 1);
-      return { ...l, quantity: next };
-    }));
+  // Faqat raqamlardan iborat string'ni qabul qiladi (bo'sh ham bo'lishi mumkin).
+  // Bo'sh / NaN — 0 deb saqlaymiz, lekin 0 ga snap qilib kursorni ushlamaymiz.
+  const setLineQty = (lineId: string, raw: string) => {
+    const cleaned = raw.replace(/[^0-9]/g, '');
+    const next = cleaned === '' ? 0 : Number(cleaned);
+    setCart(prev => prev.map(l => (l.id === lineId ? { ...l, quantity: next } : l)));
   };
 
   const removeLine = (lineId: string) => {
@@ -257,8 +268,9 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
               sumAdd += opt?.priceAdd || 0;
             }
           }
+          const draftQty = draftQtyNum(draft);
           const unitPrice = svc.basePrice + sumAdd;
-          const lineTotal = unitPrice * (draft.quantity || 0);
+          const lineTotal = unitPrice * draftQty;
 
           return (
             <div key={svc.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-4 sm:p-5">
@@ -322,20 +334,22 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Soni</p>
                       <div className="flex items-center gap-1 bg-slate-50 rounded-lg border border-slate-200 p-1">
                         <button
-                          onClick={() => setDraftQuantity(svc.id, (draft.quantity || 1) - 1)}
+                          onClick={() => setDraftQuantity(svc.id, String(Math.max(0, draftQty - 1)))}
                           className="w-7 h-7 rounded-md bg-white hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors"
                         >
                           <Minus size={14} />
                         </button>
                         <input
-                          type="number"
-                          min="1"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={draft.quantity}
-                          onChange={e => setDraftQuantity(svc.id, Number(e.target.value))}
-                          className="w-14 h-7 text-center text-sm font-bold bg-transparent focus:outline-none"
+                          onChange={e => setDraftQuantity(svc.id, e.target.value)}
+                          placeholder="0"
+                          className="w-14 h-7 text-center text-sm font-bold bg-transparent focus:outline-none placeholder:text-slate-300"
                         />
                         <button
-                          onClick={() => setDraftQuantity(svc.id, (draft.quantity || 1) + 1)}
+                          onClick={() => setDraftQuantity(svc.id, String(draftQty + 1))}
                           className="w-7 h-7 rounded-md bg-white hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors"
                         >
                           <Plus size={14} />
@@ -346,7 +360,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                     <div className="flex-1 min-w-[120px]">
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Hisob</p>
                       <p className="text-sm font-bold text-slate-700">
-                        {formatPrice(unitPrice)} × {draft.quantity || 1} =
+                        {formatPrice(unitPrice)} × {draftQty} =
                         <span className="text-orange-600 ml-1">{formatPrice(lineTotal)} so'm</span>
                       </p>
                     </div>
@@ -419,11 +433,13 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                           <Minus size={12} />
                         </button>
                         <input
-                          type="number"
-                          min="1"
-                          value={line.quantity}
-                          onChange={e => setLineQty(line.id, Number(e.target.value))}
-                          className="w-12 h-6 text-center text-xs font-bold bg-transparent focus:outline-none"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={line.quantity === 0 ? '' : String(line.quantity)}
+                          onChange={e => setLineQty(line.id, e.target.value)}
+                          placeholder="0"
+                          className="w-12 h-6 text-center text-xs font-bold bg-transparent focus:outline-none placeholder:text-slate-300"
                         />
                         <button
                           onClick={() => updateLineQty(line.id, 1)}

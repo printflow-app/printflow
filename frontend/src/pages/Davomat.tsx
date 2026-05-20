@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Clock, UserCheck, Calendar, CheckCircle2, AlertCircle,
+  Clock, UserCheck, Calendar, CheckCircle2, AlertCircle, Check, X,
   LogIn, LogOut, Users, MapPin, AlarmClock, ThumbsUp, ThumbsDown, Activity, Download,
 } from 'lucide-react';
 import { attendanceApi, settingsApi, overtimeApi } from '../api';
@@ -215,8 +215,8 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     try {
       const res = await attendanceApi.selfMark(geoData);
       const action = res.data?.action;
-      if (action === 'checkin') showStatus('success', 'Keldim ✓ Davomat belgilandi');
-      else if (action === 'checkout') showStatus('success', 'Ketdim ✓ Yaxshi kun bo\'lsin');
+      if (action === 'checkin') showStatus('success', 'Keldim — Davomat belgilandi');
+      else if (action === 'checkout') showStatus('success', 'Ketdim — Yaxshi kun bo\'lsin');
       else if (action === 'done') showStatus('error', 'Bugun davomat tugatilgan');
       await Promise.all([fetchMyToday(), fetchMyRecords()]);
     } catch (err: any) {
@@ -234,7 +234,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         settingsApi.set('workEnd', workSettings.workEnd),
         settingsApi.set('workDays', workSettings.workDays),
       ]);
-      showStatus('success', 'Ish vaqti sozlamalari saqlandi! ✅');
+      showStatus('success', 'Ish vaqti sozlamalari saqlandi!');
       setIsSettingsModalOpen(false);
     } catch {
       showStatus('error', 'Saqlashda xatolik yuz berdi!');
@@ -298,7 +298,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         checkIn: manualForm.checkIn || undefined,
         checkOut: manualForm.checkOut || undefined,
       });
-      showStatus('success', 'Davomat muvaffaqiyatli kiritildi ✓');
+      showStatus('success', 'Davomat muvaffaqiyatli kiritildi');
       setShowManualModal(false);
       setManualForm({ employeeId: '', date: getTodayString(), checkIn: '', checkOut: '' });
       await Promise.all([fetchRecords(), fetchMonthlyRecords()]);
@@ -734,7 +734,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                           <p className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">{req.employee.fullName}</p>
                           <span className="text-[8px] font-bold text-slate-400 uppercase">{req.date}</span>
                           <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-md ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
-                            {req.status === 'APPROVED' ? '✓ Tasdiqlangan' : '✗ Rad etilgan'}
+                            {req.status === 'APPROVED' ? <><Check size={10} strokeWidth={3}/> Tasdiqlangan</> : <><X size={10} strokeWidth={3}/> Rad etilgan</>}
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{req.message}</p>
@@ -888,7 +888,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               required
               value={manualForm.employeeId}
               onChange={e => setManualForm(f => ({ ...f, employeeId: e.target.value }))}
-              className="input-minimal text-sm font-bold"
+              className="select-minimal text-sm font-bold"
             >
               <option value="">— Xodimni tanlang —</option>
               {employees.map(emp => (

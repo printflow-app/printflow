@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, User as UserIcon, Building2, Eye, EyeOff } from 'lucide-react';
+import { Lock, User as UserIcon, Building2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { authApi } from '../api';
 import { buildUser, User } from '../App';
 import logo from '../assets/logo.png';
@@ -180,8 +180,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
 
             {/* Session expired warning */}
             {sessionExpired && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-600 rounded-lg text-[11px] font-bold uppercase tracking-tight p-3 text-center">
-                ⚠️ Xavfsizlik yuzasidan tizimdan chiqarildingiz. Qayta kiring.
+              <div className="bg-amber-50 border border-amber-200 text-amber-600 rounded-lg text-[11px] font-bold uppercase tracking-tight p-3 text-center flex items-center justify-center gap-2">
+                <AlertTriangle size={14} strokeWidth={2.5}/> Xavfsizlik yuzasidan tizimdan chiqarildingiz. Qayta kiring.
               </div>
             )}
 

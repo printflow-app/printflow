@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Building2, Plus, Trash2, Edit3, Phone, MapPin, Save, X,
+  Building2, Plus, Trash2, Edit3, Phone, MapPin, Save, X, AlertTriangle,
   ChevronDown, ChevronUp, Layers,
 } from 'lucide-react';
 import { branchesApi, billingApi, departmentsApi } from '../api';
@@ -326,7 +326,7 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </div>
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Mas'ul xodim</label>
-            <select value={form.managerEmployeeId} onChange={(e) => setForm({ ...form, managerEmployeeId: e.target.value })} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none">
+            <select value={form.managerEmployeeId} onChange={(e) => setForm({ ...form, managerEmployeeId: e.target.value })} className="select-minimal mt-1 font-bold">
               <option value="">Tanlanmagan</option>
               {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
             </select>
@@ -351,7 +351,7 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
               {hasData && (
                 <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 space-y-2">
-                  <p className="text-xs font-bold text-rose-700 uppercase tracking-widest">⚠ Bu filialda mavjud:</p>
+                  <p className="text-xs font-bold text-rose-700 uppercase tracking-widest flex items-center gap-1.5"><AlertTriangle size={12} strokeWidth={2.5}/> Bu filialda mavjud:</p>
                   <ul className="text-xs font-bold text-rose-800 space-y-1 list-disc pl-4">
                     {empCount > 0 && <li>{empCount} ta xodim</li>}
                     {taskCount > 0 && <li>{taskCount} ta buyurtma</li>}

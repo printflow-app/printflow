@@ -1023,3 +1023,33 @@ model TaskExpense {
   @@index([tenantId])
   @@index([taskId])
 }
+
+// =============================================
+// SUPER-ADMIN TASK MANAGER (Voronka)
+// Platform-level task tracker — fully separated from tenant Tasks.
+// Used by PrintFlow super-admins to track their own sales / ops work.
+// =============================================
+model SuperAdminFunnel {
+  id        String              @id @default(uuid())
+  name      String
+  color     String              @default("#FF6B00")
+  sortOrder Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  tasks     SuperAdminTaskItem[]
+}
+
+model SuperAdminTaskItem {
+  id          String           @id @default(uuid())
+  funnelId    String
+  funnel      SuperAdminFunnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  deadlineAt  DateTime?
+  status      String           @default("open") // open | in_progress | done
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([funnelId])
+}

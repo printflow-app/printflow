@@ -44,7 +44,7 @@ const STEPS: Step[] = [
   {
     id: 'welcome',
     kind: 'welcome',
-    title: "🎉 PrintFlow'ga xush kelibsiz!",
+    title: "PrintFlow'ga xush kelibsiz!",
     description: `Tabriklaymiz — siz muvaffaqiyatli ro'yxatdan o'tdingiz!<br><br>
       Endi sizga 6 ta amaliy qadamda PrintFlow'ni sozlashni ko'rsataman.
       Har qadamda men sizga aniq qayerga borishni va nima qilishni aytaman.<br><br>
@@ -59,7 +59,7 @@ const STEPS: Step[] = [
     target: '[data-tour-id="nav-admins"]',
     title: "1️⃣ Qadam: Ma'muriyat sahifasiga o'tamiz",
     description: `Avval filialingizni sozlaymiz. Filiallar Ma'muriyat sahifasi ichida joylashgan.<br><br>
-      👉 Chap menyudan <b>"Ma'muriyat"</b> tugmasini bosing
+Chap menyudan <b>"Ma'muriyat"</b> tugmasini bosing
       (atrofida turtinayotgan orange chiziq).`,
   },
   {
@@ -70,7 +70,7 @@ const STEPS: Step[] = [
     rewindToId: 'nav-admins',
     title: "Endi 'Filiallar' tabini oching",
     description: `Yuqorida ikkita tab bor: <b>"Ma'murlar"</b> va <b>"Filiallar"</b>.<br><br>
-      👉 <b>"Filiallar"</b> tabini bosing (atrofida orange chiziq turtinmoqda).`,
+<b>"Filiallar"</b> tabini bosing (atrofida orange chiziq turtinmoqda).`,
   },
   {
     id: 'do-filiallar',
@@ -91,7 +91,7 @@ const STEPS: Step[] = [
     target: '[data-tour-id="nav-sozlamalar"]',
     title: "2️⃣ Qadam: Sozlamalar sahifasiga o'tamiz",
     description: `Endi Sozlamalar'da uchta narsa qilamiz: lavozim, to'lov turi va xizmat qo'shamiz.<br><br>
-      👉 Chap menyudan <b>"Tizim Sozlamalari"</b> tugmasini bosing.`,
+Chap menyudan <b>"Tizim Sozlamalari"</b> tugmasini bosing.`,
   },
   {
     id: 'do-lavozim',
@@ -145,7 +145,7 @@ const STEPS: Step[] = [
     target: '[data-tour-id="nav-hodimlar"]',
     title: "5️⃣ Qadam: Birinchi xodim",
     description: `Lavozim tayyor — endi xodim qo'shamiz.<br><br>
-      👉 Chap menyudan <b>"Xodimlar"</b> tugmasini bosing.`,
+Chap menyudan <b>"Xodimlar"</b> tugmasini bosing.`,
   },
   {
     id: 'do-hodimlar',
@@ -168,7 +168,7 @@ const STEPS: Step[] = [
     target: '[data-tour-id="nav-topshiriqlar"]',
     title: "6️⃣ Qadam: Kanban bosqichlari",
     description: `Oxirgi qadam — buyurtma jarayonining bosqichlari.<br><br>
-      👉 Chap menyudan <b>"Xizmatlar (Kanban)"</b> tugmasini bosing.`,
+Chap menyudan <b>"Xizmatlar (Kanban)"</b> tugmasini bosing.`,
   },
   {
     id: 'do-kanban',
@@ -189,7 +189,7 @@ const STEPS: Step[] = [
   {
     id: 'done',
     kind: 'done',
-    title: '✅ Tabriklaymiz — sozlash tugadi!',
+    title: 'Tabriklaymiz — sozlash tugadi!',
     description: `Asosiy sozlamalar tugadi. Endi biznesingizni boshqarish mumkin:<br><br>
       • <b>Kassa</b>'da kirim/chiqimlarni yozing<br>
       • <b>Mijozlar</b>'da kontaktlar saqlang<br>
@@ -442,7 +442,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
                 onClick={finish}
                 className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl shadow-md shadow-orange-500/30 transition"
               >
-                Tugatish 🚀
+                Tugatish
               </button>
             )}
           </div>
@@ -516,7 +516,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
           )}
           {current.kind === 'nav' && (
             <span className="text-[11px] font-bold text-orange-500 italic">
-              ☝️ Orange chiziq ichidagi tugmani bosing
+              Orange chiziq ichidagi tugmani bosing
             </span>
           )}
         </div>

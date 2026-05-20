@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { tenantsApi, plansApi, leadsApi, settingsApi, platformApi } from '../api';
+import { tenantsApi, plansApi, leadsApi, settingsApi, platformApi, taskManagerApi } from '../api';
 
 // =============================================
 // ADMIN PANEL — Shared React Query hooks
@@ -16,6 +16,7 @@ export const qk = {
   setting:        (key: string) => ['admin', 'setting', key] as const,
   promoCodes:     ['admin', 'promo-codes'] as const,
   clientLogos:    ['admin', 'client-logos'] as const,
+  taskFunnels:    ['admin', 'task-funnels'] as const,
 };
 
 // -------- TENANTS --------
@@ -92,6 +93,14 @@ export function useClientLogos() {
   });
 }
 
+// -------- TASK MANAGER --------
+export function useTaskFunnels() {
+  return useQuery({
+    queryKey: qk.taskFunnels,
+    queryFn: async () => (await taskManagerApi.listFunnels()).data as any[],
+  });
+}
+
 // =============================================
 // Invalidation helper — mutatsiyalardan keyin
 // =============================================
@@ -106,6 +115,7 @@ export function useInvalidate() {
     settings:        () => qc.invalidateQueries({ queryKey: ['admin', 'setting'] }),
     promoCodes:      () => qc.invalidateQueries({ queryKey: qk.promoCodes }),
     clientLogos:     () => qc.invalidateQueries({ queryKey: qk.clientLogos }),
+    taskFunnels:     () => qc.invalidateQueries({ queryKey: qk.taskFunnels }),
     all:             () => qc.invalidateQueries(),
   };
 }

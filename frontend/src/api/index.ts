@@ -146,6 +146,7 @@ export const customersApi = {
   delete: (id: string) => api.delete(`/customers/${id}`),
   getCustomerTasks: (id: string) => api.get(`/customers/${id}/tasks`),
   getOrderHistory: (id: string) => api.get(`/customers/${id}/orders`),
+  getDetails: (id: string) => api.get(`/customers/${id}/details`),
   getTopCustomers: (limit?: number) => api.get('/customers/top', { params: limit ? { limit } : {} }),
 
   // B2B Contacts

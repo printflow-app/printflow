@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi, billingApi } from '../api';
 import logo from '../assets/logo.png';
@@ -54,10 +54,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   // Onboarding wizard — eski 3-qadamli forma (saqlangan, lekin endi default tour)
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
-  // Interactive tour — yangi, o'yin uslubidagi guided tour
+  // Interactive tour — faqat super-admin (yoki admin)ga, faqat birinchi tashrifda.
+  // Tenant'ga bir martagina kerak — boshqa xodimlar uchun chiqarmaymiz.
+  const _roleNameLower = currentUser?.role?.name?.toLowerCase?.() || '';
+  const _isAdminForTour = _roleNameLower === 'admin' || _roleNameLower === 'superadmin';
   const [showTour, setShowTour] = useState<boolean>(() => {
     const tid = currentUser?.tenantId;
-    return !!tid && !isTourComplete(tid) && !isOnboardingComplete(tid);
+    return !!tid && _isAdminForTour && !isTourComplete(tid) && !isOnboardingComplete(tid);
   });
 
   // Collapsible sidebar groups. Persisted to localStorage so user's preference
@@ -382,6 +385,25 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  // Shift+P — Price List modalni darhol ochish (Gmail-uslubidagi bitta tugma).
+  // Brauzer/OS shortcut'lari bilan to'qnashmaydi. Foydalanuvchi input/textarea/
+  // contenteditable'da yozayotgan bo'lsa ishga tushmaydi — odatdagi yozish davom etadi.
+  // Sozlamalar.tsx 'pf:open-price-list' custom event'iga ulangan.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'P' || !e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t?.isContentEditable) return;
+      e.preventDefault();
+      if (activeTab !== 'sozlamalar') handleTabChange('sozlamalar');
+      setTimeout(() => window.dispatchEvent(new Event('pf:open-price-list')), 50);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   // Sidebar notification badges — har bir tab ustida "yangi" elementlar soni
   const { counts: sidebarCounts, refresh: refreshSidebarCounts } = useSidebarCounts(activeBranchId);
 
@@ -480,7 +502,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               className="w-9 h-9 flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-lg shadow-md shadow-orange-500/30 hover:from-orange-500 hover:to-orange-700 transition-all"
               title="AI Yordamchi"
             >
-              ✦
+              <Sparkles size={16} strokeWidth={2.2} />
             </button>
           )}
           <button
@@ -751,7 +773,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   setActiveBranchId(e.target.value);
                   localStorage.setItem('pf_active_branch', e.target.value);
                 }}
-                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-700 uppercase tracking-widest shadow-sm focus:outline-none focus:border-orange-400 min-w-[160px]"
+                className="select-minimal h-9 text-[10px] font-bold uppercase tracking-widest min-w-[160px]"
               >
                 <option value="">Barcha filiallar</option>
                 {branches.map(b => (
@@ -851,10 +873,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           {!isAICopilotOpen && (
             <button
               onClick={() => setIsAICopilotOpen(true)}
-              className="fixed bottom-6 right-6 z-30 w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-2xl shadow-xl shadow-orange-500/40 flex items-center justify-center text-2xl hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 hidden md:flex"
+              className="fixed bottom-6 right-6 z-30 w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-2xl shadow-xl shadow-orange-500/40 flex items-center justify-center hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 hidden md:flex"
               title="PrintFlow AI Yordamchi (Xizmatlar)"
             >
-              ✦
+              <Sparkles size={24} strokeWidth={2.2} />
             </button>
           )}
         </>
