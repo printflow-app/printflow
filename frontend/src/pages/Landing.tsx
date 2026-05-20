@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, useInView, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, Layers, Users, Zap, ShieldCheck, Check, Send,
   Building2, BarChart3, TrendingUp, Menu, X,
@@ -12,39 +12,24 @@ const rawApiUrl = (import.meta as any).env.VITE_API_URL || ((import.meta as any)
 const API_URL = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : rawApiUrl + '/api') : '/api';
 
 // ── Animation Variants ────────────────────────────────────────────────────
-const fadeUp = {
+const fadeUp: any = {
   hidden: { opacity: 0, y: 40 },
   show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
 };
-const stagger = {
+const stagger: any = {
   hidden: {},
   show: { transition: { staggerChildren: 0.12 } },
 };
-const fadeLeft = {
+const fadeLeft: any = {
   hidden: { opacity: 0, x: -40 },
   show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
 };
-const fadeRight = {
+const fadeRight: any = {
   hidden: { opacity: 0, x: 40 },
   show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-function useAnimatedCounter(target: number, inView: boolean, duration = 1500) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!inView) return;
-    let start = 0;
-    const step = target / (duration / 16);
-    const t = setInterval(() => {
-      start += step;
-      if (start >= target) { setCount(target); clearInterval(t); }
-      else setCount(Math.floor(start));
-    }, 16);
-    return () => clearInterval(t);
-  }, [inView, target, duration]);
-  return count;
-}
 
 // ── Floating Orb Background ───────────────────────────────────────────────
 function OrbBg({ variant = 'hero' }: { variant?: 'hero' | 'dark' | 'light' }) {
@@ -76,26 +61,6 @@ function OrbBg({ variant = 'hero' }: { variant?: 'hero' | 'dark' | 'light' }) {
         }}
       />
     </div>
-  );
-}
-
-// ── Stat Counter Card ─────────────────────────────────────────────────────
-function StatCard({ value, suffix, label, delay = 0 }: { value: number; suffix: string; label: string; delay?: number }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-  const count = useAnimatedCounter(value, inView);
-  return (
-    <motion.div
-      ref={ref}
-      variants={fadeUp}
-      transition={{ delay }}
-      className="text-center"
-    >
-      <div className="text-4xl md:text-5xl font-black text-white tracking-tight">
-        {count.toLocaleString()}{suffix}
-      </div>
-      <div className="text-sm font-semibold text-slate-400 mt-1.5">{label}</div>
-    </motion.div>
   );
 }
 
