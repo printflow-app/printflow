@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Plus, X, Check, Trash2, AlertCircle, Flame, Star } from 'lucide-react';
+import { Plus, X, Trash2, AlertCircle, Eye } from 'lucide-react';
 import { plansApi } from '../api';
 import { usePlans, useInvalidate } from '../hooks/queries';
 import { ALLOWED_MODULES, defaultPlanForm as defaultForm } from '../shared/constants';
 
-export default 
-function Plans() {
+export default function Plans() {
   const { data: plans = [] } = usePlans();
   const invalidate = useInvalidate();
   const [showModal, setShowModal] = useState(false);
@@ -20,6 +19,7 @@ function Plans() {
     setForm(defaultForm());
     setEditing(null); setErrorMsg(''); setShowModal(true);
   };
+
   const openEdit = (p: any) => {
     setForm({
       name: p.name, displayName: p.displayName,
@@ -32,6 +32,7 @@ function Plans() {
     });
     setEditing(p); setErrorMsg(''); setShowModal(true);
   };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...form };
@@ -47,6 +48,7 @@ function Plans() {
       setErrorMsg(err.response?.data?.message || 'Xatolik yuz berdi'); 
     }
   };
+
   const toggleModule = (key: string) => {
     setForm(prev => ({
       ...prev,
@@ -55,6 +57,7 @@ function Plans() {
         : [...prev.allowedModules, key],
     }));
   };
+
   const handleDelete = async () => {
     if (!editing) return;
     try {
@@ -64,103 +67,202 @@ function Plans() {
   };
 
   return (
-    <div>
-      <div className="flex-between">
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Tariflar</h2>
-        <button className="btn" onClick={openCreate}><Plus size={16} /> Yangi Tarif</button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-white tracking-tight">Tarif Rejalari</h2>
+          <p className="text-xs text-slate-500">Mijoz workspacelari uchun obuna rejalari va tizim ruxsatlari</p>
+        </div>
+        <button 
+          className="h-9 px-3 flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+          onClick={openCreate}
+        >
+          <Plus size={14} /> Yangi Tarif
+        </button>
       </div>
-      <div className="stats-grid">
+
+      {/* Plans List Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {plans.map(p => (
-          <div key={p.id} className="stat-card" style={{ cursor: 'pointer', border: p.isPopular ? '2px solid var(--primary)' : undefined }} onClick={() => openEdit(p)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <div className="stat-title">{p.displayName}</div>
-              {p.isPopular && (
-                <span className="badge active" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <Flame size={11} strokeWidth={2.5} /> OMMABOP
-                </span>
-              )}
+          <div 
+            key={p.id} 
+            onClick={() => openEdit(p)}
+            className={`bg-slate-900 rounded-xl p-5 border transition-all duration-200 hover:border-slate-700 flex flex-col justify-between cursor-pointer ${
+              p.isPopular 
+                ? 'border-orange-500/80 shadow-sm ring-1 ring-orange-500/20' 
+                : 'border-slate-800'
+            }`}
+          >
+            <div>
+              {/* Title & Badge */}
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-white">{p.displayName}</h3>
+                  <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mt-0.5">{p.name}</p>
+                </div>
+                {p.isPopular && (
+                  <span className="text-[9px] font-bold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded uppercase tracking-wider">
+                    Eng Ommabop
+                  </span>
+                )}
+              </div>
+
+              {/* Price section */}
+              <div className="py-3 border-t border-b border-slate-850 mb-4">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-black text-white">{(p.price3m || 0).toLocaleString()}</span>
+                  <span className="text-[9px] text-slate-500 font-bold uppercase">UZS / 3 oy</span>
+                </div>
+                {p.description && (
+                  <p className="text-[11px] text-slate-400 mt-1 italic font-medium">"{p.description}"</p>
+                )}
+              </div>
+
+              {/* Limits and features */}
+              <div className="space-y-2">
+                {[
+                  { label: "Maks. Xodimlar", value: p.maxEmployees === 0 ? 'Cheksiz' : `${p.maxEmployees} ta` },
+                  { label: "Maks. Filiallar", value: p.maxBranches === 0 ? 'Cheksiz' : `${p.maxBranches} ta` },
+                  { label: "Maks. Bo'limlar", value: p.maxDepartments === 0 ? 'Cheksiz' : `${p.maxDepartments} ta` },
+                ].map((lim, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">{lim.label}</span>
+                    <span className="text-slate-350 font-semibold">{lim.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 4 }}>{p.price3m?.toLocaleString()} UZS <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/ 3 oy</span></div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Xodimlar: {p.maxEmployees === 0 ? 'Cheksiz' : p.maxEmployees} ta</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>Mijozlar: {p._count?.tenants || 0}</div>
+
+            {/* Footer usage summary */}
+            <div className="mt-5 pt-3 border-t border-slate-850 flex items-center justify-between text-[10px] font-bold text-slate-500">
+              <span className="flex items-center gap-1 hover:text-slate-305 transition-colors">
+                <Eye size={12} /> Tahrirlash
+              </span>
+              <span className="bg-slate-950 border border-slate-850 px-2 py-0.5 rounded text-slate-400">
+                {p._count?.tenants || 0} ta workspace ulangan
+              </span>
+            </div>
           </div>
         ))}
       </div>
 
+      {/* Create/Edit Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 740, maxHeight: '92vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
-            <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900 }}>{editing ? 'TARIFNI TAHRIRLASH' : 'YANGI TARIF'}</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button>
+          <div className="modal-content max-w-xl max-h-[90vh] overflow-hidden flex flex-col p-0 bg-slate-900 border border-slate-800 text-white">
+            <div className="modal-header p-4 border-b border-slate-800">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wide">
+                {editing ? 'Tarif Rejasini Tahrirlash' : 'Yangi Tarif Rejasi'}
+              </h2>
+              <button className="modal-close p-1" onClick={() => setShowModal(false)}><X size={18} className="text-slate-400" /></button>
             </div>
             
             {errorMsg && (
-              <div style={{ margin: '16px 24px 0', padding: '12px 16px', background: '#fef2f2', border: '1px solid #fee2e2', color: '#dc2626', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <AlertCircle size={18} /> {errorMsg}
+              <div className="mx-4 mt-3 bg-rose-950/20 border border-rose-900/30 text-rose-450 rounded-lg p-3 text-xs font-bold flex items-center gap-1.5">
+                <AlertCircle size={14} /> {errorMsg}
               </div>
             )}
             
-            <form id="plan-form" onSubmit={handleSave} style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group"><label>NOMI (UNIKAL)</label><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })} placeholder="STARTER" /></div>
-                <div className="form-group"><label>KO'RSATILADIGAN NOMI</label><input required value={form.displayName} onChange={e => setForm({ ...form, displayName: e.target.value })} placeholder="Starter Plan" /></div>
+            <form id="plan-form" onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="form-group">
+                  <label className="text-slate-400">NOMI (UNIKAL KALIT)</label>
+                  <input 
+                    required 
+                    value={form.name} 
+                    onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })} 
+                    placeholder="Masalan: STARTER, BUSINESS" 
+                    disabled={!!editing}
+                    className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="text-slate-400">KO'RSATILADIGAN NOMI</label>
+                  <input 
+                    required 
+                    value={form.displayName} 
+                    onChange={e => setForm({ ...form, displayName: e.target.value })} 
+                    placeholder="Starter Tarif" 
+                    className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500"
+                  />
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 16 }}>
-                <div className="form-group"><label>3 OYLIK (UZS)</label><input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} /></div>
-                <div className="form-group"><label>6 OYLIK (UZS)</label><input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} /></div>
-                <div className="form-group"><label>12 OYLIK (UZS)</label><input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} /></div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="form-group">
+                  <label className="text-slate-400">3 OYLIK NARX (UZS)</label>
+                  <input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                </div>
+                <div className="form-group">
+                  <label className="text-slate-400">6 OYLIK NARX (UZS)</label>
+                  <input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                </div>
+                <div className="form-group">
+                  <label className="text-slate-400">12 OYLIK NARX (UZS)</label>
+                  <input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 16 }}>
-                <div className="form-group"><label>XODIMLAR (0=∞)</label><input type="number" required min={0} value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} /></div>
-                <div className="form-group"><label>FILIALLAR (0=∞)</label><input type="number" required min={0} value={form.maxBranches} onChange={e => setForm({ ...form, maxBranches: +e.target.value })} /></div>
-                <div className="form-group"><label>BO'LIMLAR (0=∞)</label><input type="number" required min={0} value={form.maxDepartments} onChange={e => setForm({ ...form, maxDepartments: +e.target.value })} /></div>
-              </div>
-
-              <div className="form-group" style={{ marginTop: 16 }}><label>TAVSIF</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-              
-              <div style={{ background: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 24, border: '1px solid #e2e8f0', marginTop: 10 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
-                  <input type="checkbox" checked={form.isPopular} onChange={e => setForm({ ...form, isPopular: e.target.checked })} style={{ width: 18, height: 18, accentColor: '#FF6B00' }} />
-                  <span style={{ fontWeight: 800, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Star size={14} strokeWidth={2.5} fill="#FF6B00" color="#FF6B00" /> ENG OMMABOP REJA (HIGHLIGHT)
-                  </span>
-                </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="form-group">
+                  <label className="text-slate-400">MAKS. XODIMLAR (0 = CHEKSIZ)</label>
+                  <input type="number" required min={0} value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                </div>
+                <div className="form-group">
+                  <label className="text-slate-400">MAKS. FILIALLAR (0 = CHEKSIZ)</label>
+                  <input type="number" required min={0} value={form.maxBranches} onChange={e => setForm({ ...form, maxBranches: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                </div>
+                <div className="form-group">
+                  <label className="text-slate-400">MAKS. BO'LIMLAR (0 = CHEKSIZ)</label>
+                  <input type="number" required min={0} value={form.maxDepartments} onChange={e => setForm({ ...form, maxDepartments: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                </div>
               </div>
 
               <div className="form-group">
-                <label style={{ display: 'block', marginBottom: 16, fontWeight: 900, color: '#0f172a', letterSpacing: '0.5px' }}>SAHIFALAR VA MODULLARGA RUXSAT</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 12 }}>
+                <label className="text-slate-400">TARIF TAVSIFI</label>
+                <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Qisqacha izoh..." className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+              </div>
+              
+              <div className="flex items-center gap-2 py-1">
+                <input 
+                  type="checkbox" 
+                  id="isPopular"
+                  checked={form.isPopular} 
+                  onChange={e => setForm({ ...form, isPopular: e.target.checked })} 
+                  className="w-4 h-4 text-orange-500 border-slate-800 bg-slate-950 focus:ring-orange-500 rounded cursor-pointer"
+                />
+                <label htmlFor="isPopular" className="text-xs font-semibold text-slate-350 cursor-pointer select-none">
+                  Eng Ommabop Reja (Highlight)
+                </label>
+              </div>
+
+              {/* Modules selector */}
+              <div className="space-y-2.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Modullar & Ruxsatlar</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {ALLOWED_MODULES.map(mod => {
                     const active = form.allowedModules.includes(mod.key);
-                    const ModIcon = mod.icon;
                     return (
                       <div
                         key={mod.key}
                         onClick={() => toggleModule(mod.key)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-                          borderRadius: 14, cursor: 'pointer', transition: 'all 0.15s ease',
-                          background: active ? 'rgba(255,107,0,0.05)' : '#fafafa',
-                          border: active ? '2px solid #FF6B00' : '2px solid #e2e8f0',
-                          boxShadow: active ? '0 4px 10px rgba(255,107,0,0.1)' : 'none',
-                        }}
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
+                          active 
+                            ? 'border-orange-500 bg-orange-500/10' 
+                            : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                        }`}
                       >
-                        <div style={{
-                          width: 36, height: 36, borderRadius: 10,
-                          background: active ? 'rgba(255,107,0,0.12)' : '#f1f5f9',
-                          color: active ? '#FF6B00' : '#64748b',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        }}>
-                          <ModIcon size={18} strokeWidth={2.2} />
+                        <div className="min-w-0 pr-2">
+                          <p className={`text-xs font-bold ${active ? 'text-orange-500' : 'text-white'}`}>{mod.label}</p>
+                          <p className="text-[9px] text-slate-500 truncate mt-0.5">{mod.desc}</p>
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '0.8rem', fontWeight: 800, color: active ? '#FF6B00' : '#0f172a', lineHeight: 1.1 }}>{mod.label}</div>
-                          <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: 2 }}>{mod.desc}</div>
-                        </div>
-                        {active && <Check size={16} color="#FF6B00" strokeWidth={3} />}
+                        <input 
+                          type="checkbox" 
+                          checked={active}
+                          readOnly
+                          className="w-4 h-4 text-orange-500 border-slate-800 bg-slate-900 rounded cursor-pointer"
+                        />
                       </div>
                     );
                   })}
@@ -168,11 +270,23 @@ function Plans() {
               </div>
             </form>
 
-            <div className="modal-footer" style={{ padding: '20px 24px', borderTop: '1px solid #e2e8f0', background: 'white', display: 'flex', gap: 12 }}>
-              <button type="submit" form="plan-form" className="btn" style={{ flex: 1, height: 48, background: '#FF6B00', color: 'white', fontWeight: 800 }}>SAQLASH VA YANGILASH</button>
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/20 flex items-center gap-2">
+              <button 
+                type="submit" 
+                form="plan-form" 
+                className="flex-1 h-9 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-all"
+              >
+                SAQLASH VA YANGILASH
+              </button>
               {editing && (
-                <button type="button" onClick={() => setShowDeleteConfirm(true)} className="btn" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fee2e2', height: 48, padding: '0 20px' }}>
-                  <Trash2 size={20} />
+                <button 
+                  type="button" 
+                  onClick={() => setShowDeleteConfirm(true)} 
+                  className="h-9 px-3 rounded-lg border border-rose-900/35 bg-rose-950/20 hover:bg-rose-900/20 text-rose-400 transition-colors flex items-center justify-center"
+                  title="Tarifni O'chirish"
+                >
+                  <Trash2 size={15} />
                 </button>
               )}
             </div>
@@ -180,23 +294,39 @@ function Plans() {
         </div>
       )}
 
-        {/* Delete Confirm Modal */}
-        {showDeleteConfirm && (
-          <div className="modal-overlay">
-            <div className="modal-content" style={{ maxWidth: 420, textAlign: 'center', padding: 32 }}>
-              <AlertCircle size={48} color="#f59e0b" style={{ margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>Tarifni o'chirish</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 24 }}>
-                <strong>{editing?.displayName}</strong> tarifini o'chirmoqchisiz. Unga ulangan workspacelar ta'sirlanishi mumkin!
+      {/* Delete Confirm Modal */}
+      {showDeleteConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content max-w-xs text-center p-5 space-y-3 bg-slate-900 border border-slate-800 text-white">
+            <div className="w-10 h-10 bg-amber-950/20 border border-amber-900/30 rounded-lg flex items-center justify-center text-amber-500 mx-auto">
+              <AlertCircle size={20} />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-white">Tarifni o'chirish</h3>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Haqiqatan ham <strong className="text-white">"{editing?.displayName}"</strong> tarifini o'chirmoqchimisiz?
               </p>
-              {errorMsg && <div style={{ background: '#fee2e2', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: '0.85rem', marginBottom: 12 }}>{errorMsg}</div>}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn" style={{ flex: 1, background: '#64748b' }} onClick={() => { setShowDeleteConfirm(false); setErrorMsg(''); }}>Bekor qilish</button>
-                <button className="btn" style={{ flex: 1, background: '#ef4444' }} onClick={handleDelete}>Ha, o'chirilsin</button>
-              </div>
+            </div>
+            {errorMsg && (
+              <div className="bg-rose-950/20 border border-rose-900/30 text-rose-450 rounded-lg p-2.5 text-xs font-bold">{errorMsg}</div>
+            )}
+            <div className="flex gap-2">
+              <button 
+                className="flex-1 h-8 text-xs font-semibold bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-300 rounded-md transition-all" 
+                onClick={() => { setShowDeleteConfirm(false); setErrorMsg(''); }}
+              >
+                Bekor qilish
+              </button>
+              <button 
+                className="flex-1 h-8 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-md transition-all" 
+                onClick={handleDelete}
+              >
+                O'chirish
+              </button>
             </div>
           </div>
-        )}
-      </div>
-    );
-  }
+        </div>
+      )}
+    </div>
+  );
+}

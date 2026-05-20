@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Check, X, XCircle } from 'lucide-react';
+import { Check, X, ShieldAlert, Trash2, Plus } from 'lucide-react';
 import { tenantsApi, settingsApi } from '../api';
 import { useUI } from '../ui';
 import { usePendingPayments, useAllPayments, useInvalidate } from '../hooks/queries';
 
-export default 
-function Payments() {
+export default function Payments() {
   const { toast, confirm } = useUI();
   const [tab, setTab] = useState<'pending' | 'all'>('pending');
   const pendingQuery = usePendingPayments();
@@ -36,6 +35,7 @@ function Payments() {
       loadPayments();
     } catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
   };
+
   const reject = async (id: string) => {
     const ok = await confirm({ title: "To'lovni rad etish", message: 'Ushbu to\'lovni rad etasizmi?', confirmText: 'Rad etish', danger: true });
     if (!ok) return;
@@ -64,88 +64,213 @@ function Payments() {
   };
 
   const statusBadge = (s: string) => {
-    if (s === 'APPROVED') return <span className="badge active">TASDIQLANGAN</span>;
-    if (s === 'REJECTED') return <span className="badge inactive">RAD ETILGAN</span>;
-    return <span className="badge" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>KUTILMOQDA</span>;
+    if (s === 'APPROVED') {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          Tasdiqlangan
+        </span>
+      );
+    }
+    if (s === 'REJECTED') {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+          Rad etilgan
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-500">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+        Kutilmoqda
+      </span>
+    );
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 40 }}>
+    <div className="space-y-8">
       {/* 1. Payments Table */}
-      <div className="animate-fade-in">
-        <div className="flex-between" style={{ marginBottom: 24 }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>To'lovlar</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className={tab === 'pending' ? 'btn' : 'btn btn-outline-tab'} style={tab !== 'pending' ? { background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' } : {}} onClick={() => setTab('pending')}>Kutilayotgan</button>
-            <button className={tab === 'all' ? 'btn' : 'btn btn-outline-tab'} style={tab !== 'all' ? { background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' } : {}} onClick={() => setTab('all')}>Barcha</button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-tight">To'lovlar</h2>
+            <p className="text-xs text-slate-500">Obuna rejalari uchun kelib tushgan to'lovlar tarixi</p>
+          </div>
+          
+          <div className="bg-slate-900 border border-slate-800 p-0.5 rounded-lg flex items-center gap-1">
+            <button 
+              className={`h-8 px-4 rounded-md text-xs font-bold transition-all ${
+                tab === 'pending' ? 'bg-slate-950 text-white border border-slate-850' : 'text-slate-400 hover:text-slate-205'
+              }`}
+              onClick={() => setTab('pending')}
+            >
+              Kutilayotgan
+            </button>
+            <button 
+              className={`h-8 px-4 rounded-md text-xs font-bold transition-all ${
+                tab === 'all' ? 'bg-slate-950 text-white border border-slate-850' : 'text-slate-400 hover:text-slate-205'
+              }`}
+              onClick={() => setTab('all')}
+            >
+              Barchasi
+            </button>
           </div>
         </div>
-        <div className="table-container shadow-sm">
-          <table>
-            <thead><tr><th>Sana</th><th>Workspace</th><th>Tarif</th><th>Muddat</th><th>Summa</th><th>Yuboruvchi</th><th>Holat</th><th>Amallar</th></tr></thead>
-            <tbody>
-              {payments.map(p => (
-                <tr key={p.id}>
-                  <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(p.createdAt).toLocaleDateString()}</td>
-                  <td style={{ fontWeight: 700 }}>{p.tenant?.name || '—'}</td>
-                  <td>{p.planName}</td>
-                  <td>{p.duration} oy</td>
-                  <td style={{ fontWeight: 700 }}>{p.amount?.toLocaleString()} UZS</td>
-                  <td>{p.sender}</td>
-                  <td>{statusBadge(p.status)}</td>
-                  <td>
-                    {p.status === 'PENDING' && (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn" style={{ padding: '6px 12px', fontSize: '0.7rem' }} onClick={() => approve(p.id)}><Check size={14} /> Tasdiqlash</button>
-                        <button className="btn-danger" style={{ padding: '6px 12px', fontSize: '0.7rem', background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', cursor: 'pointer', borderRadius: 6, fontWeight: 800, fontFamily: 'inherit' }} onClick={() => reject(p.id)}><XCircle size={14} /></button>
-                      </div>
-                    )}
-                  </td>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-850 bg-slate-950/20 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="py-3 px-4">Sana</th>
+                  <th className="py-3 px-4">Workspace</th>
+                  <th className="py-3 px-4">Tarif</th>
+                  <th className="py-3 px-4">Muddat</th>
+                  <th className="py-3 px-4">Summa</th>
+                  <th className="py-3 px-4">Yuboruvchi</th>
+                  <th className="py-3 px-4">Holat</th>
+                  <th className="py-3 px-4 text-right">Amallar</th>
                 </tr>
-              ))}
-              {payments.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', padding: 32 }}>Ma'lumot topilmadi</td></tr>}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-850 text-xs text-slate-300">
+                {payments.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-850/20 transition-colors">
+                    <td className="py-3.5 px-4 text-slate-500 font-medium font-mono">
+                      {new Date(p.createdAt).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </td>
+                    <td className="py-3.5 px-4 font-semibold text-white">
+                      {p.tenant?.name || '—'}
+                    </td>
+                    <td className="py-3.5 px-4">{p.planName}</td>
+                    <td className="py-3.5 px-4 text-slate-400">{p.duration} oy</td>
+                    <td className="py-3.5 px-4 font-bold text-white">
+                      {p.amount?.toLocaleString()} UZS
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-400">{p.sender}</td>
+                    <td className="py-3.5 px-4">{statusBadge(p.status)}</td>
+                    <td className="py-3.5 px-4 text-right">
+                      {p.status === 'PENDING' && (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button 
+                            className="h-7 px-3 text-[11px] font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-all flex items-center gap-1 shadow-sm"
+                            onClick={() => approve(p.id)}
+                          >
+                            Tasdiqlash
+                          </button>
+                          <button 
+                            className="h-7 w-7 flex items-center justify-center bg-slate-950 hover:bg-rose-950/20 text-rose-500 border border-slate-800 hover:border-rose-900/30 rounded-md transition-all"
+                            onClick={() => reject(p.id)}
+                            title="Rad etish"
+                          >
+                            <X size={13} strokeWidth={2} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {payments.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="py-10 px-4 text-center text-slate-500 font-medium">
+                      To'lov tranzaksiyalari topilmadi.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* 2. Card Management */}
-      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-fade-in" style={{ marginTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-5">
+        <div className="flex items-center justify-between">
           <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, textTransform: 'uppercase' }}>To'lov Kartalari</h3>
-            <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Mijozlar to'lov sahifasida ko'radigan karta raqamlari</p>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">To'lov Kartalari</h3>
+            <p className="text-xs text-slate-500">Mijozlar to'lov qilish sahifasida ko'radigan faol kartalar ro'yxati</p>
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={addCard} className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '0.8rem' }}>+ Karta Qo'shish</button>
-            <button onClick={handleSaveCards} disabled={savingCards} className="btn" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
-              {savingCards ? 'Saqlanmoqda...' : 'SAQLASH'}
+          
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={addCard} 
+              className="h-8 px-3 text-xs font-bold border border-slate-800 hover:bg-slate-850 text-slate-350 rounded-lg transition-all flex items-center gap-1"
+            >
+              <Plus size={13} /> Karta Qo'shish
+            </button>
+            <button 
+              onClick={handleSaveCards} 
+              disabled={savingCards} 
+              className="h-8 px-4 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all"
+            >
+              {savingCards ? 'Saqlanmoqda...' : 'Saqlash'}
             </button>
           </div>
         </div>
 
         {cardsLoading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Yuklanmoqda...</div>
+          <div className="py-6 text-center text-slate-500 text-xs">Yuklanmoqda...</div>
         ) : (
-          <div style={{ display: 'grid', gap: 16 }}>
-            {cards.length === 0 && <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>Kartalar mavjud emas. Mijozlar to'lov qila olishi uchun karta qo'shing.</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {cards.length === 0 && (
+              <div className="col-span-full border border-dashed border-slate-800 rounded-lg p-8 text-center bg-slate-950/20">
+                <ShieldAlert size={20} className="mx-auto mb-2 text-slate-600" />
+                <p className="text-xs font-medium text-slate-500">
+                  Kartalar mavjud emas. To'lov tizimi ishlashi uchun karta ma'lumotlarini qo'shing.
+                </p>
+              </div>
+            )}
+            
             {cards.map((c, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, alignItems: 'end', background: '#f8fafc', padding: 20, borderRadius: 16, border: '1px solid #e2e8f0' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', marginBottom: 6, textTransform: 'uppercase' }}>Karta Turi (Masalan: Humo)</label>
-                  <input type="text" value={c.name} onChange={e => updateCard(i, 'name', e.target.value)} placeholder="UzCard / Humo" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: 600 }} />
+              <div 
+                key={i} 
+                className="bg-slate-950 border border-slate-850 rounded-xl p-4 space-y-3 relative group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Karta #{i + 1}</span>
+                  <button 
+                    onClick={() => removeCard(i)} 
+                    className="h-6 w-6 rounded-md bg-slate-900 border border-slate-800 hover:bg-rose-950/20 hover:text-rose-450 hover:border-rose-900/30 text-slate-500 flex items-center justify-center transition-all"
+                    title="O'chirish"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', marginBottom: 6, textTransform: 'uppercase' }}>Karta Raqami</label>
-                  <input type="text" value={c.number} onChange={e => updateCard(i, 'number', e.target.value)} placeholder="0000 0000 0000 0000" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '1px' }} />
+
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wide block mb-1">Karta turi</label>
+                    <input 
+                      type="text" 
+                      value={c.name} 
+                      onChange={e => updateCard(i, 'name', e.target.value)} 
+                      placeholder="Masalan: UZCARD yoki HUMO" 
+                      className="w-full h-8 px-2.5 bg-slate-900 border border-slate-800 text-white focus:border-orange-500 rounded-lg outline-none font-medium transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wide block mb-1">Karta raqami</label>
+                    <input 
+                      type="text" 
+                      value={c.number} 
+                      onChange={e => updateCard(i, 'number', e.target.value)} 
+                      placeholder="0000 0000 0000 0000" 
+                      className="w-full h-8 px-2.5 bg-slate-900 border border-slate-800 text-white focus:border-orange-500 rounded-lg outline-none font-mono tracking-wider transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wide block mb-1">Karta egasi</label>
+                    <input 
+                      type="text" 
+                      value={c.owner} 
+                      onChange={e => updateCard(i, 'owner', e.target.value)} 
+                      placeholder="Ism Familiya" 
+                      className="w-full h-8 px-2.5 bg-slate-900 border border-slate-800 text-white focus:border-orange-500 rounded-lg outline-none font-medium transition-all"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', marginBottom: 6, textTransform: 'uppercase' }}>Ega Ism-Familiyasi</label>
-                  <input type="text" value={c.owner} onChange={e => updateCard(i, 'owner', e.target.value)} placeholder="PrintFlow LLC" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.9rem', fontWeight: 600 }} />
-                </div>
-                <button onClick={() => removeCard(i)} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', width: 40, height: 40, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} className="hover:bg-rose-100">
-                  <X size={18} />
-                </button>
               </div>
             ))}
           </div>

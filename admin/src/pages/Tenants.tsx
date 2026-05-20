@@ -1,13 +1,19 @@
 import { useState } from 'react';
-import { Building2, Plus, X, AlertTriangle, Clock, Calendar, Trash2 } from 'lucide-react';
+import { Building2, Plus, X, AlertTriangle, Calendar, Trash2, Search } from 'lucide-react';
 import { tenantsApi } from '../api';
 import { useUI } from '../ui';
 import { useTenants, usePlans, useInvalidate } from '../hooks/queries';
-import { STATUS_COLORS, STATUS_LABELS, getAttPct, getActiveModules } from '../shared/constants';
+import { getAttPct, getActiveModules } from '../shared/constants';
 import TenantDetailsModal from './TenantDetailsModal';
 
-export default 
-function Tenants() {
+const CUSTOM_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Faol',
+  TRIAL: 'Trial',
+  EXPIRED: 'Tugagan',
+  PENDING_PAYMENT: "To'lov",
+};
+
+export default function Tenants() {
   const { toast, confirm } = useUI();
   const { data: tenants = [] } = useTenants();
   const { data: plans = [] } = usePlans();
@@ -55,132 +61,176 @@ function Tenants() {
   });
 
   const statuses = [
-    { key: 'ALL', label: 'Barchasi', color: '#64748b' },
-    { key: 'ACTIVE', label: 'Faol', color: '#10b981' },
-    { key: 'TRIAL', label: 'Trial', color: '#3b82f6' },
-    { key: 'EXPIRED', label: 'Tugagan', color: '#ef4444' },
-    { key: 'PENDING_PAYMENT', label: "To'lov", color: '#f59e0b' },
+    { key: 'ALL', label: 'Barchasi' },
+    { key: 'ACTIVE', label: 'Faol' },
+    { key: 'TRIAL', label: 'Trial' },
+    { key: 'EXPIRED', label: 'Tugagan' },
+    { key: 'PENDING_PAYMENT', label: "To'lov" },
   ];
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+    <div className="space-y-6">
+      {/* Header and Search */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 900, letterSpacing: '-0.5px', color: '#0f172a', marginBottom: 4 }}>Workspacelar</h2>
-          <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700 }}>{tenants.length} ta workspace · {tenants.filter(t => t.status === 'ACTIVE').length} faol</p>
+          <h2 className="text-lg font-bold text-white tracking-tight">Workspacelar</h2>
+          <p className="text-xs text-slate-500">
+            {tenants.length} ta workspace · {tenants.filter(t => t.status === 'ACTIVE').length} faol
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <input
-            placeholder="Nomi yoki slug bo'yicha..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ height: 38, padding: '0 14px', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '12px', fontWeight: 600, outline: 'none', background: '#f8fafc', width: 220, fontFamily: 'inherit' }}
-          />
-          <button className="btn" onClick={() => setShowModal(true)} style={{ height: 38, display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px' }}>
-            <Plus size={14} /> Yangi
+
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+            <input
+              placeholder="Workspace nomi yoki slug..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="h-8 pl-8 pr-3 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-white placeholder-slate-500 w-52 focus:border-orange-500 transition-all outline-none"
+            />
+          </div>
+          <button 
+            className="h-8 px-3 flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+            onClick={() => setShowModal(true)}
+          >
+            <Plus size={14} /> Yangi Workspace
           </button>
         </div>
       </div>
 
-      {/* Status filter tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-        {statuses.map(s => (
-          <button key={s.key} onClick={() => setStatusFilter(s.key)}
-            style={{ padding: '5px 14px', borderRadius: 8, border: `1px solid ${statusFilter === s.key ? s.color : '#e2e8f0'}`, background: statusFilter === s.key ? `${s.color}10` : '#fff', color: statusFilter === s.key ? s.color : '#64748b', fontSize: '11px', fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit' }}>
-            {s.label}
-            <span style={{ marginLeft: 6, background: statusFilter === s.key ? s.color : '#e2e8f0', color: statusFilter === s.key ? '#fff' : '#94a3b8', borderRadius: 4, padding: '1px 5px', fontSize: '9px', fontWeight: 900 }}>
-              {s.key === 'ALL' ? tenants.length : tenants.filter(t => t.status === s.key).length}
-            </span>
-          </button>
-        ))}
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap gap-2">
+        {statuses.map(s => {
+          const isActive = statusFilter === s.key;
+          const count = s.key === 'ALL' ? tenants.length : tenants.filter(t => t.status === s.key).length;
+          return (
+            <button
+              key={s.key}
+              onClick={() => setStatusFilter(s.key)}
+              className={`h-8 px-3 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all duration-205 ${
+                isActive 
+                  ? 'border-orange-500 bg-orange-500/10 text-orange-500' 
+                  : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>{s.label}</span>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                isActive ? 'bg-orange-500 text-white' : 'bg-slate-950 text-slate-500 border border-slate-850'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Workspace cards grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
+      {/* Grid of Workspaces */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map(t => {
-          const color = STATUS_COLORS[t.status] || '#94a3b8';
-          const label = STATUS_LABELS[t.status] || t.status;
+          const label = CUSTOM_STATUS_LABELS[t.status] || t.status;
           const attPct = getAttPct(t);
           const modules = getActiveModules(t);
           const expDate = t.status === 'TRIAL' ? t.trialEndsAt : t.subscriptionEndsAt;
           const isExpiringSoon = expDate && (new Date(expDate).getTime() - Date.now()) < 7 * 24 * 3600 * 1000 && new Date(expDate) > new Date();
+          
+          const dotColor = 
+            t.status === 'ACTIVE' ? 'bg-emerald-500' :
+            t.status === 'TRIAL' ? 'bg-blue-500' :
+            t.status === 'EXPIRED' ? 'bg-rose-500' : 'bg-amber-500';
 
           return (
-            <div key={t.id}
-              style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'box-shadow 0.2s, transform 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.09)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'none'; }}
+            <div 
+              key={t.id}
+              className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm hover:border-slate-700 transition-all flex flex-col justify-between"
             >
-              {/* Color strip */}
-              <div style={{ height: 3, background: color }} />
-
-              {/* Card header */}
-              <div style={{ padding: '15px 18px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-                  <p style={{ fontWeight: 900, fontSize: '0.95rem', color: '#0f172a', letterSpacing: '-0.3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</p>
-                  <p style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, marginTop: 2 }}>@{t.slug} · {t.plan?.displayName || <span style={{ fontStyle: 'italic' }}>Tarifisiz</span>}</p>
+              <div>
+                {/* Card Header */}
+                <div className="p-4 flex justify-between items-start">
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-white truncate">{t.name}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      @{t.slug} · <span className="text-slate-400 font-semibold">{t.plan?.displayName || 'Tarifisiz'}</span>
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-350 flex-shrink-0">
+                    <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                    {label}
+                  </span>
                 </div>
-                <span style={{ background: `${color}12`, color, fontSize: '8px', fontWeight: 900, padding: '4px 9px', borderRadius: 7, textTransform: 'uppercase', letterSpacing: '0.5px', border: `1px solid ${color}25`, flexShrink: 0 }}>
-                  {label}
-                </span>
+
+                {/* Grid stats */}
+                <div className="grid grid-cols-4 border-t border-b border-slate-850 bg-slate-950/20">
+                  {[
+                    { label: 'Xodim', value: t._count?.employees ?? 0 },
+                    { label: 'Buyurtma', value: t.activeTasksCount ?? t._count?.tasks ?? 0 },
+                    { label: 'Davomat', value: `${attPct}%` },
+                    { label: 'Modullar', value: `${modules}/4` },
+                  ].map((m, idx) => (
+                    <div key={idx} className={`text-center py-2.5 ${idx < 3 ? 'border-r border-slate-850' : ''}`}>
+                      <p className="text-xs font-bold text-slate-200 leading-none">{m.value}</p>
+                      <p className="text-[8px] font-bold text-slate-500 uppercase mt-1.5">{m.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Progress bar */}
+                {(t._count?.employees || 0) > 0 && (
+                  <div className="px-4 pt-3.5">
+                    <div className="h-1 bg-slate-950 rounded-full overflow-hidden border border-slate-850">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          attPct >= 80 ? 'bg-emerald-500' : attPct >= 40 ? 'bg-amber-500' : 'bg-rose-500'
+                        }`} 
+                        style={{ width: `${attPct}%` }} 
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Metrics strip */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: '1px solid #f8fafc', borderBottom: '1px solid #f8fafc' }}>
-                {[
-                  { label: 'Xodim', value: t._count?.employees ?? 0, c: '#3b82f6' },
-                  { label: 'Buyurtma', value: t.activeTasksCount ?? t._count?.tasks ?? 0, c: '#FF6B00' },
-                  { label: 'Davomat', value: `${attPct}%`, c: attPct >= 80 ? '#10b981' : attPct >= 40 ? '#f59e0b' : '#ef4444' },
-                  { label: 'Modullar', value: `${modules}/4`, c: '#8b5cf6' },
-                ].map((m, i) => (
-                  <div key={i} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 3 ? '1px solid #f8fafc' : 'none' }}>
-                    <p style={{ fontSize: '1.05rem', fontWeight: 900, color: m.c, letterSpacing: '-0.5px', lineHeight: 1 }}>{m.value}</p>
-                    <p style={{ fontSize: '7px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: 3 }}>{m.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Progress bar for attendance */}
-              {(t._count?.employees || 0) > 0 && (
-                <div style={{ padding: '8px 18px 0' }}>
-                  <div style={{ height: 3, background: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${attPct}%`, background: attPct >= 80 ? '#10b981' : attPct >= 40 ? '#f59e0b' : '#ef4444', borderRadius: 2, transition: 'width 0.5s ease' }} />
-                  </div>
-                </div>
-              )}
-
-              {/* Card footer */}
-              <div style={{ padding: '10px 18px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
+              {/* Card Footer */}
+              <div className="p-4 pt-3.5 flex items-center justify-between gap-4">
+                <div className="min-w-0">
                   {expDate ? (
-                    <span style={{ fontSize: '10px', color: isExpiringSoon ? '#f59e0b' : '#94a3b8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      {isExpiringSoon && <AlertTriangle size={11} strokeWidth={2.5} />}
-                      {t.status === 'TRIAL' ? <Clock size={11} strokeWidth={2.5} /> : <Calendar size={11} strokeWidth={2.5} />}
-                      {t.status === 'TRIAL' ? 'Trial: ' : ''}{new Date(expDate).toLocaleDateString('uz-UZ')}
+                    <span className={`text-[10px] font-semibold flex items-center gap-1 ${isExpiringSoon ? 'text-amber-500 font-bold' : 'text-slate-500'}`}>
+                      {isExpiringSoon ? <AlertTriangle size={11} /> : <Calendar size={11} />}
+                      <span className="truncate">{t.status === 'TRIAL' ? 'Trial: ' : ''}{new Date(expDate).toLocaleDateString('uz-UZ')}</span>
                     </span>
                   ) : (
-                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <Calendar size={11} strokeWidth={2.5} /> {new Date(t.createdAt).toLocaleDateString('uz-UZ')}
+                    <span className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
+                      <Calendar size={11} />
+                      <span className="truncate">{new Date(t.createdAt).toLocaleDateString('uz-UZ')}</span>
                     </span>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 5 }}>
-                  <button onClick={() => openDetails(t.id)}
-                    style={{ padding: '5px 11px', fontSize: '10px', fontWeight: 800, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer', color: '#64748b', fontFamily: 'inherit' }}>
+
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button 
+                    onClick={() => openDetails(t.id)}
+                    className="h-7 px-2.5 text-[10px] font-bold bg-slate-950 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded-lg transition-all"
+                  >
                     Tafsilot
                   </button>
-                  <button onClick={() => toggleStatus(t.id, t.isActive)}
-                    style={{ padding: '5px 11px', fontSize: '10px', fontWeight: 800, background: t.isActive ? '#fef2f2' : '#f0fdf4', border: `1px solid ${t.isActive ? '#fca5a5' : '#86efac'}`, borderRadius: 8, cursor: 'pointer', color: t.isActive ? '#ef4444' : '#10b981', fontFamily: 'inherit' }}>
+                  <button 
+                    onClick={() => toggleStatus(t.id, t.isActive)}
+                    className={`h-7 px-2.5 text-[10px] font-bold border rounded-lg transition-all ${
+                      t.isActive 
+                        ? 'bg-rose-950/20 border-rose-900/30 hover:bg-rose-900/20 text-rose-400' 
+                        : 'bg-emerald-950/20 border-emerald-900/30 hover:bg-emerald-900/20 text-emerald-400'
+                    }`}
+                  >
                     {t.isActive ? 'Bloklash' : 'Faollashtirish'}
                   </button>
-                  <button onClick={async () => {
-                    const ok = await confirm({ title: 'Workspace o\'chirish', message: `${t.name} workspace butunlay o'chirilsinmi?`, confirmText: 'Ha, o\'chirilsin', danger: true });
-                    if (!ok) return;
-                    try { await tenantsApi.delete(t.id); toast('Workspace o\'chirildi', 'success'); load(); }
-                    catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
-                  }} style={{ padding: '5px 9px', fontSize: '10px', fontWeight: 900, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, cursor: 'pointer', color: '#ef4444', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center' }}>
-                    <Trash2 size={12} strokeWidth={2.5} />
+                  <button 
+                    onClick={async () => {
+                      const ok = await confirm({ title: 'Workspace o\'chirish', message: `"${t.name}" workspace butunlay o'chirilsinmi?`, confirmText: 'Ha, o\'chirilsin', danger: true });
+                      if (!ok) return;
+                      try { await tenantsApi.delete(t.id); toast('Workspace o\'chirildi', 'success'); load(); }
+                      catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
+                    }} 
+                    className="h-7 w-7 flex items-center justify-center bg-slate-950 hover:bg-rose-950/20 hover:text-rose-400 hover:border-rose-900/30 text-slate-500 border border-slate-800 rounded-lg transition-all"
+                  >
+                    <Trash2 size={12} />
                   </button>
                 </div>
               </div>
@@ -190,40 +240,80 @@ function Tenants() {
       </div>
 
       {filtered.length === 0 && (
-        <div style={{ padding: '80px 0', textAlign: 'center', color: '#cbd5e1' }}>
-          <Building2 size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.25 }} />
-          <p style={{ fontWeight: 800, fontSize: '0.85rem' }}>{search ? 'Qidiruv bo\'yicha natija topilmadi' : 'Workspacelar mavjud emas'}</p>
+        <div className="bg-slate-900 rounded-xl border border-slate-800 p-12 text-center">
+          <Building2 size={32} className="mx-auto mb-2 text-slate-600" />
+          <p className="text-xs font-bold text-slate-500">
+            {search ? 'Natija topilmadi' : 'Workspacelar mavjud emas'}
+          </p>
         </div>
       )}
+
+      {/* Create Workspace Modal */}
       {showModal && !generatedCreds && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header"><h2>Yangi Workspace</h2><button className="modal-close" onClick={() => setShowModal(false)}><X size={24} /></button></div>
-            <form onSubmit={handleCreate}>
-              <div className="form-group"><label>Workspace Nomi</label><input required value={name} onChange={e => setName(e.target.value)} placeholder="Masalan: Ideal Print" /></div>
-              <div className="form-group"><label>Tarif (ixtiyoriy)</label>
-                <select value={selectedPlanId} onChange={e => setSelectedPlanId(e.target.value)} style={{ width: '100%', height: 48, border: '1px solid var(--border)', borderRadius: 6, padding: '0 16px', fontFamily: 'inherit', fontSize: '0.95rem' }}>
+          <div className="modal-content max-w-sm bg-slate-900 border border-slate-800 text-white">
+            <div className="modal-header p-4 border-b border-slate-800">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wide">Yangi Workspace</h2>
+              <button className="modal-close p-1" onClick={() => setShowModal(false)}><X size={18} className="text-slate-400" /></button>
+            </div>
+            <form onSubmit={handleCreate} className="p-5 space-y-4 text-xs">
+              <div className="form-group">
+                <label className="text-slate-400">Workspace Nomi</label>
+                <input 
+                  required 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  placeholder="Masalan: Ideal Print" 
+                  autoFocus
+                  className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500"
+                />
+              </div>
+              <div className="form-group">
+                <label className="text-slate-400">Tarif Rejasi (ixtiyoriy)</label>
+                <select 
+                  value={selectedPlanId} 
+                  onChange={e => setSelectedPlanId(e.target.value)} 
+                  className="w-full h-8 border border-slate-800 bg-slate-950 rounded-lg px-2 text-xs text-slate-300 outline-none focus:border-orange-500"
+                >
                   <option value="">Tanlanmagan (7 kunlik trial)</option>
                   {plans.map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
                 </select>
               </div>
-              <button className="btn" style={{ width: '100%', height: 48, marginTop: 16 }} disabled={loading}>{loading ? 'Yaratilmoqda...' : 'Yaratish'}</button>
+              <button 
+                type="submit" 
+                className="w-full h-9 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-all mt-2" 
+                disabled={loading}
+              >
+                {loading ? 'Yaratilmoqda...' : 'Workspace Yaratish'}
+              </button>
             </form>
           </div>
         </div>
       )}
 
+      {/* Generated Credentials Modal */}
       {generatedCreds && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header"><h2>Workspace Yaratildi!</h2><button className="modal-close" onClick={() => setGeneratedCreds(null)}><X size={24} /></button></div>
-            <div className="generated-creds" style={{ marginTop: 16 }}>
-              <h4>Kirish Ma'lumotlari</h4>
-              <p><strong>Workspace URL:</strong> /t/{generatedCreds.slug}</p>
-              <p><strong>Login:</strong> {generatedCreds.login}</p>
-              <p><strong>Parol:</strong> {generatedCreds.pass}</p>
+          <div className="modal-content max-w-sm bg-slate-900 border border-slate-800 text-white">
+            <div className="modal-header p-4 border-b border-slate-800">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wide">Workspace Yaratildi!</h2>
+              <button className="modal-close p-1" onClick={() => setGeneratedCreds(null)}><X size={18} className="text-slate-400" /></button>
             </div>
-            <button className="btn" style={{ width: '100%', height: 48, marginTop: 16 }} onClick={() => setGeneratedCreds(null)}>Yopish</button>
+            
+            <div className="p-5 space-y-4 text-xs">
+              <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2">
+                <p><span className="text-slate-400">Workspace URL:</span> <span className="text-white select-all font-semibold">/t/{generatedCreds.slug}</span></p>
+                <p><span className="text-slate-400">Login:</span> <span className="text-white select-all font-semibold">{generatedCreds.login}</span></p>
+                <p><span className="text-slate-400">Parol:</span> <span className="text-white select-all font-semibold">{generatedCreds.pass}</span></p>
+              </div>
+
+              <button 
+                className="w-full h-9 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-white text-xs font-bold rounded-lg transition-all mt-2" 
+                onClick={() => setGeneratedCreds(null)}
+              >
+                Yopish
+              </button>
+            </div>
           </div>
         </div>
       )}

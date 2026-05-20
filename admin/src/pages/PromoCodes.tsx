@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { tenantsApi } from '../api';
+import { Key } from 'lucide-react';
 
-export default 
-function PromoCodes() {
+export default function PromoCodes() {
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,60 +13,106 @@ function PromoCodes() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Yuklanmoqda...</div>;
+  if (loading) {
+    return <div className="py-10 text-center text-slate-500 text-xs">Yuklanmoqda...</div>;
+  }
 
   return (
-    <div>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 24 }}>Promo Kodlar va Cashbacklar</h2>
-      
-      <div className="table-container shadow-sm" style={{ marginBottom: 32 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th>Kod</th>
-              <th>Egasi (Workspace)</th>
-              <th>Jalb qildi (ta)</th>
-              <th>Jami topdi</th>
-              <th>Balans</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {promos.map(p => (
-              <React.Fragment key={p.id}>
-                <tr>
-                  <td style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--primary)' }}>{p.code}</td>
-                  <td style={{ fontWeight: 700 }}>{p.tenant?.name || '—'} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({p.tenant?.slug})</span></td>
-                  <td><span className="badge" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>{p.totalReferrals} ta</span></td>
-                  <td style={{ fontWeight: 800, color: '#10b981' }}>{p.totalEarned?.toLocaleString()} UZS</td>
-                  <td style={{ fontWeight: 800 }}>{p.cashbackBalance?.toLocaleString()} UZS</td>
-                  <td>{p.isActive ? <span className="badge active">Faol</span> : <span className="badge inactive">Nofaol</span>}</td>
-                </tr>
-                {p.usages && p.usages.length > 0 && (
-                  <tr>
-                    <td colSpan={6} style={{ padding: 0, backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                      <div style={{ padding: '12px 24px' }}>
-                        <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: 8 }}>Ishlatilish tarixi:</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {p.usages.map((u: any) => (
-                            <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: 12, fontSize: '0.8rem', padding: '8px 12px', backgroundColor: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                              <span><strong>Kim ishlatdi:</strong> {u.usingTenant?.name}</span>
-                              <span><strong>Tarif:</strong> {u.planName}</span>
-                              <span><strong>To'lov:</strong> {u.paymentAmount?.toLocaleString()} UZS</span>
-                              <span style={{ color: '#ef4444' }}><strong>Chegirma:</strong> -{u.discount?.toLocaleString()} UZS</span>
-                              <span style={{ color: '#10b981' }}><strong>Cashback:</strong> +{u.cashbackEarned?.toLocaleString()} UZS</span>
-                            </div>
-                          ))}
-                        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-bold text-white tracking-tight">Promo Kodlar & Cashback</h2>
+        <p className="text-xs text-slate-500">Hamkorlik promo kodlari va ulardan kelib tushgan cashback balanslari</p>
+      </div>
+
+      {/* Promocodes Table */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-850 bg-slate-950/20 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="py-3 px-4">Kod</th>
+                <th className="py-3 px-4">Hamkor (Workspace)</th>
+                <th className="py-3 px-4">Jalb qildi</th>
+                <th className="py-3 px-4">Jami Topdi</th>
+                <th className="py-3 px-4">Joriy Balans</th>
+                <th className="py-3 px-4">Holati</th>
+              </tr>
+            </thead>
+            <tbody className="text-xs text-slate-300">
+              {promos.map(p => (
+                <React.Fragment key={p.id}>
+                  {/* Promo Code Row */}
+                  <tr className="hover:bg-slate-850/20 border-b border-slate-850 font-semibold">
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-1.5 text-orange-500">
+                        <Key size={13} className="text-orange-500" />
+                        <span className="font-mono text-xs tracking-wider select-all">{p.code}</span>
                       </div>
                     </td>
+                    <td className="py-3.5 px-4">
+                      <div>
+                        <p className="text-white">{p.tenant?.name || '—'}</p>
+                        <p className="text-[10px] text-slate-500 font-normal">@{p.tenant?.slug}</p>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="text-slate-300">{p.totalReferrals} ta</span>
+                    </td>
+                    <td className="py-3.5 px-4 text-emerald-500 font-bold">
+                      {(p.totalEarned || 0).toLocaleString()} UZS
+                    </td>
+                    <td className="py-3.5 px-4 font-bold text-white">
+                      {(p.cashbackBalance || 0).toLocaleString()} UZS
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center gap-1.5 font-semibold">
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.isActive ? 'bg-emerald-500' : 'bg-slate-500'}`} />
+                        <span className={p.isActive ? 'text-emerald-400' : 'text-slate-500'}>{p.isActive ? 'Faol' : 'Nofaol'}</span>
+                      </span>
+                    </td>
                   </tr>
-                )}
-              </React.Fragment>
-            ))}
-            {promos.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32 }}>Promo kodlar yo'q</td></tr>}
-          </tbody>
-        </table>
+
+                  {/* Referral usages detail row */}
+                  {p.usages && p.usages.length > 0 && (
+                    <tr>
+                      <td colSpan={6} className="bg-slate-950/30 p-0 border-b border-slate-850">
+                        <div className="py-3 px-6 space-y-2">
+                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Tarix va komissiyalar:</p>
+                          <div className="space-y-1.5">
+                            {p.usages.map((u: any) => (
+                              <div 
+                                key={u.id} 
+                                className="bg-slate-900 border border-slate-850 rounded-lg p-2.5 flex items-center justify-between text-[11px]"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <span className="font-bold text-white">{u.usingTenant?.name}</span>
+                                  <span className="text-slate-500 font-mono text-[10px]">Tarif: {u.planName}</span>
+                                  <span className="text-slate-400">To'lov: {u.paymentAmount?.toLocaleString()} UZS</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-rose-400 font-medium">Chegirma: -{u.discount?.toLocaleString()} UZS</span>
+                                  <span className="text-emerald-500 font-bold">Cashback: +{u.cashbackEarned?.toLocaleString()} UZS</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+              {promos.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-slate-500 font-medium">
+                    Promo kodlar mavjud emas
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

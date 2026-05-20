@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Plus, X, Trash2, Calendar, AlertCircle, Pencil, CheckCircle2, Circle, Clock,
-  Layers, FileText, GripVertical,
+  Layers, FileText, GripVertical, Check
 } from 'lucide-react';
 import { taskManagerApi } from '../api';
 import { useTaskFunnels, useInvalidate } from '../hooks/queries';
@@ -33,21 +33,22 @@ type TaskItem = {
 };
 
 const FUNNEL_COLORS = ['#FF6B00', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444', '#f59e0b', '#0ea5e9', '#ec4899'];
-const STATUS_OPTIONS: { value: string; label: string; icon: any; color: string }[] = [
-  { value: 'open',        label: 'Yangi',      icon: Circle,       color: '#64748b' },
-  { value: 'in_progress', label: 'Jarayonda',  icon: Clock,        color: '#3b82f6' },
-  { value: 'done',        label: 'Bajarildi',  icon: CheckCircle2, color: '#10b981' },
+const STATUS_OPTIONS: { value: string; label: string; icon: any; color: string; bg: string }[] = [
+  { value: 'open',        label: 'Yangi',      icon: Circle,       color: '#64748b', bg: 'bg-slate-100 text-slate-700 border-slate-200' },
+  { value: 'in_progress', label: 'Jarayonda',  icon: Clock,        color: '#3b82f6', bg: 'bg-blue-50 text-blue-700 border-blue-100' },
+  { value: 'done',        label: 'Bajarildi',  icon: CheckCircle2, color: '#10b981', bg: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
 ];
 
 function formatDeadline(d: string | null): { text: string; tone: 'danger' | 'warning' | 'muted' } {
-  if (!d) return { text: 'Muddat yo\'q', tone: 'muted' };
+  if (!d) return { text: "Muddat yo'q", tone: 'muted' };
   const date = new Date(d);
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   const text = date.toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric' });
-  if (diffDays < 0)  return { text: `${text} (${Math.abs(diffDays)} kun kechikti)`, tone: 'danger' };
-  if (diffDays <= 2) return { text: `${text} (${diffDays === 0 ? 'bugun' : diffDays + ' kun qoldi'})`, tone: 'warning' };
+  if (diffDays < 0)  return { text: `${text} (${Math.abs(diffDays)} kun kechikdi)`, tone: 'danger' };
+  if (diffDays === 0) return { text: `${text} (bugun)`, tone: 'warning' };
+  if (diffDays <= 2) return { text: `${text} (${diffDays} kun qoldi)`, tone: 'warning' };
   return { text, tone: 'muted' };
 }
 
@@ -231,42 +232,46 @@ export default function TaskManager() {
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div>
-      <div className="flex-between">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase' }}>Task Menejer</h2>
-          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>
-            Varonkalar va ichidagi tasklar — drag-drop bilan ko'chiring
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Task Menejer</h2>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Varonkalar va ichidagi tasklar — drag-drop yordamida ustunlararo ko'chiring
           </p>
         </div>
-        <button className="btn" onClick={openCreateFunnel}>
-          <Plus size={16} /> Yangi Varonka
+        <button 
+          className="btn h-10 px-4 flex items-center gap-2 rounded-xl text-xs font-bold self-start"
+          onClick={openCreateFunnel}
+        >
+          <Plus size={14} strokeWidth={2.5} /> Yangi Varonka
         </button>
       </div>
 
-      {/* Empty state */}
+      {/* Empty State */}
       {funnels.length === 0 ? (
-        <div style={{
-          background: 'white', border: '1px dashed #cbd5e1', borderRadius: 12,
-          padding: 48, textAlign: 'center', marginTop: 20,
-        }}>
-          <Layers size={48} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 6 }}>Varonkalar yo'q</h3>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: 20 }}>
-            Tasklarni guruhlash uchun birinchi varonkangizni yarating.
-          </p>
-          <button className="btn" onClick={openCreateFunnel}>
-            <Plus size={16} /> Birinchi Varonka
+        <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-16 text-center max-w-xl mx-auto space-y-4">
+          <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-400">
+            <Layers size={26} strokeWidth={1.8} />
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-slate-800">Varonkalar yo'q</h3>
+            <p className="text-xs text-slate-500 font-medium mt-1 max-w-xs mx-auto">
+              Tasklarni guruhlash va jarayonlarni kuzatish uchun birinchi varonkangizni yarating.
+            </p>
+          </div>
+          <button 
+            className="btn h-10 px-4 text-xs font-bold"
+            onClick={openCreateFunnel}
+          >
+            <Plus size={14} strokeWidth={2.5} /> Birinchi Varonkani Yaratish
           </button>
         </div>
       ) : (
-        // ── Kanban board ─────────────────────────────────────────────────
-        <div style={{
-          display: 'flex', gap: 14, marginTop: 20, paddingBottom: 8,
-          overflowX: 'auto', alignItems: 'flex-start',
-        }}>
+        /* Kanban Board Container */
+        <div className="flex gap-4 overflow-x-auto pb-4 items-start select-none">
           {funnels.map(f => {
             const isDragOver = dragOverFunnelId === f.id;
             return (
@@ -275,158 +280,108 @@ export default function TaskManager() {
                 onDragOver={(e) => onColumnDragOver(e, f.id)}
                 onDragLeave={onColumnDragLeave}
                 onDrop={(e) => onColumnDrop(e, f.id)}
-                style={{
-                  width: 320, flexShrink: 0,
-                  background: isDragOver ? `${f.color}10` : '#f8fafc',
-                  border: `2px solid ${isDragOver ? f.color : 'transparent'}`,
-                  borderRadius: 12, padding: 10,
-                  transition: 'all 0.15s ease',
-                  display: 'flex', flexDirection: 'column', gap: 8,
-                  maxHeight: 'calc(100vh - 220px)',
-                }}
+                className={`w-80 flex-shrink-0 rounded-2xl border transition-all duration-200 flex flex-col max-h-[calc(100vh-210px)] ${
+                  isDragOver 
+                    ? 'border-dashed border-orange-400 bg-orange-50/20' 
+                    : 'border-slate-200/80 bg-slate-50/70'
+                }`}
               >
-                {/* Column header */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '4px 6px',
-                }}>
-                  <span style={{
-                    width: 12, height: 12, borderRadius: '50%',
-                    background: f.color, flexShrink: 0,
-                  }} />
-                  <span style={{
-                    fontWeight: 800, fontSize: '0.9rem',
-                    color: '#0f172a', textTransform: 'uppercase',
-                    letterSpacing: 0.3, flex: 1, minWidth: 0,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
+                {/* Column Header */}
+                <div className="p-4 flex items-center gap-2.5 border-b border-slate-200/60 bg-white/50 rounded-t-2xl">
+                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: f.color }} />
+                  <span className="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex-1 truncate">
                     {f.name}
                   </span>
-                  <span style={{
-                    fontSize: '0.7rem', fontWeight: 700,
-                    padding: '2px 8px', borderRadius: 999,
-                    background: '#e2e8f0', color: '#475569',
-                  }}>
+                  <span className="text-[10px] font-black bg-slate-200/60 text-slate-600 px-2 py-0.5 rounded-md">
                     {f.tasks?.length || 0}
                   </span>
                   <button
                     onClick={() => openEditFunnel(f)}
-                    style={{
-                      background: 'transparent', border: 'none', cursor: 'pointer',
-                      color: '#94a3b8', padding: 4, display: 'flex',
-                    }}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
                     title="Varonkani tahrirlash"
                   >
-                    <Pencil size={13} />
+                    <Pencil size={13} strokeWidth={2.5} />
                   </button>
                 </div>
 
-                {/* Tasks list (scrollable) */}
-                <div style={{
-                  display: 'flex', flexDirection: 'column', gap: 6,
-                  overflowY: 'auto', flex: 1, padding: 2,
-                }}>
+                {/* Task Card List */}
+                <div className="p-3 flex flex-col gap-2 overflow-y-auto flex-1">
                   {(f.tasks || []).map(t => {
-                    const status = STATUS_OPTIONS.find(s => s.value === t.status) || STATUS_OPTIONS[0];
-                    const StatusIcon = status.icon;
                     const deadline = formatDeadline(t.deadlineAt);
-                    const deadlineColor =
-                      deadline.tone === 'danger'  ? '#dc2626' :
-                      deadline.tone === 'warning' ? '#d97706' : '#64748b';
                     const dragging = draggedTaskId === t.id;
+
+                    const deadlineBadge = 
+                      deadline.tone === 'danger' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                      deadline.tone === 'warning' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                      'bg-slate-100 text-slate-500 border border-slate-200/50';
+
                     return (
                       <div
                         key={t.id}
                         draggable
                         onDragStart={(e) => onTaskDragStart(e, t.id)}
                         onDragEnd={() => { setDraggedTaskId(null); setDragOverFunnelId(null); }}
-                        style={{
-                          background: 'white',
-                          border: `1px solid ${dragging ? f.color : '#e2e8f0'}`,
-                          borderRadius: 10, padding: 10,
-                          cursor: 'grab',
-                          opacity: dragging ? 0.4 : 1,
-                          transform: dragging ? 'scale(0.97)' : 'none',
-                          boxShadow: dragging ? `0 4px 16px ${f.color}40` : '0 1px 2px rgba(0,0,0,0.04)',
-                          transition: 'all 0.15s ease',
-                        }}
+                        className={`bg-white border rounded-xl p-4 flex flex-col justify-between cursor-grab active:cursor-grabbing transition-all ${
+                          dragging 
+                            ? 'opacity-40 border-orange-500 scale-[0.98]' 
+                            : 'border-slate-200 hover:border-slate-300 shadow-sm hover:shadow'
+                        }`}
                       >
-                        <div style={{
-                          display: 'flex', alignItems: 'flex-start', gap: 8,
-                        }}>
-                          <GripVertical size={12} color="#cbd5e1" style={{ marginTop: 3, flexShrink: 0 }} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            {/* Title + status icon */}
-                            <div style={{
-                              display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4,
-                            }}>
+                        <div className="flex items-start gap-2">
+                          <GripVertical size={13} className="text-slate-300 mt-1 flex-shrink-0 cursor-grab" />
+                          <div className="flex-1 min-w-0">
+                            {/* Title & Status checkbox */}
+                            <div className="flex items-start gap-2.5">
                               <button
                                 onClick={() => toggleStatus(t)}
-                                title={`Status: ${status.label}`}
-                                style={{
-                                  background: 'transparent', border: 'none', cursor: 'pointer',
-                                  color: status.color, padding: 0, display: 'flex', flexShrink: 0,
-                                }}
+                                className={`mt-0.5 h-4.5 w-4.5 rounded-md flex items-center justify-center flex-shrink-0 border transition-all ${
+                                  t.status === 'done' 
+                                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-500/20' 
+                                    : 'border-slate-300 bg-white hover:border-slate-400'
+                                }`}
                               >
-                                <StatusIcon size={15} strokeWidth={2.4} />
+                                {t.status === 'done' && <Check size={11} strokeWidth={3} />}
                               </button>
-                              <span style={{
-                                fontWeight: 700, fontSize: '0.85rem', color: '#0f172a',
-                                textDecoration: t.status === 'done' ? 'line-through' : 'none',
-                                opacity: t.status === 'done' ? 0.55 : 1,
-                                flex: 1, minWidth: 0,
-                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                              }}>
+                              
+                              <p className={`font-extrabold text-xs leading-snug tracking-tight text-slate-800 break-words ${
+                                t.status === 'done' ? 'line-through text-slate-400 font-semibold' : ''
+                              }`}>
                                 {t.title}
-                              </span>
+                              </p>
                             </div>
+
                             {/* Description */}
                             {t.description && (
-                              <div style={{
-                                fontSize: '0.75rem', color: '#475569', marginBottom: 6,
-                                lineHeight: 1.4,
-                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}>
+                              <p className="text-[11px] font-medium text-slate-500 line-clamp-2 mt-2 leading-relaxed pl-7">
                                 {t.description}
-                              </div>
+                              </p>
                             )}
-                            {/* Deadline + actions */}
-                            <div style={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
-                            }}>
-                              <div style={{
-                                display: 'flex', alignItems: 'center', gap: 4,
-                                fontSize: '0.7rem', color: deadlineColor, fontWeight: 700, minWidth: 0,
-                              }}>
-                                <Calendar size={11} />
-                                <span style={{
-                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                }}>{deadline.text}</span>
-                              </div>
-                              <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+
+                            {/* Footer (Deadline & Actions) */}
+                            <div className="flex items-center justify-between gap-3 mt-4 pl-7">
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${deadlineBadge}`}>
+                                <Calendar size={10} strokeWidth={2.5} />
+                                <span className="truncate">{deadline.text}</span>
+                              </span>
+
+                              <div className="flex items-center gap-1 flex-shrink-0">
                                 <button
                                   onClick={() => openEditTask(t)}
-                                  style={{
-                                    background: 'transparent', border: 'none', cursor: 'pointer',
-                                    color: '#94a3b8', padding: 4, display: 'flex',
-                                  }}
+                                  className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-50 transition-all"
                                   title="Tahrirlash"
                                 >
-                                  <Pencil size={12} />
+                                  <Pencil size={11} strokeWidth={2.5} />
                                 </button>
                                 <button
                                   onClick={() => deleteTask(t)}
-                                  style={{
-                                    background: 'transparent', border: 'none', cursor: 'pointer',
-                                    color: '#dc2626', padding: 4, display: 'flex',
-                                  }}
+                                  className="p-1 text-rose-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-all"
                                   title="O'chirish"
                                 >
-                                  <Trash2 size={12} />
+                                  <Trash2 size={11} strokeWidth={2.5} />
                                 </button>
                               </div>
                             </div>
+
                           </div>
                         </div>
                       </div>
@@ -434,101 +389,87 @@ export default function TaskManager() {
                   })}
 
                   {(f.tasks || []).length === 0 && (
-                    <div style={{
-                      padding: '20px 8px', textAlign: 'center',
-                      color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600,
-                      border: '1px dashed #e2e8f0', borderRadius: 8,
-                    }}>
-                      <FileText size={20} color="#cbd5e1" style={{ margin: '0 auto 6px' }} />
-                      <div>Tasklar yo'q</div>
+                    <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl bg-white/20">
+                      <FileText size={20} className="mx-auto mb-2 text-slate-300 opacity-60" />
+                      <p className="text-[10px] font-bold text-slate-400">Varonka bo'sh</p>
                     </div>
                   )}
                 </div>
 
-                {/* Add task button */}
-                <button
-                  onClick={() => openCreateTask(f.id)}
-                  style={{
-                    background: 'transparent', border: '1px dashed #cbd5e1',
-                    color: '#64748b', padding: '8px 12px', borderRadius: 8,
-                    fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = f.color;
-                    (e.currentTarget as HTMLButtonElement).style.color = f.color;
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = '#cbd5e1';
-                    (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
-                  }}
-                >
-                  <Plus size={13} /> Task qo'shish
-                </button>
+                {/* Add Task Trigger */}
+                <div className="p-3 border-t border-slate-200/60 bg-white/30 rounded-b-2xl">
+                  <button
+                    onClick={() => openCreateTask(f.id)}
+                    className="w-full py-2 border border-dashed border-slate-300 hover:border-orange-400 hover:bg-orange-50/10 text-slate-500 hover:text-orange-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Plus size={12} strokeWidth={2.5} /> Task qo'shish
+                  </button>
+                </div>
+
               </div>
             );
           })}
-
         </div>
       )}
 
-      {/* ── Funnel modal ─────────────────────────────────────────────────── */}
+      {/* Funnel Modal */}
       {showFunnelModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 480 }}>
+          <div className="modal-content max-w-sm">
             <div className="modal-header">
-              <h2>{editingFunnel ? 'Varonkani tahrirlash' : 'Yangi varonka'}</h2>
-              <button className="modal-close" onClick={() => setShowFunnelModal(false)}><X size={22} /></button>
+              <h2>{editingFunnel ? 'Varonkani Tahrirlash' : 'Yangi Varonka'}</h2>
+              <button className="modal-close" onClick={() => setShowFunnelModal(false)}><X size={20} /></button>
             </div>
             {errorMsg && (
-              <div style={{
-                padding: '10px 14px', background: '#fef2f2', border: '1px solid #fee2e2',
-                color: '#dc2626', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700,
-                marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <AlertCircle size={16} /> {errorMsg}
+              <div className="bg-rose-50 border border-rose-100 text-rose-600 rounded-xl p-3.5 text-xs font-bold mb-4 flex items-center gap-2">
+                <AlertCircle size={15} /> {errorMsg}
               </div>
             )}
-            <form onSubmit={saveFunnel}>
+            <form onSubmit={saveFunnel} className="space-y-4">
               <div className="form-group">
-                <label>Nomi *</label>
+                <label>Varonka Nomi</label>
                 <input
-                  autoFocus required value={funnelForm.name}
+                  autoFocus 
+                  required 
+                  value={funnelForm.name}
                   onChange={e => setFunnelForm({ ...funnelForm, name: e.target.value })}
                   placeholder="Sotuv, Marketing, ..."
                 />
               </div>
               <div className="form-group">
                 <label>Rang</label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="flex gap-2 flex-wrap">
                   {FUNNEL_COLORS.map(c => (
-                    <div
+                    <button
                       key={c}
+                      type="button"
                       onClick={() => setFunnelForm({ ...funnelForm, color: c })}
+                      className="w-8 h-8 rounded-full border-2 transition-all"
                       style={{
-                        width: 32, height: 32, borderRadius: '50%', cursor: 'pointer',
                         background: c,
-                        border: funnelForm.color === c ? '3px solid #0f172a' : '3px solid transparent',
-                        boxShadow: funnelForm.color === c ? `0 4px 10px ${c}55` : 'none',
+                        borderColor: funnelForm.color === c ? '#0f172a' : 'transparent',
+                        boxShadow: funnelForm.color === c ? `0 0 8px ${c}88` : 'none',
                       }}
                     />
                   ))}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button type="submit" className="btn" style={{ flex: 1, height: 44 }} disabled={saving}>
+              <div className="flex gap-2 pt-2">
+                <button 
+                  type="submit" 
+                  className="btn flex-1 h-11 text-xs uppercase font-bold tracking-wide" 
+                  disabled={saving}
+                >
                   {saving ? 'Saqlanmoqda...' : 'Saqlash'}
                 </button>
                 {editingFunnel && (
                   <button
-                    type="button" onClick={deleteFunnel} className="btn"
-                    style={{
-                      background: '#fef2f2', color: '#dc2626', border: '1px solid #fee2e2',
-                      height: 44, padding: '0 16px',
-                    }}
+                    type="button" 
+                    onClick={deleteFunnel} 
+                    className="h-11 px-4 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors flex items-center justify-center"
+                    title="Varonkani O'chirish"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={16} strokeWidth={2.2} />
                   </button>
                 )}
               </div>
@@ -537,51 +478,46 @@ export default function TaskManager() {
         </div>
       )}
 
-      {/* ── Task modal ───────────────────────────────────────────────────── */}
+      {/* Task Modal */}
       {showTaskModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 540 }}>
+          <div className="modal-content max-w-md">
             <div className="modal-header">
-              <h2>{editingTask ? 'Taskni tahrirlash' : 'Yangi task'}</h2>
-              <button className="modal-close" onClick={() => setShowTaskModal(false)}><X size={22} /></button>
+              <h2>{editingTask ? 'Taskni Tahrirlash' : 'Yangi Task'}</h2>
+              <button className="modal-close" onClick={() => setShowTaskModal(false)}><X size={20} /></button>
             </div>
             {errorMsg && (
-              <div style={{
-                padding: '10px 14px', background: '#fef2f2', border: '1px solid #fee2e2',
-                color: '#dc2626', borderRadius: 8, fontSize: '0.85rem', fontWeight: 700,
-                marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <AlertCircle size={16} /> {errorMsg}
+              <div className="bg-rose-50 border border-rose-100 text-rose-600 rounded-xl p-3.5 text-xs font-bold mb-4 flex items-center gap-2">
+                <AlertCircle size={15} /> {errorMsg}
               </div>
             )}
-            <form onSubmit={saveTask}>
+            <form onSubmit={saveTask} className="space-y-4">
               <div className="form-group">
-                <label>Task nomi *</label>
+                <label>Task Nomi</label>
                 <input
-                  autoFocus required value={taskForm.title}
+                  autoFocus 
+                  required 
+                  value={taskForm.title}
                   onChange={e => setTaskForm({ ...taskForm, title: e.target.value })}
-                  placeholder="Masalan: Klient bilan bog'lanish"
+                  placeholder="Masalan: Mijoz bilan shartnoma imzolash"
                 />
               </div>
               <div className="form-group">
-                <label>Izoh</label>
+                <label>Izoh (Tafsilotlar)</label>
                 <textarea
                   value={taskForm.description}
                   onChange={e => setTaskForm({ ...taskForm, description: e.target.value })}
-                  placeholder="Qisqacha tafsilot, kontekst..."
-                  rows={4}
-                  style={{
-                    width: '100%', border: '1px solid var(--border)', borderRadius: 6,
-                    padding: '10px 14px', fontFamily: 'inherit', fontSize: '0.9rem',
-                    resize: 'vertical',
-                  }}
+                  placeholder="Kontekst, eslatmalar..."
+                  rows={3}
+                  className="w-full"
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="form-group">
                   <label>Muddat</label>
                   <input
-                    type="date" value={taskForm.deadlineAt}
+                    type="date" 
+                    value={taskForm.deadlineAt}
                     onChange={e => setTaskForm({ ...taskForm, deadlineAt: e.target.value })}
                   />
                 </div>
@@ -590,10 +526,7 @@ export default function TaskManager() {
                   <select
                     value={taskForm.status}
                     onChange={e => setTaskForm({ ...taskForm, status: e.target.value })}
-                    style={{
-                      width: '100%', height: 44, border: '1px solid var(--border)',
-                      borderRadius: 6, padding: '0 14px', fontFamily: 'inherit',
-                    }}
+                    className="w-full"
                   >
                     {STATUS_OPTIONS.map(s => (
                       <option key={s.value} value={s.value}>{s.label}</option>
@@ -601,8 +534,12 @@ export default function TaskManager() {
                   </select>
                 </div>
               </div>
-              <button type="submit" className="btn" style={{ width: '100%', height: 44, marginTop: 12 }} disabled={saving}>
-                {saving ? 'Saqlanmoqda...' : (editingTask ? 'Yangilash' : 'Yaratish')}
+              <button 
+                type="submit" 
+                className="btn w-full h-11 text-xs uppercase font-bold tracking-wide mt-2" 
+                disabled={saving}
+              >
+                {saving ? 'Saqlanmoqda...' : (editingTask ? 'Saqlash' : 'Yaratish')}
               </button>
             </form>
           </div>

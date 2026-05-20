@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Upload, Trash2, Image } from 'lucide-react';
+import { Upload, Trash2, Image, CheckCircle2, AlertCircle } from 'lucide-react';
 import { platformApi } from '../api';
 import { useClientLogos, useInvalidate } from '../hooks/queries';
 
-export default 
-function Logos() {
-  // RQ — client logos cache
+export default function Logos() {
   const { data: logosData } = useClientLogos();
   const invalidate = useInvalidate();
   const [logos, setLogos] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Sync RQ data → local state (so optimistic updates from `save` still work)
   useEffect(() => {
     if (Array.isArray(logosData)) setLogos(logosData);
   }, [logosData]);
@@ -28,16 +25,19 @@ function Logos() {
       await platformApi.setClientLogos(newLogos);
       setLogos(newLogos);
       invalidate.clientLogos();
-      showMsg('success', 'Saqlandi');
+      showMsg('success', 'Logolar muvaffaqiyatli saqlandi');
     } catch {
-      showMsg('error', 'Xatolik');
+      showMsg('error', 'Saqlashda xatolik yuz berdi');
     } finally { setSaving(false); }
   };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 500 * 1024) { showMsg('error', 'Fayl 500KB dan kichik bo\'lishi kerak'); return; }
+    if (file.size > 500 * 1024) { 
+      showMsg('error', "Fayl hajmi 500KB dan kichik bo'lishi kerak"); 
+      return; 
+    }
     const reader = new FileReader();
     reader.onload = (ev) => save([...logos, ev.target?.result as string]);
     reader.readAsDataURL(file);
@@ -45,41 +45,45 @@ function Logos() {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Toast Notification */}
       {msg && (
-        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 999, padding: '12px 20px', borderRadius: 12, fontWeight: 800, fontSize: '0.85rem', background: msg.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-          {msg.text}
+        <div className={`fixed top-5 right-5 z-50 px-4 py-2.5 rounded-lg shadow-md text-xs font-bold text-white flex items-center gap-2 animate-fade-in ${
+          msg.type === 'success' ? 'bg-emerald-600 border border-emerald-500' : 'bg-rose-600 border border-rose-500'
+        }`}>
+          {msg.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+          <span>{msg.text}</span>
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Mijozlar Logolari</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Landing page'dagi "Bizga ishonch bildirganlar" slayderida ko'rsatiladi</p>
-        </div>
+
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-bold text-white tracking-tight">Mijozlar Logolari</h2>
+        <p className="text-xs text-slate-500">Landing page slayderida namoyish etiladigan mijoz hamkor logotiplari boshqaruvi</p>
       </div>
 
-      {/* Upload area */}
-      <label style={{ display: 'block', border: '2px dashed #e2e8f0', borderRadius: 16, padding: 40, textAlign: 'center', cursor: 'pointer', marginBottom: 24, transition: 'all 0.2s' }}
-        onMouseEnter={e => (e.currentTarget.style.borderColor = '#FF6B00')}
-        onMouseLeave={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
-      >
-        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={saving} />
-        <Upload size={32} style={{ margin: '0 auto 12px', display: 'block', color: '#94a3b8' }} />
-        <p style={{ fontWeight: 800, color: '#64748b', marginBottom: 4 }}>Logo yuklash uchun bosing</p>
-        <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>PNG, JPG, SVG, WebP • Maks 500KB</p>
+      {/* Upload Zone */}
+      <label className="block border border-dashed border-slate-800 hover:border-orange-500/80 rounded-xl p-8 text-center cursor-pointer transition-all bg-slate-900 hover:bg-slate-850/50">
+        <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={saving} />
+        <Upload size={24} className="mx-auto mb-2 text-slate-500" />
+        <p className="text-xs font-bold text-slate-300">Logo yuklash uchun bosing</p>
+        <p className="text-[10px] text-slate-500 font-medium mt-0.5">PNG, JPG, SVG, WebP • Maks 500KB</p>
       </label>
 
-      {/* Logo grid */}
+      {/* Logo Grid */}
       {logos.length > 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {logos.map((src, i) => (
-            <div key={i} style={{ position: 'relative', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 100 }}
-              onMouseEnter={e => (e.currentTarget.querySelector('.del-btn') as HTMLElement)!.style.opacity = '1'}
-              onMouseLeave={e => (e.currentTarget.querySelector('.del-btn') as HTMLElement)!.style.opacity = '0'}
+            <div 
+              key={i} 
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 h-24 flex items-center justify-center relative group transition-all"
             >
-              <img src={src} alt={`Logo ${i + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-              <button className="del-btn" onClick={() => save(logos.filter((_, j) => j !== i))}
-                style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', boxShadow: '0 2px 6px rgba(239,68,68,0.4)' }}
+              <img src={src} alt={`Client Logo ${i + 1}`} className="max-w-full max-h-full object-contain filter grayscale opacity-50 hover:opacity-90 hover:grayscale-0 transition-all" />
+              
+              <button 
+                onClick={() => save(logos.filter((_, j) => j !== i))}
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded bg-slate-800 hover:bg-rose-950/30 text-slate-500 hover:text-rose-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all border border-slate-750"
+                title="Logoni o'chirish"
               >
                 <Trash2 size={12} />
               </button>
@@ -87,14 +91,18 @@ function Logos() {
           ))}
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
-          <Image size={48} style={{ margin: '0 auto 16px', display: 'block', opacity: 0.3 }} />
-          <p style={{ fontWeight: 700 }}>Hali logolar yo'q</p>
-          <p style={{ fontSize: '0.8rem', marginTop: 4 }}>Yuqoridan logo yuklang — landing pageda avtomatik chiqadi</p>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
+          <Image size={32} className="mx-auto mb-2 text-slate-600" />
+          <p className="text-xs font-bold text-slate-500">Logotiplar yuklanmagan</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">Yuqoridagi maydon orqali yangi rasm yuklang.</p>
         </div>
       )}
 
-      {saving && <p style={{ textAlign: 'center', color: '#FF6B00', fontWeight: 800, marginTop: 16, fontSize: '0.85rem' }}>SAQLANMOQDA...</p>}
+      {saving && (
+        <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-orange-500 animate-pulse">
+          <span>Saqlanmoqda...</span>
+        </div>
+      )}
     </div>
   );
 }
