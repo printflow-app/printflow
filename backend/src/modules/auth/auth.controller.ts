@@ -188,13 +188,22 @@ export class AuthController {
       });
       if (!tenant) return null;
 
-      let tenantFeatures = {};
+      // Merge legacy features JSON + allowedModules array (admin UI source
+      // of truth) so frontend gates match FeatureGuard's union check.
+      let tenantFeatures: Record<string, any> = {};
       if (tenant?.plan?.features) {
         try {
-          tenantFeatures = typeof tenant.plan.features === 'string'
+          const parsed = typeof tenant.plan.features === 'string'
             ? JSON.parse(tenant.plan.features)
             : tenant.plan.features;
+          Object.assign(tenantFeatures, parsed);
         } catch { }
+      }
+      const allowedModules: string[] = Array.isArray((tenant?.plan as any)?.allowedModules)
+        ? (tenant!.plan as any).allowedModules
+        : [];
+      for (const m of allowedModules) {
+        if (tenantFeatures[m] === undefined) tenantFeatures[m] = true;
       }
 
       // Workspace admins and employees live in separate tables — try admin first.

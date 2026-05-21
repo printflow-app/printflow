@@ -1,0 +1,39 @@
+- generic [ref=e3]:
+  - generic [ref=e658]:
+    - button "Bosh sahifa" [ref=e659] [cursor=pointer]:
+      - img [ref=e660]
+      - text: Bosh sahifa
+    - generic [ref=e662]:
+      - generic [ref=e663]:
+        - img "PrintFlow" [ref=e666]
+        - heading "PrintFlow" [level=1] [ref=e667]
+        - paragraph [ref=e668]: Bosmaxona Boshqaruv Tizimi
+      - generic [ref=e669]:
+        - generic [ref=e671]:
+          - generic [ref=e672]:
+            - text: Workspace
+            - generic [ref=e673]:
+              - generic:
+                - img
+              - textbox "sizning-workspace" [ref=e674]
+          - generic [ref=e675]:
+            - text: Login
+            - generic [ref=e676]:
+              - generic:
+                - img
+              - textbox "loginni kiriting" [ref=e677]
+          - generic [ref=e678]:
+            - text: Parol
+            - generic [ref=e679]:
+              - generic:
+                - img
+              - textbox "•••••••••" [ref=e680]
+              - button [ref=e681] [cursor=pointer]:
+                - img [ref=e682]
+          - button "Tizimga kirish →" [ref=e685] [cursor=pointer]:
+            - generic [ref=e686]: Tizimga kirish →
+        - paragraph [ref=e687]:
+          - text: Workspace yo'qmi?
+          - button "Yangi ochish" [ref=e688] [cursor=pointer]
+      - paragraph [ref=e689]: PrintFlow © 2026 — Barcha huquqlar himoyalangan
+  - region "Notifications Alt+T"

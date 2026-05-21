@@ -1,0 +1,377 @@
+- generic [ref=e3]:
+  - generic [ref=e690]:
+    - complementary [ref=e691]:
+      - generic [ref=e692]:
+        - generic [ref=e693]:
+          - img "PF" [ref=e694]
+          - generic [ref=e695]:
+            - heading "PRINTFLOW" [level=1] [ref=e696]
+            - paragraph [ref=e697]: Admin
+        - generic [ref=e698]:
+          - button "Qulflash sozlamalari" [ref=e699] [cursor=pointer]:
+            - img [ref=e700]
+          - button "Tizimni qulflash" [ref=e703] [cursor=pointer]:
+            - img [ref=e704]
+      - navigation [ref=e707]:
+        - button "Operatsiya 5" [ref=e708] [cursor=pointer]:
+          - generic [ref=e709]:
+            - img [ref=e710]
+            - generic [ref=e713]: Operatsiya
+            - generic [ref=e714]: "5"
+          - img [ref=e715]
+        - button "Kassa Kirim va Chiqim" [ref=e717] [cursor=pointer]:
+          - img [ref=e718]
+          - generic [ref=e721]:
+            - paragraph [ref=e722]: Kassa
+            - paragraph [ref=e723]: Kirim va Chiqim
+          - img [ref=e725]
+        - button "Xizmatlar (Kanban) Buyurtmalar nazorati" [ref=e728] [cursor=pointer]:
+          - img [ref=e729]
+          - generic [ref=e732]:
+            - paragraph [ref=e733]: Xizmatlar (Kanban)
+            - paragraph [ref=e734]: Buyurtmalar nazorati
+          - img [ref=e736]
+        - button "Mijozlar Bazasi Qarzlar va hamkorlar" [ref=e739] [cursor=pointer]:
+          - img [ref=e740]
+          - generic [ref=e744]:
+            - paragraph [ref=e745]: Mijozlar Bazasi
+            - paragraph [ref=e746]: Qarzlar va hamkorlar
+          - img [ref=e748]
+        - button "Ombor Materiallar va qoldiqlar" [ref=e751] [cursor=pointer]:
+          - img [ref=e752]
+          - generic [ref=e756]:
+            - paragraph [ref=e757]: Ombor
+            - paragraph [ref=e758]: Materiallar va qoldiqlar
+          - img [ref=e760]
+        - button "Davomat QR kirim/chiqim" [ref=e763] [cursor=pointer]:
+          - img [ref=e764]
+          - generic [ref=e770]:
+            - paragraph [ref=e771]: Davomat
+            - paragraph [ref=e772]: QR kirim/chiqim
+          - img [ref=e774]
+        - button "Tahlil 2" [ref=e778] [cursor=pointer]:
+          - generic [ref=e779]:
+            - img [ref=e780]
+            - generic [ref=e783]: Tahlil
+            - generic [ref=e784]: "2"
+          - img [ref=e785]
+        - button "Boshqaruv 4" [ref=e788] [cursor=pointer]:
+          - generic [ref=e789]:
+            - img [ref=e790]
+            - generic [ref=e791]: Boshqaruv
+            - generic [ref=e792]: "4"
+          - img [ref=e793]
+      - generic [ref=e795]:
+        - button "I Ibrohim Sayid Profil Sozlamalari" [ref=e796] [cursor=pointer]:
+          - generic [ref=e797]: I
+          - generic [ref=e798]:
+            - paragraph [ref=e799]: Ibrohim Sayid
+            - paragraph [ref=e800]: Profil Sozlamalari
+        - button "O'rgatuvchi Qo'llanma" [ref=e801] [cursor=pointer]
+        - button "Chiqish" [ref=e802] [cursor=pointer]:
+          - img [ref=e803]
+          - text: Chiqish
+    - main [ref=e806]:
+      - generic [ref=e807]:
+        - generic [ref=e808]:
+          - heading "Kassa" [level=2] [ref=e809]: Kassa
+          - paragraph [ref=e811]: PrintFlow • Kirim va Chiqim
+        - button "Sahifani Qulflash" [ref=e813] [cursor=pointer]:
+          - img [ref=e814]
+          - generic [ref=e817]: Sahifani Qulflash
+      - generic [ref=e819]:
+        - generic [ref=e820]:
+          - generic [ref=e821]:
+            - generic [ref=e822]:
+              - generic [ref=e823]: Kirim (2026-05-01 → 2026-05-31)
+              - img [ref=e825]
+            - paragraph [ref=e828]: 5 540 000 UZS
+            - generic [ref=e829]:
+              - generic [ref=e830]:
+                - generic [ref=e831]: Click
+                - generic [ref=e832]: +1 000 000 UZS
+              - generic [ref=e833]:
+                - generic [ref=e834]: Naqt
+                - generic [ref=e835]: +4 040 000 UZS
+              - generic [ref=e836]:
+                - generic [ref=e837]: Noma'lum
+                - generic [ref=e838]: +500 000 UZS
+          - generic [ref=e839]:
+            - generic [ref=e840]:
+              - generic [ref=e841]: Chiqim (2026-05-01 → 2026-05-31)
+              - img [ref=e843]
+            - paragraph [ref=e846]: 750 000 UZS
+            - generic [ref=e847]:
+              - generic [ref=e848]:
+                - generic [ref=e849]: Click
+                - generic [ref=e850]: "-0 UZS"
+              - generic [ref=e851]:
+                - generic [ref=e852]: Naqt
+                - generic [ref=e853]: "-750 000 UZS"
+          - generic [ref=e854]:
+            - generic [ref=e855]:
+              - generic [ref=e856]: Xarajat Yo'nalishlari
+              - img [ref=e858]
+            - generic [ref=e861]:
+              - generic [ref=e862]:
+                - generic [ref=e863]: Banner
+                - generic [ref=e864]: 450 000 UZS
+              - generic [ref=e865]:
+                - generic [ref=e866]: Boshqa
+                - generic [ref=e867]: 300 000 UZS
+          - generic [ref=e868]:
+            - generic [ref=e869]: Balans
+            - paragraph [ref=e870]: 4 790 000 UZS
+            - generic [ref=e871]: 2026-05-01 → 2026-05-31
+        - generic [ref=e872]:
+          - generic [ref=e873]:
+            - generic [ref=e874]:
+              - generic [ref=e875]:
+                - heading "Kassa Amaliyotlari" [level=3] [ref=e876]:
+                  - text: Kassa Amaliyotlari
+                  - img [ref=e877]
+                - paragraph [ref=e880]: Kunlik tranzaksiyalar tarixi
+              - generic [ref=e881]:
+                - textbox [ref=e882] [cursor=pointer]: 2026-05-01
+                - generic [ref=e883]: →
+                - textbox [ref=e884] [cursor=pointer]: 2026-05-31
+                - button "Qidirish" [disabled] [ref=e885]:
+                  - img [ref=e886]
+                - button "BUGUN" [ref=e889] [cursor=pointer]
+            - combobox [ref=e890]:
+              - option "Barcha bo'limlar" [selected]
+              - option "poligrafiya"
+            - combobox "Ma'lum hamkorga oid kirim/chiqimlar" [ref=e891]:
+              - option "Barcha hamkorlar" [selected]
+              - option "Sharq Reklama"
+            - generic [ref=e892]:
+              - button "EKSPORT" [ref=e893] [cursor=pointer]:
+                - img [ref=e894]
+                - text: EKSPORT
+              - button "KIRIM" [ref=e897] [cursor=pointer]:
+                - img [ref=e898]
+                - text: KIRIM
+              - button "CHIQIM" [ref=e901] [cursor=pointer]:
+                - img [ref=e902]
+                - text: CHIQIM
+          - table [ref=e906]:
+            - rowgroup [ref=e907]:
+              - row "Turi Mijoz / Sabab Summa To'lov Sana Amallar" [ref=e908]:
+                - columnheader "Turi" [ref=e909]
+                - columnheader "Mijoz / Sabab" [ref=e910]
+                - columnheader "Summa" [ref=e911]
+                - columnheader "To'lov" [ref=e912]
+                - columnheader "Sana" [ref=e913]
+                - columnheader "Amallar" [ref=e914]
+            - rowgroup [ref=e915]:
+              - row "Azizbek +400 000 UZS Naqt 2026-05-16 18:16" [ref=e916]:
+                - cell [ref=e917]:
+                  - img [ref=e919]
+                - cell "Azizbek" [ref=e922]:
+                  - paragraph [ref=e923]: Azizbek
+                - cell "+400 000 UZS" [ref=e924]
+                - cell "Naqt" [ref=e925]
+                - cell "2026-05-16 18:16" [ref=e926]:
+                  - paragraph [ref=e927]: 2026-05-16
+                  - paragraph [ref=e928]: 18:16
+                - cell [ref=e929]:
+                  - generic [ref=e930]:
+                    - button "Tahrirlash" [ref=e931] [cursor=pointer]:
+                      - img [ref=e932]
+                    - button "O'chirish" [ref=e935] [cursor=pointer]:
+                      - img [ref=e936]
+              - row "Kapital Bank +250 000 UZS Click 2026-05-13 21:56" [ref=e939]:
+                - cell [ref=e940]:
+                  - img [ref=e942]
+                - cell "Kapital Bank" [ref=e945]:
+                  - paragraph [ref=e946]: Kapital Bank
+                - cell "+250 000 UZS" [ref=e947]
+                - cell "Click" [ref=e948]
+                - cell "2026-05-13 21:56" [ref=e949]:
+                  - paragraph [ref=e950]: 2026-05-13
+                  - paragraph [ref=e951]: 21:56
+                - cell [ref=e952]:
+                  - generic [ref=e953]:
+                    - button "Tahrirlash" [ref=e954] [cursor=pointer]:
+                      - img [ref=e955]
+                    - button "O'chirish" [ref=e958] [cursor=pointer]:
+                      - img [ref=e959]
+              - row "Avlod Shifoxona +500 000 UZS Naqt 2026-05-13 19:12" [ref=e962]:
+                - cell [ref=e963]:
+                  - img [ref=e965]
+                - cell "Avlod Shifoxona" [ref=e968]:
+                  - paragraph [ref=e969]: Avlod Shifoxona
+                - cell "+500 000 UZS" [ref=e970]
+                - cell "Naqt" [ref=e971]
+                - cell "2026-05-13 19:12" [ref=e972]:
+                  - paragraph [ref=e973]: 2026-05-13
+                  - paragraph [ref=e974]: 19:12
+                - cell [ref=e975]:
+                  - generic [ref=e976]:
+                    - button "Tahrirlash" [ref=e977] [cursor=pointer]:
+                      - img [ref=e978]
+                    - button "O'chirish" [ref=e981] [cursor=pointer]:
+                      - img [ref=e982]
+              - row "Royal Sport +500 000 UZS Naqt 2026-05-13 15:32" [ref=e985]:
+                - cell [ref=e986]:
+                  - img [ref=e988]
+                - cell "Royal Sport" [ref=e991]:
+                  - paragraph [ref=e992]: Royal Sport
+                - cell "+500 000 UZS" [ref=e993]
+                - cell "Naqt" [ref=e994]
+                - cell "2026-05-13 15:32" [ref=e995]:
+                  - paragraph [ref=e996]: 2026-05-13
+                  - paragraph [ref=e997]: 15:32
+                - cell [ref=e998]:
+                  - generic [ref=e999]:
+                    - button "Tahrirlash" [ref=e1000] [cursor=pointer]:
+                      - img [ref=e1001]
+                    - button "O'chirish" [ref=e1004] [cursor=pointer]:
+                      - img [ref=e1005]
+              - row "Yora chicken +500 000 UZS — 2026-05-13 15:23" [ref=e1008]:
+                - cell [ref=e1009]:
+                  - img [ref=e1011]
+                - cell "Yora chicken" [ref=e1014]:
+                  - paragraph [ref=e1015]: Yora chicken
+                - cell "+500 000 UZS" [ref=e1016]
+                - cell "—" [ref=e1017]
+                - cell "2026-05-13 15:23" [ref=e1018]:
+                  - paragraph [ref=e1019]: 2026-05-13
+                  - paragraph [ref=e1020]: 15:23
+                - cell [ref=e1021]:
+                  - generic [ref=e1022]:
+                    - button "Tahrirlash" [ref=e1023] [cursor=pointer]:
+                      - img [ref=e1024]
+                    - button "O'chirish" [ref=e1027] [cursor=pointer]:
+                      - img [ref=e1028]
+              - 'row "Hamkor: Sharq Reklama Hamkor -300 000 UZS Naqt 2026-05-11 19:07" [ref=e1031]':
+                - cell [ref=e1032]:
+                  - img [ref=e1034]
+                - 'cell "Hamkor: Sharq Reklama Hamkor" [ref=e1037]':
+                  - paragraph [ref=e1038]: "Hamkor: Sharq Reklama"
+                  - text: Hamkor
+                - cell "-300 000 UZS" [ref=e1039]
+                - cell "Naqt" [ref=e1040]
+                - cell "2026-05-11 19:07" [ref=e1041]:
+                  - paragraph [ref=e1042]: 2026-05-11
+                  - paragraph [ref=e1043]: 19:07
+                - cell [ref=e1044]:
+                  - generic [ref=e1045]:
+                    - button "Tahrirlash" [ref=e1046] [cursor=pointer]:
+                      - img [ref=e1047]
+                    - button "O'chirish" [ref=e1050] [cursor=pointer]:
+                      - img [ref=e1051]
+              - row "Avlod Shifoxona +300 000 UZS Naqt 2026-05-11 19:05" [ref=e1054]:
+                - cell [ref=e1055]:
+                  - img [ref=e1057]
+                - cell "Avlod Shifoxona" [ref=e1060]:
+                  - paragraph [ref=e1061]: Avlod Shifoxona
+                - cell "+300 000 UZS" [ref=e1062]
+                - cell "Naqt" [ref=e1063]
+                - cell "2026-05-11 19:05" [ref=e1064]:
+                  - paragraph [ref=e1065]: 2026-05-11
+                  - paragraph [ref=e1066]: 19:05
+                - cell [ref=e1067]:
+                  - generic [ref=e1068]:
+                    - button "Tahrirlash" [ref=e1069] [cursor=pointer]:
+                      - img [ref=e1070]
+                    - button "O'chirish" [ref=e1073] [cursor=pointer]:
+                      - img [ref=e1074]
+              - row "Qo'zibek +480 000 UZS Naqt 2026-05-07 15:14" [ref=e1077]:
+                - cell [ref=e1078]:
+                  - img [ref=e1080]
+                - cell "Qo'zibek" [ref=e1083]:
+                  - paragraph [ref=e1084]: Qo'zibek
+                - cell "+480 000 UZS" [ref=e1085]
+                - cell "Naqt" [ref=e1086]
+                - cell "2026-05-07 15:14" [ref=e1087]:
+                  - paragraph [ref=e1088]: 2026-05-07
+                  - paragraph [ref=e1089]: 15:14
+                - cell [ref=e1090]:
+                  - generic [ref=e1091]:
+                    - button "Tahrirlash" [ref=e1092] [cursor=pointer]:
+                      - img [ref=e1093]
+                    - button "O'chirish" [ref=e1096] [cursor=pointer]:
+                      - img [ref=e1097]
+              - row "Avlod Shifoxona +400 000 UZS Naqt 2026-05-02 17:12" [ref=e1100]:
+                - cell [ref=e1101]:
+                  - img [ref=e1103]
+                - cell "Avlod Shifoxona" [ref=e1106]:
+                  - paragraph [ref=e1107]: Avlod Shifoxona
+                - cell "+400 000 UZS" [ref=e1108]
+                - cell "Naqt" [ref=e1109]
+                - cell "2026-05-02 17:12" [ref=e1110]:
+                  - paragraph [ref=e1111]: 2026-05-02
+                  - paragraph [ref=e1112]: 17:12
+                - cell [ref=e1113]:
+                  - generic [ref=e1114]:
+                    - button "Tahrirlash" [ref=e1115] [cursor=pointer]:
+                      - img [ref=e1116]
+                    - button "O'chirish" [ref=e1119] [cursor=pointer]:
+                      - img [ref=e1120]
+              - row "Avlod Shifoxona +500 000 UZS Naqt 2026-05-01 18:00" [ref=e1123]:
+                - cell [ref=e1124]:
+                  - img [ref=e1126]
+                - cell "Avlod Shifoxona" [ref=e1129]:
+                  - paragraph [ref=e1130]: Avlod Shifoxona
+                - cell "+500 000 UZS" [ref=e1131]
+                - cell "Naqt" [ref=e1132]
+                - cell "2026-05-01 18:00" [ref=e1133]:
+                  - paragraph [ref=e1134]: 2026-05-01
+                  - paragraph [ref=e1135]: 18:00
+                - cell [ref=e1136]:
+                  - generic [ref=e1137]:
+                    - button "Tahrirlash" [ref=e1138] [cursor=pointer]:
+                      - img [ref=e1139]
+                    - button "O'chirish" [ref=e1142] [cursor=pointer]:
+                      - img [ref=e1143]
+              - row "Royal Sport +750 000 UZS Click 2026-05-01 16:00" [ref=e1146]:
+                - cell [ref=e1147]:
+                  - img [ref=e1149]
+                - cell "Royal Sport" [ref=e1152]:
+                  - paragraph [ref=e1153]: Royal Sport
+                - cell "+750 000 UZS" [ref=e1154]
+                - cell "Click" [ref=e1155]
+                - cell "2026-05-01 16:00" [ref=e1156]:
+                  - paragraph [ref=e1157]: 2026-05-01
+                  - paragraph [ref=e1158]: 16:00
+                - cell [ref=e1159]:
+                  - generic [ref=e1160]:
+                    - button "Tahrirlash" [ref=e1161] [cursor=pointer]:
+                      - img [ref=e1162]
+                    - button "O'chirish" [ref=e1165] [cursor=pointer]:
+                      - img [ref=e1166]
+              - row "Yangi banner material Banner -450 000 UZS Naqt 2026-05-01 15:00" [ref=e1169]:
+                - cell [ref=e1170]:
+                  - img [ref=e1172]
+                - cell "Yangi banner material Banner" [ref=e1175]:
+                  - paragraph [ref=e1176]: Yangi banner material
+                  - text: Banner
+                - cell "-450 000 UZS" [ref=e1177]
+                - cell "Naqt" [ref=e1178]
+                - cell "2026-05-01 15:00" [ref=e1179]:
+                  - paragraph [ref=e1180]: 2026-05-01
+                  - paragraph [ref=e1181]: 15:00
+                - cell [ref=e1182]:
+                  - generic [ref=e1183]:
+                    - button "Tahrirlash" [ref=e1184] [cursor=pointer]:
+                      - img [ref=e1185]
+                    - button "O'chirish" [ref=e1188] [cursor=pointer]:
+                      - img [ref=e1189]
+              - row "Kapital Bank +960 000 UZS Naqt 2026-05-01 14:00" [ref=e1192]:
+                - cell [ref=e1193]:
+                  - img [ref=e1195]
+                - cell "Kapital Bank" [ref=e1198]:
+                  - paragraph [ref=e1199]: Kapital Bank
+                - cell "+960 000 UZS" [ref=e1200]
+                - cell "Naqt" [ref=e1201]
+                - cell "2026-05-01 14:00" [ref=e1202]:
+                  - paragraph [ref=e1203]: 2026-05-01
+                  - paragraph [ref=e1204]: 14:00
+                - cell [ref=e1205]:
+                  - generic [ref=e1206]:
+                    - button "Tahrirlash" [ref=e1207] [cursor=pointer]:
+                      - img [ref=e1208]
+                    - button "O'chirish" [ref=e1211] [cursor=pointer]:
+                      - img [ref=e1212]
+  - region "Notifications Alt+T"

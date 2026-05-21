@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (error.response?.status === 401 || error.response?.status === 403) {    
       // Don't auto-redirect for login request itself
       const url = error.config?.url || '';
       if (!url.includes('/auth/')) {
@@ -67,8 +67,8 @@ export const leadsApi = {
 };
 
 export const settingsApi = {
-  get: (key: string) => api.get(`/billing/settings/${key}`),
-  update: (key: string, value: any) => api.put(`/billing/settings/${key}`, { value }),
+  get: (key: string) => api.get(`/billing/platform-settings/${key}`),
+  update: (key: string, value: any) => api.put(`/billing/platform-settings/${key}`, { value }),
 };
 
 export const platformApi = {

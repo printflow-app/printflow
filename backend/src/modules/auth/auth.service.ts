@@ -22,6 +22,25 @@ const RESERVED_SLUGS = new Set([
   'register', 'super-admin', 'superadmin', 't', 'tenant', 'www',
 ]);
 
+// Builds the feature map the frontend uses to gate modules. The plan stores
+// access in two places — legacy `features` JSON and the newer `allowedModules`
+// array (admin UI source of truth). FeatureGuard already checks both; we
+// surface the union here so UI gates stay in sync with backend enforcement.
+function buildTenantFeatures(plan: any): Record<string, any> {
+  const features: Record<string, any> = {};
+  if (plan?.features) {
+    try {
+      const parsed = typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features;
+      Object.assign(features, parsed);
+    } catch {}
+  }
+  const allowedModules: string[] = Array.isArray(plan?.allowedModules) ? plan.allowedModules : [];
+  for (const m of allowedModules) {
+    if (features[m] === undefined) features[m] = true;
+  }
+  return features;
+}
+
 // =============================================
 // AUTH SERVICE
 // Workspace login + Super-Admin login
@@ -161,7 +180,7 @@ export class AuthService {
         baseSalary: isWorkspaceAdmin ? 0 : (userEntity as any).baseSalary,
         givenAmount: isWorkspaceAdmin ? 0 : (userEntity as any).givenAmount,
         workDebt: isWorkspaceAdmin ? 0 : (userEntity as any).workDebt,
-        tenantFeatures: tenant.plan?.features ? JSON.parse(tenant.plan.features) : {},
+        tenantFeatures: buildTenantFeatures(tenant.plan),
       },
     };
   }
@@ -423,7 +442,7 @@ export class AuthService {
         baseSalary: (employee as any).baseSalary,
         givenAmount: (employee as any).givenAmount,
         workDebt: (employee as any).workDebt,
-        tenantFeatures: tenant.plan?.features ? JSON.parse(tenant.plan.features) : {},
+        tenantFeatures: buildTenantFeatures(tenant.plan),
       },
     };
   }
