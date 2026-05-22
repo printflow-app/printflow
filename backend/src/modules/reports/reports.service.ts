@@ -158,11 +158,22 @@ export class ReportsService {
     ]);
     const finalColumnId = columns.length ? columns[columns.length - 1].id : null;
 
+    // PERF: explicit select — `description`, `serviceOptions`, `attachments`
+    // (legacy JSON, megabaytlik bo'lishi mumkin), `materialOverrides` kabi katta
+    // matn ustunlar bu yerda kerak emas. Faqat hisob-kitobga kerak bo'lganini olamiz.
     const completedTasks = await this.prisma.task.findMany({
       where: {
         ...(finalColumnId ? { columnId: finalColumnId } : {}),
         updatedAt: { gte: from, lte: to },
         isArchived: false,
+      },
+      select: {
+        id: true,
+        assignees: true,
+        totalAmount: true,
+        deadlineAt: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -270,17 +281,23 @@ export class ReportsService {
   // =============================================
   async getMonthlyDynamics(months = 6, branchId?: string) {
     const now = new Date();
-    const result = [];
+    const bFilter = branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {};
 
-    for (let i = months - 1; i >= 0; i--) {
+    // PERF: Avval bu loop ichida `await` qilingan — har oy uchun 1 ta round-trip,
+    // 12 oy = 12 ketma-ket round-trip. Railway PG ga ~80ms latency'da bu ~1s
+    // tarmoq vaqti qo'shilardi. Endi barcha oylar uchun aggregate'lar parallel
+    // ishlaydi (bitta connection pool sikli) — 12 oy ham 2 oy ham bir xil tezlikda.
+    const monthRanges = Array.from({ length: months }, (_, idx) => {
+      const i = months - 1 - idx;
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const start = new Date(d.getFullYear(), d.getMonth(), 1);
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
       const monthKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+      return { start, end, monthKey };
+    });
 
-      const bFilter = branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {};
-
-      const [income, expense, vendorCosts] = await Promise.all([
+    const aggregations = await Promise.all(
+      monthRanges.flatMap(({ start, end }) => [
         this.prisma.transaction.aggregate({
           where: { type: 'kirim', date: { gte: start, lte: end }, ...bFilter },
           _sum: { amount: true },
@@ -290,23 +307,18 @@ export class ReportsService {
           _sum: { amount: true },
         }),
         this.prisma.transaction.aggregate({
-          where: { 
-            type: 'chiqim', 
-            vendorId: { not: null },
-            date: { gte: start, lte: end }, 
-            ...bFilter 
-          },
+          where: { type: 'chiqim', vendorId: { not: null }, date: { gte: start, lte: end }, ...bFilter },
           _sum: { amount: true },
         }),
-      ]);
+      ]),
+    );
 
-      const kirim = income._sum.amount || 0;
-      const chiqim = expense._sum.amount || 0;
-      const hamkorlar = vendorCosts._sum.amount || 0;
-
-      result.push({ month: monthKey, kirim, chiqim, hamkorlar, net: kirim - chiqim - hamkorlar });
-    }
-
-    return result;
+    return monthRanges.map(({ monthKey }, idx) => {
+      const [income, expense, vendorCosts] = aggregations.slice(idx * 3, idx * 3 + 3);
+      const kirim = (income as any)._sum.amount || 0;
+      const chiqim = (expense as any)._sum.amount || 0;
+      const hamkorlar = (vendorCosts as any)._sum.amount || 0;
+      return { month: monthKey, kirim, chiqim, hamkorlar, net: kirim - chiqim - hamkorlar };
+    });
   }
 }

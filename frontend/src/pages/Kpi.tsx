@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { TrendingUp, Trophy, Activity, Clock, Calendar } from 'lucide-react';
 import { kpiApi, reportsApi } from '../api';
 import { SkeletonTable } from '../components/Skeleton';
@@ -54,33 +54,43 @@ const Kpi: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentU
   const params = { start: localYMD(startDate), end: localYMD(today), branchId: bId };
   const prevParams = { start: localYMD(prevStart), end: localYMD(prevEnd), branchId: bId };
 
+  // keepPreviousData: filter o'zgarganda eski jadval ko'rinib turadi, to'liq
+  // skeleton qaytmaydi — Railway DB sekin javob bersa ham UX uziluvchan emas.
   const listQuery = useQuery({
     queryKey: ['kpi-list', params],
     queryFn: async () => (await kpiApi.list(params)).data || [],
     enabled: canViewAll,
+    placeholderData: keepPreviousData,
   });
   const prevListQuery = useQuery({
     queryKey: ['kpi-list-prev', prevParams],
     queryFn: async () => (await kpiApi.list(prevParams)).data || [],
     enabled: canViewAll,
+    placeholderData: keepPreviousData,
   });
   const velocityQuery = useQuery({
     queryKey: ['kpi-velocity', params.start, params.end],
     queryFn: async () => (await reportsApi.employeeVelocity({ start: params.start, end: params.end })).data || [],
     enabled: canViewAll,
+    placeholderData: keepPreviousData,
   });
   const meQuery = useQuery({
     queryKey: ['kpi-me', params.start, params.end],
     queryFn: async () => (await kpiApi.me({ start: params.start, end: params.end })).data,
+    placeholderData: keepPreviousData,
   });
 
   const rows = (listQuery.data as KpiRow[]) || [];
   const prevRows = (prevListQuery.data as KpiRow[]) || [];
   const velocity = (velocityQuery.data as VelocityRow[]) || [];
   const me = (meQuery.data as KpiRow | null) || null;
-  const loading = listQuery.isLoading || prevListQuery.isLoading || velocityQuery.isLoading || meQuery.isLoading;
+  // Render progressively — the leaderboard query can be slow on Railway, but
+  // the user-specific KPI ("me") usually comes back in a few hundred ms.
+  // Blocking the whole page on listQuery means switching filters feels frozen.
+  const tableLoading = listQuery.isLoading || velocityQuery.isLoading;
+  const firstPaintLoading = meQuery.isLoading && !meQuery.data && tableLoading && rows.length === 0;
 
-  if (loading) return <SkeletonTable rows={6} cols={6} />;
+  if (firstPaintLoading) return <SkeletonTable rows={6} cols={6} />;
 
   const getVelocityData = (empId: string) => velocity.find(v => v.employeeId === empId);
   const getPrevScore = (empId: string) => prevRows.find(r => r.employeeId === empId)?.velocityScore ?? null;
@@ -166,32 +176,48 @@ const Kpi: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentU
       )}
 
       {/* Leaderboard with comparison & revenue */}
-      {canViewAll && rows.length > 0 && (
-        <EmployeePerformanceTable
-          rows={rows}
-          velocity={velocity}
-          prevRows={prevRows}
-          title="Samaradorlik Reytingi"
-          showTrend
-        />
+      {canViewAll && (
+        rows.length > 0 ? (
+          <EmployeePerformanceTable
+            rows={rows}
+            velocity={velocity}
+            prevRows={prevRows}
+            title="Samaradorlik Reytingi"
+            showTrend
+          />
+        ) : tableLoading ? (
+          <SkeletonTable rows={6} cols={6} />
+        ) : listQuery.isError || velocityQuery.isError ? (
+          <div className="bg-white rounded-2xl border border-rose-200 shadow-sm p-8 text-center">
+            <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Activity size={28} className="text-rose-400" />
+            </div>
+            <h3 className="text-base font-bold text-rose-600 uppercase tracking-tight mb-2">Yuklab bo'lmadi</h3>
+            <p className="text-[11px] font-bold text-slate-400 leading-relaxed mb-4">
+              So'rov vaqti tugadi yoki server javob bermayapti. Filtrni qisqaroq qiling yoki qayta urinib ko'ring.
+            </p>
+            <button onClick={() => { listQuery.refetch(); velocityQuery.refetch(); prevListQuery.refetch(); }}
+              className="px-4 py-2 bg-orange-600 text-white text-[10px] font-bold rounded-lg uppercase tracking-widest hover:bg-orange-700">
+              Qayta urinish
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-10 text-center">
+            <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Activity size={28} className="text-orange-400" />
+            </div>
+            <h3 className="text-base font-bold text-slate-700 uppercase tracking-tight mb-2">Ma'lumot yo'q</h3>
+            <p className="text-[11px] font-bold text-slate-400 leading-relaxed">
+              Tanlangan davr uchun KPI ma'lumotlari mavjud emas.
+            </p>
+          </div>
+        )
       )}
 
       {!canViewAll && me && (
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <p className="text-xs font-bold text-slate-500 leading-relaxed">
             Siz faqat o'zingizning samaradorlik ko'rsatkichlaringizni ko'ra olasiz. Boshqa xodimlarning ma'lumotlarini ko'rish uchun "KPI ko'rish" ruxsati kerak.
-          </p>
-        </div>
-      )}
-
-      {!me && rows.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-10 text-center">
-          <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Activity size={28} className="text-orange-400" />
-          </div>
-          <h3 className="text-base font-bold text-slate-700 uppercase tracking-tight mb-2">Ma'lumot yo'q</h3>
-          <p className="text-[11px] font-bold text-slate-400 leading-relaxed">
-            Hozircha KPI ma'lumotlari mavjud emas.<br />Xodimlar vazifalar bajarganida statistika to'ldiriladi.
           </p>
         </div>
       )}

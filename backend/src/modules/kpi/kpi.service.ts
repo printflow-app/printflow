@@ -65,43 +65,40 @@ export class KpiService {
 
     // Prisma middleware tenantId'ni avtomatik qo'shadi (TenantInterceptor orqali).
     // Strict branch filter — when branchId is supplied, only employees of that branch.
-    const employees = await this.prisma.employee.findMany({
-      where: branchId && branchId !== '__main__' ? { branchId } : undefined,
-      include: { role: true },
-    });
+    //
+    // PARALLEL: barchasi mustaqil queries, Promise.all bilan ishlatamiz.
+    // Eski (ketma-ket) variant Railway PG'da 6-10s olardi va ko'pincha
+    // 30+ kun oralig'ida frontend timeout'iga uchrardi. Endi parallel
+    // ishlaganda taxminan eng sekin query'ning vaqti qadar oladi.
+    const [employees, columns, histories, tasks, attendance] = await Promise.all([
+      this.prisma.employee.findMany({
+        where: branchId && branchId !== '__main__' ? { branchId } : undefined,
+        include: { role: true },
+      }),
+      this.prisma.kanbanColumn.findMany({ orderBy: { orderIdx: 'asc' } }),
+      // task'ni include qilmaymiz — kod uni o'qimaydi va Task'dagi bir nechta
+      // qatorda Prisma engine hal qila olmaydigan baytlar bor (Railway PG18'dan
+      // PG16'ga dump-restore vaqtida ba'zi text bayt-ketma-ketliklari napi
+      // string'ga o'tmaydi). Faqat zaruriy ustunlarni `select` qilamiz.
+      this.prisma.taskHistory.findMany({
+        where: { createdAt: { gte: from, lte: to } },
+        select: { id: true, employeeId: true, taskId: true, action: true, createdAt: true },
+      }),
+      // Tasks — KPI uchun faqat bir nechta ustun kerak. `description`, `notes`
+      // kabi tekst maydonlar olib tashlandi.
+      this.prisma.task.findMany({
+        where: { updatedAt: { gte: from, lte: to } },
+        select: { id: true, assignees: true, columnId: true, createdAt: true, updatedAt: true },
+      }),
+      this.prisma.attendanceRecord.findMany({
+        where: { createdAt: { gte: from, lte: to } },
+        select: { id: true, employeeId: true, lateMinutes: true, checkIn: true, createdAt: true },
+      }),
+    ]);
 
-    const columns = await this.prisma.kanbanColumn.findMany({
-      orderBy: { orderIdx: 'asc' },
-    });
     const finalColumnId = columns.length ? columns[columns.length - 1].id : null;
 
-    // task'ni include qilmaymiz — kod uni o'qimaydi va Task'dagi bir nechta
-    // qatorda Prisma engine hal qila olmaydigan baytlar bor (Railway PG18'dan
-    // PG16'ga dump-restore vaqtida ba'zi text bayt-ketma-ketliklari napi
-    // string'ga o'tmaydi). Faqat zaruriy ustunlarni `select` qilamiz.
-    const histories = await this.prisma.taskHistory.findMany({
-      where: { createdAt: { gte: from, lte: to } },
-      select: {
-        id: true, employeeId: true, taskId: true, action: true, createdAt: true,
-      },
-    });
-
-    // Tasks — KPI uchun faqat bir nechta ustun kerak. `description`, `notes`
-    // kabi tekst maydonlar olib tashlandi.
-    const tasks = await this.prisma.task.findMany({
-      where: { updatedAt: { gte: from, lte: to } },
-      select: {
-        id: true, assignees: true, columnId: true, createdAt: true, updatedAt: true,
-      },
-    });
-
-    const attendance = await this.prisma.attendanceRecord.findMany({
-      where: { createdAt: { gte: from, lte: to } },
-      select: {
-        id: true, employeeId: true, lateMinutes: true, checkIn: true, createdAt: true,
-      },
-    });
-
+    // activeTasks finalColumnId'ga bog'liq — Promise.all'dan keyin alohida.
     const activeTasks = await this.prisma.task.findMany({
       where: finalColumnId ? { columnId: { not: finalColumnId } } : {},
       select: { id: true, assignees: true, columnId: true },
