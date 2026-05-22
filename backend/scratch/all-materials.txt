@@ -1,0 +1,85 @@
+- ID: 21ee3f4b-1bce-4847-be41-b4dfcfbf3f25
+  Name: "arakal - 107"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 50
+
+- ID: 1f1a00e5-2819-4a4d-b766-62f50f4c8a4e
+  Name: "arakal-1.27"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 50
+
+- ID: 06f2becf-0351-4dc1-b916-d8756ceaea9b
+  Name: "arakal-1.52"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 50
+
+- ID: 121fb318-6618-4376-acad-1d7387ace3a4
+  Name: "akril oq 2.7mm"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 2
+
+- ID: 1a65ca85-064b-4053-bc51-b756d3e2e399
+  Name: "akril qora 2.7mm"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 1
+
+- ID: 58fdcc15-35a8-4ab8-9f69-df8d980cc125
+  Name: "akril havo kok 2.7mm (835) "
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 1
+
+- ID: f822b9ef-95f0-4e05-b578-2f8a4323f1d1
+  Name: "akril qizil 1ta 2.7mm (136)"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 1
+
+- ID: b7257da8-f2dc-4711-bdae-10e6cb50fbd8
+  Name: "akril sariq (235) 2.7mm"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 2
+
+- ID: 85f9f50a-5005-4190-93d7-8cfed1c70648
+  Name: "fomeks 4mm"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 10
+
+- ID: b9b4697b-9bb7-4f8e-be48-3cb37eea1f9d
+  Name: "setka 1.27 "
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 50
+
+- ID: b62391ba-cd38-456c-a002-a9289f67435b
+  Name: "kraska bosrong qizil"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 5
+
+- ID: a4c1fd6c-4d60-410e-a831-4d50f302689a
+  Name: "kraska bosrong qora"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 5
+
+- ID: 33031561-08c6-4c6c-9d4d-bb3a01048966
+  Name: "kraska bosrong ko'k"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 5
+
+- ID: 80f88741-4c93-4c25-8566-407dcfa8bb53
+  Name: "kraska bosrong sariq"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 5
+
+- ID: abd75bb6-ad23-4267-a6f5-6bc094736467
+  Name: "diod 5054 oq "
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 5000
+
+- ID: f044cb83-db13-44da-885a-aed4cdfd3614
+  Name: "diod 5054 qizil"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Stock: 1000
+
+- ID: dafda02c-7c55-41fd-b570-3986ac974ea1
+  Name: "A4 qogoz"
+  Tenant: "Puff Print" (puffprint)
+  Stock: 500
+

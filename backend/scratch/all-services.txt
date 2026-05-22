@@ -1,0 +1,495 @@
+- ID: f33523c8-3abb-475e-b44c-5747117a35af
+  Name: "banner"
+  Tenant: "Puff Print" (puffprint)
+  Has Image: No
+
+- ID: 089a7c7b-8272-4b84-a7c5-c843c8574927
+  Name: "Vizitka"
+  Tenant: "Puff Print" (puffprint)
+  Has Image: No
+
+- ID: e84aa320-f529-4da5-b2b8-a16a4a2a0dfb
+  Name: "banner"
+  Tenant: "Puff Print" (puffprint)
+  Has Image: No
+
+- ID: 38c13ffd-7b4f-4998-877a-4d9e6110550f
+  Name: "Orakal"
+  Tenant: "Puff Print" (puffprint)
+  Has Image: No
+
+- ID: 36a74448-add4-415e-8bbd-cd6acd6dc961
+  Name: "Brotma Xarf"
+  Tenant: "Puff Print" (puffprint)
+  Has Image: No
+
+- ID: 4d45d14b-f3fd-4e51-8d20-9a4e554faf28
+  Name: "Koja bloknot (0020)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: b1835605-ed99-47f2-8fb3-7c14bb6b9b55
+  Name: "Futbolka (Basico)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 0d05ad6b-eee4-4781-a2ea-155fd9bca5bf
+  Name: "Bayroq ish stoli uchun (2 shoxli)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: d9ef2ce9-0829-4268-8fde-e8eae339afc3
+  Name: "Vizitka"
+  Tenant: "Puff Print" (puffprint)
+  Has Image: Yes
+
+- ID: 9455684f-1f41-42d0-a4a4-eabb61f9c68a
+  Name: "Beydjik (Lentasi)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 4f621a97-c2c0-48b0-8ccd-fc3592f57102
+  Name: "Znachok (55mm)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 00b4e48c-fae9-43f1-b678-c2d3dafb372b
+  Name: "Koja bloknot (0030)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 99215a28-beae-4e21-88de-b556f89760f8
+  Name: "Parus bayroq (M razmer 2.70x0.7)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: c70fc4ff-e581-40a3-ae5d-2433956f9b74
+  Name: "ROLL UP"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 567a5cde-c25f-4ad5-ba5f-8664976a0041
+  Name: "Termos"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 2d672e50-5263-4b4a-b73e-ac3fc8f3e7b7
+  Name: "Finka (STATUS)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: f35ae551-263c-43d5-bbe6-c407f94dde60
+  Name: "Futbolka (Detskiy)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 5fb182f7-bb30-4e2d-a00d-da79fbceda7d
+  Name: "Led Ekran"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: dc010178-ae79-41f5-8fb6-3d3097eef5f3
+  Name: "Termos"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 10b9707f-cf6d-4c20-8823-c5187620f0a3
+  Name: "Pereplyot"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 01965f15-aa99-414d-9b16-31d6bbd0bc30
+  Name: "Tarelka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: b8d42beb-cf5a-443c-9264-f17a752d80ba
+  Name: "Mato"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 1a90c043-773f-4eeb-b433-f6040736c18a
+  Name: "Finka (Basico)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 5541b135-1171-4093-9d62-0a9400cdbf59
+  Name: "Bayroq ish stoli uchun (3 shoxli)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 3fa36a5d-ad6a-4a31-9b2b-c55ba9ecb8a8
+  Name: "Beydjik (UV print)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: d7603ded-b9f4-4f2c-8418-091e3682446a
+  Name: "Bloknot A5 (tipografiya)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: b42770a5-f163-466a-b573-fcbd089bda3a
+  Name: "Kalendar 7 varoqli (Tipografiya)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: b1cb286b-2fb4-4780-83e1-38e95dfcea24
+  Name: "Koja bloknot (0040)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 6f325262-93e7-4cd6-9af7-1f4e9650c7c5
+  Name: "Pauchok (160x60)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: e99b3971-db22-421a-be69-85d9ee3629b3
+  Name: "Ruchka premium (sof touch)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: c25092ea-9eca-4e8e-8e4f-ef0e275ac8cd
+  Name: "Flayer (99x210)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: d792bc95-9e8d-427c-9fa0-c97ee784339d
+  Name: "Futbolka"
+  Tenant: "Puff Print" (puffprint)
+  Has Image: Yes
+
+- ID: 708c697c-0e22-4548-b23c-d6c947749d10
+  Name: "Bayroq (1x1.5 standart)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 848c82a9-5079-489d-8bd1-996a37b66191
+  Name: "Bayroq (PREZIDENT)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: d434f0bc-fe1a-41c7-949b-6d472cb7c56f
+  Name: "Buklet A4"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: ae78d849-5410-4854-9a9a-903b3782af16
+  Name: "Kepka (oq va qora)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: c7c199b5-9f83-42e9-889e-5e96db70f2df
+  Name: "Krujka (oddiy)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 9fa5f23c-546d-479c-b404-5427e5b0d2e2
+  Name: "Ruchka (Sensor)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 1f0fbfb8-f4c0-453f-bf9c-5aace0e6d752
+  Name: "Ko'rsatgich"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: c0d397ad-86f2-4f34-9bc5-0011d9d38f9d
+  Name: "Oynalarga aplikatsiya"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 5fe5a557-058e-44df-bb66-87a3d34b6828
+  Name: "Yo'l belgilar"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 5dfa0ea5-b635-4065-98aa-4089a3882a46
+  Name: "Banner - 320SM"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: cf7ce43c-6d21-48dc-ade9-c942b78634a5
+  Name: "Vizitka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 2fb0ee14-42af-4ff3-997f-0a5d99513f4d
+  Name: "Plastik karta"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: ad57e8cb-ec8f-459a-aa19-eff6b4f1763b
+  Name: "Leflet"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 3c2b672c-80dc-4fbb-94e4-a9c47a1f96e9
+  Name: "Jurnal"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 95fde772-87cb-4d7e-bc6c-9352d4dd1d36
+  Name: "Broshuralar"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 03b231e8-304b-4707-a4bd-436b87a02b6f
+  Name: "Brand book"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 4c475402-d3f6-4ff1-b0d6-acf3d61b4cc1
+  Name: "Katalog"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: ce2f6972-2aec-4bba-87f4-f16a15da4b0d
+  Name: "Ruchka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 289fdb61-03f4-405d-b70c-b895c6c524d8
+  Name: "Blaknot"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 2a0eb389-23f7-4a3d-ab17-83e2d3a576bd
+  Name: "kalendar"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: d281e0c2-3c1d-4d08-b8a4-b7e15650014b
+  Name: "Sticker"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 3bf5765a-287f-4b68-a4df-edb60e04000c
+  Name: "Nakleyka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 45c32654-a226-437b-bd2c-308be04ce0ab
+  Name: "Otkritka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: de4bcedc-c50f-48e7-bd16-57a5b5d8619b
+  Name: "Menyu"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 036ff10b-a64b-4fd2-ae20-dfc32cd24987
+  Name: "Kundalik"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: b9ed840e-58ed-481c-8fb8-e2bd23ef7fad
+  Name: "Papka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 3c1b95cc-ee08-47ff-9c75-8fb256cbf577
+  Name: "Soat"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 505e113d-45c3-49cd-92bf-b8dbc30486aa
+  Name: "Fleshka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 4c3b5675-62d4-4bb4-a814-1a76f74680e1
+  Name: "Bayrog'"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 082d893e-4f49-446e-baca-7e5ca430bf02
+  Name: "Etiketka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 608a9bde-1d36-40cf-bdc6-28ed8d77be57
+  Name: "Light Box"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 031b4142-f6e4-495a-a0af-cd0c135e4181
+  Name: "Pauk"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: aaba7ac3-b919-4dfd-8db3-2b548cb65c8a
+  Name: "Tablo"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: af4901aa-6fdd-4bda-9f5d-0015b85744ce
+  Name: "Roll-Up"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: ff28d9f2-50a0-47f1-a68d-a8a0c02a2c21
+  Name: "Avto reklama"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 13cc6e69-ef3a-4494-bb76-cb670f413482
+  Name: "Tashqi ko'rsatgich (Stella)"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: ffec3864-4939-46d8-94aa-82a9dbfcf1b0
+  Name: "Banner - 180sm"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: c21435c5-f06f-49c5-ade3-0b4f92294040
+  Name: "Banner - 110sm"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 93806630-2999-4e6a-ac3a-536cb2441b57
+  Name: "Banner - 220sm"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 210cf183-9eed-426d-99b3-56220ec009d4
+  Name: "Laminatsiya"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 685160eb-98f2-4a84-80b3-d775085ecefd
+  Name: "Bokal"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: e136aee6-7c18-468d-9b5d-2a93786b89ae
+  Name: "Banner - 260SM"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 8add6a4d-3e7e-4c3b-9d5e-49e1ed093e21
+  Name: "Orakal - 107SM"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: a49443cc-3257-4527-963b-5eb1f8200698
+  Name: "Orakal - 127SM"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: d5265716-ce38-4583-aedf-951ad1b41cec
+  Name: "Orakal - 152SM"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 488524bb-f281-437e-8b0c-0b2f7f7e7f7c
+  Name: "Setkalik Orakal - 107SM"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: e933b100-693c-47bf-916f-91eaf1dfa5fb
+  Name: "Setkalik Orakal - 127SM"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 4373a982-8bbe-46d7-9482-562241e36519
+  Name: "Setkalik Orakal - 152SM"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 097e69fd-8978-4461-8127-b4b8b8c601eb
+  Name: "Flayer"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 5e1b3a09-7efb-465e-8be8-a86b0c4f2bdb
+  Name: "Buklet"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 7ef4fcd3-378e-40cc-8a08-1cd7cd9a8ca3
+  Name: "Bo'rtma harflar"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 9d64671b-25af-46f6-b75d-7ea53ac31080
+  Name: "Kepka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 6e9ccc3b-de9b-4dd7-bec4-c394833990db
+  Name: "Futbolka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 993ba18c-a09d-434d-bf3e-b710326941b3
+  Name: "Yoqali Fudbolka"
+  Tenant: "Sharq Reklama" (sharqreklama)
+  Has Image: No
+
+- ID: 5da5dae4-ec8e-43b5-8a6a-a266a5b4152f
+  Name: "Bukva"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 5dfe51f8-9147-4969-81cf-cee1a56d0dd0
+  Name: "Bayroq"
+  Tenant: "Puff Print" (puffprint)
+  Has Image: No
+
+- ID: a4f26b74-a1b6-4a60-a362-d3e7d738f624
+  Name: "Futbolka (Status)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: d921d1fa-9211-4bc9-9496-545919cb9a3b
+  Name: "Ruchka standart"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 620c6347-4e94-4adf-a070-70b4d41f8a14
+  Name: "Bayroq ish stoli uchun (1 shoxli)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 6b1a3763-9da5-4c75-8420-d71e6f520638
+  Name: "Beydjik (standart)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: f82c6c6a-66fd-4368-9c4a-4bfd0730d340
+  Name: "Vizitka oddiy (poligrafiya)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 5e45dd7b-7fb4-45f8-bf0b-aa70c3607d56
+  Name: "Kepka (rangli)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: a5948833-4d2c-400f-804b-c27a38b747c6
+  Name: "Krujka (sof touch)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 2ae2cb1a-5e53-48c1-9246-108f0789af80
+  Name: "Pauchok (175x75)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 7d596090-2c80-419f-b6d7-ea84addb9590
+  Name: "Paket A4"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: e5808c1a-5359-47b6-bb66-4a25eb691242
+  Name: "Soat"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+
+- ID: 3be203dc-88f8-43db-8bfc-95f7792c9a5e
+  Name: "Futbolka (Amina)"
+  Tenant: "vodiyprint" (vodiyprint)
+  Has Image: No
+

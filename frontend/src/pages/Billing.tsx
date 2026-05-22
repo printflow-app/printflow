@@ -279,19 +279,14 @@ export default function Billing() {
                       const isEnabled = (feat: { ids: string[] }) =>
                         feat.ids.some(id => features[id] || allowedMods.includes(id));
 
-                      // Sort: active features first
-                      const sortedFeatures = [...allFeatures].sort((a, b) =>
-                        (isEnabled(b) ? 1 : 0) - (isEnabled(a) ? 1 : 0)
-                      );
-
-                      return sortedFeatures.map(feat => {
+                      return allFeatures.map(feat => {
                         const val = isEnabled(feat);
                         return (
-                          <li key={feat.ids[0]} className={`flex items-center gap-3 text-[11px] font-bold ${val ? 'text-slate-700' : 'text-slate-400 opacity-60'}`}>
+                          <li key={feat.ids[0]} className={`flex items-center gap-3 text-[11px] font-bold ${val ? 'text-slate-700' : 'text-slate-400 opacity-35'}`}>
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${val ? 'bg-orange-50' : 'bg-slate-100'}`}>
                               {val ? <Check size={12} className="text-[#FF6B00]" strokeWidth={4} /> : <div className="w-3 h-0.5 bg-slate-300" />}
                             </div>
-                            <span style={{ textDecoration: val ? 'none' : 'line-through' }}>{feat.label}</span>
+                            <span>{feat.label}</span>
                           </li>
                         );
                       });
