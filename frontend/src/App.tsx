@@ -327,19 +327,65 @@ const App: React.FC = () => {
 
   if (loading && !isAlwaysPublic) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-slate-900 font-sans">
-        <div className="relative mb-8">
-          <img src={logo} alt="PrintFlow" className="w-24 h-24 object-contain animate-pulse" />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-16 h-16 border-2 border-[#FF6B00]/20 border-t-[#FF6B00] rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#fafbfc] flex flex-col items-center justify-center p-6 overflow-hidden relative font-sans text-slate-900">
+        {/* Soft background glows for aesthetics */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#FF6B00]/5 rounded-full blur-[80px] pointer-events-none animate-pulse" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col items-center">
+          {/* Logo container - modern, rounded-2xl square box instead of circle */}
+          <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
+            {/* Elegant glowing background */}
+            <div className="absolute -inset-1.5 bg-gradient-to-tr from-[#FF6B00] via-amber-500 to-orange-400 rounded-2xl blur opacity-25 animate-cardGlow" />
+            
+            {/* Main logo card keeping original proportions */}
+            <div className="absolute inset-0 bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center p-4">
+              <img src={logo} alt="PrintFlow" className="w-16 h-16 object-contain animate-logoScale" />
+            </div>
           </div>
+
+          {/* Branding with modern gradient/weight balance */}
+          <h1 className="text-3xl font-black tracking-tight mb-2 select-none uppercase">
+            <span className="text-slate-800">Print</span>
+            <span className="text-[#FF6B00]">Flow</span>
+          </h1>
+
+          {/* Elegant Loading bar */}
+          <div className="w-40 h-1 bg-slate-100 rounded-full overflow-hidden mb-4 relative border border-slate-200/50">
+            <div className="h-full bg-gradient-to-r from-[#FF6B00] via-orange-500 to-amber-500 rounded-full absolute top-0 left-0 w-1/3 animate-loadingBar" />
+          </div>
+
+          {/* Muted loading text */}
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">
+            Tizimga kirilmoqda...
+          </p>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight uppercase mb-2">
-          Print<span className="text-[#FF6B00]">Flow</span>
-        </h1>
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">
-          Tizimga kirilmoqda...
-        </p>
+
+        {/* CSS Keyframes for custom animations */}
+        <style>{`
+          @keyframes slideProgress {
+            0% { left: -35%; width: 35%; }
+            50% { width: 45%; }
+            100% { left: 100%; width: 35%; }
+          }
+          @keyframes logoScale {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+          }
+          @keyframes cardGlow {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(1.03); }
+          }
+          .animate-loadingBar {
+            animation: slideProgress 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          }
+          .animate-logoScale {
+            animation: logoScale 2s ease-in-out infinite;
+          }
+          .animate-cardGlow {
+            animation: cardGlow 2s ease-in-out infinite;
+          }
+        `}</style>
       </div>
     );
   }
