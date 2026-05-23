@@ -10,7 +10,7 @@ import {
   Tooltip, Legend, PieChart, Pie, Cell,
 } from 'recharts';
 import { reportsApi, financeApi, tasksApi, taskExpensesApi, kpiApi } from '../api';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useDepartments } from '../hooks/queries';
 import { SkeletonStats, SkeletonCardGrid } from '../components/Skeleton';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
@@ -277,7 +277,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const [departmentId, setDepartmentId] = useState('');
   // Group-by-department toggle for the local breakdown card (client-side aggregation).
   const [groupByDept, setGroupByDept] = useState(false);
-  const [preset, setPreset] = useState<DatePreset>('3month');
+  const [preset, setPreset] = useState<DatePreset>('month');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
@@ -332,11 +332,14 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const financeParams = { ...params, ...(departmentId ? { departmentId } : {}) };
   const canRunCustom = preset !== 'custom' || (!!params.start && !!params.end);
 
+  // keepPreviousData: filter o'zgarganda eski jadval/grafiklar ko'rinib turadi,
+  // har safar bo'sh skeleton'ga qaytmaydi.
   // Sof Foyda dashboard stats
   const dashStatsQuery = useQuery({
     queryKey: ['report-dashStats', financeParams],
     queryFn: async () => (await financeApi.getDashboard({ params: financeParams })).data,
     enabled: needsFinanceData && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const dashStats = dashStatsQuery.data as { totalKirim: number; totalChiqim: number; balance: number } | null;
 
@@ -345,6 +348,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     queryKey: ['report-growth', params.branchId],
     queryFn: async () => (await reportsApi.growthMetrics({ branchId: params.branchId })).data,
     enabled: canViewGrowthCards && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const growth = growthQuery.data as any;
 
@@ -353,6 +357,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     queryKey: ['report-services', params],
     queryFn: async () => (await reportsApi.servicesPerformance(params)).data || [],
     enabled: canViewServiceStats && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const services = (servicesQuery.data as any[]) || [];
 
@@ -367,6 +372,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       }));
     },
     enabled: canViewDynamics && isShortPreset && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const dynamicsMonthlyQuery = useQuery({
     queryKey: ['report-dinamika-monthly', getMonthsCount(), params.branchId],
@@ -378,6 +384,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       }));
     },
     enabled: canViewDynamics && !isShortPreset && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const dynamics = isShortPreset ? (dynamicsDailyQuery.data as any[] || []) : (dynamicsMonthlyQuery.data as any[] || []);
   const dynamicsType: 'daily' | 'monthly' = isShortPreset ? 'daily' : 'monthly';
@@ -387,6 +394,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     queryKey: ['report-paymentStats', financeParams],
     queryFn: async () => (await financeApi.getStatsByPaymentType({ params: financeParams })).data || { kirim: [], chiqim: [] },
     enabled: (canViewIncomeByType || canViewExpenseByType) && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const paymentStats = (paymentStatsQuery.data as { kirim: any[]; chiqim: any[] }) || { kirim: [], chiqim: [] };
 
@@ -395,6 +403,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     queryKey: ['report-expenseBreakdown', financeParams],
     queryFn: async () => (await financeApi.getExpenseBreakdown({ params: financeParams })).data || [],
     enabled: canViewExpenseCharts && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const expenseBreakdown = (expenseQuery.data as any[]) || [];
 
@@ -403,6 +412,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     queryKey: ['report-vendors', params.start, params.end],
     queryFn: async () => (await reportsApi.vendorProfitability({ start: params.start, end: params.end })).data || [],
     enabled: canViewVendors && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const vendors = (vendorsQuery.data as any[]) || [];
 
@@ -411,6 +421,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     queryKey: ['report-allTasks', params.branchId],
     queryFn: async () => (await tasksApi.findAll(params.branchId)).data || [],
     enabled: (canViewCostCalc || canViewGrowthCards || canViewServiceStats) && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const allTasks = (allTasksQuery.data as any[]) || [];
 
@@ -419,19 +430,30 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     queryKey: ['report-velocity', params.start, params.end],
     queryFn: async () => (await reportsApi.employeeVelocity({ start: params.start, end: params.end })).data || [],
     enabled: canViewKpi && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const velocity = (velocityQuery.data as any[]) || [];
   const kpiQuery = useQuery({
     queryKey: ['report-kpi', params.start, params.end],
     queryFn: async () => (await kpiApi.list({ start: params.start, end: params.end })).data || [],
     enabled: canViewKpi && canRunCustom,
+    placeholderData: keepPreviousData,
   });
   const kpiRows = (kpiQuery.data as any[]) || [];
 
-  // Aggregated loading state for the page
-  const loading = [
+  // Show a brief skeleton only on the very first render when nothing is in
+  // cache yet. Once any section has data we render progressively — blocking
+  // the entire page on the slowest query (KPI on Railway can be 10s+) makes
+  // the app feel frozen even when most data is already back.
+  const hasAnyData = !!(
+    growthQuery.data || dashStatsQuery.data || servicesQuery.data ||
+    dynamicsDailyQuery.data || dynamicsMonthlyQuery.data ||
+    paymentStatsQuery.data || expenseQuery.data || vendorsQuery.data ||
+    kpiQuery.data || velocityQuery.data
+  );
+  const firstLoad = !hasAnyData && [
     dashStatsQuery, growthQuery, servicesQuery, dynamicsDailyQuery, dynamicsMonthlyQuery,
-    paymentStatsQuery, expenseQuery, vendorsQuery, allTasksQuery, velocityQuery, kpiQuery,
+    paymentStatsQuery, expenseQuery,
   ].some(q => q.isLoading && q.fetchStatus !== 'idle');
 
   const handleAddCostingExpense = async () => {
@@ -591,7 +613,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     });
   };
 
-  if (loading) return (
+  if (firstLoad) return (
     <div className="space-y-4">
       <SkeletonStats count={4} />
       <SkeletonCardGrid count={4} />
@@ -832,13 +854,37 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       )}
 
       {/* ── Employee Velocity ── */}
-      {canViewKpi && kpiRows.length > 0 && (
-        <EmployeePerformanceTable 
-          rows={kpiRows} 
-          velocity={velocity} 
-          title="Xodimlar Samaradorligi" 
-          showBar
-        />
+      {canViewKpi && (
+        kpiRows.length > 0 ? (
+          <EmployeePerformanceTable
+            rows={kpiRows}
+            velocity={velocity}
+            title="Xodimlar Samaradorligi"
+            showBar
+          />
+        ) : kpiQuery.isLoading || velocityQuery.isLoading ? (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Users size={16} className="text-orange-500" />
+              <h3 className="text-sm font-bold text-slate-800">Xodimlar Samaradorligi</h3>
+            </div>
+            <SkeletonStats count={4} />
+          </div>
+        ) : kpiQuery.isError ? (
+          <div className="bg-white rounded-2xl border border-rose-200 shadow-sm p-6 text-center">
+            <Users size={28} className="mx-auto text-rose-300 mb-2" />
+            <p className="text-xs font-bold text-rose-600">Xodimlar samaradorligini yuklab bo'lmadi</p>
+            <button onClick={() => { kpiQuery.refetch(); velocityQuery.refetch(); }}
+              className="mt-3 px-3 py-1.5 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-lg hover:bg-rose-100">
+              Qayta urinib ko'rish
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
+            <Users size={28} className="mx-auto text-slate-300 mb-2" />
+            <p className="text-xs font-bold text-slate-500">Tanlangan davr uchun xodim samaradorligi ma'lumotlari yo'q</p>
+          </div>
+        )
       )}
 
       {/* ── Bo'limlar bo'yicha taqsimot (client-side grouping) ─────────────

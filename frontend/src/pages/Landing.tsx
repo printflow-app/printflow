@@ -771,13 +771,13 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                     </div>
 
                     <ul className="space-y-2.5 flex-1 mb-6">
-                      {sorted.slice(0, 7).map(feat => {
+                      {sorted.map(feat => {
                         const val = isOn(feat);
                         return (
-                          <li key={feat.ids[0]} className={`flex items-center gap-2.5 text-sm ${val ? '' : 'opacity-40'}`}>
+                          <li key={feat.ids[0]} className={`flex items-center gap-2.5 text-sm ${val ? '' : 'opacity-35'}`}>
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
                               val
-                                ? plan.isPopular ? 'bg-white/20' : 'bg-orange-500/10'
+                                ? plan.isPopular ? 'bg-white/20' : 'bg-orange-50/10'
                                 : plan.isPopular ? 'bg-white/5' : 'bg-slate-800'
                             }`}>
                               {val
@@ -786,7 +786,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                             </div>
                             <span className={val
                               ? plan.isPopular ? 'text-white font-semibold' : 'text-slate-200 font-semibold'
-                              : 'text-slate-500 line-through text-xs'}
+                              : plan.isPopular ? 'text-orange-200/60' : 'text-slate-500'}
                             >
                               {feat.label}
                             </span>

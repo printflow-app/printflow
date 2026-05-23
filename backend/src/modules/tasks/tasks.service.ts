@@ -43,7 +43,12 @@ export class TasksService {
         paymentType: true,
         vendor: { select: { id: true, name: true } },
         executorBranch: { select: { id: true, name: true } },
-        histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } }
+        // histories include qilinmaydi — kanban kartochkasi tarixni ko'rsatmaydi.
+        // Detail modal `tasksApi.findOne(id)` chaqiradi va u yerda histories
+        // employeega bog'liq holda yuklanadi. Avval bu yerda histories +
+        // employee join bor edi: 1000 ta task uchun ~20K history qator + 20K
+        // employee join har 12 sek polling'da. Bu kanbanni Railway PG'da
+        // 6-10s'gacha sekinlashtirardi.
       },
     });
 
