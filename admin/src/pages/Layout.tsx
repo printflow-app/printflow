@@ -45,21 +45,21 @@ export default function Layout({ onLogout, children }: { onLogout: () => void; c
     .find(n => n.path === location.pathname)?.label || 'Super Admin';
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="min-h-screen flex bg-[#f2f2f7]">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shadow-sm">
+      <aside className="w-64 bg-white/80 backdrop-blur-xl border-r border-slate-200/70 flex flex-col">
         <div className="h-16 px-5 flex items-center gap-2.5 border-b border-slate-100">
           <img src={logo} alt="PF" className="h-7 w-auto drop-shadow" />
-          <span className="text-base font-bold tracking-tight text-slate-800">
+          <span className="text-base font-semibold tracking-tight text-slate-800">
             Print<span className="text-orange-500">Flow</span>
           </span>
-          <span className="ml-auto text-[8px] font-bold text-slate-400 uppercase tracking-widest">v2.5</span>
+          <span className="ml-auto text-[8px] font-semibold text-slate-400 uppercase tracking-widest">v2.5</span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-3 px-2">
+        <nav className="flex-1 overflow-y-auto py-3 px-2.5">
           {NAV_GROUPS.map((group, gi) => (
-            <div key={group.label} className={gi > 0 ? 'mt-4' : ''}>
-              <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+            <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
+              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                 {group.label}
               </div>
               {group.items.map(n => {
@@ -69,13 +69,13 @@ export default function Layout({ onLogout, children }: { onLogout: () => void; c
                   <Link
                     key={n.path}
                     to={n.path}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors ${
                       active
-                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                        ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/25'
+                        : 'text-slate-600 hover:bg-slate-500/5 hover:text-slate-900'
                     }`}
                   >
-                    <Icon size={15} strokeWidth={active ? 2.5 : 2} />
+                    <Icon size={17} strokeWidth={active ? 2.4 : 2} />
                     <span>{n.label}</span>
                   </Link>
                 );
@@ -84,29 +84,29 @@ export default function Layout({ onLogout, children }: { onLogout: () => void; c
           ))}
         </nav>
 
-        <div className="px-5 py-3 border-t border-slate-100 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+        <div className="px-5 py-3 border-t border-slate-100 text-[10px] font-medium text-slate-400 tracking-wide">
           Super Admin · PrintFlow
         </div>
       </aside>
 
       {/* Main */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
+        <header className="h-16 bg-white/70 backdrop-blur-xl border-b border-slate-200/70 flex items-center justify-between px-6 sticky top-0 z-40">
           <div>
-            <h1 className="text-base font-bold text-slate-800 tracking-tight">{currentLabel}</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+            <h1 className="text-[17px] font-semibold text-slate-900 tracking-tight">{currentLabel}</h1>
+            <p className="text-[11px] font-medium text-slate-400 tracking-wide mt-0.5">
               Boshqaruv paneli
             </p>
           </div>
           <button
             onClick={onLogout}
-            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-xs font-bold uppercase tracking-wider transition-colors"
+            className="flex items-center gap-2 h-9 px-4 rounded-full bg-slate-500/8 hover:bg-rose-500/10 text-slate-600 hover:text-rose-600 text-[13px] font-medium transition-colors"
           >
-            <LogOut size={14} strokeWidth={2.5} /> Chiqish
+            <LogOut size={15} strokeWidth={2.2} /> Chiqish
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 bg-slate-50">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6 bg-[#f2f2f7]">{children}</main>
       </div>
     </div>
   );

@@ -490,7 +490,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       <header className="md:hidden h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
           <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
-          <h1 className="text-sm font-bold text-slate-900 tracking-tighter uppercase italic">Print<span className="text-[#FF6B00]">Flow</span></h1>
+          <h1 className="text-base font-semibold text-slate-900 tracking-tight">Print<span className="text-[#FF6B00]">Flow</span></h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={handleManualLock} className="w-9 h-9 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg">
@@ -523,8 +523,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           <div className="flex items-center gap-2">
             <img src={logo} alt="PF" style={{ height: 32, width: 'auto' }} />
             <div>
-              <h1 className="text-lg font-bold text-slate-900 tracking-tighter leading-noneUppercase italic">PRINT<span className="text-[#FF6B00]">FLOW</span></h1>
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{currentUser.role?.name || 'Xodim'}</p>
+              <h1 className="text-lg font-semibold text-slate-900 tracking-tight leading-none">Print<span className="text-[#FF6B00]">Flow</span></h1>
+              <p className="text-[10px] font-medium text-slate-400 tracking-wide mt-1">{currentUser.role?.name || 'Xodim'}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -572,10 +572,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   data-tour-group={group.label.toLowerCase()}
                   data-tour-open={isOpen ? '1' : '0'}
                   onClick={() => toggleGroup(group.label)}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
                     containsActive
-                      ? 'bg-slate-100/80 text-slate-800 shadow-sm border border-slate-200/60'
-                      : 'bg-slate-50/50 text-slate-500 hover:bg-slate-100/50 hover:text-slate-700 border border-transparent'
+                      ? 'bg-slate-500/8 text-slate-800'
+                      : 'text-slate-500 hover:bg-slate-500/5 hover:text-slate-700'
                   }`}
                 >
                   <span className="flex items-center gap-2.5">
@@ -607,15 +607,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     key={item.id}
                     data-tour-id={`nav-${item.id}`}
                     onClick={() => handleTabChange(item.id as any)}
-                    className={`group relative flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-300 border ${activeTab === item.id
-                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 border-orange-500'
-                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'
+                    className={`group relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-300 border ${activeTab === item.id
+                        ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/25 border-orange-500'
+                        : 'text-slate-600 hover:bg-slate-500/5 hover:text-slate-900 border-transparent'
                       }`}
                   >
-                    <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} className={activeTab === item.id ? 'text-white' : 'text-slate-300 group-hover:text-slate-500'} />
+                    <item.icon size={17} strokeWidth={activeTab === item.id ? 2.4 : 2} className={activeTab === item.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'} />
                     <div className="text-left flex-1">
-                      <p className="leading-none uppercase tracking-tight">{item.label}</p>
-                      <p className={`text-[8px] font-semibold mt-0.5 uppercase tracking-tighter ${activeTab === item.id ? 'text-orange-100' : 'text-slate-400 opacity-60'}`}>{item.sub}</p>
+                      <p className="leading-tight tracking-tight">{item.label}</p>
+                      <p className={`text-[10px] font-normal mt-0.5 tracking-tight ${activeTab === item.id ? 'text-orange-100' : 'text-slate-400 opacity-70'}`}>{item.sub}</p>
                     </div>
 
                     {/* Per-item notification badge — yangilik soni */}
@@ -664,25 +664,25 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="overflow-hidden min-w-0 flex-1">
-              <p className="text-[11px] font-bold text-slate-800 truncate leading-tight uppercase tracking-tight">{currentUser.fullName}</p>
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate italic group-hover:text-orange-500">Profil Sozlamalari</p>
+              <p className="text-[13px] font-semibold text-slate-800 truncate leading-tight tracking-tight">{currentUser.fullName}</p>
+              <p className="text-[11px] font-medium text-slate-400 tracking-wide mt-0.5 truncate group-hover:text-orange-500">Profil sozlamalari</p>
             </div>
           </button>
           <button
             onClick={() => handleTabChange('qollanma')}
-            className={`flex w-full items-center justify-center gap-2 px-3 py-2 mb-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border-dashed ${
-              activeTab === 'qollanma' 
-                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 border-emerald-500' 
-                : 'text-emerald-600 border-emerald-100 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20'
+            className={`flex w-full items-center justify-center gap-2 px-3 py-2.5 mb-2 rounded-xl text-[12px] font-medium transition-all ${
+              activeTab === 'qollanma'
+                ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/25'
+                : 'text-emerald-600 bg-emerald-500/8 hover:bg-emerald-500 hover:text-white'
             }`}
           >
-            O'rgatuvchi Qo'llanma
+            O'rgatuvchi qo'llanma
           </button>
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex w-full items-center justify-center gap-2 px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest text-rose-500 border border-rose-100 bg-rose-50/50 hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-500/20 transition-all border-dashed"
+            className="flex w-full items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-[12px] font-medium text-rose-500 bg-rose-500/8 hover:bg-rose-500 hover:text-white transition-all"
           >
-            <LogOut size={12} strokeWidth={3} /> Chiqish
+            <LogOut size={14} strokeWidth={2.4} /> Chiqish
           </button>
         </div>
       </aside>
@@ -740,12 +740,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       <main className="flex-1 flex flex-col h-[calc(100vh-3rem)] md:h-screen overflow-hidden">
         <header className="hidden md:flex h-16 px-6 items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md z-10">
           <div className="flex flex-col">
-            <h2 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2.5 uppercase">
+            <h2 className="text-[19px] font-semibold text-slate-900 tracking-tight flex items-center gap-2.5">
               {navItems.find(i => i.id === activeTab)?.label}
               {lockedTabs.has(activeTab) && <Lock size={16} className="text-rose-500" />}
               {!lockedTabs.has(activeTab) && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>}
             </h2>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5 opacity-80">
+            <p className="text-[11px] font-medium text-slate-400 tracking-wide mt-0.5">
               PrintFlow • {navItems.find(i => i.id === activeTab)?.sub}
             </p>
           </div>
@@ -758,11 +758,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 // Dispatch synthetic Ctrl+K event so the palette opens via its global listener
                 document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
               }}
-              className="hidden lg:flex items-center gap-2 h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all"
+              className="hidden lg:flex items-center gap-2 h-9 px-3.5 rounded-full border border-slate-200 bg-white text-[12px] font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-all"
               title="Tezkor qidiruv"
             >
               <span>Qidiruv</span>
-              <kbd className="text-[9px] font-bold bg-slate-100 px-1.5 py-0.5 rounded">Ctrl K</kbd>
+              <kbd className="text-[10px] font-medium bg-slate-100 px-1.5 py-0.5 rounded-md">⌘K</kbd>
             </button>
 
             {/* Filial filtri faqat: bir nechta filial bor + foydalanuvchining filiallar ruxsati bor bo'lsa */}
@@ -773,7 +773,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   setActiveBranchId(e.target.value);
                   localStorage.setItem('pf_active_branch', e.target.value);
                 }}
-                className="select-minimal h-9 text-[10px] font-bold uppercase tracking-widest min-w-[160px]"
+                className="select-minimal h-9 text-[12px] font-medium min-w-[160px]"
               >
                 <option value="">Barcha filiallar</option>
                 {branches.map(b => (
@@ -784,13 +784,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
             <button
               onClick={(e) => toggleTabLock(activeTab, e)}
-              className={`group flex items-center gap-2 h-10 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg ${lockedTabs.has(activeTab)
-                  ? 'bg-rose-600 text-white shadow-rose-500/20'
-                  : 'bg-orange-600 text-white shadow-orange-500/10 hover:bg-orange-700'
+              className={`group flex items-center gap-2 h-10 px-4 rounded-full text-[12px] font-medium transition-all ${lockedTabs.has(activeTab)
+                  ? 'bg-rose-500 text-white shadow-sm shadow-rose-500/25'
+                  : 'bg-orange-500 text-white shadow-sm shadow-orange-500/20 hover:bg-orange-600'
                 }`}
             >
               {lockedTabs.has(activeTab) ? <Lock size={14} /> : <Unlock size={14} />}
-              <span>{lockedTabs.has(activeTab) ? 'Sahifa Qulflangan' : 'Sahifani Qulflash'}</span>
+              <span>{lockedTabs.has(activeTab) ? 'Sahifa qulflangan' : 'Sahifani qulflash'}</span>
             </button>
           </div>
         </header>

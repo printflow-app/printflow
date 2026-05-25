@@ -3,29 +3,34 @@
 @tailwind utilities;
 
 :root {
-  --background: #fafafa;
-  --foreground: #0f172a;
+  /* iOS systemGroupedBackground — a hair warmer/softer than the old #fafafa.
+     Keeps the same neutral family; only the temperature shifts toward iOS. */
+  --background: #f2f2f7;
+  --foreground: #1c1c1e;
   --primary: #FF6B00;
   --primary-hover: #E66100;
   --primary-foreground: #ffffff;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  /* Border tokens — was #0f172a (near-black) which made every bordered card look like a debug outline.
-     Now matches slate-200 for normal separation, with a stronger variant for emphasis. */
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --muted: #64748b;
-  --muted-foreground: #0f172a;
+  --card-foreground: #1c1c1e;
+  /* Border tokens — iOS hairline separators. Slightly lighter than slate-200
+     so cards separate by tone rather than by a hard outline. */
+  --border: #e5e5ea;
+  --border-strong: #d1d1d6;
+  --muted: #8e8e93;
+  --muted-foreground: #1c1c1e;
 
   /* Design tokens — single source for radius and control heights.
-     Use these instead of ad-hoc rounded-lg/xl/2xl per file. */
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --control-h-sm: 32px;
-  --control-h:    40px;
-  --control-h-lg: 48px;
+     iOS uses generous, continuous-looking corners. These cascade to the
+     Tailwind rounded-{sm,md,lg,xl,2xl,3xl} scale via tailwind.config.js. */
+  --radius-sm: 9px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-3xl: 30px;
+  --control-h-sm: 34px;
+  --control-h:    44px;  /* iOS HIG minimum tap target */
+  --control-h-lg: 52px;
 
   /* Backward compatibility for existing utility classes */
   --bg-main: var(--background);
@@ -98,7 +103,7 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased overflow-x-hidden;
+    @apply bg-[#f2f2f7] text-slate-900 font-sans antialiased overflow-x-hidden;
   }
 
   h1,
@@ -232,7 +237,9 @@
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   font-feature-settings: 'cv11', 'ss01'; /* Inter alt-glyph variants — subtle, premium */
+  letter-spacing: -0.011em; /* iOS-style crisp, slightly tight tracking */
   overflow-x: hidden;
 }
 

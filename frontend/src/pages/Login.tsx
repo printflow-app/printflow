@@ -71,14 +71,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+    <div className="min-h-screen bg-[#f2f2f7] flex items-center justify-center p-4 font-sans">
       {/* Background grid */}
       <div className="pf-animated-grid" />
 
       {onBack && (
         <button
           onClick={onBack}
-          className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-white/80 backdrop-blur border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-sm transition-all"
+          className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-white/80 backdrop-blur border border-slate-200 px-4 py-2 rounded-full text-[13px] font-medium text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-sm transition-all"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Bosh sahifa
@@ -92,22 +92,22 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
             <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl group-hover:bg-[#FF6B00]/20 transition-all duration-500" />
             <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain hover:scale-110 transition-transform duration-300" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800 mb-1 uppercase">
+          <h1 className="text-[28px] font-semibold tracking-tight text-slate-900 mb-1.5">
             Print<span className="text-[#FF6B00]">Flow</span>
           </h1>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
-            Bosmaxona Boshqaruv Tizimi
+          <p className="text-[13px] font-medium text-slate-400 tracking-tight">
+            Bosmaxona boshqaruv tizimi
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white p-8 shadow-xl border border-slate-200 relative overflow-hidden rounded-xl">
+        <div className="bg-white p-8 shadow-xl border border-slate-200/70 relative overflow-hidden rounded-2xl">
           <div className="absolute top-0 right-0 w-40 h-40 bg-[#FF6B00]/5 rounded-full -mr-20 -mt-20" />
 
           <form onSubmit={handleSubmit} className="space-y-5 relative" autoComplete="off">
             {/* Workspace Slug */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <label className="text-[13px] font-medium text-slate-600 tracking-tight ml-1">
                 Workspace
               </label>
               <div className="relative group">
@@ -119,7 +119,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
                   type="text"
                   value={workspaceSlug}
                   onChange={(e) => setWorkspaceSlug(e.target.value.toLowerCase())}
-                  className="w-full h-12 bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
+                  className="w-full h-12 bg-slate-100/70 border border-slate-200 rounded-xl pl-11 pr-4 text-[15px] font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
                   placeholder="sizning-workspace"
                   autoComplete="off"
                   required
@@ -129,7 +129,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
 
             {/* Login */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <label className="text-[13px] font-medium text-slate-600 tracking-tight ml-1">
                 Login
               </label>
               <div className="relative group">
@@ -141,7 +141,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full h-12 bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
+                  className="w-full h-12 bg-slate-100/70 border border-slate-200 rounded-xl pl-11 pr-4 text-[15px] font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
                   placeholder="loginni kiriting"
                   autoComplete="off"
                   required
@@ -151,7 +151,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
 
             {/* Password */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <label className="text-[13px] font-medium text-slate-600 tracking-tight ml-1">
                 Parol
               </label>
               <div className="relative group">
@@ -163,7 +163,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-12 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
+                  className="w-full h-12 bg-slate-100/70 border border-slate-200 rounded-xl pl-11 pr-12 text-[15px] font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
                   placeholder="•••••••••"
                   autoComplete="new-password"
                   required
@@ -180,14 +180,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
 
             {/* Session expired warning */}
             {sessionExpired && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-600 rounded-lg text-[11px] font-bold uppercase tracking-tight p-3 text-center flex items-center justify-center gap-2">
+              <div className="bg-amber-50 border border-amber-200 text-amber-600 rounded-xl text-[12px] font-medium tracking-tight p-3 text-center flex items-center justify-center gap-2">
                 <AlertTriangle size={14} strokeWidth={2.5}/> Xavfsizlik yuzasidan tizimdan chiqarildingiz. Qayta kiring.
               </div>
             )}
 
             {/* Error */}
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-lg text-[11px] font-bold uppercase tracking-tight p-3 text-center">
+              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-[12px] font-medium tracking-tight p-3 text-center">
                 {error}
               </div>
             )}
@@ -196,7 +196,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-13 bg-[#FF6B00] hover:bg-[#e66000] disabled:bg-slate-300 rounded-lg text-white flex justify-center items-center gap-3 text-sm font-bold uppercase tracking-widest shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all duration-200 mt-2 py-4"
+              className="w-full bg-[#FF6B00] hover:bg-[#e66000] active:scale-[0.98] disabled:bg-slate-300 rounded-xl text-white flex justify-center items-center gap-3 text-[15px] font-semibold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all duration-200 mt-2 py-4"
             >
               {loading ? (
                 <>
@@ -210,12 +210,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
           </form>
 
           {onRegisterClick && (
-            <p className="mt-6 text-center text-xs font-bold text-slate-500">
+            <p className="mt-6 text-center text-[13px] font-medium text-slate-500">
               Workspace yo'qmi?{' '}
               <button
                 type="button"
                 onClick={onRegisterClick}
-                className="text-[#FF6B00] hover:underline font-bold uppercase tracking-wider"
+                className="text-[#FF6B00] hover:underline font-semibold"
               >
                 Yangi ochish
               </button>
@@ -223,7 +223,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
           )}
         </div>
 
-        <p className="mt-8 text-center text-[10px] font-bold text-zinc-700 uppercase tracking-[0.2em]">
+        <p className="mt-8 text-center text-[11px] font-medium text-slate-400 tracking-tight">
           PrintFlow © {new Date().getFullYear()} — Barcha huquqlar himoyalangan
         </p>
       </div>

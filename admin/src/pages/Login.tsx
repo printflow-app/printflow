@@ -26,7 +26,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-slate-50 overflow-hidden">
+    <div className="fixed inset-0 flex items-center justify-center bg-[#f2f2f7] overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -42,23 +42,23 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             alt="PrintFlow"
             className="w-16 h-16 mx-auto mb-4 object-contain drop-shadow-lg"
           />
-          <h1 className="text-2xl font-bold uppercase tracking-tight text-white">
+          <h1 className="text-[26px] font-semibold tracking-tight text-white">
             Print<span className="text-orange-400">Flow</span>
           </h1>
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 mt-2">
+          <p className="text-[12px] font-medium tracking-wide text-slate-400 mt-2">
             Super Admin Panel
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold uppercase tracking-wide px-4 py-3 rounded-xl">
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-[13px] font-medium px-4 py-3 rounded-xl">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+            <label className="block text-[13px] font-medium text-slate-600 mb-2 ml-1">
               Login
             </label>
             <input
@@ -67,12 +67,12 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
               value={login}
               onChange={(e) => setLogin(e.target.value)}
               placeholder="Admin login..."
-              className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
+              className="w-full h-12 bg-slate-100/70 border border-slate-200 rounded-xl px-4 text-[15px] font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+            <label className="block text-[13px] font-medium text-slate-600 mb-2 ml-1">
               Parol
             </label>
             <div className="relative">
@@ -82,7 +82,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
+                className="w-full h-12 bg-slate-100/70 border border-slate-200 rounded-xl pl-4 pr-12 text-[15px] font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
               />
               <button
                 type="button"
@@ -97,7 +97,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white font-bold text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/30 transition-all"
+            className="w-full h-12 bg-orange-500 hover:bg-orange-600 active:scale-[0.98] disabled:bg-slate-300 text-white font-semibold text-[15px] rounded-xl shadow-lg shadow-orange-500/30 transition-all"
           >
             {loading ? 'Yuklanmoqda...' : 'Tizimga kirish'}
           </button>
