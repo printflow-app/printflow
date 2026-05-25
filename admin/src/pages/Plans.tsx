@@ -27,6 +27,7 @@ export default function Plans() {
       maxEmployees: p.maxEmployees ?? 8,
       maxBranches: p.maxBranches ?? 1,
       maxDepartments: p.maxDepartments ?? 1,
+      aiMessagesPerMonth: p.aiMessagesPerMonth ?? 100,
       allowedModules: p.allowedModules ?? [],
       description: p.description || '', isPopular: p.isPopular, sortOrder: p.sortOrder,
     });
@@ -125,6 +126,7 @@ export default function Plans() {
                   { label: "Maks. Xodimlar", value: p.maxEmployees === 0 ? 'Cheksiz' : `${p.maxEmployees} ta` },
                   { label: "Maks. Filiallar", value: p.maxBranches === 0 ? 'Cheksiz' : `${p.maxBranches} ta` },
                   { label: "Maks. Bo'limlar", value: p.maxDepartments === 0 ? 'Cheksiz' : `${p.maxDepartments} ta` },
+                  { label: "AI / 30 kun", value: (p.aiMessagesPerMonth ?? 0) === 0 ? 'Cheksiz' : `${p.aiMessagesPerMonth} xabar` },
                 ].map((lim, idx) => (
                   <div key={idx} className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 font-medium">{lim.label}</span>
@@ -216,6 +218,14 @@ export default function Plans() {
                 <div className="form-group">
                   <label className="text-slate-400">MAKS. BO'LIMLAR (0 = CHEKSIZ)</label>
                   <input type="number" required min={0} value={form.maxDepartments} onChange={e => setForm({ ...form, maxDepartments: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div className="form-group">
+                  <label className="text-slate-400">AI XABARLAR / 30 KUN (0 = CHEKSIZ)</label>
+                  <input type="number" required min={0} value={form.aiMessagesPerMonth} onChange={e => setForm({ ...form, aiMessagesPerMonth: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                  <p className="text-[10px] text-slate-500 mt-1">Foydalanuvchi obuna boshlangan kunidan 30 kunlik davr ichida yuborishi mumkin bo'lgan AI xabarlar soni.</p>
                 </div>
               </div>
 

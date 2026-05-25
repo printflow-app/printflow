@@ -208,7 +208,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Umumiy qarz (Bizdan)</p>
           <p className="text-lg font-bold text-rose-500">
-            {formatCurrency(vendors.reduce((s, v) => s + (v.balance || 0), 0))}
+            {formatCurrency(vendors.reduce((s, v) => s + (v.balance > 0 ? v.balance : 0), 0))}
           </p>
         </div>
       </div>
@@ -273,7 +273,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                     </td>
                     <td className="px-5 py-4 text-right">
                       <span className={`text-xs font-bold ${v.balance > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
-                        {formatCurrency(v.balance)}
+                        {v.balance > 0 ? formatCurrency(v.balance) : '0 UZS'}
                       </span>
                     </td>
                     <td className="px-5 py-4">
@@ -339,9 +339,11 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 <p className="text-sm font-bold text-emerald-600">{formatCurrency(detailData.totalPaid)}</p>
               </div>
               <div className={`p-4 rounded-2xl border ${detailData.balance > 0 ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Joriy qarz</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  Joriy qarz
+                </p>
                 <p className={`text-sm font-bold ${detailData.balance > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
-                  {formatCurrency(detailData.balance)}
+                  {detailData.balance > 0 ? formatCurrency(detailData.balance) : '0 UZS'}
                 </p>
               </div>
             </div>

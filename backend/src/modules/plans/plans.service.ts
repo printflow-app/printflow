@@ -25,9 +25,9 @@ export class PlansService {
     }
     if (name.includes('STANDARD') || name.includes('PRO')) {
       return ['finance', 'statistics', 'reports', 'kanban', 'customers', 'employees',
-              'administration', 'inventory', 'attendance', 'partners', 'settings', 'subscriptions'];
+              'administration', 'inventory', 'attendance', 'partners', 'settings', 'subscriptions', 'ai_chat'];
     }
-    return ['kanban', 'finance', 'customers', 'employees', 'subscriptions'];
+    return ['kanban', 'finance', 'customers', 'employees', 'subscriptions', 'ai_chat'];
   }
 
   findAllAdmin() {

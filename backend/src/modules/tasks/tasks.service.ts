@@ -67,6 +67,9 @@ export class TasksService {
         customer: true,
         paymentType: true,
         vendor: { select: { id: true, name: true } },
+        // Service kerak — modal variant jadvalining ustun nomlarini xizmatning
+        // variantAxes'idan oladi (variant data'da kalit sifatida nima saqlangan bo'lishidan qat'i nazar).
+        service: { select: { id: true, name: true, unit: true, variantAxes: true } },
         histories: { include: { employee: true }, orderBy: { createdAt: 'desc' } },
         attachmentRecords: { orderBy: { createdAt: 'asc' } },
       },
@@ -100,6 +103,34 @@ export class TasksService {
     return task;
   }
 
+  /**
+   * Variant qatorlarini normalize qiladi va validatsiya qiladi.
+   * Kirish: noma'lum (any), masalan client'dan kelgan array.
+   * Chiqish: tozalangan array, yoki null (variantlar yo'q/yaroqsiz).
+   */
+  private normalizeVariants(raw: any): Array<{ atributlar: Record<string, string>; soni: number }> | null {
+    if (!raw) return null;
+    if (!Array.isArray(raw)) return null;
+    const cleaned: Array<{ atributlar: Record<string, string>; soni: number }> = [];
+    for (const row of raw) {
+      if (!row || typeof row !== 'object') continue;
+      const soni = Number(row.soni ?? row.quantity ?? 0);
+      if (!Number.isFinite(soni) || soni <= 0) continue;
+      const attrsRaw = row.atributlar ?? row.attributes ?? {};
+      if (!attrsRaw || typeof attrsRaw !== 'object') continue;
+      const attrs: Record<string, string> = {};
+      for (const [k, v] of Object.entries(attrsRaw)) {
+        const key = String(k).trim();
+        const val = String(v ?? '').trim();
+        if (key && val) attrs[key] = val;
+      }
+      // Atributsiz qator — variant emas, o'tkazib yuboramiz
+      if (Object.keys(attrs).length === 0) continue;
+      cleaned.push({ atributlar: attrs, soni: Math.round(soni) });
+    }
+    return cleaned.length > 0 ? cleaned : null;
+  }
+
   async create(data: any, employeeId?: string) {
     const {
       orderName, title, description, customerId, customerName, customerPhone,
@@ -108,6 +139,12 @@ export class TasksService {
     } = data;
 
     const remainingAmount = Math.max(0, Math.round(Number(totalAmount || 0) - Number(depositAmount || 0)));
+
+    // Variant qatorlari — agar berilgan bo'lsa, jami soni avtomatik hisoblanadi
+    const normalizedVariants = this.normalizeVariants(data.variants);
+    const effectiveQuantity = normalizedVariants
+      ? normalizedVariants.reduce((s, v) => s + (Number(v.soni) || 0), 0)
+      : Number(data.quantity || 1);
 
     // Retry loop to handle race condition on displayId unique constraint
     let task: any = null;
@@ -170,8 +207,9 @@ export class TasksService {
           assignees: assignees || "[]",
           attachments: attachments || "[]",
           serviceId: data.serviceId,
-          quantity: Number(data.quantity || 1),
+          quantity: effectiveQuantity,
           coefficient: Number(data.coefficient || 1.0),
+          variants: normalizedVariants ?? undefined,
           deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
           branchId: data.branchId || data.targetBranchId || undefined,
           departmentId: departmentId || null,
@@ -180,7 +218,7 @@ export class TasksService {
 
       // Handle Stock Reservation
       if (data.serviceId) {
-        await this.reserveStock(tx, createdTask.id, data.serviceId, Number(data.quantity || 1));
+        await this.reserveStock(tx, createdTask.id, data.serviceId, effectiveQuantity);
       }
 
       if (finalCustomerId) {
@@ -307,6 +345,12 @@ export class TasksService {
         const { title, description, totalAmount, serviceId, serviceOptions, quantity, coefficient } = item;
         totalOrderAmount += Number(totalAmount || 0);
 
+        // Variant qatorlari berilgan bo'lsa — quantity sum bo'yicha hisoblanadi
+        const itemVariants = this.normalizeVariants(item.variants);
+        const effectiveQty = itemVariants
+          ? itemVariants.reduce((s, v) => s + (Number(v.soni) || 0), 0)
+          : Number(quantity || 1);
+
         // Distribute deposit: the last item gets the remainder if any
         const depositForThisTask = (i === items.length - 1)
           ? (perTaskDepositFloor + remainder)
@@ -334,8 +378,9 @@ export class TasksService {
             columnId,
             serviceId,
             serviceOptions: JSON.stringify(serviceOptions || []),
-            quantity: Number(quantity || 1),
+            quantity: effectiveQty,
             coefficient: Number(coefficient || 1.0),
+            variants: itemVariants ?? undefined,
             assignees: JSON.stringify(assigneeIds || []),
             attachments: "[]",
             deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
@@ -349,7 +394,7 @@ export class TasksService {
 
         // Handle Stock Reservation for each bulk item
         if (serviceId) {
-          await this.reserveStock(tx, task.id, serviceId, Number(quantity || 1));
+          await this.reserveStock(tx, task.id, serviceId, effectiveQty);
         }
 
         await tx.taskHistory.create({
@@ -427,6 +472,16 @@ export class TasksService {
     if (!oldTask) throw new Error('Task topilmadi');
 
     const { historyNote, ...taskData } = data;
+
+    // Variant qatorlari berilgan bo'lsa — quantity ni avtomatik yangilaymiz.
+    // null/array.length=0 yuborilsa — variantlar o'chiriladi va eski quantity saqlanadi.
+    if (taskData.variants !== undefined) {
+      const normalized = this.normalizeVariants(taskData.variants);
+      taskData.variants = normalized ?? null;
+      if (normalized) {
+        taskData.quantity = normalized.reduce((s, v) => s + (Number(v.soni) || 0), 0);
+      }
+    }
 
     // Fetch static columns and existing stock movement concurrently BEFORE transaction
     // to minimize transaction duration and network round-trips over remote Railway proxy.

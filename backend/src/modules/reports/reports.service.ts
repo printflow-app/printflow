@@ -48,6 +48,21 @@ export class ReportsService {
     return Math.round(((current - previous) / previous) * 1000) / 10;
   }
 
+  /**
+   * Mirror of FinanceService.resolveDeptScope — keep transaction filtering
+   * transitive (transaction.departmentId OR task.departmentId).
+   */
+  private async resolveDeptScope(departmentId?: string): Promise<Record<string, any>> {
+    if (!departmentId) return {};
+    const tasks = await this.prisma.task.findMany({
+      where: { departmentId },
+      select: { id: true },
+    });
+    const taskIds = tasks.map((t) => t.id);
+    if (taskIds.length === 0) return { departmentId };
+    return { OR: [{ departmentId }, { taskId: { in: taskIds } }] };
+  }
+
   // =============================================
   // 1. Services Performance — revenue & volume per service grouped by month
   // =============================================
@@ -230,7 +245,7 @@ export class ReportsService {
   // =============================================
   // 4. Growth Metrics — current month vs previous month
   // =============================================
-  async getGrowthMetrics(branchId?: string) {
+  async getGrowthMetrics(branchId?: string, departmentId?: string) {
     const now = new Date();
     const currStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -238,6 +253,13 @@ export class ReportsService {
     const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
     const bFilter = branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {};
+    const deptScope = await this.resolveDeptScope(departmentId);
+    const deptTaskFilter = departmentId ? { departmentId } : {};
+    // Customers can be related to a department only through their tasks; if a
+    // department filter is active we count customers whose tasks live in it.
+    const customerDeptWhere = departmentId
+      ? { tasks: { some: { departmentId } } }
+      : {};
 
     const columns = await this.prisma.kanbanColumn.findMany({ orderBy: { orderIdx: 'asc' } });
     const finalColumnId = columns.length ? columns[columns.length - 1].id : null;
@@ -249,17 +271,17 @@ export class ReportsService {
       currTasks, prevTasks,
     ] = await Promise.all([
       this.prisma.transaction.aggregate({
-        where: { type: 'kirim', date: { gte: currStart, lte: currEnd }, ...bFilter },
+        where: { type: 'kirim', date: { gte: currStart, lte: currEnd }, ...bFilter, ...deptScope },
         _sum: { amount: true },
       }),
       this.prisma.transaction.aggregate({
-        where: { type: 'kirim', date: { gte: prevStart, lte: prevEnd }, ...bFilter },
+        where: { type: 'kirim', date: { gte: prevStart, lte: prevEnd }, ...bFilter, ...deptScope },
         _sum: { amount: true },
       }),
-      this.prisma.customer.count({ where: { createdAt: { gte: currStart, lte: currEnd } } }),
-      this.prisma.customer.count({ where: { createdAt: { gte: prevStart, lte: prevEnd } } }),
-      this.prisma.task.count({ where: { ...colFilter, updatedAt: { gte: currStart, lte: currEnd }, isArchived: false } }),
-      this.prisma.task.count({ where: { ...colFilter, updatedAt: { gte: prevStart, lte: prevEnd }, isArchived: false } }),
+      this.prisma.customer.count({ where: { createdAt: { gte: currStart, lte: currEnd }, ...customerDeptWhere } }),
+      this.prisma.customer.count({ where: { createdAt: { gte: prevStart, lte: prevEnd }, ...customerDeptWhere } }),
+      this.prisma.task.count({ where: { ...colFilter, updatedAt: { gte: currStart, lte: currEnd }, isArchived: false, ...deptTaskFilter } }),
+      this.prisma.task.count({ where: { ...colFilter, updatedAt: { gte: prevStart, lte: prevEnd }, isArchived: false, ...deptTaskFilter } }),
     ]);
 
     const currRev = currIncome._sum.amount || 0;
@@ -279,9 +301,10 @@ export class ReportsService {
   // =============================================
   // 5. Monthly Dynamics — last N months: income / expense / vendor costs
   // =============================================
-  async getMonthlyDynamics(months = 6, branchId?: string) {
+  async getMonthlyDynamics(months = 6, branchId?: string, departmentId?: string) {
     const now = new Date();
     const bFilter = branchId === '__main__' ? { branchId: null } : branchId ? { branchId } : {};
+    const deptScope = await this.resolveDeptScope(departmentId);
 
     // PERF: Avval bu loop ichida `await` qilingan — har oy uchun 1 ta round-trip,
     // 12 oy = 12 ketma-ket round-trip. Railway PG ga ~80ms latency'da bu ~1s
@@ -299,15 +322,15 @@ export class ReportsService {
     const aggregations = await Promise.all(
       monthRanges.flatMap(({ start, end }) => [
         this.prisma.transaction.aggregate({
-          where: { type: 'kirim', date: { gte: start, lte: end }, ...bFilter },
+          where: { type: 'kirim', date: { gte: start, lte: end }, ...bFilter, ...deptScope },
           _sum: { amount: true },
         }),
         this.prisma.transaction.aggregate({
-          where: { type: 'chiqim', vendorId: null, date: { gte: start, lte: end }, ...bFilter },
+          where: { type: 'chiqim', vendorId: null, date: { gte: start, lte: end }, ...bFilter, ...deptScope },
           _sum: { amount: true },
         }),
         this.prisma.transaction.aggregate({
-          where: { type: 'chiqim', vendorId: { not: null }, date: { gte: start, lte: end }, ...bFilter },
+          where: { type: 'chiqim', vendorId: { not: null }, date: { gte: start, lte: end }, ...bFilter, ...deptScope },
           _sum: { amount: true },
         }),
       ]),

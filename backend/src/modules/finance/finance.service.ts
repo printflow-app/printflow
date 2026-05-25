@@ -92,6 +92,23 @@ export class FinanceService implements OnApplicationBootstrap {
     return {};
   }
 
+  /**
+   * Department filtering must be transitive: a transaction belongs to a department
+   * either directly (transaction.departmentId) OR through its linked task
+   * (task.departmentId). Most chiqim records (salary/vendor/material) have no
+   * direct departmentId — without this widening, the filter returns 0.
+   */
+  private async resolveDeptScope(departmentId?: string): Promise<Record<string, any>> {
+    if (!departmentId) return {};
+    const tasks = await this.prisma.task.findMany({
+      where: { departmentId },
+      select: { id: true },
+    });
+    const taskIds = tasks.map((t) => t.id);
+    if (taskIds.length === 0) return { departmentId };
+    return { OR: [{ departmentId }, { taskId: { in: taskIds } }] };
+  }
+
   private getDateRange(start?: string, end?: string) {
     if (!start && !end) return {};
 
@@ -110,7 +127,8 @@ export class FinanceService implements OnApplicationBootstrap {
   }
 
   async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string, vendorId?: string) {
-    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+    const deptScope = await this.resolveDeptScope(departmentId);
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
     if (vendorId) where.vendorId = vendorId;
 
     const [transactions, total] = await Promise.all([
@@ -140,7 +158,8 @@ export class FinanceService implements OnApplicationBootstrap {
   }
 
   async getDashboard(start?: string, end?: string, branchId?: string, departmentId?: string) {
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+    const deptScope = await this.resolveDeptScope(departmentId);
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
 
     const [incomes, expenses] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -161,7 +180,7 @@ export class FinanceService implements OnApplicationBootstrap {
     if (columns.length > 0) {
       const finalColumnId = columns[columns.length - 1].id;
       // For tasks, we use updatedAt for the date filter since that's when it was moved
-      const taskWhere: any = { columnId: finalColumnId, ...this.branchFilter(branchId) };
+      const taskWhere: any = { columnId: finalColumnId, ...this.branchFilter(branchId), ...(departmentId ? { departmentId } : {}) };
       const range = this.getDateRange(start, end);
       if (range.date) {
         taskWhere.updatedAt = range.date; // reusing the gte/lte from getDateRange
@@ -458,7 +477,8 @@ export class FinanceService implements OnApplicationBootstrap {
       endDate.setUTCHours(23, 59, 59, 999);
     }
 
-    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+    const deptScope = await this.resolveDeptScope(departmentId);
+    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -500,7 +520,8 @@ export class FinanceService implements OnApplicationBootstrap {
   }
 
   async getStatsByPaymentType(start?: string, end?: string, branchId?: string, departmentId?: string) {
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+    const deptScope = await this.resolveDeptScope(departmentId);
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -533,8 +554,9 @@ export class FinanceService implements OnApplicationBootstrap {
   /**
    * Expense Breakdown by ExpenseType — for Pie/Bar chart on Dashboard
    */
-  async getExpenseBreakdown(start?: string, end?: string) {
-    const where = this.getDateRange(start, end);
+  async getExpenseBreakdown(start?: string, end?: string, branchId?: string, departmentId?: string) {
+    const deptScope = await this.resolveDeptScope(departmentId);
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
 
     const expenses = await this.prisma.transaction.findMany({
       where: { ...where, type: 'chiqim' },
@@ -555,7 +577,8 @@ export class FinanceService implements OnApplicationBootstrap {
   }
 
   async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string, vendorId?: string) {
-    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...this.deptFilter(departmentId) };
+    const deptScope = await this.resolveDeptScope(departmentId);
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
     if (vendorId) where.vendorId = vendorId;
 
     const [transactions, dashboard, allPaymentTypes] = await Promise.all([

@@ -14,8 +14,16 @@ import { toast } from 'react-toastify';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { exportToXlsx } from '../utils/exportToXlsx';
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + ' UZS';
+const formatCurrency = (amount: number | null | undefined) => {
+  const val = typeof amount === 'number' ? amount : 0;
+  return new Intl.NumberFormat('uz-UZ').format(val).replace(/,/g, ' ') + ' UZS';
+};
+
+const formatDate = (dateStr: any) => {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('uz-UZ');
+};
 
 const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
@@ -99,7 +107,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         { header: 'Jami qarzdorlik (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) },
         { header: "Jami to'langan (UZS)", accessor: (c: any) => Number(c.totalPaid || 0) },
         { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) - Number(c.totalPaid || 0) },
-        { header: 'Yaratilgan', accessor: (c: any) => c.createdAt ? new Date(c.createdAt).toLocaleDateString('uz-UZ') : '' },
+        { header: 'Yaratilgan', accessor: (c: any) => formatDate(c.createdAt) },
       ],
     });
     toast.success(`${rows.length} ta mijoz eksport qilindi`);
@@ -507,7 +515,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                           <div key={t.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
                                             <div>
                                               <p className="text-xs font-bold text-slate-700">{t.title}</p>
-                                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">{new Date(t.createdAt).toLocaleDateString('uz-UZ')}</p>
+                                              {t.service && (
+                                                <p className="text-[9px] text-orange-600 font-bold mt-0.5 uppercase tracking-wide bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100/50 inline-block">
+                                                  {t.service.name}
+                                                </p>
+                                              )}
+                                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">{formatDate(t.createdAt)}</p>
                                             </div>
                                             <p className="text-xs font-bold text-slate-800">{formatCurrency(t.totalAmount)}</p>
                                           </div>
@@ -533,7 +546,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                               </div>
                                               <div>
                                                 <p className="text-xs font-bold text-slate-700">{tr.serviceType || tr.expenseReason || tr.type}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold">{new Date(tr.date).toLocaleDateString('uz-UZ')} • {tr.paymentType?.name || 'Naqd'}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">{formatDate(tr.date)} • {tr.paymentType?.name || 'Naqd'}</p>
                                               </div>
                                             </div>
                                             <span className={`text-xs font-bold ${tr.type === 'kirim' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -735,7 +748,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                       {order.column && (
                         <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded-lg uppercase">{order.column.title}</span>
                       )}
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded-lg">{new Date(order.createdAt).toLocaleDateString('uz-UZ')}</span>
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded-lg">{formatDate(order.createdAt)}</span>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">

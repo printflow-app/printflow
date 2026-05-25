@@ -24,25 +24,41 @@ enum TenantStatus {
 
 // Dynamic Plans — Super-Admin manages from panel
 model Plan {
-  id             String   @id @default(uuid())
-  name           String   @unique // "STARTER", "STANDARD", "INDUSTRIAL"
-  displayName    String // "Starter (Kichik)"
-  price3m        Float    @default(0) // 3 oylik narx
-  price6m        Float    @default(0) // 6 oylik narx
-  price12m       Float    @default(0) // 12 oylik narx
-  maxEmployees   Int      @default(8) // Xodimlar limiti (0 = cheksiz)
-  maxBranches    Int      @default(1) // Filiallar limiti (0 = cheksiz)
-  maxDepartments Int      @default(1) // Bo'limlar limiti (0 = cheksiz)
-  allowedModules String[] // ['finance','kanban','inventory','reports','ai_chat']
-  features       String   @default("{}") // JSON: { "kanban": true, "finance": false, ... }
-  description    String? // Qisqa ta'rif
-  isPopular      Boolean  @default(false) // Eng ommabop — highlight qilish
-  isActive       Boolean  @default(true)
-  sortOrder      Int      @default(0)
-  durationDays   Int      @default(30) // Obuna muddati kunlarda (30, 90, 180, 365)
-  tenants        Tenant[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  name                String   @unique // "STARTER", "STANDARD", "INDUSTRIAL"
+  displayName         String // "Starter (Kichik)"
+  price3m             Float    @default(0) // 3 oylik narx
+  price6m             Float    @default(0) // 6 oylik narx
+  price12m            Float    @default(0) // 12 oylik narx
+  maxEmployees        Int      @default(8) // Xodimlar limiti (0 = cheksiz)
+  maxBranches         Int      @default(1) // Filiallar limiti (0 = cheksiz)
+  maxDepartments      Int      @default(1) // Bo'limlar limiti (0 = cheksiz)
+  aiMessagesPerMonth  Int      @default(100) // AI xabarlar/30-kunlik davr limiti (0 = cheksiz)
+  allowedModules      String[] // ['finance','kanban','inventory','reports','ai_chat']
+  features            String   @default("{}") // JSON: { "kanban": true, "finance": false, ... }
+  description         String? // Qisqa ta'rif
+  isPopular           Boolean  @default(false) // Eng ommabop — highlight qilish
+  isActive            Boolean  @default(true)
+  sortOrder           Int      @default(0)
+  durationDays        Int      @default(30) // Obuna muddati kunlarda (30, 90, 180, 365)
+  tenants             Tenant[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// AI foydalanish hisobi — har 30 kunlik davr uchun bitta satr.
+// periodStart = tenant obunasidagi joriy 30-kunlik davrning boshlanish sanasi.
+model AiUsage {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  periodStart  DateTime // 30-kunlik davr boshlanishi (yengil indeks uchun normalize'lashtirilgan)
+  count        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, periodStart])
+  @@index([tenantId])
 }
 
 model Tenant {
@@ -94,6 +110,7 @@ model Tenant {
   taskExpenses      TaskExpense[]
   vendorOrders      VendorOrder[]
   taskAttachments   TaskAttachment[]
+  aiUsages          AiUsage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -277,6 +294,11 @@ model Service {
   basePrice   Float   @default(0)
   unit        String  @default("dona") // dona, metr, m2, kg...
   isActive    Boolean @default(true)
+
+  // Variant o'qlari (axes) — agar xizmat turli rang/o'lcham bilan kelsa.
+  // Masalan futbolka: ["Rang", "O'lcham"] → buyurtma formasi shu axes'larga
+  // input grid chiqaradi. Bo'sh array bo'lsa — buyurtmada variant rejimi yo'q.
+  variantAxes String[]
 
   // Price list uchun rasm — base64 data URL (kichiklashtirilgan, ~600px JPEG).
   // Tashqi storage yo'q (Railway disk persistent emas), DB'da @db.Text sifatida.
@@ -861,6 +883,11 @@ model Task {
   serviceOptions String   @default("[]") // JSON: tanlangan option ID lar
   quantity       Int      @default(1)
   coefficient    Float    @default(1.0)
+
+  // Variant qatorlari (rang/o'lcham ajratmasi) — agar Service.variantAxes mavjud bo'lsa.
+  // Format: [{ "atributlar": { "Rang": "Oq", "O'lcham": "M" }, "soni": 30 }, ...]
+  // quantity = sum(variants.soni). Bo'sh/null bo'lsa — variantsiz buyurtma.
+  variants       Json?
 
   // Moliyaviy qism
   totalAmount     Float @default(0) // Berilishi kerak bo'lgan summa

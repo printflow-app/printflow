@@ -1392,7 +1392,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   const [selectedService, setSelectedService] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
 
-  const [newSvcForm, setNewSvcForm] = useState<{ name: string; description: string; basePrice: string; unit: string; imageUrl: string | null }>({ name: '', description: '', basePrice: '', unit: 'dona', imageUrl: null });
+  const [newSvcForm, setNewSvcForm] = useState<{ name: string; description: string; basePrice: string; unit: string; imageUrl: string | null; variantAxes: string }>({ name: '', description: '', basePrice: '', unit: 'dona', imageUrl: null, variantAxes: '' });
   // Image edit modal — mavjud xizmat rasmini almashtirish uchun
   const [imageEditSvc, setImageEditSvc] = useState<{ id: string; name: string; imageUrl?: string | null } | null>(null);
   const [editSvcId, setEditSvcId] = useState<string | null>(null);
@@ -1459,10 +1459,11 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
     const bId = requireActiveBranch();
     if (!bId) return;
     try {
-      await servicesApi.create({ ...newSvcForm, basePrice: Number(newSvcForm.basePrice), branchId: bId });
+      const axes = (newSvcForm.variantAxes || '').split(',').map(s => s.trim()).filter(Boolean);
+      await servicesApi.create({ ...newSvcForm, basePrice: Number(newSvcForm.basePrice), variantAxes: axes, branchId: bId });
       showStatus('success', 'Xizmat qo\'shildi!');
       setIsAddOpen(false);
-      setNewSvcForm({ name: '', description: '', basePrice: '', unit: 'dona', imageUrl: null });
+      setNewSvcForm({ name: '', description: '', basePrice: '', unit: 'dona', imageUrl: null, variantAxes: '' });
       onRefresh();
     } catch { showStatus('error', 'Xizmat qo\'shishda xatolik!'); }
   };
@@ -1590,7 +1591,10 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
     const bId = requireActiveBranch();
     if (!bId) return;
     try {
-      await servicesApi.update(id, { ...editSvcForm, basePrice: Number(editSvcForm.basePrice) }, bId);
+      const axes = typeof editSvcForm.variantAxes === 'string'
+        ? editSvcForm.variantAxes.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : (Array.isArray(editSvcForm.variantAxes) ? editSvcForm.variantAxes : []);
+      await servicesApi.update(id, { ...editSvcForm, basePrice: Number(editSvcForm.basePrice), variantAxes: axes }, bId);
       setEditSvcId(null);
       showStatus('success', 'Yangilandi!');
       onRefresh();
@@ -1668,14 +1672,27 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                         <select value={editSvcForm.unit} onChange={e => setEditSvcForm({ ...editSvcForm, unit: e.target.value })} className="select-minimal h-9 font-bold">
                           {['dona', 'metr', 'sm', 'm2', 'kg', 'litr', 'soat', 'rulon', 'varaq'].map(u => <option key={u} value={u}>{u}</option>)}
                         </select>
+                        <input
+                          type="text"
+                          value={editSvcForm.variantAxes ?? ''}
+                          onChange={e => setEditSvcForm({ ...editSvcForm, variantAxes: e.target.value })}
+                          className="h-9 px-3 text-sm font-bold border-2 border-violet-200 rounded-xl outline-none focus:border-violet-500 bg-white min-w-0 w-44"
+                          placeholder="Variant o'qlari: Rang, O'lcham"
+                          title="Vergul bilan ajratib yozing (masalan: Rang, O'lcham). Bo'sh qoldirilsa variant yo'q."
+                        />
                       </div>
                     ) : (
                       <>
                         <h4 className="font-bold text-sm sm:text-base text-slate-800 uppercase tracking-tight">{svc.name}</h4>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-sm font-bold text-violet-600">{Number(svc.basePrice).toLocaleString('uz-UZ')} UZS</span>
                           <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">/ {svc.unit}</span>
                           <span className="text-[9px] font-bold text-sky-500 bg-sky-50 border border-sky-100 px-2 py-0.5 rounded-full uppercase">{svc.options?.length || 0} optsiya</span>
+                          {Array.isArray((svc as any).variantAxes) && (svc as any).variantAxes.length > 0 && (
+                            <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full uppercase">
+                              {(svc as any).variantAxes.join(' · ')}
+                            </span>
+                          )}
                         </div>
                       </>
                     )}
@@ -1698,7 +1715,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                         </button>
                       )}
                       {canEdit && (
-                        <button onClick={() => { setEditSvcId(svc.id); setEditSvcForm({ name: svc.name, basePrice: String(svc.basePrice), unit: svc.unit }); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-all"><Edit3 size={15}/></button>
+                        <button onClick={() => { setEditSvcId(svc.id); setEditSvcForm({ name: svc.name, basePrice: String(svc.basePrice), unit: svc.unit, variantAxes: Array.isArray(svc.variantAxes) ? svc.variantAxes.join(', ') : '' }); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-all"><Edit3 size={15}/></button>
                       )}
                       {canEdit && cloneTargets.length > 0 && (
                         <button onClick={() => openCloneModal(svc)} title="Filialga nusxalash" className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-violet-500 hover:text-white transition-all"><Copy size={15}/></button>
@@ -1818,6 +1835,17 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                 {['dona', 'metr', 'sm', 'm2', 'kg', 'litr', 'soat', 'rulon', 'varaq'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Variant o'qlari (ixtiyoriy)</label>
+            <input
+              type="text"
+              value={newSvcForm.variantAxes}
+              onChange={e => setNewSvcForm(f => ({ ...f, variantAxes: e.target.value }))}
+              className="input-minimal"
+              placeholder="Rang, O'lcham"
+            />
+            <p className="text-[10px] text-slate-500 mt-1.5 px-1">Buyurtmada rang/o'lcham bo'yicha ajratma kerak bo'lsa, vergul bilan ajratib yozing. Masalan: <strong>Rang, O'lcham</strong> — futbolka uchun.</p>
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Tavsif (ixtiyoriy)</label>

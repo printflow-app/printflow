@@ -55,8 +55,8 @@ export class FinanceController {
 
   @Get('expense-breakdown')
   @RequireFeature('expenseAnalytics')
-  async getExpenseBreakdown(@Query('start') start?: string, @Query('end') end?: string) {
-    return this.financeService.getExpenseBreakdown(start, end);
+  async getExpenseBreakdown(@Query('start') start?: string, @Query('end') end?: string, @Query('branchId') branchId?: string, @Query('departmentId') departmentId?: string) {
+    return this.financeService.getExpenseBreakdown(start, end, branchId, departmentId);
   }
 
   @Get('daily-summary')

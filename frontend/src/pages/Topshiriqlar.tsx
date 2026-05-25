@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, Search, UserPlus, CheckCircle2, Clock, X,
   Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle,
-  Users, AlertTriangle, ExternalLink, Package, Building2,
+  Users, AlertTriangle, Package, Building2,
   Archive, ArchiveRestore, Handshake, AlertOctagon, Download
 } from 'lucide-react';
 import { exportToXlsx } from '../utils/exportToXlsx';
@@ -213,7 +213,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   // Vendor assignment (used when executorType === 'vendor')
   const [vendorAssign, setVendorAssign] = useState({ vendorId: '', amount: '', note: '' });
   const [currentOrderService, setCurrentOrderService] = useState({
-    serviceId: '', selectedOptionIds: [] as string[], quantity: '', coefficient: '', totalAmount: 0
+    serviceId: '', selectedOptionIds: [] as string[], quantity: '', coefficient: '', totalAmount: 0,
+    variants: [] as Array<{ atributlar: Record<string, string>; soni: number | string }>,
   });
   const [selectedServiceOptions, setSelectedServiceOptions] = useState<any[]>([]);
   const [priceBreakdown, setPriceBreakdown] = useState<any>(null);
@@ -327,7 +328,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     setExecutorType('self');
     setExecutorBranchId('');
     setVendorAssign({ vendorId: '', amount: '', note: '' });
-    setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0 });
+    setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0, variants: [] });
     setSelectedServiceOptions([]);
     setPriceBreakdown(null);
     setPrepaymentWarningAccepted(false);
@@ -341,6 +342,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     if (!serviceId) { setSelectedServiceOptions([]); return; }
     const svc = services.find((s: any) => s.id === serviceId);
     setSelectedServiceOptions(svc?.options || []);
+    // Yangi xizmat tanlanganda — eski variantlarni o'chiramiz va agar yangi xizmatda
+    // variant o'qlari bo'lsa, bo'sh bitta qator bilan boshlanadi.
+    const axes: string[] = Array.isArray(svc?.variantAxes) ? svc.variantAxes : [];
+    const initialVariants = axes.length > 0
+      ? [{ atributlar: Object.fromEntries(axes.map((a) => [a, ''])), soni: '' as number | string }]
+      : [];
+    setCurrentOrderService(f => ({ ...f, variants: initialVariants }));
     if (svc) recalculatePrice({ serviceId, selectedOptionIds: [] });
   };
 
@@ -350,7 +358,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     if (!form.serviceId) return;
     const svc = services.find((s: any) => s.id === form.serviceId);
     if (!svc) return;
-    const qty = Number(form.quantity) || 1;
+    // Variantlar mavjud bo'lsa — quantity = sum(soni); aks holda inputdan olamiz
+    const variantsArr = Array.isArray(form.variants) ? form.variants : [];
+    const variantQty = variantsArr.reduce((s: number, v: any) => s + (Number(v.soni) || 0), 0);
+    const qty = variantQty > 0 ? variantQty : (Number(form.quantity) || 1);
     const coeff = Number(form.coefficient) || 1;
     const opts = svc.options || [];
     const selectedOpts = opts.filter((o: any) => (form.selectedOptionIds || []).includes(o.id));
@@ -371,10 +382,26 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const addItemToOrder = () => {
     if (!currentOrderService.serviceId) return;
     const svc = services.find(s => s.id === currentOrderService.serviceId);
+    // Variantlardan to'liq tozalangan ro'yxat — bo'sh qatorlarni o'tkazib yuboramiz
+    const cleanedVariants = (currentOrderService.variants || [])
+      .map(v => ({
+        atributlar: Object.fromEntries(
+          Object.entries(v.atributlar || {})
+            .filter(([_, val]) => String(val || '').trim() !== '')
+            .map(([k, val]) => [k, String(val).trim()])
+        ),
+        soni: Number(v.soni) || 0,
+      }))
+      .filter(v => Object.keys(v.atributlar).length > 0 && v.soni > 0);
+    const variantsQty = cleanedVariants.reduce((s, v) => s + v.soni, 0);
+    const effectiveQty = variantsQty > 0 ? variantsQty : (Number(currentOrderService.quantity) || 1);
+
     const newItem = {
       ...currentOrderService,
+      quantity: effectiveQty,
+      variants: cleanedVariants.length > 0 ? cleanedVariants : undefined,
       title: svc?.name || 'Xizmat',
-      description: `${svc?.name} (${currentOrderService.quantity} ${svc?.unit || 'dona'})`,
+      description: `${svc?.name} (${effectiveQty} ${svc?.unit || 'dona'})`,
       optionsSummary: selectedServiceOptions.filter(o => currentOrderService.selectedOptionIds.includes(o.id)).map(o => `${o.name}: ${o.value}`).join(', ')
     };
 
@@ -385,7 +412,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     });
 
     // Reset current item form
-    setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0 });
+    setCurrentOrderService({ serviceId: '', selectedOptionIds: [], quantity: '', coefficient: '', totalAmount: 0, variants: [] });
     setSelectedServiceOptions([]);
     setPriceBreakdown(null);
   };
@@ -490,11 +517,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     }
   };
 
-  // Buyurtmaga biriktiriladigan fayl formatlari — faqat TIF va CorelDRAW.
+  // Buyurtmaga biriktiriladigan fayl formatlari:
+  //  - Dizayn fayllari: .tif/.cdr (qo'l bilan ochiladi)
+  //  - Oddiy rasmlar: .png/.jpg/.jpeg/.webp/.gif (modal'da inline ko'rinadi)
   // MIME atayin tekshirilmaydi: CDR uchun brauzerlar ko'pincha bo'sh yoki
   // 'application/octet-stream' qaytaradi; haqiqiy filtr — kengaytma.
-  const ALLOWED_ATTACHMENT_EXT = ['.tif', '.tiff', '.cdr'];
-  const ALLOWED_ATTACHMENT_ACCEPT = '.tif,.tiff,.cdr,image/tiff';
+  const ALLOWED_ATTACHMENT_EXT = ['.tif', '.tiff', '.cdr', '.png', '.jpg', '.jpeg', '.webp', '.gif'];
+  const ALLOWED_ATTACHMENT_ACCEPT = '.tif,.tiff,.cdr,.png,.jpg,.jpeg,.webp,.gif,image/*';
   // Backend body limiti 50MB. Base64 ~1.33x kattalashtirgani uchun xom fayl ~36MB.
   // Xavfsiz chegara — 35MB.
   const MAX_ATTACHMENT_BYTES = 35 * 1024 * 1024;
@@ -509,7 +538,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     const file = e.target.files?.[0];
     if (!file || !selectedTask) return;
     if (!isAllowedAttachment(file)) {
-      showStatus('error', "Faqat .tif yoki .cdr fayllar yuklash mumkin");
+      showStatus('error', "Faqat rasm (.png/.jpg/.webp/.gif) yoki dizayn (.tif/.cdr) fayllari qabul qilinadi");
       e.target.value = '';
       return;
     }
@@ -605,7 +634,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     const tooLarge = files.filter(f => isAllowedAttachment(f) && isTooLarge(f));
     const allowed = files.filter(f => isAllowedAttachment(f) && !isTooLarge(f));
     if (wrongFormat.length > 0) {
-      showStatus('error', `${wrongFormat.length} ta fayl rad etildi: faqat .tif yoki .cdr formatlari qabul qilinadi`);
+      showStatus('error', `${wrongFormat.length} ta fayl rad etildi: faqat rasm (.png/.jpg/.webp/.gif) yoki dizayn (.tif/.cdr) formatlari qabul qilinadi`);
     }
     if (tooLarge.length > 0) {
       showStatus('error', `${tooLarge.length} ta fayl juda katta (max ${formatMb(MAX_ATTACHMENT_BYTES)})`);
@@ -1261,26 +1290,125 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1.5">Miqdor <span className="text-slate-400 capitalize font-medium">({services.find(s => s.id === currentOrderService.serviceId)?.unit})</span></label>
-                      <input
-                        type="number" min="0.1" step="0.1"
-                        value={currentOrderService.quantity}
-                        onChange={e => recalculatePrice({ quantity: e.target.value })}
-                        className="input-minimal font-bold text-orange-700 h-11 bg-white border-2 border-orange-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1.5">Koeffitsiyent</label>
-                      <input
-                        type="number" min="0.1" step="0.1"
-                        value={currentOrderService.coefficient}
-                        onChange={e => recalculatePrice({ coefficient: e.target.value })}
-                        className="input-minimal font-bold text-orange-700 h-11 bg-white border-2 border-orange-100"
-                      />
-                    </div>
-                  </div>
+                  {(() => {
+                    const selSvc = services.find(s => s.id === currentOrderService.serviceId) as any;
+                    const axes: string[] = Array.isArray(selSvc?.variantAxes) ? selSvc.variantAxes : [];
+                    const hasVariants = axes.length > 0;
+                    const variantQtySum = (currentOrderService.variants || [])
+                      .reduce((s, v) => s + (Number(v.soni) || 0), 0);
+                    return (
+                      <>
+                        {hasVariants && (
+                          <div className="bg-white border-2 border-amber-100 rounded-2xl p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
+                                Variant qatorlari
+                              </p>
+                              <span className="text-[10px] font-bold text-slate-500">
+                                Jami: <strong className="text-amber-700">{variantQtySum}</strong> {selSvc?.unit || 'dona'}
+                              </span>
+                            </div>
+
+                            {/* Ustun sarlavhalari — har qator ustida bir marta */}
+                            {(currentOrderService.variants || []).length > 0 && (
+                              <div className="flex items-center gap-2 px-0.5">
+                                {axes.map((axis) => (
+                                  <div key={axis} className="flex-1 min-w-0 text-[9px] font-bold text-amber-700 uppercase tracking-widest">
+                                    {axis}
+                                  </div>
+                                ))}
+                                <div className="w-20 text-[9px] font-bold text-amber-700 uppercase tracking-widest text-right">
+                                  Soni
+                                </div>
+                                <div className="w-9" />
+                              </div>
+                            )}
+
+                            <div className="space-y-2">
+                              {(currentOrderService.variants || []).map((row, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  {axes.map((axis) => (
+                                    <input
+                                      key={axis}
+                                      type="text"
+                                      value={row.atributlar?.[axis] ?? ''}
+                                      onChange={(e) => {
+                                        const next = [...(currentOrderService.variants || [])];
+                                        next[idx] = {
+                                          ...next[idx],
+                                          atributlar: { ...next[idx].atributlar, [axis]: e.target.value },
+                                        };
+                                        recalculatePrice({ variants: next });
+                                      }}
+                                      className="flex-1 min-w-0 h-9 px-2.5 text-xs font-bold border border-amber-200 rounded-lg outline-none focus:border-amber-500 bg-white"
+                                    />
+                                  ))}
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={row.soni === 0 ? '' : row.soni}
+                                    onChange={(e) => {
+                                      const next = [...(currentOrderService.variants || [])];
+                                      next[idx] = { ...next[idx], soni: e.target.value === '' ? '' : Number(e.target.value) };
+                                      recalculatePrice({ variants: next });
+                                    }}
+                                    className="w-20 h-9 px-2.5 text-xs font-bold border border-amber-200 rounded-lg outline-none focus:border-amber-500 bg-white text-right"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const next = (currentOrderService.variants || []).filter((_, i) => i !== idx);
+                                      recalculatePrice({ variants: next });
+                                    }}
+                                    className="w-9 h-9 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors"
+                                    title="Qatorni o'chirish"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const empty = { atributlar: Object.fromEntries(axes.map((a) => [a, ''])), soni: '' as number | string };
+                                const next = [...(currentOrderService.variants || []), empty];
+                                recalculatePrice({ variants: next });
+                              }}
+                              className="w-full h-9 border-2 border-dashed border-amber-200 rounded-lg text-[10px] font-bold text-amber-600 uppercase tracking-widest hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              <Plus size={12} /> Qator qo'shish
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1.5">
+                              Miqdor <span className="text-slate-400 capitalize font-medium">({selSvc?.unit})</span>
+                              {hasVariants && variantQtySum > 0 && <span className="ml-1 text-amber-600 normal-case">— variantlardan</span>}
+                            </label>
+                            <input
+                              type="number" min="0.1" step="0.1"
+                              value={hasVariants && variantQtySum > 0 ? variantQtySum : currentOrderService.quantity}
+                              onChange={e => recalculatePrice({ quantity: e.target.value })}
+                              disabled={hasVariants && variantQtySum > 0}
+                              className="input-minimal font-bold text-orange-700 h-11 bg-white border-2 border-orange-100 disabled:bg-slate-50 disabled:text-slate-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1.5">Koeffitsiyent</label>
+                            <input
+                              type="number" min="0.1" step="0.1"
+                              value={currentOrderService.coefficient}
+                              onChange={e => recalculatePrice({ coefficient: e.target.value })}
+                              className="input-minimal font-bold text-orange-700 h-11 bg-white border-2 border-orange-100"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   {priceBreakdown && (
                     <div className="bg-white border-2 border-orange-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
@@ -1633,6 +1761,80 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   </div>
                 </div>
 
+                {(() => {
+                  const variants = Array.isArray((selectedTask as any).variants)
+                    ? (selectedTask as any).variants as Array<{ atributlar: Record<string, string>; soni: number }>
+                    : [];
+                  if (variants.length === 0) return null;
+
+                  // Ustun nomlari — xizmatning variantAxes'idan (asosiy manba).
+                  // Agar service yo'q bo'lsa yoki axes bo'sh bo'lsa, fallback —
+                  // data'dagi kalitlardan olamiz.
+                  const serviceAxes: string[] = Array.isArray((selectedTask as any).service?.variantAxes)
+                    ? (selectedTask as any).service.variantAxes
+                    : [];
+                  const allAxes = serviceAxes.length > 0
+                    ? serviceAxes
+                    : Array.from(new Set(variants.flatMap(v => Object.keys(v.atributlar || {}))));
+                  const totalSum = variants.reduce((s, v) => s + (Number(v.soni) || 0), 0);
+                  const unit = (selectedTask as any).service?.unit || 'dona';
+
+                  return (
+                    <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100">
+                      <div className="flex justify-between items-center mb-3 pb-2 border-b border-amber-200">
+                        <h4 className="text-[9px] font-bold text-amber-700 uppercase tracking-widest flex items-center gap-2">
+                          <Package size={14} /> Variant qatorlari
+                        </h4>
+                        <span className="text-[10px] font-bold text-amber-700">
+                          Jami: {totalSum} {unit}
+                        </span>
+                      </div>
+
+                      {/* Jadval ko'rinishi: har ustun atribut + soni */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-left">
+                              {allAxes.map((axis) => (
+                                <th key={axis} className="px-3 py-2 text-[9px] font-bold text-amber-700 uppercase tracking-widest border-b border-amber-200">
+                                  {axis}
+                                </th>
+                              ))}
+                              <th className="px-3 py-2 text-[9px] font-bold text-amber-700 uppercase tracking-widest border-b border-amber-200 text-right">
+                                Soni
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {variants.map((v, i) => (
+                              <tr key={i} className="hover:bg-white/60 transition-colors">
+                                {allAxes.map((axis) => (
+                                  <td key={axis} className="px-3 py-2 font-bold text-slate-700 border-b border-amber-100/60">
+                                    {v.atributlar?.[axis] || '—'}
+                                  </td>
+                                ))}
+                                <td className="px-3 py-2 font-bold text-slate-800 tabular-nums text-right border-b border-amber-100/60">
+                                  {v.soni}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr>
+                              <td colSpan={allAxes.length} className="px-3 pt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">
+                                Jami:
+                              </td>
+                              <td className="px-3 pt-3 font-bold text-amber-700 tabular-nums text-right">
+                                {totalSum} {unit}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                   <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
                     <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
@@ -1640,11 +1842,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadProgress !== null}
                       className="text-[10px] font-bold text-sky-500 uppercase hover:text-sky-700 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Faqat .tif yoki .cdr"
+                      title="Rasm (PNG/JPG) yoki dizayn (TIF/CDR)"
                     >
                       {uploadProgress !== null
                         ? <><Clock size={11} className="animate-spin" /> Yuklanmoqda... {uploadProgress}%</>
-                        : <><Plus size={11} /> Fayl yuklash (.tif, .cdr)</>
+                        : <><Plus size={11} /> Fayl yuklash (rasm yoki dizayn)</>
                       }
                     </button>
                     <input type="file" hidden ref={fileInputRef} accept={ALLOWED_ATTACHMENT_ACCEPT} onChange={handleFileUpload} />
@@ -1663,22 +1865,24 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                           // CDR/TIF — non-renderable in browser, always download.
                           // Other images (jpg/png/...) — preview + dedicated download button.
                           return att.isImage ? (
-                            <div key={att.id} className="aspect-video rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-sky-300 transition-all group relative">
+                            <a
+                              key={att.id}
+                              href={att.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="aspect-video rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-sky-300 transition-all group relative cursor-zoom-in block"
+                              title="Yangi oynada kattalashtirib ochish"
+                            >
                               <img src={att.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={att.name} />
-                              <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                <a href={att.url} target="_blank" rel="noreferrer" title="Yangi oynada ochish" className="p-2 rounded-lg bg-white/90 hover:bg-white">
-                                  <ExternalLink size={14} className="text-slate-700" />
-                                </a>
-                                <button
-                                  type="button"
-                                  onClick={() => downloadAttachment(att)}
-                                  title="Yuklab olish"
-                                  className="p-2 rounded-lg bg-white/90 hover:bg-white"
-                                >
-                                  <Download size={14} className="text-slate-700" />
-                                </button>
-                              </div>
-                            </div>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); downloadAttachment(att); }}
+                                title="Yuklab olish"
+                                className="absolute top-2 right-2 p-2 rounded-lg bg-white/90 hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Download size={14} className="text-slate-700" />
+                              </button>
+                            </a>
                           ) : (
                             <div key={att.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-sm transition-all group">
                               <div className="w-9 h-9 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0">
@@ -2085,7 +2289,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {/* Design file upload */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase px-1">Design Fayllar (ixtiyoriy)</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase px-1">Rasm yoki dizayn fayl (ixtiyoriy)</label>
               {moveForm.newFiles.length > 0 && (
                 <span className="text-[9px] font-bold text-orange-500">{moveForm.newFiles.length} ta fayl tanlandi</span>
               )}
@@ -2105,7 +2309,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               <p className="text-xs font-bold text-slate-600 uppercase tracking-wider text-center">
                 Faylni shu yerga tashlang yoki <span className="text-orange-500 underline">tanlash uchun bosing</span>
               </p>
-              <p className="text-[10px] text-slate-400 font-medium text-center">Faqat .tif va .cdr (CorelDRAW) formatlari</p>
+              <p className="text-[10px] text-slate-400 font-medium text-center">Rasmlar (.png, .jpg, .jpeg, .webp, .gif) yoki dizayn fayllar (.tif, .cdr)</p>
             </div>
             <input type="file" hidden multiple accept={ALLOWED_ATTACHMENT_ACCEPT} ref={moveFileInputRef} onChange={handleMoveFileSelect} />
 
@@ -2428,6 +2632,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </div>
         </div>
       </Modal>
+
     </div>
   );
 };

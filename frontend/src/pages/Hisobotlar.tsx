@@ -345,8 +345,8 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
   // O'sish ko'rsatkichlari
   const growthQuery = useQuery({
-    queryKey: ['report-growth', params.branchId],
-    queryFn: async () => (await reportsApi.growthMetrics({ branchId: params.branchId })).data,
+    queryKey: ['report-growth', params.branchId, departmentId],
+    queryFn: async () => (await reportsApi.growthMetrics({ branchId: params.branchId, departmentId: departmentId || undefined })).data,
     enabled: canViewGrowthCards && canRunCustom,
     placeholderData: keepPreviousData,
   });
@@ -375,9 +375,9 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     placeholderData: keepPreviousData,
   });
   const dynamicsMonthlyQuery = useQuery({
-    queryKey: ['report-dinamika-monthly', getMonthsCount(), params.branchId],
+    queryKey: ['report-dinamika-monthly', getMonthsCount(), params.branchId, departmentId],
     queryFn: async () => {
-      const r = await reportsApi.monthlyDynamics({ months: getMonthsCount(), branchId: params.branchId });
+      const r = await reportsApi.monthlyDynamics({ months: getMonthsCount(), branchId: params.branchId, departmentId: departmentId || undefined });
       return (r.data || []).map((d: any) => ({
         label: monthLabel(d.month), kirim: d.kirim || 0, chiqim: d.chiqim || 0,
         hamkorlar: d.hamkorlar || 0, net: d.net || 0,

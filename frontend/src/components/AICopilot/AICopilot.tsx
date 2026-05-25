@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X, Send, Sparkles, Bot, User, CheckCircle2,
   Loader2, Package, Zap, ShieldCheck,
-  Plus, Settings
+  Plus, Settings, Mic, MicOff, AlertTriangle
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -18,6 +18,40 @@ const STARTER_SUGGESTIONS = [
   "Yangi xizmat qo'shish (masalan: Vizitka)",
   'Xizmat uchun yangi narx qoidasi',
 ];
+
+// AI ba'zan baribir markdown chiqaradi — display vaqtida tozalaymiz.
+// System prompt allaqachon man qiladi, lekin defensive cleanup ham bo'lsin.
+const stripMarkdown = (text: string): string =>
+  text
+    .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^\s*---+\s*$/gm, '');
+
+// Chrome ba'zan o'zbek nutqini rus kirillida transkribe qilishi mumkin.
+// Uni avtomatik O'zbek lotin yozuviga aylantiramiz.
+const CYR_TO_LAT_MAP: Record<string, string> = {
+  // Ruscha 'х' lotincha 'x' ga o'giriladi (masalan: xizmat, xato, yaxshi).
+  // O'zbekcha 'ҳ' esa lotincha 'h' ga o'giriladi (masalan: hujjat, haqida).
+  'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo',
+  'ж':'j','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m',
+  'н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u',
+  'ф':'f','х':'x','ц':'s','ч':'ch','ш':'sh','щ':'sh',
+  'ъ':"'",'ы':'i','ь':'','э':'e','ю':'yu','я':'ya',
+  // Uzbek-specific Cyrillic letters
+  'қ':'q','ў':"o'",'ғ':"g'",'ҳ':'h',
+  'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo',
+  'Ж':'J','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M',
+  'Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U',
+  'Ф':'F','Х':'X','Ц':'S','Ч':'Ch','Ш':'Sh','Щ':'Sh',
+  'Ъ':"'",'Ы':'I','Ь':'','Э':'E','Ю':'Yu','Я':'Ya',
+  'Қ':'Q','Ў':"O'",'Ғ':"G'",'Ҳ':'H',
+};
+const cyrToLat = (text: string): string =>
+  text.replace(/[Ѐ-ӿ]/g, (ch) => CYR_TO_LAT_MAP[ch] ?? ch);
 
 // Build chat URL the same way as the main axios client (api/index.ts):
 // - dev: '/api/ai/chat' (Vite proxy → localhost:4000)
@@ -93,8 +127,43 @@ interface AICopilotProps {
   onRefresh?: () => void;
 }
 
+type Usage = { used: number; limit: number; unlimited: boolean; periodEnd?: string };
+
 const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => {
   const [input, setInput] = useState('');
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [limitError, setLimitError] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [micPermissionDenied, setMicPermissionDenied] = useState(false);
+
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<any>(null);
+  const isListeningRef = useRef(false);
+  const inputRefVal = useRef<string>('');
+
+  // Web Speech API qo'llab-quvvatlanishini brauzerda tekshiramiz
+  const speechSupported = typeof window !== 'undefined' &&
+    ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
+
+  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+  useEffect(() => { inputRefVal.current = input; }, [input]);
+
+  const fetchUsage = useCallback(async () => {
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const bearer = localStorage.getItem('pf_token');
+      if (bearer) headers['Authorization'] = `Bearer ${bearer}`;
+      const raw = localStorage.getItem('pf_user_info') || sessionStorage.getItem('pf_user_info');
+      if (raw) {
+        try {
+          const u = JSON.parse(raw);
+          if (u?.tenantId) headers['X-Tenant-Id'] = u.tenantId;
+        } catch {}
+      }
+      const r = await fetch(`${API_BASE}/ai/usage`, { credentials: 'include', headers });
+      if (r.ok) setUsage(await r.json());
+    } catch { /* silent */ }
+  }, []);
 
   const { messages, sendMessage, status, addToolResult } = useChat({
     transport: chatTransport,
@@ -102,6 +171,22 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
       if (message.parts?.some(p => p.type !== 'text' && p.type !== 'step-start')) {
         onRefresh?.();
       }
+      // TTS o'chirilgan — AI faqat matn bilan javob beradi.
+      // Har streaming tugaganida limit hisobini yangilaymiz
+      fetchUsage();
+    },
+    onError: (err: any) => {
+      // 429 — limit oshgan; SDK xabar matni ichida JSONni saqlaydi
+      const msg = err?.message || '';
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed?.error === 'AI_LIMIT_REACHED') {
+          setLimitError(parsed.message || 'Limit tugadi');
+          fetchUsage();
+          return;
+        }
+      } catch {}
+      if (msg) setLimitError(msg);
     },
   });
 
@@ -115,17 +200,137 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
   }, [messages, isLoading]);
 
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 300);
-  }, [isOpen]);
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+      fetchUsage();
+    }
+  }, [isOpen, fetchUsage]);
+
+  const submitText = useCallback((text: string) => {
+    const t = text.trim();
+    // 3 belgidan qisqa — STT noto'g'ri eshitgan bo'lishi mumkin. Yubormaymiz.
+    if (t.length < 3) {
+      setInput('');
+      inputRefVal.current = '';
+      return;
+    }
+    setLimitError(null);
+    sendMessage({ text: t });
+    setInput('');
+    inputRefVal.current = '';
+  }, [sendMessage]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    sendMessage({ text: input });
-    setInput('');
+    if (input.trim().length < 3 || isLoading) return;
+    submitText(input);
   };
 
+  const stopListening = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    const rec = recognitionRef.current;
+    recognitionRef.current = null;
+    if (rec) {
+      try { rec.stop(); } catch {}
+    }
+    setIsListening(false);
+    isListeningRef.current = false;
+  }, []);
+
+  const startListening = useCallback(() => {
+    if (!speechSupported) return;
+    if (recognitionRef.current) return;
+
+    const SR: any = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const rec = new SR();
+    rec.lang = 'uz-UZ';
+    // Doimiy yozish — Chrome o'zi to'xtatib qo'ymasligi uchun. 3-soniyalik silence timer'ni
+    // o'zimiz boshqaramiz va shu vaqt o'tsa avtomatik yuboramiz.
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onresult = (e: any) => {
+      if (recognitionRef.current !== rec) return; // Ignore events from old/stopped sessions
+
+      const transcript = Array.from(e.results)
+        .map((r: any) => r[0].transcript)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!transcript) return;
+      const text = cyrToLat(transcript);
+      setInput(text);
+      inputRefVal.current = text;
+
+      // Har yangi natijada 3-soniyalik silence timer reset qilinadi
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        const t = inputRefVal.current.trim();
+        if (t.length >= 3) {
+          submitText(t);
+        }
+        stopListening();
+      }, 3000);
+    };
+
+    rec.onerror = (e: any) => {
+      if (recognitionRef.current !== rec) return;
+      if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+        setMicPermissionDenied(true);
+      }
+    };
+
+    rec.onend = () => {
+      if (recognitionRef.current !== rec) return;
+      recognitionRef.current = null;
+      setIsListening(false);
+      isListeningRef.current = false;
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+    };
+
+    recognitionRef.current = rec;
+    setIsListening(true);
+    isListeningRef.current = true;
+    setMicPermissionDenied(false);
+    try {
+      rec.start();
+    } catch {
+      setIsListening(false);
+      isListeningRef.current = false;
+    }
+  }, [speechSupported, stopListening, submitText]);
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  // Panel yopilganda yoki komponent unmount bo'lganda recognition'ni tozalaymiz
+  useEffect(() => {
+    if (!isOpen) {
+      stopListening();
+    }
+    return () => {
+      stopListening();
+    };
+  }, [isOpen, stopListening]);
+
   if (!isOpen) return null;
+
+  const quotaPct = usage && !usage.unlimited && usage.limit > 0
+    ? Math.min(100, Math.round((usage.used / usage.limit) * 100))
+    : 0;
+  const quotaLow = !!(usage && !usage.unlimited && quotaPct >= 80);
+  const quotaExhausted = !!(usage && !usage.unlimited && usage.used >= usage.limit);
 
   return (
     <>
@@ -140,16 +345,56 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
               <Sparkles size={22} className="text-white" strokeWidth={2.5} />
             </div>
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2 uppercase">
-              PrintFlow <span className="px-1.5 py-0.5 bg-orange-500 text-white text-[9px] rounded-md shadow-sm">AI PRO</span>
+              Girgitton
+              {isListening && (
+                <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[9px] rounded-md shadow-sm animate-pulse">Eshityapman</span>
+              )}
             </h2>
-            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-1">Ready for 3 Workflows</p>
+            {usage && (
+              <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${
+                quotaExhausted ? 'text-rose-500' : quotaLow ? 'text-amber-500' : 'text-emerald-500'
+              }`}>
+                {usage.unlimited
+                  ? 'Cheksiz xabarlar'
+                  : `${usage.used} / ${usage.limit} xabar — 30 kun davri`}
+              </p>
+            )}
           </div>
           <button onClick={onClose} className="ml-auto w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition-all">
             <X size={20} />
           </button>
         </div>
+
+        {/* Quota progress bar */}
+        {usage && !usage.unlimited && usage.limit > 0 && (
+          <div className="px-6 pt-2 flex-shrink-0">
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${
+                  quotaExhausted ? 'bg-rose-500' : quotaLow ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+                style={{ width: `${quotaPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Limit reached banner */}
+        {limitError && (
+          <div className="mx-6 mt-3 p-3 rounded-2xl border border-rose-200 bg-rose-50 flex items-start gap-2 flex-shrink-0">
+            <AlertTriangle size={16} className="text-rose-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-bold text-rose-700">AI limit tugadi</p>
+              <p className="text-[10px] font-bold text-rose-600 mt-0.5 leading-snug">{limitError}</p>
+              <a href="/billing" className="text-[10px] font-bold text-orange-600 underline mt-1 inline-block">Tarifni yangilash →</a>
+            </div>
+            <button onClick={() => setLimitError(null)} className="text-rose-400 hover:text-rose-600">
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Chat window */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scroll-smooth custom-scroll bg-slate-50/30">
@@ -161,10 +406,16 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           )}
 
           {messages.map((msg) => {
-            const textContent = msg.parts
+            const rawText = msg.parts
               .filter(p => p.type === 'text')
               .map(p => (p as { type: 'text'; text: string }).text)
               .join('');
+            // Assistant javoblaridagi har qanday markdown'ni tozalaymiz va kirill
+            // bo'lsa O'zbek lotin'ga aylantiramiz (defensiv, system prompt allaqachon man qiladi).
+            // Foydalanuvchi xabarini esa o'zgartirmaymiz.
+            const textContent = msg.role === 'assistant'
+              ? cyrToLat(stripMarkdown(rawText))
+              : rawText;
 
             const toolParts = msg.parts.filter(p =>
               p.type === 'dynamic-tool' || p.type.startsWith('tool-')
@@ -309,14 +560,29 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Xabar yozing..."
+                placeholder={isListening ? 'Eshityapman...' : 'Xabar yozing...'}
                 rows={1}
                 className="flex-1 bg-transparent resize-none text-[14px] text-slate-800 placeholder:text-slate-400 font-semibold focus:outline-none py-3 min-h-[44px] max-h-[150px]"
                 onInput={(e) => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 150) + 'px'; }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFormSubmit(e as any); } }}
-                disabled={isLoading}
+                disabled={isLoading || quotaExhausted}
               />
-              <button type="submit" disabled={!input.trim() || isLoading} className="w-11 h-11 flex-shrink-0 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:bg-slate-200 text-white flex items-center justify-center transition-all shadow-xl shadow-orange-500/25 active:scale-90 mb-0.5">
+              {speechSupported && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  disabled={isLoading || quotaExhausted || micPermissionDenied}
+                  title={isListening ? "Yozishni to'xtatish" : "Ovozli yozishni boshlash"}
+                  className={`w-11 h-11 flex-shrink-0 rounded-2xl flex items-center justify-center transition-all active:scale-90 mb-0.5 ${
+                    isListening
+                      ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-xl shadow-rose-500/25 animate-pulse'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-40'
+                  }`}
+                >
+                  {isListening ? <Mic size={18} strokeWidth={2.5} /> : <MicOff size={18} strokeWidth={2.5} />}
+                </button>
+              )}
+              <button type="submit" disabled={!input.trim() || isLoading || quotaExhausted} className="w-11 h-11 flex-shrink-0 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:bg-slate-200 text-white flex items-center justify-center transition-all shadow-xl shadow-orange-500/25 active:scale-90 mb-0.5">
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} strokeWidth={2.5} />}
               </button>
             </div>
@@ -324,10 +590,10 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
 
           <div className="flex items-center justify-between mt-4 px-2">
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-              System Active
+              <div className={`w-1.5 h-1.5 rounded-full ${isListening ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
+              {isListening ? 'Ovoz yozilmoqda' : micPermissionDenied ? "Mikrofon ruxsati yo'q" : 'Tayyor'}
             </div>
-            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Vercel AI SDK • Anthropic</p>
+            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Girgitton AI</p>
           </div>
         </div>
       </div>

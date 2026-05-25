@@ -60,6 +60,8 @@ export const ALLOWED_MODULES: { key: string; label: string; icon: LucideIcon; de
 
 export const defaultPlanForm = () => ({
   name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0,
-  maxEmployees: 8, maxBranches: 1, maxDepartments: 1, allowedModules: [] as string[],
+  maxEmployees: 8, maxBranches: 1, maxDepartments: 1,
+  aiMessagesPerMonth: 100,
+  allowedModules: [] as string[],
   description: '', isPopular: false, sortOrder: 0,
 });

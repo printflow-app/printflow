@@ -36,8 +36,11 @@ export class ReportsController {
 
   @Get('growth-metrics')
   @RequirePermissions('canViewFinance')
-  growthMetrics(@Query('branchId') branchId?: string) {
-    return this.reports.getGrowthMetrics(branchId);
+  growthMetrics(
+    @Query('branchId') branchId?: string,
+    @Query('departmentId') departmentId?: string,
+  ) {
+    return this.reports.getGrowthMetrics(branchId, departmentId);
   }
 
   @Get('monthly-dynamics')
@@ -45,7 +48,8 @@ export class ReportsController {
   monthlyDynamics(
     @Query('months') months?: string,
     @Query('branchId') branchId?: string,
+    @Query('departmentId') departmentId?: string,
   ) {
-    return this.reports.getMonthlyDynamics(months ? Number(months) : 6, branchId);
+    return this.reports.getMonthlyDynamics(months ? Number(months) : 6, branchId, departmentId);
   }
 }

@@ -9,6 +9,7 @@ import { z } from 'zod/v3';
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private anthropicClient: any;
+  private static readonly PERIOD_MS = 30 * 24 * 60 * 60 * 1000; // 30 kun
 
   constructor(
     private readonly prisma: PrismaService,
@@ -21,6 +22,98 @@ export class AiService {
     this.anthropicClient = createAnthropic({ apiKey });
   }
 
+  /**
+   * Tenant uchun joriy 30-kunlik AI davrining boshlanish sanasini hisoblaydi.
+   * Anchor: agar tenant.subscriptionEndsAt va plan.durationDays mavjud bo'lsa —
+   * subscriptionEndsAt - durationDays (obuna boshlangan kun). Aks holda createdAt.
+   * Davr har 30 kunda anchor'dan boshlab takrorlanadi.
+   */
+  private getCurrentPeriodStart(tenant: {
+    createdAt: Date;
+    subscriptionEndsAt: Date | null;
+    plan: { durationDays: number } | null;
+  }): Date {
+    let anchorMs: number;
+    if (tenant.subscriptionEndsAt && tenant.plan?.durationDays) {
+      anchorMs = tenant.subscriptionEndsAt.getTime() - tenant.plan.durationDays * 86400000;
+    } else {
+      anchorMs = tenant.createdAt.getTime();
+    }
+    const elapsed = Math.max(0, Date.now() - anchorMs);
+    const periods = Math.floor(elapsed / AiService.PERIOD_MS);
+    return new Date(anchorMs + periods * AiService.PERIOD_MS);
+  }
+
+  /**
+   * Tenant'ning joriy davrdagi AI foydalanishini qaytaradi.
+   * { used, limit, periodStart, periodEnd, unlimited }
+   * unlimited = true bo'lsa limit qo'llanmaydi (0 = cheksiz konvensiya).
+   */
+  async getUsage(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { plan: true },
+    });
+    if (!tenant) throw new Error('Tenant topilmadi');
+
+    const limit = tenant.plan?.aiMessagesPerMonth ?? 0;
+    const unlimited = limit === 0;
+    const periodStart = this.getCurrentPeriodStart(tenant);
+    const periodEnd = new Date(periodStart.getTime() + AiService.PERIOD_MS);
+
+    const usage = await this.prisma.aiUsage.findUnique({
+      where: { tenantId_periodStart: { tenantId, periodStart } },
+    });
+
+    return {
+      used: usage?.count ?? 0,
+      limit,
+      unlimited,
+      periodStart: periodStart.toISOString(),
+      periodEnd: periodEnd.toISOString(),
+    };
+  }
+
+  /**
+   * Limitni tekshiradi va to'g'ri kelsa hisobni 1 ga oshiradi.
+   * Limit oshgan bo'lsa false qaytaradi (xabar yuborilmaydi).
+   * Atomik upsert + increment — race condition oldini oladi.
+   */
+  private async checkAndIncrementUsage(tenantId: string): Promise<{
+    allowed: boolean;
+    used: number;
+    limit: number;
+    unlimited: boolean;
+  }> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: { plan: true },
+    });
+    if (!tenant) return { allowed: false, used: 0, limit: 0, unlimited: false };
+
+    const limit = tenant.plan?.aiMessagesPerMonth ?? 0;
+    const unlimited = limit === 0;
+    const periodStart = this.getCurrentPeriodStart(tenant);
+
+    // Cheksiz bo'lsa ham hisoblab boramiz — keyin analitika uchun foydali.
+    const result = await this.prisma.aiUsage.upsert({
+      where: { tenantId_periodStart: { tenantId, periodStart } },
+      create: { tenantId, periodStart, count: 1 },
+      update: { count: { increment: 1 } },
+    });
+
+    if (unlimited) return { allowed: true, used: result.count, limit, unlimited };
+    if (result.count > limit) {
+      // Limitdan oshib ketgan — increment'ni qaytarib olamiz (idempotent rollback).
+      await this.prisma.aiUsage.update({
+        where: { tenantId_periodStart: { tenantId, periodStart } },
+        data: { count: { decrement: 1 } },
+      });
+      return { allowed: false, used: limit, limit, unlimited };
+    }
+    return { allowed: true, used: result.count, limit, unlimited };
+  }
+
   async streamChat(
     messages: any[],
     tenantId?: string,
@@ -31,6 +124,38 @@ export class AiService {
     }
 
     try {
+      // Limitni faqat haqiqiy foydalanuvchi xabarida hisoblaymiz —
+      // tool callback'lar oxirida assistant/tool roli keladi, ularni sanamaymiz.
+      // Wake word noto'g'ri tetik bo'lib qisqa xabar yuborishi mumkin —
+      // 3 belgidan qisqa matn na hisoblanadi, na Anthropic'ga yuboriladi.
+      const last = messages[messages.length - 1];
+      const trimmed = typeof last?.content === 'string' ? last.content.trim() : '';
+      const isFreshUserMessage = last?.role === 'user' && trimmed.length > 0;
+
+      if (isFreshUserMessage && trimmed.length < 3) {
+        return new Response(
+          JSON.stringify({
+            error: 'MESSAGE_TOO_SHORT',
+            message: 'Xabar juda qisqa. Iltimos to\'liqroq yozing yoki gapiring.',
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+
+      if (isFreshUserMessage) {
+        const gate = await this.checkAndIncrementUsage(tenantId);
+        if (!gate.allowed) {
+          return new Response(
+            JSON.stringify({
+              error: 'AI_LIMIT_REACHED',
+              message: `Joriy davr uchun AI xabar limiti tugadi (${gate.used}/${gate.limit}). Tarifni yangilang.`,
+              used: gate.used,
+              limit: gate.limit,
+            }),
+            { status: 429, headers: { 'Content-Type': 'application/json' } },
+          );
+        }
+      }
       const [employees, customers, servicesRaw, kanbanCols, paymentTypes, departmentsRaw] = await Promise.all([
         this.prisma.employee.findMany({
           where: { tenantId },
@@ -63,6 +188,7 @@ export class AiService {
           nom: s.name,
           narx: s.basePrice,
           birlik: s.unit,
+          variant_oqlari: (s as any).variantAxes || [],
           optsiyalar: s.options.map(o => ({
             id: o.id,
             nom: o.name,
@@ -77,51 +203,65 @@ export class AiService {
 
       const firstColId = kanbanCols[0]?.id || '';
 
-      const systemPrompt = `You are PrintFlow AI PRO, an advanced assistant and tutor for the PrintFlow ERP system. Today's date is ${new Date().toLocaleDateString('uz-UZ')}.
+      const systemPrompt = `Sen — Girgitton. PrintFlow ERP tizimining yordamchisi. Bugungi sana: ${new Date().toLocaleDateString('uz-UZ')}.
 
-CORE RESPONSIBILITIES:
-1. AUTOMATION: You can automatically create orders, add services, and create service options using tools.
-2. GUIDANCE & TUTORING: For actions you CANNOT do automatically, you must act as a guide. Explain precisely where the user needs to go in the system and what buttons to click.
+TIL QOIDASI (QAT'IY):
+- Javob HAR DOIM O'zbek tilida, LOTIN yozuvida bo'ladi. Kirill yozuvi (а, б, в, ё, ы) va boshqa tillar (rus, ingliz) MAN ETILGAN.
+- Foydalanuvchi har qanday tilda yozsa yoki gapirsa ham, sen FAQAT O'zbek lotin'da javob berasan.
 
-NAVIGATION GUIDE (How to use the platform manually):
-- Kassa (Tranzaksiyalar): Sidebar -> "KASSA". View incomes/expenses, filter by date.
-- Statistika (Dashboard): Sidebar -> "STATISTIKA". General business overview.
-- Hisobotlar: Sidebar -> "HISOBOTLAR". Detailed business analysis.
-- Xizmatlar (Kanban): Sidebar -> "XIZMATLAR (KANBAN)". Manage current orders.
-- Mijozlar: Sidebar -> "MIJOZLAR BAZASI". Manage CRM and debts.
-- Xodimlar: Sidebar -> "XODIMLAR". Manage team and salaries. To add an employee: Click "Yangi xodim" button.
-- Ma'muriyat: Sidebar -> "MA'MURIYAT". Role-based access and permissions.
-- Ombor: Sidebar -> "OMBOR". Materials and stock management.
-- Davomat: Sidebar -> "DAVOMAT". Employee attendance records.
-- Hamkorlar: Sidebar -> "HAMKORLAR". Outsourcing and vendor management.
-- Tizim Sozlamalari: Sidebar -> "TIZIM SOZLAMALARI". Change branch, manage billing/plans, and system settings.
+GAPIRISH USLUBI (QAT'IY):
+- Suhbat tarzida, qisqa: 2-3 jumla, ortig'i kerak emas.
+- Hech qachon markdown ishlatma: hech qanday **, ##, ###, *, -, ro'yxat, qalin yozuv, sarlavha YO'Q. Faqat tabiiy matn.
+- Emojilarni juda ehtiyot ishlat (faqat zarur bo'lsa). "Eslatma:", "Ogohlantirish:", "📊", "⚠️" kabi sarlavhalar yozma.
+- Leksiya o'qima, "Tushundim!", "Hisoblayman:" kabi to'ldiruvchi gaplar berma — to'g'ridan to'g'ri natijani ayt.
+- Hisoblashda: faqat NATIJA va kerak bo'lsa bitta qisqa eslatma/savol. Bosqichlarni sanama.
 
-TOOL USAGE RULES:
-Before calling any tool, you MUST summarize the details strictly in one of these templates:
+NAMUNA (hisoblash uslubi):
+User: "3000 ta vizitka 250 so'mdan qil va buyurtma yarat"
+Yomon javob (BUNAQA YOZMA): uzun ro'yxat, ** belgilari, 4 ta savol bilan tugaydi.
+Yaxshi javob: "3000 ta vizitka × 250 so'm = 750 000 so'm. Tizimda 200 so'm narxda saqlangan ekan — 250 da olamizmi yoki 200 da qoldiramizmi?"
 
-Template 1 (Orders):
-- Buyurtma: [Mijoz] - [Xizmat]
-- Mijoz: [Mijoz]
-- Xizmat: [Xizmat va o'lcham]
-- Bo'lim: [Bo'lim nomi yoki Yo'q] (only if the current branch has departments — match by name from "bolimlar" where filial_id = employee's branchId; if no match found or branch has no departments, use "Yo'q")
-- Zakolat: [Summa]
-- To'lov turi: [Naqd/Click]
-- Muddat: [Sana, Vaqt]
+ASOSIY VAZIFALAR:
+1. AVTOMATIK ISH: tool'lar yordamida buyurtma yaratish, xizmat va optsiya qo'shish.
+2. YO'L-YO'RIQ: avtomatik bajara olmagan ishni qisqa ko'rsatma bilan tushuntirish (qaysi sidebar, qaysi tugma).
 
-Template 2 (New Service):
-- Xizmat qo'shish: [Xizmat nomi]
-- Asosiy narx: [Summa]
-- O'lchov birligi: [dona, metr, m2, vs]
-- Tavsif: [Izoh yoki Yo'q]
+NAVIGATSIYA (tezkor):
+Kassa — tranzaksiyalar; Statistika — dashboard; Hisobotlar — tahlil; Xizmatlar (Kanban) — buyurtmalar; Mijozlar — CRM; Xodimlar — jamoa; Ma'muriyat — rollar; Ombor — material; Davomat — keldi-ketdi; Hamkorlar — vendorlar; Tizim Sozlamalari — billing va sozlama.
 
-Template 3 (Service Option/Volume Discount):
-- Optsiya: [Qaysi xizmat uchun] - [Optsiya nomi]
-- Qiymati: [Masalan: 3000 ta, yoki Qalin qog'oz]
-- Asosiy narx: [Joriy narx, masalan: 500]
-- Yangi (o'zgargan) narx: [Masalan: 250]
-- Izoh: [Izoh yoki Yo'q]
+TOOL CHAQIRISH QOIDALARI:
+Sen 3 ta tool'ga egasan: createOrder (buyurtma), createService (xizmat), createServiceOption (optsiya/chegirma).
 
-Rule: If any required detail is missing, ask ONE short question to get it. DO NOT call the tool until the summary is presented and confirmed by the user. If the user asks for something outside of these 3 automated workflows, provide step-by-step navigation instructions using the NAVIGATION GUIDE.
+createOrder (buyurtma) uchun kerakli ma'lumotlar:
+- orderName (buyurtma nomi, masalan: "Vizitka 3000 ta")
+- title (qisqa sarlavha)
+- customerName yoki customerId (mijoz)
+- serviceId (xizmat ID — contextData.xizmatlar dan tanla)
+- quantity (miqdor, default 1)
+- totalAmount (jami summa so'mda)
+- depositAmount (zakolat, default 0)
+- paymentTypeId (to'lov turi ID — contextData.tolov_turlari dan tanla)
+- deadlineAt (muddat, ISO sana formatida — optional)
+- departmentId (bo'lim ID — optional, agar filialda bo'limlar bo'lsa)
+- columnId (default "${firstColId}")
+- assigneeId (xodim ID — optional)
+- variants (variant qatorlari, optional): agar tanlangan xizmatda variant_oqlari mavjud bo'lsa (masalan ["Rang", "O'lcham"]), foydalanuvchidan rang/o'lcham ajratmasini so'ra va shu formatda yubor:
+  variants: [
+    { "atributlar": { "Rang": "Oq", "O'lcham": "M" }, "soni": 30 },
+    { "atributlar": { "Rang": "Oq", "O'lcham": "L" }, "soni": 40 },
+    { "atributlar": { "Rang": "Qora", "O'lcham": "S" }, "soni": 50 }
+  ]
+  Variantlar berilsa quantity avtomatik hisoblanadi (yig'indi).
+
+createService uchun: name, basePrice, unit (dona/metr/m2), description (optional).
+
+createServiceOption uchun: targetServiceName, optionName, optionValue, oldPrice, newPrice, note (optional).
+
+ISHLASH QOIDASI:
+1. Foydalanuvchi so'rovini tahlil qil. Kerakli majburiy ma'lumotlar (mijoz, summa, to'lov turi, muddat) yo'q bo'lsa — bitta qisqa savol bilan so'ra (ro'yxat shaklida emas, bir-ikki jumla).
+2. Hammasi yetarli bo'lganda — qisqa xulosa bilan tasdiqlash so'ra: "Vizitka 3000 ta, Akmal Sotvoldiyev, 750 000 so'm, naqd, ertaga soat 15. Yarataymizmi?"
+3. Foydalanuvchi "ha", "yarataylik", "tasdiqlayman" yoki shunga o'xshash tasdiq bersa — DARHOL tool'ni chaqir, qaytadan so'rama.
+4. Tool ID'larni contextData'dan o'qib to'g'ri yubor. Xizmat yoki to'lov turi nomidan ID topish kerak.
+5. Tool muvaffaqiyatli ishlasa — "Tayyor, [displayId] buyurtma yaratildi" deb qisqa javob ber. Ortiqcha izoh berma.
 
 TIZIMDAGI MA'LUMOTLAR:
 ${JSON.stringify(contextData)}`;
@@ -189,6 +329,13 @@ ${JSON.stringify(contextData)}`;
               // matches the calling employee's branchId — AI should resolve by name
               // from contextData.bolimlar before passing here.
               departmentId: z.string().optional(),
+              // Variant qatorlari — xizmatda variant_oqlari bo'lsa to'ldiriladi.
+              // Masalan futbolka uchun: [{atributlar:{Rang:'Oq',O\'lcham:'M'}, soni:30}, ...]
+              // Variantlar berilsa, quantity = sum(soni) avtomatik hisoblanadi.
+              variants: z.array(z.object({
+                atributlar: z.record(z.string(), z.string()),
+                soni: z.number().positive(),
+              })).optional(),
             }),
             execute: async (args) => {
               const currentEmployee = employees.find(e => e.id === employeeId);
@@ -207,6 +354,7 @@ ${JSON.stringify(contextData)}`;
                   targetBranchId: currentEmployee?.branchId || null,
                   branchId: currentEmployee?.branchId || null,
                   departmentId: args.departmentId || null,
+                  variants: args.variants ?? undefined,
                 },
                 employeeId,
               );

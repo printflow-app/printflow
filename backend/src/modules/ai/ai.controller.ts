@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   Res,
   HttpCode,
@@ -35,6 +36,13 @@ interface ChatRequestBody {
 @Controller('ai')
 export class AiController {
   constructor(private readonly aiService: AiService) {}
+
+  @Get('usage')
+  async usage(@Req() req: any) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) return { used: 0, limit: 0, unlimited: false };
+    return this.aiService.getUsage(tenantId);
+  }
 
   @Post('chat')
   @HttpCode(HttpStatus.OK)

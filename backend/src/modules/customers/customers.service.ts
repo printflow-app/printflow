@@ -38,7 +38,13 @@ export class CustomersService {
         orderBy: { createdAt: 'desc' },
         take: 50,
         select: {
-          id: true, title: true, totalAmount: true, createdAt: true,
+          id: true,
+          title: true,
+          totalAmount: true,
+          createdAt: true,
+          service: {
+            select: { name: true }
+          }
         },
       }),
       this.prisma.transaction.findMany({

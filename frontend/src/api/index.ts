@@ -453,9 +453,9 @@ export const reportsApi = {
     api.get('/reports/vendor-profitability', { params }),
   employeeVelocity: (params?: { start?: string; end?: string }) =>
     api.get('/reports/employee-velocity', { params }),
-  growthMetrics: (params?: { branchId?: string }) =>
+  growthMetrics: (params?: { branchId?: string; departmentId?: string }) =>
     api.get('/reports/growth-metrics', { params }),
-  monthlyDynamics: (params?: { months?: number; branchId?: string }) =>
+  monthlyDynamics: (params?: { months?: number; branchId?: string; departmentId?: string }) =>
     api.get('/reports/monthly-dynamics', { params }),
 };
 
