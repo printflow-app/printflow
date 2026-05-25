@@ -298,7 +298,9 @@ model Service {
   // Variant o'qlari (axes) — agar xizmat turli rang/o'lcham bilan kelsa.
   // Masalan futbolka: ["Rang", "O'lcham"] → buyurtma formasi shu axes'larga
   // input grid chiqaradi. Bo'sh array bo'lsa — buyurtmada variant rejimi yo'q.
-  variantAxes String[]
+  // @default([]) MAJBURIY: ustun mavjud (ma'lumotli) jadvalga qo'shilganda
+  // PostgreSQL default'siz NOT NULL massivni rad etadi → `prisma db push` yiqiladi.
+  variantAxes String[] @default([])
 
   // Price list uchun rasm — base64 data URL (kichiklashtirilgan, ~600px JPEG).
   // Tashqi storage yo'q (Railway disk persistent emas), DB'da @db.Text sifatida.
