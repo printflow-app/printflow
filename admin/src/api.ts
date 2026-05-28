@@ -35,6 +35,7 @@ export const authApi = {
   login: (data: { login: string; password: string }) =>
     api.post('/auth/super-admin/login', data),
   logout: () => api.post('/auth/logout'),
+  me: () => api.get('/auth/super-admin/me'),
 };
 
 export const tenantsApi = {

@@ -57,12 +57,46 @@ export class TenantsService {
     });
     if (!tenant) throw new NotFoundException('Workspace topilmadi');
 
-    // Calculate total paid
     const totalPaid = tenant.payments
       .filter(p => p.status === 'APPROVED')
       .reduce((sum, p) => sum + p.amount, 0);
 
-    return { ...tenant, totalPaid };
+    // Workspace admin + branches live behind tenantScoped middleware — run
+    // a TenantContext-scoped fetch so we get rows for this tenant only.
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const { admins, branches, attendanceToday, activeTasks } = await TenantContext.run(
+      { tenantId: tenant.id, userId: '', userRole: '' },
+      async () => {
+        const [admins, branches, attendanceToday, activeTasks] = await Promise.all([
+          this.prisma.workspaceAdmin.findMany({
+            select: { id: true, fullName: true, login: true, phone: true, telegramId: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+          }),
+          this.prisma.branch.findMany({
+            select: { id: true, name: true, isActive: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+          }),
+          this.prisma.attendanceRecord.count({ where: { date: todayStr } }),
+          this.prisma.task.count({ where: { isArchived: false } }),
+        ]);
+        return { admins, branches, attendanceToday, activeTasks };
+      },
+    );
+
+    // Flatten module access (legacy features JSON + allowedModules array)
+    const planAllowedModules: string[] = Array.isArray((tenant.plan as any)?.allowedModules)
+      ? (tenant.plan as any).allowedModules
+      : [];
+
+    return {
+      ...tenant,
+      totalPaid,
+      admins,
+      branches,
+      attendanceToday,
+      activeTasks,
+      planAllowedModules,
+    };
   }
 
   /**
