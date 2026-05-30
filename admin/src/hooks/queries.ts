@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { tenantsApi, plansApi, leadsApi, settingsApi, platformApi, taskManagerApi } from '../api';
+import { tenantsApi, plansApi, leadsApi, settingsApi, platformApi, taskManagerApi, authApi } from '../api';
 
 // =============================================
 // ADMIN PANEL — Shared React Query hooks
 // =============================================
 
 export const qk = {
+  me:             ['admin', 'me'] as const,
   tenants:        ['admin', 'tenants'] as const,
   tenantStats:    ['admin', 'tenant-stats'] as const,
   tenant:         (id: string) => ['admin', 'tenant', id] as const,
@@ -18,6 +19,15 @@ export const qk = {
   clientLogos:    ['admin', 'client-logos'] as const,
   taskFunnels:    ['admin', 'task-funnels'] as const,
 };
+
+// -------- SUPER ADMIN IDENTITY --------
+export function useSuperAdminMe() {
+  return useQuery({
+    queryKey: qk.me,
+    queryFn: async () => (await authApi.me()).data as { id: string; login: string; createdAt?: string } | null,
+    staleTime: 5 * 60_000,
+  });
+}
 
 // -------- TENANTS --------
 export function useTenants() {

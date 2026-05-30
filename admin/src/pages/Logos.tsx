@@ -34,9 +34,9 @@ export default function Logos() {
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 500 * 1024) { 
-      showMsg('error', "Fayl hajmi 500KB dan kichik bo'lishi kerak"); 
-      return; 
+    if (file.size > 500 * 1024) {
+      showMsg('error', "Fayl hajmi 500KB dan kichik bo'lishi kerak");
+      return;
     }
     const reader = new FileReader();
     reader.onload = (ev) => save([...logos, ev.target?.result as string]);
@@ -58,15 +58,15 @@ export default function Logos() {
 
       {/* Header */}
       <div>
-        <h2 className="text-lg font-bold text-white tracking-tight">Mijozlar Logolari</h2>
+        <h2 className="text-lg font-bold text-slate-900 tracking-tight">Mijozlar Logolari</h2>
         <p className="text-xs text-slate-500">Landing page slayderida namoyish etiladigan mijoz hamkor logotiplari boshqaruvi</p>
       </div>
 
       {/* Upload Zone */}
-      <label className="block border border-dashed border-slate-800 hover:border-orange-500/80 rounded-xl p-8 text-center cursor-pointer transition-all bg-slate-900 hover:bg-slate-850/50">
+      <label className="block border border-dashed border-slate-300 hover:border-orange-500/80 rounded-xl p-8 text-center cursor-pointer transition-all bg-white hover:bg-orange-50/20 shadow-sm">
         <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={saving} />
-        <Upload size={24} className="mx-auto mb-2 text-slate-500" />
-        <p className="text-xs font-bold text-slate-300">Logo yuklash uchun bosing</p>
+        <Upload size={24} className="mx-auto mb-2 text-slate-400" />
+        <p className="text-xs font-bold text-slate-700">Logo yuklash uchun bosing</p>
         <p className="text-[10px] text-slate-500 font-medium mt-0.5">PNG, JPG, SVG, WebP • Maks 500KB</p>
       </label>
 
@@ -74,15 +74,15 @@ export default function Logos() {
       {logos.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {logos.map((src, i) => (
-            <div 
-              key={i} 
-              className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 h-24 flex items-center justify-center relative group transition-all"
+            <div
+              key={i}
+              className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-4 h-24 flex items-center justify-center relative group transition-all shadow-sm"
             >
-              <img src={src} alt={`Client Logo ${i + 1}`} className="max-w-full max-h-full object-contain filter grayscale opacity-50 hover:opacity-90 hover:grayscale-0 transition-all" />
-              
-              <button 
+              <img src={src} alt={`Client Logo ${i + 1}`} className="max-w-full max-h-full object-contain filter grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all" />
+
+              <button
                 onClick={() => save(logos.filter((_, j) => j !== i))}
-                className="absolute top-1.5 right-1.5 w-6 h-6 rounded bg-slate-800 hover:bg-rose-950/30 text-slate-500 hover:text-rose-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all border border-slate-750"
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all border border-slate-200"
                 title="Logoni o'chirish"
               >
                 <Trash2 size={12} />
@@ -91,8 +91,8 @@ export default function Logos() {
           ))}
         </div>
       ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
-          <Image size={32} className="mx-auto mb-2 text-slate-600" />
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+          <Image size={32} className="mx-auto mb-2 text-slate-300" />
           <p className="text-xs font-bold text-slate-500">Logotiplar yuklanmagan</p>
           <p className="text-[10px] text-slate-500 mt-0.5">Yuqoridagi maydon orqali yangi rasm yuklang.</p>
         </div>

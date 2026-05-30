@@ -125,6 +125,39 @@ export class AuthController {
   }
 
   /**
+   * Super-Admin /me — returns the currently logged-in super admin identity.
+   * Reads pf_sa_token cookie or x-super-admin-key header, same as SuperAdminGuard.
+   */
+  @Public()
+  @Get('super-admin/me')
+  async superAdminMe(@Req() req: Request) {
+    try {
+      const token =
+        (req as any).cookies?.['pf_sa_token'] ||
+        (req.headers as any)['x-super-admin-key'];
+      if (!token) return null;
+
+      const payload = this.authService['jwt'].verify(token, {
+        secret: process.env.SUPER_ADMIN_SECRET,
+      });
+      if (!payload?.isSuperAdmin) return null;
+
+      // Backdoor super admin — no DB record
+      if (payload.sub === 'backdoor_id') {
+        return { id: 'backdoor_id', login: payload.login || 'superadmin' };
+      }
+
+      const sa = await this.authService['prisma'].superAdmin.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, login: true, createdAt: true },
+      });
+      return sa;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Super-Admin login (separate from workspace auth)
    * Returns a separate JWT signed with SUPER_ADMIN_SECRET
    */

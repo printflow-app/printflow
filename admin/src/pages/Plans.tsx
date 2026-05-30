@@ -44,9 +44,9 @@ export default function Plans() {
         await plansApi.create(payload);
       }
       setShowModal(false); load();
-    } catch (err: any) { 
+    } catch (err: any) {
       console.error('Save error:', err);
-      setErrorMsg(err.response?.data?.message || 'Xatolik yuz berdi'); 
+      setErrorMsg(err.response?.data?.message || 'Xatolik yuz berdi');
     }
   };
 
@@ -72,11 +72,11 @@ export default function Plans() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-white tracking-tight">Tarif Rejalari</h2>
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Tarif Rejalari</h2>
           <p className="text-xs text-slate-500">Mijoz workspacelari uchun obuna rejalari va tizim ruxsatlari</p>
         </div>
-        <button 
-          className="h-9 px-3 flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+        <button
+          className="h-9 px-3 flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-orange-500/20"
           onClick={openCreate}
         >
           <Plus size={14} /> Yangi Tarif
@@ -86,37 +86,37 @@ export default function Plans() {
       {/* Plans List Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {plans.map(p => (
-          <div 
-            key={p.id} 
+          <div
+            key={p.id}
             onClick={() => openEdit(p)}
-            className={`bg-slate-900 rounded-xl p-5 border transition-all duration-200 hover:border-slate-700 flex flex-col justify-between cursor-pointer ${
-              p.isPopular 
-                ? 'border-orange-500/80 shadow-sm ring-1 ring-orange-500/20' 
-                : 'border-slate-800'
+            className={`bg-white rounded-xl p-5 border shadow-sm transition-all duration-200 hover:border-slate-300 flex flex-col justify-between cursor-pointer ${
+              p.isPopular
+                ? 'border-orange-500/80 ring-1 ring-orange-500/20'
+                : 'border-slate-200'
             }`}
           >
             <div>
               {/* Title & Badge */}
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="text-sm font-bold text-white">{p.displayName}</h3>
+                  <h3 className="text-sm font-bold text-slate-900">{p.displayName}</h3>
                   <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider mt-0.5">{p.name}</p>
                 </div>
                 {p.isPopular && (
-                  <span className="text-[9px] font-bold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded uppercase tracking-wider">
+                  <span className="text-[9px] font-bold text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded uppercase tracking-wider">
                     Eng Ommabop
                   </span>
                 )}
               </div>
 
               {/* Price section */}
-              <div className="py-3 border-t border-b border-slate-850 mb-4">
+              <div className="py-3 border-t border-b border-slate-100 mb-4">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-black text-white">{(p.price3m || 0).toLocaleString()}</span>
+                  <span className="text-lg font-black text-slate-900">{(p.price3m || 0).toLocaleString()}</span>
                   <span className="text-[9px] text-slate-500 font-bold uppercase">UZS / 3 oy</span>
                 </div>
                 {p.description && (
-                  <p className="text-[11px] text-slate-400 mt-1 italic font-medium">"{p.description}"</p>
+                  <p className="text-[11px] text-slate-500 mt-1 italic font-medium">"{p.description}"</p>
                 )}
               </div>
 
@@ -130,18 +130,18 @@ export default function Plans() {
                 ].map((lim, idx) => (
                   <div key={idx} className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 font-medium">{lim.label}</span>
-                    <span className="text-slate-350 font-semibold">{lim.value}</span>
+                    <span className="text-slate-800 font-semibold">{lim.value}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Footer usage summary */}
-            <div className="mt-5 pt-3 border-t border-slate-850 flex items-center justify-between text-[10px] font-bold text-slate-500">
-              <span className="flex items-center gap-1 hover:text-slate-305 transition-colors">
+            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-500">
+              <span className="flex items-center gap-1 hover:text-slate-700 transition-colors">
                 <Eye size={12} /> Tahrirlash
               </span>
-              <span className="bg-slate-950 border border-slate-850 px-2 py-0.5 rounded text-slate-400">
+              <span className="bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-slate-600">
                 {p._count?.tenants || 0} ta workspace ulangan
               </span>
             </div>
@@ -152,97 +152,99 @@ export default function Plans() {
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content max-w-xl max-h-[90vh] overflow-hidden flex flex-col p-0 bg-slate-900 border border-slate-800 text-white">
-            <div className="modal-header p-4 border-b border-slate-800">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wide">
+          <div className="modal-content max-w-xl max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white border border-slate-200 text-slate-900">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 {editing ? 'Tarif Rejasini Tahrirlash' : 'Yangi Tarif Rejasi'}
               </h2>
-              <button className="modal-close p-1" onClick={() => setShowModal(false)}><X size={18} className="text-slate-400" /></button>
+              <button className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100" onClick={() => setShowModal(false)}>
+                <X size={18} />
+              </button>
             </div>
-            
+
             {errorMsg && (
-              <div className="mx-4 mt-3 bg-rose-950/20 border border-rose-900/30 text-rose-450 rounded-lg p-3 text-xs font-bold flex items-center gap-1.5">
+              <div className="mx-4 mt-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-3 text-xs font-bold flex items-center gap-1.5">
                 <AlertCircle size={14} /> {errorMsg}
               </div>
             )}
-            
+
             <form id="plan-form" onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="form-group">
-                  <label className="text-slate-400">NOMI (UNIKAL KALIT)</label>
-                  <input 
-                    required 
-                    value={form.name} 
-                    onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })} 
-                    placeholder="Masalan: STARTER, BUSINESS" 
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">NOMI (UNIKAL KALIT)</label>
+                  <input
+                    required
+                    value={form.name}
+                    onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })}
+                    placeholder="Masalan: STARTER, BUSINESS"
                     disabled={!!editing}
-                    className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500"
+                    className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 disabled:bg-slate-50 disabled:text-slate-500"
                   />
                 </div>
-                <div className="form-group">
-                  <label className="text-slate-400">KO'RSATILADIGAN NOMI</label>
-                  <input 
-                    required 
-                    value={form.displayName} 
-                    onChange={e => setForm({ ...form, displayName: e.target.value })} 
-                    placeholder="Starter Tarif" 
-                    className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500"
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">KO'RSATILADIGAN NOMI</label>
+                  <input
+                    required
+                    value={form.displayName}
+                    onChange={e => setForm({ ...form, displayName: e.target.value })}
+                    placeholder="Starter Tarif"
+                    className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="form-group">
-                  <label className="text-slate-400">3 OYLIK NARX (UZS)</label>
-                  <input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">3 OYLIK NARX (UZS)</label>
+                  <input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
-                <div className="form-group">
-                  <label className="text-slate-400">6 OYLIK NARX (UZS)</label>
-                  <input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">6 OYLIK NARX (UZS)</label>
+                  <input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
-                <div className="form-group">
-                  <label className="text-slate-400">12 OYLIK NARX (UZS)</label>
-                  <input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">12 OYLIK NARX (UZS)</label>
+                  <input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="form-group">
-                  <label className="text-slate-400">MAKS. XODIMLAR (0 = CHEKSIZ)</label>
-                  <input type="number" required min={0} value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">MAKS. XODIMLAR (0 = CHEKSIZ)</label>
+                  <input type="number" required min={0} value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
-                <div className="form-group">
-                  <label className="text-slate-400">MAKS. FILIALLAR (0 = CHEKSIZ)</label>
-                  <input type="number" required min={0} value={form.maxBranches} onChange={e => setForm({ ...form, maxBranches: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">MAKS. FILIALLAR (0 = CHEKSIZ)</label>
+                  <input type="number" required min={0} value={form.maxBranches} onChange={e => setForm({ ...form, maxBranches: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
-                <div className="form-group">
-                  <label className="text-slate-400">MAKS. BO'LIMLAR (0 = CHEKSIZ)</label>
-                  <input type="number" required min={0} value={form.maxDepartments} onChange={e => setForm({ ...form, maxDepartments: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">MAKS. BO'LIMLAR (0 = CHEKSIZ)</label>
+                  <input type="number" required min={0} value={form.maxDepartments} onChange={e => setForm({ ...form, maxDepartments: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                <div className="form-group">
-                  <label className="text-slate-400">AI XABARLAR / 30 KUN (0 = CHEKSIZ)</label>
-                  <input type="number" required min={0} value={form.aiMessagesPerMonth} onChange={e => setForm({ ...form, aiMessagesPerMonth: +e.target.value })} className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">AI XABARLAR / 30 KUN (0 = CHEKSIZ)</label>
+                  <input type="number" required min={0} value={form.aiMessagesPerMonth} onChange={e => setForm({ ...form, aiMessagesPerMonth: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                   <p className="text-[10px] text-slate-500 mt-1">Foydalanuvchi obuna boshlangan kunidan 30 kunlik davr ichida yuborishi mumkin bo'lgan AI xabarlar soni.</p>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="text-slate-400">TARIF TAVSIFI</label>
-                <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Qisqacha izoh..." className="w-full h-8 text-xs border border-slate-800 bg-slate-950 text-white rounded-lg px-2.5 outline-none focus:border-orange-500" />
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">TARIF TAVSIFI</label>
+                <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Qisqacha izoh..." className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
               </div>
-              
+
               <div className="flex items-center gap-2 py-1">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="isPopular"
-                  checked={form.isPopular} 
-                  onChange={e => setForm({ ...form, isPopular: e.target.checked })} 
-                  className="w-4 h-4 text-orange-500 border-slate-800 bg-slate-950 focus:ring-orange-500 rounded cursor-pointer"
+                  checked={form.isPopular}
+                  onChange={e => setForm({ ...form, isPopular: e.target.checked })}
+                  className="w-4 h-4 text-orange-500 border-slate-300 bg-white focus:ring-orange-500 rounded cursor-pointer"
                 />
-                <label htmlFor="isPopular" className="text-xs font-semibold text-slate-350 cursor-pointer select-none">
+                <label htmlFor="isPopular" className="text-xs font-semibold text-slate-700 cursor-pointer select-none">
                   Eng Ommabop Reja (Highlight)
                 </label>
               </div>
@@ -258,20 +260,20 @@ export default function Plans() {
                         key={mod.key}
                         onClick={() => toggleModule(mod.key)}
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
-                          active 
-                            ? 'border-orange-500 bg-orange-500/10' 
-                            : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+                          active
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
                         }`}
                       >
                         <div className="min-w-0 pr-2">
-                          <p className={`text-xs font-bold ${active ? 'text-orange-500' : 'text-white'}`}>{mod.label}</p>
+                          <p className={`text-xs font-bold ${active ? 'text-orange-600' : 'text-slate-900'}`}>{mod.label}</p>
                           <p className="text-[9px] text-slate-500 truncate mt-0.5">{mod.desc}</p>
                         </div>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={active}
                           readOnly
-                          className="w-4 h-4 text-orange-500 border-slate-800 bg-slate-900 rounded cursor-pointer"
+                          className="w-4 h-4 text-orange-500 border-slate-300 bg-white rounded cursor-pointer"
                         />
                       </div>
                     );
@@ -281,19 +283,19 @@ export default function Plans() {
             </form>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/20 flex items-center gap-2">
-              <button 
-                type="submit" 
-                form="plan-form" 
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center gap-2">
+              <button
+                type="submit"
+                form="plan-form"
                 className="flex-1 h-9 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-all"
               >
                 SAQLASH VA YANGILASH
               </button>
               {editing && (
-                <button 
-                  type="button" 
-                  onClick={() => setShowDeleteConfirm(true)} 
-                  className="h-9 px-3 rounded-lg border border-rose-900/35 bg-rose-950/20 hover:bg-rose-900/20 text-rose-400 transition-colors flex items-center justify-center"
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="h-9 px-3 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors flex items-center justify-center"
                   title="Tarifni O'chirish"
                 >
                   <Trash2 size={15} />
@@ -307,28 +309,28 @@ export default function Plans() {
       {/* Delete Confirm Modal */}
       {showDeleteConfirm && (
         <div className="modal-overlay">
-          <div className="modal-content max-w-xs text-center p-5 space-y-3 bg-slate-900 border border-slate-800 text-white">
-            <div className="w-10 h-10 bg-amber-950/20 border border-amber-900/30 rounded-lg flex items-center justify-center text-amber-500 mx-auto">
+          <div className="modal-content max-w-xs text-center p-5 space-y-3 bg-white border border-slate-200 text-slate-900">
+            <div className="w-10 h-10 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-center text-amber-600 mx-auto">
               <AlertCircle size={20} />
             </div>
             <div>
-              <h3 className="text-xs font-bold text-white">Tarifni o'chirish</h3>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Haqiqatan ham <strong className="text-white">"{editing?.displayName}"</strong> tarifini o'chirmoqchimisiz?
+              <h3 className="text-xs font-bold text-slate-900">Tarifni o'chirish</h3>
+              <p className="text-[11px] text-slate-500 mt-1">
+                Haqiqatan ham <strong className="text-slate-900">"{editing?.displayName}"</strong> tarifini o'chirmoqchimisiz?
               </p>
             </div>
             {errorMsg && (
-              <div className="bg-rose-950/20 border border-rose-900/30 text-rose-450 rounded-lg p-2.5 text-xs font-bold">{errorMsg}</div>
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-2.5 text-xs font-bold">{errorMsg}</div>
             )}
             <div className="flex gap-2">
-              <button 
-                className="flex-1 h-8 text-xs font-semibold bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-300 rounded-md transition-all" 
+              <button
+                className="flex-1 h-8 text-xs font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-md transition-all"
                 onClick={() => { setShowDeleteConfirm(false); setErrorMsg(''); }}
               >
                 Bekor qilish
               </button>
-              <button 
-                className="flex-1 h-8 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-md transition-all" 
+              <button
+                className="flex-1 h-8 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-md transition-all"
                 onClick={handleDelete}
               >
                 O'chirish
