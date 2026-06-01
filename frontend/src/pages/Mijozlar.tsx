@@ -106,7 +106,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         { header: 'Kompaniya / Info', accessor: (c: any) => c.companyInfo || '' },
         { header: 'Jami qarzdorlik (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) },
         { header: "Jami to'langan (UZS)", accessor: (c: any) => Number(c.totalPaid || 0) },
-        { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) - Number(c.totalPaid || 0) },
+        { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => Math.max(0, Number(c.totalDebt || 0) - Number(c.totalPaid || 0)) },
         { header: 'Yaratilgan', accessor: (c: any) => formatDate(c.createdAt) },
       ],
     });
@@ -250,7 +250,8 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     const b = c.totalDebt - c.totalPaid;
     return b > 0 ? s + b : s;
   }, 0);
-  const totalCreditors = customers.filter(c => (c.totalDebt - c.totalPaid) < 0).length;
+  // Hisobi yopilgan mijozlar: qarzi qolmagan (ortiqcha to'lov "haqdorlik" sifatida ko'rsatilmaydi).
+  const totalSettled = customers.filter(c => (c.totalDebt - c.totalPaid) <= 0).length;
 
   if (isLoading) return <SkeletonTable rows={8} cols={6} />;
 
@@ -327,9 +328,9 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           <p className="text-[8px] font-bold text-rose-400 uppercase mb-1 tracking-widest">Umumiy Qarzlar</p>
           <h4 className="text-lg font-bold text-rose-600 truncate">{formatCurrency(totalDebtAmount)}</h4>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[8px] font-bold text-orange-400 uppercase mb-1 tracking-widest">Haqdorlar</p>
-          <h4 className="text-lg font-bold text-orange-600">{totalCreditors}</h4>
+        <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm hover:shadow-md transition-all">
+          <p className="text-[8px] font-bold text-emerald-400 uppercase mb-1 tracking-widest">Hisobi yopilgan</p>
+          <h4 className="text-lg font-bold text-emerald-600">{totalSettled}</h4>
         </div>
       </div>
 
@@ -456,8 +457,8 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                           <td className="px-5 font-bold text-[11px] text-slate-600">{formatCurrency(c.totalDebt)}</td>
                           <td className="px-5 font-bold text-[11px] text-emerald-600">{formatCurrency(c.totalPaid)}</td>
                           <td className="px-5">
-                            <span className={`px-2 py-1 rounded-lg text-[9px] font-bold border uppercase tracking-tight ${balance > 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : balance < 0 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                              {balance > 0 ? formatCurrency(balance) : balance < 0 ? `Haqdor: ${formatCurrency(Math.abs(balance))}` : 'Yopilgan'}
+                            <span className={`px-2 py-1 rounded-lg text-[9px] font-bold border uppercase tracking-tight ${balance > 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                              {balance > 0 ? formatCurrency(balance) : 'Yopilgan'}
                             </span>
                           </td>
                           <td className="px-5 text-right pr-6" onClick={e => e.stopPropagation()}>
