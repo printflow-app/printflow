@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, Search, UserPlus, CheckCircle2, Clock, X,
@@ -379,8 +380,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     recalculatePrice({ selectedOptionIds: newIds });
   };
 
-  const addItemToOrder = () => {
-    if (!currentOrderService.serviceId) return;
+  // Joriy tanlangan xizmatdan buyurtma qatori (item) quradi. State o'zgartirmaydi —
+  // shu sababli ham "RO'YXATGA QO'SHISH" tugmasi, ham submit paytida ishlatish mumkin.
+  // serviceId tanlanmagan bo'lsa null qaytaradi.
+  const buildOrderItem = () => {
+    if (!currentOrderService.serviceId) return null;
     const svc = services.find(s => s.id === currentOrderService.serviceId);
     // Variantlardan to'liq tozalangan ro'yxat — bo'sh qatorlarni o'tkazib yuboramiz
     const cleanedVariants = (currentOrderService.variants || [])
@@ -396,7 +400,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     const variantsQty = cleanedVariants.reduce((s, v) => s + v.soni, 0);
     const effectiveQty = variantsQty > 0 ? variantsQty : (Number(currentOrderService.quantity) || 1);
 
-    const newItem = {
+    return {
       ...currentOrderService,
       quantity: effectiveQty,
       variants: cleanedVariants.length > 0 ? cleanedVariants : undefined,
@@ -404,6 +408,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       description: `${svc?.name} (${effectiveQty} ${svc?.unit || 'dona'})`,
       optionsSummary: selectedServiceOptions.filter(o => currentOrderService.selectedOptionIds.includes(o.id)).map(o => `${o.name}: ${o.value}`).join(', ')
     };
+  };
+
+  const addItemToOrder = () => {
+    const newItem = buildOrderItem();
+    if (!newItem) return;
 
     setNewTaskForm(f => {
       const newItems = [...f.items, newItem];
@@ -427,7 +436,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newTaskForm.items.length === 0) {
+
+    // Foydalanuvchi xizmatni tanlab, lekin "RO'YXATGA QO'SHISH"ni bosmagan bo'lsa —
+    // tanlovini yo'qotmaslik uchun shu xizmatni avtomatik buyurtmaga qo'shamiz.
+    const pendingItem = buildOrderItem();
+    const effectiveItems = pendingItem ? [...newTaskForm.items, pendingItem] : newTaskForm.items;
+
+    if (effectiveItems.length === 0) {
       showStatus('error', "Kamida bitta xizmat qo'shing!");
       return;
     }
@@ -450,7 +465,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     }
 
     // Check if justification is needed for price override
-    const calculatedTotal = Number(newTaskForm.totalAmount);
+    // Jami — effectiveItems'dan qayta hisoblanadi (pending item totalAmount'ga kirmagan bo'lishi mumkin).
+    const calculatedTotal = effectiveItems.reduce((sum, it) => sum + (Number(it.totalAmount) || 0), 0);
     const finalTotal = newTaskForm.manualTotal ? Number(newTaskForm.manualTotal) : calculatedTotal;
 
     if (finalTotal !== calculatedTotal && calculatedTotal !== 0 && !newTaskForm.justification) {
@@ -473,11 +489,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         branchId: activeBranchId || undefined,
         executorBranchId: executorType === 'branch' ? executorBranchId : null,
         departmentId: selectedDepartmentId || null,
-        items: newTaskForm.items.map(it => {
+        items: effectiveItems.map(it => {
           let adjustedTotal = it.totalAmount;
           if (finalTotal !== calculatedTotal) {
             if (calculatedTotal === 0) {
-              adjustedTotal = finalTotal / newTaskForm.items.length;
+              adjustedTotal = finalTotal / effectiveItems.length;
             } else {
               adjustedTotal = it.totalAmount * (finalTotal / calculatedTotal);
             }
@@ -948,11 +964,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     <div className="space-y-4 sm:space-y-6 flex flex-col h-full animate-fade-in">
 
       {/* Global Status Notification */}
-      {statusMessage && (
-        <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+      {/* Portal + z-[2000]: Modal (z-[1000], backdrop-blur) ochiq bo'lganda
+          toast modal ortida ko'rinmay qolmasligi uchun. Buyurtma qo'shishdagi
+          validatsiya xatolari shu toast orqali ko'rsatiladi. */}
+      {statusMessage && createPortal(
+        <div className={`fixed top-6 right-6 z-[2000] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
           {statusMessage.type === 'success' ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />}
           <span className="font-bold text-sm tracking-tight">{statusMessage.text}</span>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Top Header */}
