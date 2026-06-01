@@ -256,7 +256,10 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       ]);
     },
     {
-      intervalMs: 20000,
+      // Focus-only: no idle polling (was a visible 20s "reload" of the whole
+      // records + monthly matrix). Still refreshes when the tab regains focus
+      // and after any mutation handler calls fetch*().
+      intervalMs: 0,
       paused: isSettingsModalOpen || !!rejectingRequest,
     },
   );

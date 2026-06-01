@@ -385,10 +385,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // Shift+P — Price List modalni darhol ochish (Gmail-uslubidagi bitta tugma).
-  // Brauzer/OS shortcut'lari bilan to'qnashmaydi. Foydalanuvchi input/textarea/
-  // contenteditable'da yozayotgan bo'lsa ishga tushmaydi — odatdagi yozish davom etadi.
-  // Sozlamalar.tsx 'pf:open-price-list' custom event'iga ulangan.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'P' || !e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -404,11 +400,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // Sidebar notification badges — har bir tab ustida "yangi" elementlar soni
   const { counts: sidebarCounts, refresh: refreshSidebarCounts } = useSidebarCounts(activeBranchId);
 
-  // Aktiv tab har safar o'zgarganda uni "ko'rilgan" deb belgilaymiz va sanoqlarni yangilaymiz.
-  // Bu URL orqali sahifaga to'g'ridan kelganda (browser back/forward) ham ishlaydi.
   useEffect(() => {
     markTabSeen(activeTab);
     refreshSidebarCounts();
@@ -834,17 +827,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || !!(p as any).canViewBranches) && <Filiallar currentUser={currentUser} />}
               {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports) && <Hisobotlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {/* Xizmatlar katalogi — alohida tab, lekin Sozlamalar komponentini render qiladi.
-                  Foydalanuvchining ruxsatlariga qarab Sozlamalar faqat services bo'limini ko'rsatadi
-                  (boshqa bo'limlar o'z permission'lari bilan gated). Paradoxni hal qiladi:
-                  canViewServices bor lekin canViewSettings yo'q foydalanuvchilar shu yo'l bilan kiradi. */}
               {activeTab === 'xizmatlar-katalog' && (p.canViewServices || p.canManageServices || isAdmin) && <Sozlamalar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'qollanma' && <Qollanma />}
 
-              {/* Unauthorized message if tab is set but permission removed.
-                  Special tabs (qollanma, xizmatlar-katalog, filiallar, billing)
-                  yashirin — navGroups'da yo'q, lekin permission o'z render shartida tekshiriladi.
-                  Shularni unauthorized fallback'dan istisno qilamiz. */}
               {(() => {
                 const SPECIAL_TABS = new Set(['qollanma', 'xizmatlar-katalog', 'filiallar', 'billing']);
                 if (SPECIAL_TABS.has(activeTab)) return null;

@@ -11,6 +11,8 @@ interface UseAutoRefreshOptions {
  * Real-time refresh: polls while tab visible, pauses when hidden,
  * refreshes immediately when tab regains focus or visibility.
  * Pass `paused: true` while a modal/edit is open to avoid clobbering user input.
+ * Pass `intervalMs: 0` for focus-only mode (no idle polling) — still refreshes
+ * when the tab regains focus/visibility, but won't auto-refresh while you sit idle.
  */
 export function useAutoRefresh(
   callback: () => void | Promise<void>,
@@ -31,7 +33,8 @@ export function useAutoRefresh(
       if (document.visibilityState === 'visible') cbRef.current();
     };
 
-    const id = window.setInterval(tick, intervalMs);
+    // intervalMs <= 0 → focus-only mode: skip the idle poll, keep focus/visibility refresh.
+    const id = intervalMs > 0 ? window.setInterval(tick, intervalMs) : undefined;
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible') cbRef.current();
@@ -42,7 +45,7 @@ export function useAutoRefresh(
     if (refreshOnFocus) window.addEventListener('focus', onFocus);
 
     return () => {
-      window.clearInterval(id);
+      if (id !== undefined) window.clearInterval(id);
       document.removeEventListener('visibilitychange', onVisibility);
       if (refreshOnFocus) window.removeEventListener('focus', onFocus);
     };
