@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, Bell, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake, FileText, Image as ImageIcon } from 'lucide-react';
 import { PriceListModal } from '../components/PriceListModal';
 import { PriceListBrandingSection } from '../components/PriceListBrandingSection';
@@ -614,12 +615,12 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
       {activeSettingsTab === 'general' && (
         <div className="space-y-10 animate-fade-in">
-          {/* Status notification */}
-          {statusMessage && (
-            <div className={`fixed top-4 right-4 z-[200] p-3 rounded-xl shadow-lg flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+          {statusMessage && createPortal(
+            <div className={`fixed top-4 right-4 z-[2000] p-3 rounded-xl shadow-lg flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
               {statusMessage.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
               <span className="font-bold text-xs tracking-tight">{statusMessage.text}</span>
-            </div>
+            </div>,
+            document.body,
           )}
       
       {/* Roles Section */}
