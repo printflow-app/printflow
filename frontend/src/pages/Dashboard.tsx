@@ -485,7 +485,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900 font-sans relative overflow-x-hidden">
+    <div className="h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900 font-sans relative overflow-hidden">
 
       <header className="md:hidden h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
