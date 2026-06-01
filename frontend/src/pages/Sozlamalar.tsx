@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, Bell, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake, FileText, Image as ImageIcon } from 'lucide-react';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake, FileText, Image as ImageIcon } from 'lucide-react';
 import { PriceListModal } from '../components/PriceListModal';
 import { PriceListBrandingSection } from '../components/PriceListBrandingSection';
 import { ImageUpload } from '../components/ImageUpload';
-import { rolesApi, paymentTypesApi, expenseTypesApi, tasksApi, servicesApi, inventoryApi, settingsApi, branchesApi } from '../api';
-import { useRoles, usePaymentTypes, useExpenseTypes, useTaskColumns, useServices, useEmployees, useInvalidate } from '../hooks/queries';
-import { useQuery } from '@tanstack/react-query';
+import { rolesApi, paymentTypesApi, expenseTypesApi, servicesApi, inventoryApi, settingsApi, branchesApi } from '../api';
+import { useRoles, usePaymentTypes, useExpenseTypes, useTaskColumns, useServices, useInvalidate } from '../hooks/queries';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { SkeletonCardGrid } from '../components/Skeleton';
@@ -22,56 +21,10 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const roles = (rawRoles as any[]).filter((r: any) => r.name?.toLowerCase() !== 'admin');
   const { data: paymentTypes = [] } = usePaymentTypes();
   const { data: expenseTypes = [] } = useExpenseTypes();
-  const { data: kanbanColumns = [], isLoading: kcLoading } = useTaskColumns(activeBranchId);
+  const { isLoading: kcLoading } = useTaskColumns(activeBranchId);
   const { data: services = [] } = useServices(activeBranchId);
-  const { data: employees = [] } = useEmployees();
   const invalidate = useInvalidate();
 
-  // System settings (notif prefs + prepayment) — custom queries
-  const notifPrefsQuery = useQuery({
-    queryKey: ['settings-notifPrefs'],
-    queryFn: async () => {
-      const r = await settingsApi.get('TELEGRAM_BOT_PREFS');
-      return r.data && typeof r.data === 'object' ? {
-        hisobotReceivers: r.data.hisobotReceivers || [],
-        newOrderReceivers: r.data.newOrderReceivers || [],
-        reminderReceivers: r.data.reminderReceivers || [],
-      } : { hisobotReceivers: [], newOrderReceivers: [], reminderReceivers: [] };
-    },
-    staleTime: 5 * 60_000,
-  });
-  const [notifPrefs, setNotifPrefs] = useState<{
-    hisobotReceivers: string[];
-    newOrderReceivers: string[];
-    reminderReceivers: string[];
-    hisobotEnabled: boolean;
-    newOrderEnabled: boolean;
-    reminderEnabled: boolean;
-  }>({
-    hisobotReceivers: [],
-    newOrderReceivers: [],
-    reminderReceivers: [],
-    hisobotEnabled: true,
-    newOrderEnabled: true,
-    reminderEnabled: true,
-  });
-
-  // Sync notifPrefs with RQ data — merge with defaults to ensure new enable fields
-  // are present even when server returned an older settings shape.
-  useEffect(() => {
-    if (notifPrefsQuery.data) {
-      const d = notifPrefsQuery.data as any;
-      setNotifPrefs({
-        hisobotReceivers: d.hisobotReceivers ?? [],
-        newOrderReceivers: d.newOrderReceivers ?? [],
-        reminderReceivers: d.reminderReceivers ?? [],
-        hisobotEnabled: d.hisobotEnabled !== false,
-        newOrderEnabled: d.newOrderEnabled !== false,
-        reminderEnabled: d.reminderEnabled !== false,
-      });
-    }
-  }, [notifPrefsQuery.data]);
-  const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
   const [minPrepaymentPct, setMinPrepaymentPct] = useState(70);
   const [savingPrepayment, setSavingPrepayment] = useState(false);
   // Davomat — GPS Geofencing
@@ -99,7 +52,6 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     invalidate.taskColumns();
     invalidate.services();
     invalidate.employees();
-    notifPrefsQuery.refetch();
     // One-off settings (prepayment threshold + GPS geofencing) — not yet on RQ
     try {
       const pctRes = await settingsApi.get('MIN_PREPAYMENT_PERCENTAGE');
@@ -205,18 +157,6 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     );
   };
 
-  const saveNotifPrefs = async (next: typeof notifPrefs) => {
-    setNotifPrefs(next);
-    setSavingNotifPrefs(true);
-    try {
-      await settingsApi.set('TELEGRAM_BOT_PREFS', next);
-      showStatus('success', 'Xabarnoma sozlamalari saqlandi');
-    } catch {
-      showStatus('error', 'Xabarnoma sozlamalarini saqlashda xato');
-    } finally {
-      setSavingNotifPrefs(false);
-    }
-  };
 
 
 
@@ -361,26 +301,6 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     }
   };
 
-  // Kanban Column Logic
-  const [editingColId, setEditingColId] = useState<string | null>(null);
-  const [editColTitle, setEditColTitle] = useState('');
-
-  const handleUpdateColumn = async (id: string) => {
-    if (!editColTitle) return;
-    try {
-      // branchId — backend ustun shu filialga tegishlimi tekshiradi.
-      // Aktiv filtr bo'lmasa (Barcha filiallar), ustunning O'Z branchId'ini
-      // topib yuboramiz — aks holda backend `branchId IS NULL` ni qidirib
-      // topa olmaydi va "Bosqich topilmadi" xatosini qaytaradi.
-      const col = (kanbanColumns as any[]).find((c: any) => c.id === id);
-      const branchId = activeBranchId || col?.branchId || undefined;
-      await tasksApi.updateColumn(id, { title: editColTitle, branchId });
-      setEditingColId(null);
-      fetchData(true);
-    } catch (err) {
-      showStatus('error', "Bosqichni tahrirlashda xato!");
-    }
-  };
 
   // Permissions grouped by page — har bo'lim uchun alohida ruxsat + Lucide icon
   const permissionGroups: {
@@ -911,68 +831,6 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         </section>
       )}
 
-      {/* Kanban Columns Section (Editing Titles) */}
-      {(isAdmin || p.canManageKanbanColumns) && (
-        <section className="space-y-6">
-           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-             <div>
-               <h3 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
-                  <LayoutGrid className="text-sky-400" size={28} /> Kanban Bosqichlari
-               </h3>
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Sotuv varonkasi bosqichlarini tahrirlash</p>
-             </div>
-           </div>
-
-           <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                 {kanbanColumns.map(col => {
-                   const isEditingCol = editingColId === col.id;
-                   return (
-                      <div key={col.id} className={`group p-5 rounded-2xl border-2 transition-all duration-300 ${isEditingCol ? 'bg-white border-orange-400 shadow-lg scale-105' : 'bg-slate-50/50 border-transparent hover:bg-white hover:border-orange-100 hover:shadow-md'}`}>
-                         {isEditingCol ? (
-                           <div className="space-y-3">
-                              <label className="text-[9px] font-bold text-orange-500 uppercase tracking-widest">Bosqich nomi</label>
-                              <input 
-                                type="text" 
-                                autoFocus
-                                value={editColTitle}
-                                onChange={(e) => setEditColTitle(e.target.value)}
-                                className="w-full h-10 text-xs font-bold bg-white border-2 border-orange-100 rounded-xl px-4 outline-none focus:border-orange-500 uppercase"
-                              />
-                              <div className="flex gap-2">
-                                 <button onClick={() => handleUpdateColumn(col.id)} className="flex-1 h-9 bg-orange-500 text-white text-[10px] font-bold rounded-lg hover:bg-orange-600 transition-all uppercase tracking-widest">SAQLASH</button>
-                                 <button onClick={() => setEditingColId(null)} className="flex-1 h-9 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-lg hover:bg-slate-200 uppercase tracking-widest">BEKOR</button>
-                              </div>
-                           </div>
-                         ) : (
-                           <div className="flex flex-col gap-3">
-                              <div className="flex justify-between items-start">
-                                 <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-orange-500 shadow-sm border border-slate-100 group-hover:bg-orange-500 group-hover:text-white transition-all">
-                                    <LayoutGrid size={16}/>
-                                 </div>
-                                 <div className="flex gap-1">
-                                    <button onClick={() => { setEditingColId(col.id); setEditColTitle(col.title); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-orange-500 hover:border-orange-200 border border-slate-100 flex items-center justify-center transition-all">
-                                       <Edit3 size={12}/>
-                                    </button>
-                                    <button onClick={() => { setConfirmModal({ isOpen: true, title: "Bosqichni o'chirish", message: "${col.title} bosqichi o'chirilsinmi?", onConfirm: () => { tasksApi.deleteColumn(col.id, activeBranchId || col.branchId).then(() => fetchData(true)); setConfirmModal(null); } }); }} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:border-rose-200 border border-slate-100 flex items-center justify-center transition-all">
-                                       <Trash2 size={12}/>
-                                    </button>
-                                 </div>
-                              </div>
-                              <div>
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Tartib: #{col.orderIdx + 1}</p>
-                                 <h4 className="text-sm font-bold text-slate-800 uppercase tracking-tight truncate">{col.title}</h4>
-                              </div>
-                           </div>
-                         )}
-                      </div>
-                   );
-                 })}
-              </div>
-           </div>
-        </section>
-      )}
-
       {/* General Settings Section */}
       {(isAdmin || p.canManageGeneralSettings) && (
         <section className="space-y-6">
@@ -1150,136 +1008,6 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               </div>
             )}
           </div>
-        </section>
-      )}
-
-      {/* Bot Notifications Section */}
-      {(isAdmin || p.canManageNotifications) && (
-        <section className="space-y-6">
-           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-             <div>
-               <h3 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
-                  <Bell className="text-sky-500" size={28} /> Telegram Xabarnomalar
-               </h3>
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Bot orqali keladigan bildirishnomalar sozlamalari</p>
-             </div>
-           </div>
-           
-           <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-3">
-                   <div className="flex items-center justify-between">
-                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Hisobotlar (Kunlik/Haftalik)</label>
-                     <button
-                       type="button"
-                       onClick={() => setNotifPrefs(prev => ({ ...prev, hisobotEnabled: !prev.hisobotEnabled }))}
-                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${notifPrefs.hisobotEnabled ? 'bg-sky-500' : 'bg-slate-300'}`}
-                       title={notifPrefs.hisobotEnabled ? "Yoqilgan — bosish o'chiradi" : "O'chiq — bosish yoqadi"}
-                     >
-                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${notifPrefs.hisobotEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
-                     </button>
-                   </div>
-                   <div className={`w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1 ${!notifPrefs.hisobotEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
-                     {employees.map(emp => (
-                       <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
-                         <input
-                           type="checkbox"
-                           className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
-                           checked={notifPrefs.hisobotReceivers.includes(emp.id)}
-                           onChange={(e) => {
-                             if (e.target.checked) {
-                               setNotifPrefs(prev => ({...prev, hisobotReceivers: [...prev.hisobotReceivers, emp.id]}));
-                             } else {
-                               setNotifPrefs(prev => ({...prev, hisobotReceivers: prev.hisobotReceivers.filter(id => id !== emp.id)}));
-                             }
-                           }}
-                         />
-                         <span className="text-slate-700 text-xs font-bold">{emp.fullName}</span>
-                       </label>
-                     ))}
-                   </div>
-                   <p className="text-[9px] text-slate-400 italic">Hisobot yuboriladigan xodimlar (Keraklilarini belgilang)</p>
-                </div>
-
-                <div className="space-y-3">
-                   <div className="flex items-center justify-between">
-                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Yangi Buyurtmalar</label>
-                     <button
-                       type="button"
-                       onClick={() => setNotifPrefs(prev => ({ ...prev, newOrderEnabled: !prev.newOrderEnabled }))}
-                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${notifPrefs.newOrderEnabled ? 'bg-sky-500' : 'bg-slate-300'}`}
-                       title={notifPrefs.newOrderEnabled ? "Yoqilgan — bosish o'chiradi" : "O'chiq — bosish yoqadi"}
-                     >
-                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${notifPrefs.newOrderEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
-                     </button>
-                   </div>
-                   <div className={`w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1 ${!notifPrefs.newOrderEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
-                     {employees.map(emp => (
-                       <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
-                         <input
-                           type="checkbox"
-                           className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
-                           checked={notifPrefs.newOrderReceivers.includes(emp.id)}
-                           onChange={(e) => {
-                             if (e.target.checked) {
-                               setNotifPrefs(prev => ({...prev, newOrderReceivers: [...prev.newOrderReceivers, emp.id]}));
-                             } else {
-                               setNotifPrefs(prev => ({...prev, newOrderReceivers: prev.newOrderReceivers.filter(id => id !== emp.id)}));
-                             }
-                           }}
-                         />
-                         <span className="text-slate-700 text-xs font-bold">{emp.fullName}</span>
-                       </label>
-                     ))}
-                   </div>
-                   <p className="text-[9px] text-slate-400 italic">Yangi buyurtma tushganda kimlarga xabar borishi kerak (Keraklilarini belgilang)</p>
-                </div>
-
-                <div className="space-y-3">
-                   <div className="flex items-center justify-between">
-                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Muddat Eslatmalari</label>
-                     <button
-                       type="button"
-                       onClick={() => setNotifPrefs(prev => ({ ...prev, reminderEnabled: !prev.reminderEnabled }))}
-                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${notifPrefs.reminderEnabled ? 'bg-sky-500' : 'bg-slate-300'}`}
-                       title={notifPrefs.reminderEnabled ? "Yoqilgan — bosish o'chiradi" : "O'chiq — bosish yoqadi"}
-                     >
-                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${notifPrefs.reminderEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
-                     </button>
-                   </div>
-                   <div className={`w-full h-40 bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm font-bold overflow-y-auto custom-scroll flex flex-col gap-1 ${!notifPrefs.reminderEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
-                     {employees.map(emp => (
-                       <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-lg cursor-pointer transition-all">
-                         <input
-                           type="checkbox"
-                           className="w-4 h-4 rounded text-sky-500 focus:ring-sky-500 border-slate-300 cursor-pointer"
-                           checked={notifPrefs.reminderReceivers.includes(emp.id)}
-                           onChange={(e) => {
-                             if (e.target.checked) {
-                               setNotifPrefs(prev => ({...prev, reminderReceivers: [...prev.reminderReceivers, emp.id]}));
-                             } else {
-                               setNotifPrefs(prev => ({...prev, reminderReceivers: prev.reminderReceivers.filter(id => id !== emp.id)}));
-                             }
-                           }}
-                         />
-                         <span className="text-slate-700 text-xs font-bold">{emp.fullName}</span>
-                       </label>
-                     ))}
-                   </div>
-                   <p className="text-[9px] text-slate-400 italic">Muddat oz qolganda va tugaganda eslatmalar kimlarga borishi kerak (Keraklilarini belgilang)</p>
-                </div>
-             </div>
-             
-             <div className="mt-6 flex justify-end">
-                <button 
-                  onClick={() => saveNotifPrefs(notifPrefs)} 
-                  disabled={savingNotifPrefs}
-                  className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs uppercase px-8 h-12 rounded-xl shadow-lg shadow-sky-500/20 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {savingNotifPrefs ? 'SAQLANMOQDA...' : 'SAQLASH'}
-                </button>
-             </div>
-           </div>
         </section>
       )}
 
