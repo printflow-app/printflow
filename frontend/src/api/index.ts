@@ -44,10 +44,55 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor to handle SUBSCRIPTION_EXPIRED
+// =============================================
+// RETRY WITH BACKOFF — rate-limit (429) & transient failures
+//
+// Without this, a 429 (or a brief network/5xx blip) bubbles straight to React
+// Query, which renders it as an empty list (components default `data` to []).
+// That's the "data disappears on refresh / on some devices" bug. Here we retry
+// transparently with backoff so a momentary throttle becomes a slightly delayed
+// success instead of a blank screen.
+//
+// Safety:
+//  - 429 is ALWAYS safe to retry, regardless of HTTP method: ThrottlerGuard rejects
+//    the request BEFORE the handler runs, so no side effect occurred even for POST.
+//  - Other transient errors (no response / 5xx) are retried ONLY for idempotent
+//    reads (GET/HEAD) — never for POST/PUT/PATCH/DELETE, to avoid double-submits.
+// =============================================
+const MAX_RETRIES = 3;
+
+function computeRetryDelay(error: any, attempt: number): number {
+  // Honor server's Retry-After (seconds) when present (throttler sets it).
+  const retryAfter = error?.response?.headers?.['retry-after'];
+  if (retryAfter !== undefined) {
+    const secs = Number(retryAfter);
+    if (!Number.isNaN(secs)) return Math.min(secs * 1000, 15_000);
+  }
+  // Exponential backoff with jitter, capped at 8s.
+  return Math.min(500 * 2 ** (attempt - 1), 8_000) + Math.floor(Math.random() * 300);
+}
+
+// Interceptor: retry first, then handle SUBSCRIPTION_EXPIRED / session expiry.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const cfg: any = error.config;
+    if (cfg) {
+      const status = error.response?.status;
+      const method = String(cfg.method || 'get').toLowerCase();
+      const idempotent = method === 'get' || method === 'head';
+      const isThrottled = status === 429;
+      const isTransient = !error.response || (status >= 500 && status < 600);
+      const retryable = isThrottled || (isTransient && idempotent);
+
+      cfg.__retryCount = cfg.__retryCount || 0;
+      if (retryable && cfg.__retryCount < MAX_RETRIES) {
+        cfg.__retryCount += 1;
+        await new Promise((resolve) => setTimeout(resolve, computeRetryDelay(error, cfg.__retryCount)));
+        return api(cfg);
+      }
+    }
+
     if (error.response?.status === 403 && error.response?.data?.message === 'SUBSCRIPTION_EXPIRED') {
       window.dispatchEvent(new CustomEvent('subscription_expired'));
     }

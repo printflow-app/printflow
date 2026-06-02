@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { JwtModule } from '@nestjs/jwt';
 
 // Infrastructure
@@ -11,6 +11,7 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 
 // Guards & Interceptors
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { UserThrottlerGuard } from './common/guards/user-throttler.guard';
 import { FeatureGuard } from './common/guards/feature.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { TenantInterceptor } from './common/tenant/tenant.interceptor';
@@ -101,10 +102,11 @@ import { SuperAdminTasksModule } from './modules/super-admin-tasks/super-admin-t
     SuperAdminTasksModule,
   ],
   providers: [
-    // Global rate limiting guard
+    // Global rate limiting guard — bucketed per authenticated user, not per IP
+    // (so one shared office IP no longer means one shared 200/min bucket).
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: UserThrottlerGuard,
     },
 
     // Global JWT auth guard — protects ALL routes by default
