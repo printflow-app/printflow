@@ -1364,10 +1364,21 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
 
       <div className="space-y-4">
         {services.length === 0 && (
-          <div className="bg-white rounded-3xl border border-dashed border-slate-200 py-20 flex flex-col items-center gap-3 text-slate-300">
-            <Tag size={40} />
-            <p className="font-bold uppercase tracking-widest text-xs">Hozircha xizmatlar yo'q</p>
-          </div>
+          // Catalog is strictly branch-scoped: with no active branch (multi-branch
+          // tenant on "Barcha filiallar") the list is empty even though services
+          // exist. Guide the user to pick a branch instead of implying none exist.
+          !activeBranchId && branches.length > 1 ? (
+            <div className="bg-white rounded-3xl border border-dashed border-orange-200 py-20 flex flex-col items-center gap-3 text-orange-300">
+              <Layers size={40} />
+              <p className="font-bold uppercase tracking-widest text-xs text-orange-400">Avval yuqoridan filialni tanlang</p>
+              <p className="text-[11px] text-slate-400 normal-case tracking-normal font-medium">Xizmatlar katalogi har bir filialga alohida bog'langan</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl border border-dashed border-slate-200 py-20 flex flex-col items-center gap-3 text-slate-300">
+              <Tag size={40} />
+              <p className="font-bold uppercase tracking-widest text-xs">Hozircha xizmatlar yo'q</p>
+            </div>
+          )
         )}
         {services.map(svc => {
           const isExpanded = expandedId === svc.id;
