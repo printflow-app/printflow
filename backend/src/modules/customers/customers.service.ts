@@ -14,7 +14,7 @@ export class CustomersService {
   // on-demand via /customers/:id/details when a row is expanded. Returning
   // them per-customer in the list caused multi-MB payloads on Railway/Vercel.
   async findAll(branchId?: string, _includeDetails = false) {
-    return this.prisma.customer.findMany({
+    const customers = await this.prisma.customer.findMany({
       where:
         branchId === '__main__'
           ? { branchId: null }
@@ -26,6 +26,42 @@ export class CustomersService {
         contacts: { orderBy: { isPrimary: 'desc' } },
       },
     });
+    // totalDebt/totalPaid ustunlari saqlanadigan hisoblagich (counter) edi va
+    // vaqt o'tib manba yozuvlardan drift qilardi (15/16 mijozda noto'g'ri balans).
+    // Endi ularni manbadan — aktiv tasklar va kirim tranzaksiyalardan — hisoblaymiz,
+    // shunda balans doim ekrandagi "Buyurtmalar" + "To'lovlar Tarixi" ga mos keladi.
+    return this.withDerivedTotals(customers);
+  }
+
+  // Bir nechta mijoz uchun totalDebt (aktiv tasklar summasi) va totalPaid
+  // (kirim tranzaksiyalar summasi) ni ikkita groupBy bilan hisoblab, qatorlarga
+  // qayta yozadi. N+1 emas — har biri bitta so'rov.
+  private async withDerivedTotals<T extends { id: string }>(customers: T[]): Promise<T[]> {
+    if (customers.length === 0) return customers;
+    const ids = customers.map(c => c.id);
+    const [taskSums, paidSums] = await Promise.all([
+      this.prisma.task.groupBy({
+        by: ['customerId'],
+        where: { customerId: { in: ids }, isArchived: false } as any,
+        _sum: { totalAmount: true },
+      }),
+      this.prisma.transaction.groupBy({
+        by: ['customerId'],
+        where: { customerId: { in: ids }, type: 'kirim' },
+        _sum: { amount: true },
+      }),
+    ]);
+    const debtBy = Object.fromEntries(
+      taskSums.map((t: any) => [t.customerId, Number(t._sum.totalAmount || 0)]),
+    );
+    const paidBy = Object.fromEntries(
+      paidSums.map((t: any) => [t.customerId, Number(t._sum.amount || 0)]),
+    );
+    return customers.map(c => ({
+      ...c,
+      totalDebt: debtBy[c.id] ?? 0,
+      totalPaid: paidBy[c.id] ?? 0,
+    }));
   }
 
   // Lazy-loaded expanded row payload — recent tasks + recent transactions.
@@ -155,19 +191,24 @@ export class CustomersService {
   }
 
   async getTopCustomers(limit = 10) {
+    // Saralash hisoblangan totalPaid (kirim tranzaksiyalar) bo'yicha bo'lishi kerak —
+    // saqlangan ustun drift qilgani uchun unga ishonmaymiz. Barcha mijozni olib,
+    // manbadan hisoblab, keyin saralaymiz (mijozlar soni kichik).
     const customers = await this.prisma.customer.findMany({
       include: { _count: { select: { tasks: true } } },
-      orderBy: { totalPaid: 'desc' },
-      take: limit,
     });
-    return customers.map(c => ({
-      id: c.id,
-      name: c.name,
-      phone: c.phone,
-      totalDebt: c.totalDebt,
-      totalPaid: c.totalPaid,
-      orderCount: c._count.tasks,
-    }));
+    const withTotals = await this.withDerivedTotals(customers as any[]);
+    return (withTotals as any[])
+      .sort((a, b) => Number(b.totalPaid) - Number(a.totalPaid))
+      .slice(0, limit)
+      .map(c => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        totalDebt: c.totalDebt,
+        totalPaid: c.totalPaid,
+        orderCount: c._count.tasks,
+      }));
   }
 
   async getOrderHistory(customerId: string) {
