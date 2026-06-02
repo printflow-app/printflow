@@ -108,20 +108,28 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Global branch filter (multiBranch feature)
-  const [activeBranchId, setActiveBranchId] = useState<string>(() => localStorage.getItem('pf_active_branch') || '');
+  // Key is tenant-scoped: the same browser may manage multiple workspaces, and a
+  // branch id from tenant A is meaningless for tenant B. A shared key let stale
+  // cross-tenant ids leak in, which broke branch-scoped views (services catalog).
+  const branchStorageKey = `pf_active_branch_${currentUser?.tenantId || 'unknown'}`;
+  const [activeBranchId, setActiveBranchId] = useState<string>(() => localStorage.getItem(branchStorageKey) || '');
   const [branches, setBranches] = useState<any[]>([]);
 
   useEffect(() => {
     branchesApi.findAll().then(r => {
       const list: any[] = r.data || [];
       setBranches(list);
-      if (list.length === 1 && !activeBranchId) {
-        setActiveBranchId(list[0].id);
-        localStorage.setItem('pf_active_branch', list[0].id);
-      }
-      if (activeBranchId && !list.some((b: any) => b.id === activeBranchId)) {
-        setActiveBranchId('');
-        localStorage.removeItem('pf_active_branch');
+      // Resolve a valid active branch in one pass: drop an id that doesn't belong to
+      // this tenant, then auto-select the sole branch if only one exists. Doing both
+      // together avoids the gap where a stale id was reset to '' but never re-selected,
+      // leaving single-branch tenants with an empty catalog and no dropdown to recover.
+      let next = activeBranchId;
+      if (next && !list.some((b: any) => b.id === next)) next = '';
+      if (!next && list.length === 1) next = list[0].id;
+      if (next !== activeBranchId) {
+        setActiveBranchId(next);
+        if (next) localStorage.setItem(branchStorageKey, next);
+        else localStorage.removeItem(branchStorageKey);
       }
     }).catch(() => {});
   }, []);
@@ -764,7 +772,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 value={activeBranchId}
                 onChange={e => {
                   setActiveBranchId(e.target.value);
-                  localStorage.setItem('pf_active_branch', e.target.value);
+                  if (e.target.value) localStorage.setItem(branchStorageKey, e.target.value);
+                  else localStorage.removeItem(branchStorageKey);
                 }}
                 className="select-minimal h-9 text-[12px] font-medium min-w-[160px]"
               >
