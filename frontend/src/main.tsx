@@ -5,6 +5,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.tsx'
 import './index.css'
 
+// After a deploy, a client still running the previous build requests chunk hashes
+// that no longer exist on the CDN, so the lazy import fails ("Failed to fetch
+// dynamically imported module"). Vite fires 'vite:preloadError' in that case —
+// reload once to pull the fresh index.html and its new hashes. Guard with a short
+// sessionStorage window so a genuinely broken chunk can't loop the page forever.
+window.addEventListener('vite:preloadError', () => {
+  const KEY = 'pf_chunk_reload_at'
+  const last = Number(sessionStorage.getItem(KEY) || 0)
+  if (Date.now() - last > 10_000) {
+    sessionStorage.setItem(KEY, String(Date.now()))
+    window.location.reload()
+  }
+})
+
 // Single QueryClient instance for the whole app. Tuned for B2B dashboards
 // where data changes server-side but not millisecond-frequently.
 const queryClient = new QueryClient({
