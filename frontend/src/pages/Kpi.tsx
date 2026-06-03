@@ -28,8 +28,15 @@ interface VelocityRow {
   velocityScore: number;
 }
 
-const fmt = (n: number) =>
-  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n);
+// Aniq raqam — yumaloqlanmaydi (mingliklar bo'sh joy bilan, kerak bo'lsa tiyingacha).
+const fmtNum = (n: number) => {
+  const v = Number(n) || 0;
+  const hasFraction = Math.abs(v % 1) > 1e-9;
+  return new Intl.NumberFormat('uz-UZ', {
+    minimumFractionDigits: hasFraction ? 2 : 0,
+    maximumFractionDigits: hasFraction ? 2 : 0,
+  }).format(v).replace(/,/g, ' ');
+};
 
 const localYMD = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -159,7 +166,7 @@ const Kpi: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentU
               <div><p className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Harakatlar</p><p className="font-bold text-base">{me.totalActivity}</p></div>
               <div><p className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Avg vaqt</p><p className="font-bold text-base">{me.avgVelocityHours ? `${me.avgVelocityHours}h` : '—'}</p></div>
               <div><p className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Kelgan kunlar</p><p className="font-bold text-base">{me.presentDays}</p></div>
-              {myVel && <div><p className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Daromad</p><p className="font-bold text-base text-emerald-400">{fmt(myVel.totalRevenue)}</p></div>}
+              {myVel && <div><p className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Daromad</p><p className="font-bold text-base text-emerald-400 tabular-nums">{fmtNum(myVel.totalRevenue)} <span className="text-[10px] text-slate-400">UZS</span></p></div>}
             </div>
           </div>
         );

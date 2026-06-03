@@ -28,8 +28,18 @@ const UZ_MONTHS_SHORT = ['Yan', 'Feb', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg',
 const fmt = (n: number) =>
   n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(Math.round(n));
 
-const fmtFull = (n: number) =>
-  new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(n).replace(/,/g, ' ') + ' UZS';
+// Aniq raqam — yumaloqlanmaydi. Butun bo'lsa kasr ko'rsatilmaydi, aks holda
+// tiyingacha (2 xona) ko'rsatiladi. Mingliklar bo'sh joy bilan ajratiladi.
+const fmtNum = (n: number) => {
+  const v = Number(n) || 0;
+  const hasFraction = Math.abs(v % 1) > 1e-9;
+  return new Intl.NumberFormat('uz-UZ', {
+    minimumFractionDigits: hasFraction ? 2 : 0,
+    maximumFractionDigits: hasFraction ? 2 : 0,
+  }).format(v).replace(/,/g, ' ');
+};
+
+const fmtFull = (n: number) => `${fmtNum(n)} UZS`;
 
 const localYMD = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -93,7 +103,7 @@ const LineTooltip = ({ active, payload, label }: any) => {
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center justify-between gap-4">
           <span className="font-bold" style={{ color: p.color }}>{p.name}</span>
-          <span className="font-bold text-slate-800">{fmt(p.value)}</span>
+          <span className="font-bold text-slate-800 tabular-nums">{fmtNum(p.value)} UZS</span>
         </div>
       ))}
     </div>
@@ -139,7 +149,7 @@ const PieWithLegend = ({ data, colors }: { data: { name: string; value: number }
             <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
             <span className="flex-1 text-[11px] font-bold text-slate-700 truncate">{entry.name}</span>
             <span className="text-[10px] font-bold text-slate-400">{total > 0 ? Math.round((entry.value / total) * 100) : 0}%</span>
-            <span className="text-[10px] font-bold text-slate-700 tabular-nums">{fmt(entry.value)}</span>
+            <span className="text-[10px] font-bold text-slate-700 tabular-nums whitespace-nowrap">{fmtNum(entry.value)}</span>
           </div>
         ))}
       </div>
@@ -189,26 +199,22 @@ const ServiceStats = ({ services }: { services: any[] }) => {
           <p className="text-[10px] font-bold text-slate-400 mt-1">ta bajarilgan</p>
         </div>
 
-        {/* Total revenue */}
+        {/* Total revenue — aniq qiymat (yumaloqlanmaydi) */}
         <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
           <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Jami Daromad</p>
-          <p className="text-xl font-bold text-emerald-700 tabular-nums leading-tight">
-            {totalRevenue >= 1_000_000
-              ? `${(totalRevenue / 1_000_000).toFixed(2)} M`
-              : `${Math.round(totalRevenue / 1_000)} K`}
+          <p className="text-lg font-bold text-emerald-700 tabular-nums leading-tight break-all">
+            {fmtNum(totalRevenue)}
           </p>
-          <p className="text-[10px] font-bold text-emerald-500 mt-1">{fmtFull(totalRevenue)}</p>
+          <p className="text-[10px] font-bold text-emerald-500 mt-1">UZS</p>
         </div>
 
-        {/* Average check */}
+        {/* Average check — aniq qiymat (yumaloqlanmaydi) */}
         <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100">
           <p className="text-[9px] font-bold uppercase tracking-widest text-orange-500 mb-2">O'rtacha Chek</p>
-          <p className="text-xl font-bold text-orange-700 tabular-nums leading-tight">
-            {avgCheck >= 1_000_000
-              ? `${(avgCheck / 1_000_000).toFixed(2)} M`
-              : `${Math.round(avgCheck / 1_000)} K`}
+          <p className="text-lg font-bold text-orange-700 tabular-nums leading-tight break-all">
+            {fmtNum(avgCheck)}
           </p>
-          <p className="text-[10px] font-bold text-orange-400 mt-1">{fmtFull(avgCheck)}</p>
+          <p className="text-[10px] font-bold text-orange-400 mt-1">UZS</p>
         </div>
 
         {/* Share of total */}
@@ -239,7 +245,7 @@ const ServiceStats = ({ services }: { services: any[] }) => {
                 <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full transition-all ${isActive ? 'bg-orange-500' : 'bg-slate-400'}`} style={{ width: `${pct}%` }} />
                 </div>
-                <span className={`text-[10px] font-bold tabular-nums w-16 text-right ${isActive ? 'text-orange-600' : 'text-slate-600'}`}>{fmt(s.totalRevenue)}</span>
+                <span className={`text-[10px] font-bold tabular-nums text-right whitespace-nowrap pl-1 ${isActive ? 'text-orange-600' : 'text-slate-600'}`}>{fmtNum(s.totalRevenue)}</span>
               </button>
             );
           })}
@@ -833,8 +839,8 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                       <div className="font-bold text-slate-800">{v.vendorName}</div>
                       {Array.isArray(v.roles) && v.roles.length > 0 && <div className="text-[10px] text-slate-400 font-bold">{v.roles.join(', ')}</div>}
                     </td>
-                    <td className="p-3 text-right font-bold text-rose-500 tabular-nums">{fmt(v.totalCost)}</td>
-                    <td className="p-3 text-right font-bold text-emerald-600 tabular-nums">{fmt(v.linkedRevenue)}</td>
+                    <td className="p-3 text-right font-bold text-rose-500 tabular-nums whitespace-nowrap">{fmtNum(v.totalCost)}</td>
+                    <td className="p-3 text-right font-bold text-emerald-600 tabular-nums whitespace-nowrap">{fmtNum(v.linkedRevenue)}</td>
                     <td className="p-3 text-right">
                       <span className={`inline-block px-2 py-0.5 rounded-md font-bold text-[10px] ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'}`}>
                         {v.marginPct >= 0 ? '+' : ''}{v.marginPct}%

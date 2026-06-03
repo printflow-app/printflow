@@ -29,8 +29,15 @@ interface Props {
   showBar?: boolean;
 }
 
-const fmt = (n: number) =>
-  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(Math.round(n));
+// Aniq raqam — yumaloqlanmaydi (mingliklar bo'sh joy bilan, kerak bo'lsa tiyingacha).
+const fmt = (n: number) => {
+  const v = Number(n) || 0;
+  const hasFraction = Math.abs(v % 1) > 1e-9;
+  return new Intl.NumberFormat('uz-UZ', {
+    minimumFractionDigits: hasFraction ? 2 : 0,
+    maximumFractionDigits: hasFraction ? 2 : 0,
+  }).format(v).replace(/,/g, ' ');
+};
 
 const ScoreDelta = ({ current, previous }: { current: number; previous: number | null }) => {
   if (previous === null || previous === undefined) return <span className="text-[9px] font-bold text-slate-300">—</span>;
@@ -97,7 +104,7 @@ const EmployeePerformanceTable: React.FC<Props> = ({ rows, velocity, prevRows, t
                       : <span className="text-slate-300 font-bold text-xs">—</span>}
                   </td>
                   <td className="p-3 text-right font-bold text-slate-600">{avgHours != null ? `${avgHours}h` : '—'}</td>
-                  <td className="p-3 text-right font-bold text-slate-700 tabular-nums text-xs">
+                  <td className="p-3 text-right font-bold text-slate-700 tabular-nums text-xs whitespace-nowrap">
                     {vel ? fmt(vel.totalRevenue) : '—'}
                   </td>
                   <td className="p-3 text-right">

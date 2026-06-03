@@ -5,7 +5,7 @@ import {
   Plus, Search, UserPlus, CheckCircle2, Clock, X,
   Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle,
   Users, AlertTriangle, Package, Building2,
-  Archive, ArchiveRestore, Handshake, AlertOctagon, Download
+  Archive, ArchiveRestore, Handshake, AlertOctagon, Download, Pencil
 } from 'lucide-react';
 import { exportToXlsx } from '../utils/exportToXlsx';
 import { tasksApi, taskExpensesApi, servicesApi, settingsApi } from '../api';
@@ -170,6 +170,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [isNewColumnModalOpen, setIsNewColumnModalOpen] = useState(false);
   const [isNewOptionModalOpen, setIsNewOptionModalOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
+  // Bosqich qo'shish/tahrirlash. editingColumnId !== null → tahrirlash rejimi.
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [isSavingColumn, setIsSavingColumn] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history' | 'vendors' | 'costing'>('details');
 
   // Real-time refresh — pause while user has any modal open to avoid clobbering input
@@ -678,22 +681,48 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     processMoveFiles(files);
   };
 
-  const handleAddColumn = async (e: React.FormEvent) => {
+  const openAddColumn = () => {
+    setEditingColumnId(null);
+    setNewColumnTitle('');
+    setIsNewColumnModalOpen(true);
+  };
+
+  const openEditColumn = (col: Column) => {
+    setEditingColumnId(col.id);
+    setNewColumnTitle(col.title);
+    setIsNewColumnModalOpen(true);
+  };
+
+  // Bosqich qo'shish (yangi) yoki nomini yangilash (tahrirlash).
+  // isSavingColumn guard — double-submit (tez ikki marta bosish) duplikatining oldini oladi.
+  const handleSaveColumn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newColumnTitle) {
-      try {
+    const title = newColumnTitle.trim();
+    if (!title || isSavingColumn) return;
+    setIsSavingColumn(true);
+    try {
+      if (editingColumnId) {
+        await tasksApi.updateColumn(editingColumnId, {
+          title,
+          ...(activeBranchId ? { branchId: activeBranchId } : {}),
+        });
+        showStatus('success', 'Bosqich nomi yangilandi.');
+      } else {
         await tasksApi.createColumn({
-          title: newColumnTitle,
+          title,
           orderIdx: columns.length,
           ...(activeBranchId ? { branchId: activeBranchId } : {}),
         });
-        setNewColumnTitle('');
-        setIsNewColumnModalOpen(false);
-        fetchData(true);
-      } catch (err) {
-        showStatus('error', "Bosqich qo'shishda xatolik!");
-        console.error(err);
       }
+      setNewColumnTitle('');
+      setEditingColumnId(null);
+      setIsNewColumnModalOpen(false);
+      fetchData(true);
+    } catch (err) {
+      showStatus('error', editingColumnId ? "Nomni yangilashda xatolik!" : "Bosqich qo'shishda xatolik!");
+      console.error(err);
+    } finally {
+      setIsSavingColumn(false);
     }
   };
 
@@ -1011,7 +1040,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </button>
           )}
           {p.canManageColumns && (
-            <button data-tour-id="kanban-add-column" onClick={() => setIsNewColumnModalOpen(true)} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
+            <button data-tour-id="kanban-add-column" onClick={openAddColumn} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
               + BOSQICH
             </button>
           )}
@@ -1035,22 +1064,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <p className="text-base font-bold text-slate-800">Kanban bosqichlari yo'q</p>
             <p className="text-sm text-slate-500 text-center max-w-sm">Birinchi navbatda Kanban ustunlarini yarating (Yangi → Jarayonda → Tayyor kabi). Sozlamalar bo'limidan qo'shing.</p>
           </div>
-        ) : tasks.length === 0 && !searchTerm ? (
-          <div className="w-full flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-400">
-              <ClipboardList size={28} />
-            </div>
-            <div className="text-center">
-              <p className="text-base font-bold text-slate-800 mb-1">Hali buyurtma yo'q</p>
-              <p className="text-sm text-slate-500 max-w-md">Kanban ustunlari tayyor. Birinchi buyurtmangizni yarating va uni bosqichlarda kuzating.</p>
-            </div>
-            {canCreateTask && (
-              <button onClick={() => openNewTaskModal()} className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm flex items-center gap-2 mt-2">
-                <Plus size={16} /> Birinchi buyurtmani yaratish
-              </button>
-            )}
-          </div>
         ) : (
+          // Tasklar bo'lmasa ham ustunlar (bo'sh holatda) ko'rsatiladi —
+          // foydalanuvchi bosqichlarni ko'rib, ularga yangi buyurtma qo'sha oladi.
           columns.map(col => {
             const now_s = new Date();
             const myId = currentUser?.id;
@@ -1095,7 +1111,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <span className="bg-white text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded-md border border-slate-200/50 shadow-sm">{colTasks.length}</span>
                   </div>
                   {p.canManageColumns && (
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'column', id: col.id, title: col.title })} className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={12} /></button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => openEditColumn(col)} title="Nomini tahrirlash" className="text-slate-300 hover:text-orange-500 transition-colors"><Pencil size={12} /></button>
+                      <button onClick={() => setConfirmModal({ isOpen: true, type: 'column', id: col.id, title: col.title })} title="O'chirish" className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={12} /></button>
+                    </div>
                   )}
                 </div>
 
@@ -1185,7 +1204,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
         {/* Floating Add Column Button at the end */}
         {p.canManageColumns && (
-          <button onClick={() => setIsNewColumnModalOpen(true)} className="min-w-[280px] h-20 border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 text-slate-400 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/30 transition-all group shrink-0">
+          <button onClick={openAddColumn} className="min-w-[280px] h-20 border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 text-slate-400 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/30 transition-all group shrink-0">
             <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
             <span className="font-bold text-[11px] uppercase tracking-widest">Yangi Bosqich</span>
           </button>
@@ -2372,14 +2391,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         </form>
       </Modal>
 
-      {/* MODAL: NEW COLUMN */}
+      {/* MODAL: NEW / EDIT COLUMN */}
       <Modal
         isOpen={isNewColumnModalOpen}
-        onClose={() => setIsNewColumnModalOpen(false)}
-        title="Yangi Bosqich Qoshish"
+        onClose={() => { setIsNewColumnModalOpen(false); setEditingColumnId(null); }}
+        title={editingColumnId ? 'Bosqich nomini tahrirlash' : 'Yangi Bosqich Qoshish'}
         type="warning"
       >
-        <form onSubmit={handleAddColumn} className="space-y-5">
+        <form onSubmit={handleSaveColumn} className="space-y-5">
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Ustun Nomi</label>
             <input
@@ -2393,8 +2412,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             />
           </div>
           <div className="flex gap-3 pt-2 items-end justify-end">
-            <button type="button" className="btn-outline h-14 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest px-8" onClick={() => setIsNewColumnModalOpen(false)}>BEKOR</button>
-            <button type="submit" className="btn-primary h-14 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest shadow-amber-500/10 bg-amber-500 hover:bg-amber-600 px-10">YARATISH</button>
+            <button type="button" className="btn-outline h-14 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest px-8" onClick={() => { setIsNewColumnModalOpen(false); setEditingColumnId(null); }}>BEKOR</button>
+            <button type="submit" disabled={isSavingColumn} className="btn-primary h-14 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest shadow-amber-500/10 bg-amber-500 hover:bg-amber-600 px-10 disabled:opacity-50">{isSavingColumn ? '...' : (editingColumnId ? 'YANGILASH' : 'YARATISH')}</button>
           </div>
         </form>
       </Modal>
