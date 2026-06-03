@@ -1580,7 +1580,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       >
                         <option value="">— Hamkorni tanlang —</option>
                         {vendors.map((v: any) => (
-                          <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
+                          <option key={v.id} value={v.id}>{v.name}{Array.isArray(v.roles) && v.roles.length ? ` (${v.roles.join(', ')})` : ''}</option>
                         ))}
                       </select>
                       <CurrencyInput
@@ -2037,7 +2037,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     >
                       <option value="">— Biriktirilmagan —</option>
                       {vendors.map(v => (
-                        <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` (${v.specialty})` : ''}</option>
+                        <option key={v.id} value={v.id}>{v.name}{Array.isArray(v.roles) && v.roles.length ? ` (${v.roles.join(', ')})` : ''}</option>
                       ))}
                     </select>
                   </div>

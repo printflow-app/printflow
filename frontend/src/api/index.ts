@@ -294,6 +294,11 @@ export const vendorsApi = {
     api.put(`/vendors/${id}`, data, { params: { branchId } }),
   remove: (id: string, branchId: string) =>
     api.delete(`/vendors/${id}`, { params: { branchId } }),
+  // Ledger (naqdsiz qarz/haq): Xarid (we_owe) yoki Sotuv (they_owe)
+  createLedgerEntry: (data: any, branchId: string) =>
+    api.post('/vendors/ledger', data, { params: { branchId } }),
+  removeLedgerEntry: (entryId: string, branchId: string) =>
+    api.delete(`/vendors/ledger/${entryId}`, { params: { branchId } }),
 };
 
 // =============================================

@@ -151,6 +151,7 @@ export class ReportsService {
         return {
           vendorId: vendor.id,
           vendorName: vendor.name,
+          roles: vendor.roles || [],
           totalCost,
           linkedTaskCount: taskMap.size,
           linkedRevenue,

@@ -831,7 +831,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   <tr key={v.vendorId} className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
                     <td className="p-3">
                       <div className="font-bold text-slate-800">{v.vendorName}</div>
-                      {v.specialty && <div className="text-[10px] text-slate-400 font-bold">{v.specialty}</div>}
+                      {Array.isArray(v.roles) && v.roles.length > 0 && <div className="text-[10px] text-slate-400 font-bold">{v.roles.join(', ')}</div>}
                     </td>
                     <td className="p-3 text-right font-bold text-rose-500 tabular-nums">{fmt(v.totalCost)}</td>
                     <td className="p-3 text-right font-bold text-emerald-600 tabular-nums">{fmt(v.linkedRevenue)}</td>

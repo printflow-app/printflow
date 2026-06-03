@@ -16,3 +16,7 @@ railway_backup*
 pg_dump_err.log
 restore.log
 kpi_test.json
+
+# Lokal dev DB nusxasi (prod dump) — commit qilinmaydi
+backend/railway_clone.sql
+railway_clone.sql

@@ -7,7 +7,7 @@ export class VendorOrdersService {
 
   async findAll() {
     return (this.prisma as any).vendorOrder.findMany({
-      include: { vendor: { select: { id: true, name: true, specialty: true, phone: true } } },
+      include: { vendor: { select: { id: true, name: true, roles: true, phone: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -32,7 +32,8 @@ export class VendorOrdersService {
     if (vo.status !== 'PENDING') throw new Error('Faqat PENDING so\'rovlarni qabul qilish mumkin');
 
     return this.prisma.$transaction(async (tx: any) => {
-      // Kanban task yaratish
+      // Kanban task yaratish. vendorId + vendorCost o'rnatamiz —
+      // shunda hamkor balansi (hisoblanadigan) "biz qarzdormiz" tomonga o'sadi.
       const task = await tx.task.create({
         data: {
           title: vo.title,
@@ -45,20 +46,16 @@ export class VendorOrdersService {
           attachments: '[]',
           serviceOptions: '[]',
           materialOverrides: '[]',
+          vendorId: vo.vendorId,
+          vendorCost: vo.amount,
         },
-      });
-
-      // Vendor balansi: biz ularga qarzimiz (decrement)
-      await tx.vendor.update({
-        where: { id: vo.vendorId },
-        data: { balance: { decrement: vo.amount } },
       });
 
       // VendorOrder status yangilash
       return tx.vendorOrder.update({
         where: { id },
         data: { status: 'ACCEPTED', taskId: task.id },
-        include: { vendor: { select: { id: true, name: true, specialty: true } } },
+        include: { vendor: { select: { id: true, name: true, roles: true } } },
       });
     });
   }

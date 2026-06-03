@@ -12,6 +12,19 @@ export class VendorsController {
     return this.vendorsService.findAll(branchId);
   }
 
+  // Ledger (Xarid/Sotuv) — static segment'ni :id dan oldin e'lon qilamiz.
+  @Post('ledger')
+  @RequirePermissions('canManageVendors')
+  createLedgerEntry(@Body() data: any, @Query('branchId') branchId?: string) {
+    return this.vendorsService.createLedgerEntry(data, branchId);
+  }
+
+  @Delete('ledger/:entryId')
+  @RequirePermissions('canManageVendors')
+  removeLedgerEntry(@Param('entryId') entryId: string, @Query('branchId') branchId?: string) {
+    return this.vendorsService.removeLedgerEntry(entryId, branchId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @Query('branchId') branchId?: string) {
     return this.vendorsService.findOne(id, branchId);

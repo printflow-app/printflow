@@ -30,6 +30,7 @@ const TENANT_SCOPED_MODELS = new Set([
   'botSession',
   'branch',
   'vendor',
+  'vendorLedgerEntry',
   'orderVendorCost',
   'customerContact',
   'vendorOrder',

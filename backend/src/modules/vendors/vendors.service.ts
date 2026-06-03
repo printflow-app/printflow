@@ -13,6 +13,36 @@ function requireBranchId(branchId: string | undefined | null, ctx: string): stri
 export class VendorsService {
   constructor(private prisma: PrismaService) {}
 
+  // Ikki yo'nalishli balansni hisoblaydi.
+  //   weOwe   = Σ task.vendorCost (subpudrat) + Σ ledger("we_owe")  (xomashyo/xizmat xaridi)
+  //   theyOwe = Σ ledger("they_owe")                                (hamkorga sotuv)
+  //   paidByUs   = Σ chiqim (vendorId)   — biz to'laganimiz
+  //   paidToUs   = Σ kirim  (vendorId)   — hamkor to'laganı
+  //   balance = (weOwe − paidByUs) − (theyOwe − paidToUs)
+  // balance > 0 → biz qarzdormiz; balance < 0 → hamkor bizga qarzdor.
+  private computeTotals(v: any) {
+    const tasksCost = (v.tasks || []).reduce((s: number, t: any) => s + (Number(t.vendorCost) || 0), 0);
+    const ledger = v.ledgerEntries || [];
+    const purchases = ledger.filter((l: any) => l.direction === 'we_owe').reduce((s: number, l: any) => s + (Number(l.amount) || 0), 0);
+    const sales = ledger.filter((l: any) => l.direction === 'they_owe').reduce((s: number, l: any) => s + (Number(l.amount) || 0), 0);
+    const txns = v.transactions || [];
+    const paidByUs = txns.filter((t: any) => t.type === 'chiqim').reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
+    const paidToUs = txns.filter((t: any) => t.type === 'kirim').reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
+
+    const weOwe = tasksCost + purchases;
+    const theyOwe = sales;
+    const balance = (weOwe - paidByUs) - (theyOwe - paidToUs);
+
+    return {
+      totalAssignedCost: tasksCost,   // subpudrat (eski nom — backward compat)
+      totalPurchases: purchases,      // xomashyo/xizmat xaridi (qarzga)
+      totalSales: sales,              // hamkorga sotuv (qarzga)
+      totalPaid: paidByUs,            // biz to'laganimiz (eski nom — backward compat)
+      totalReceived: paidToUs,        // hamkor to'laganı
+      balance,
+    };
+  }
+
   async findAll(branchId?: string) {
     const bId = requireBranchId(branchId, 'GET /vendors');
     const vendors = await this.prisma.vendor.findMany({
@@ -29,17 +59,16 @@ export class VendorsService {
           },
         },
         transactions: {
-          where: { type: 'chiqim' },
-          select: { amount: true, date: true, expenseReason: true },
+          where: { type: { in: ['chiqim', 'kirim'] } },
+          select: { amount: true, type: true, date: true, expenseReason: true },
+        },
+        ledgerEntries: {
+          select: { amount: true, direction: true },
         },
       },
     });
 
-    return vendors.map((v: any) => {
-      const totalCost = v.tasks.reduce((sum: number, t: any) => sum + (Number(t.vendorCost) || 0), 0);
-      const totalPaid = v.transactions.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0);
-      return { ...v, totalAssignedCost: totalCost, totalPaid, balance: totalCost - totalPaid };
-    });
+    return vendors.map((v: any) => ({ ...v, ...this.computeTotals(v) }));
   }
 
   async findOne(id: string, branchId?: string) {
@@ -52,18 +81,49 @@ export class VendorsService {
           select: { id: true, title: true, orderName: true, vendorCost: true, createdAt: true },
         },
         transactions: {
-          where: { type: 'chiqim' },
+          where: { type: { in: ['chiqim', 'kirim'] } },
           orderBy: { date: 'desc' },
-          select: { id: true, amount: true, date: true, expenseReason: true },
+          select: { id: true, amount: true, type: true, date: true, expenseReason: true, serviceType: true },
+        },
+        ledgerEntries: {
+          orderBy: { date: 'desc' },
+          select: { id: true, direction: true, amount: true, description: true, date: true },
         },
       },
     });
 
     if (!vendor) throw new NotFoundException('Hamkor topilmadi yoki ushbu filialga tegishli emas');
 
-    const totalCost = vendor.tasks.reduce((sum: number, t: any) => sum + (Number(t.vendorCost) || 0), 0);
-    const totalPaid = vendor.transactions.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0);
-    return { ...vendor, totalAssignedCost: totalCost, totalPaid, balance: totalCost - totalPaid };
+    return { ...vendor, ...this.computeTotals(vendor) };
+  }
+
+  // Naqdsiz qarz/haq yozuvi yaratish (Xarid yoki Sotuv).
+  async createLedgerEntry(data: any, branchId?: string) {
+    const bId = requireBranchId(branchId, 'POST /vendors/:id/ledger');
+    const direction = data.direction === 'they_owe' ? 'they_owe' : 'we_owe';
+    const amount = Number(data.amount);
+    if (!amount || amount <= 0) throw new BadRequestException('Summa musbat bo\'lishi kerak');
+
+    const vendor = await this.prisma.vendor.findFirst({ where: { id: data.vendorId, branchId: bId } });
+    if (!vendor) throw new NotFoundException('Hamkor topilmadi yoki ushbu filialga tegishli emas');
+
+    return (this.prisma as any).vendorLedgerEntry.create({
+      data: {
+        vendorId: data.vendorId,
+        branchId: bId,
+        direction,
+        amount,
+        description: data.description || null,
+        ...(data.date ? { date: new Date(data.date) } : {}),
+      },
+    });
+  }
+
+  async removeLedgerEntry(id: string, branchId?: string) {
+    const bId = requireBranchId(branchId, 'DELETE /vendors/ledger/:id');
+    const entry = await (this.prisma as any).vendorLedgerEntry.findFirst({ where: { id, branchId: bId } });
+    if (!entry) throw new NotFoundException('Yozuv topilmadi yoki ushbu filialga tegishli emas');
+    return (this.prisma as any).vendorLedgerEntry.delete({ where: { id } });
   }
 
   async create(data: any) {

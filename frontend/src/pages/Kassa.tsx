@@ -513,7 +513,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                           ? (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.customer?.name || t.customerName || t.serviceType || '—'))
                           : (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.employeeId && !p.canViewSalary) ? 'Xodim maoshi' : (t.expenseReason || (t.expenseType?.name + (t.employee?.fullName ? ' - ' + t.employee.fullName : ''))))}
                       </p>
-                      {t.vendor && <span className="text-[8px] font-bold text-sky-500 uppercase tracking-widest mt-0.5">{t.vendor.specialty || 'Hamkor'}</span>}
+                      {t.vendor && <span className="text-[8px] font-bold text-sky-500 uppercase tracking-widest mt-0.5">{Array.isArray(t.vendor.roles) && t.vendor.roles.length ? t.vendor.roles.join(', ') : 'Hamkor'}</span>}
                       {!t.vendor && t.expenseType && <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{t.expenseType.name}</span>}
                   </td>
                   <td className="py-3 px-5 text-right whitespace-nowrap">
@@ -610,7 +610,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
               <select required value={kirimForm.vendorId === '_' ? '' : kirimForm.vendorId} onChange={e => setKirimForm(f => ({...f, vendorId: e.target.value}))} className="select-minimal">
                 <option value="">Tanlang...</option>
-                {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` — ${v.specialty}` : ''}</option>)}
+                {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{Array.isArray(v.roles) && v.roles.length ? ` — ${v.roles.join(', ')}` : ''}</option>)}
               </select>
             </div>
           ) : (
@@ -742,7 +742,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
               <select required value={chiqimForm.vendorId} onChange={e => setChiqimForm(f => ({...f, vendorId: e.target.value}))} className="select-minimal">
                 <option value="">Tanlang...</option>
-                {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{v.specialty ? ` — ${v.specialty}` : ''}</option>)}
+                {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{Array.isArray(v.roles) && v.roles.length ? ` — ${v.roles.join(', ')}` : ''}</option>)}
               </select>
             </div>
           )}

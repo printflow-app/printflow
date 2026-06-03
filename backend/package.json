@@ -23,7 +23,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "db:refresh": "node scripts/refresh-local-db.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.77",

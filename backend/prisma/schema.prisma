@@ -88,6 +88,7 @@ model Tenant {
   customerContacts  CustomerContact[]
   vendors           Vendor[]
   orderVendorCosts  OrderVendorCost[]
+  vendorLedgerEntries VendorLedgerEntry[]
   paymentTypes      PaymentType[]
   transactions      Transaction[]
   expenseTypes      ExpenseType[]
@@ -494,6 +495,7 @@ model Branch {
   departments   Department[]
   services      Service[]
   vendors       Vendor[]
+  vendorLedgerEntries VendorLedgerEntry[]
   roles         Role[]
   kanbanColumns KanbanColumn[]
   materials     Material[]
@@ -732,17 +734,53 @@ model Vendor {
   name  String
   phone String?
 
+  // Rol-teglar (ko'p tanlovli): "xomashyo" | "xizmat" | "xaridor".
+  // Faqat yorliq/filtr uchun — pul yo'nalishini cheklamaydi.
+  roles String[] @default([])
+
   // Relations
   tasks            Task[]
   transactions     Transaction[]
   orderVendorCosts OrderVendorCost[]
   vendorOrders     VendorOrder[]
+  ledgerEntries    VendorLedgerEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
   @@index([branchId])
+}
+
+// =============================================
+// VENDOR LEDGER ENTRY — Naqdsiz qarz/haqdorlik yozuvi
+// Buyurtmaga ham, kassaga ham bog'lanmagan qo'lda kiritma:
+//   direction = "we_owe"  → biz hamkordan xomashyo/xizmat oldik (qarzdormiz)
+//   direction = "they_owe" → hamkor bizdan oldi (u bizga qarzdor)
+// Naqd pul harakati Kassada (Transaction) qoladi; bu jadval faqat
+// majburiyatni qayd etadi. Balans formulasi ikkalasini birlashtiradi.
+// =============================================
+model VendorLedgerEntry {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  vendorId String
+  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  direction   String // "we_owe" | "they_owe"
+  amount      Float
+  description String?
+  date        DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@index([vendorId])
 }
 
 model OrderVendorCost {
