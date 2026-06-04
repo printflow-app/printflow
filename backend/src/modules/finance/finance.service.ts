@@ -87,6 +87,11 @@ export class FinanceService implements OnApplicationBootstrap {
     return {};
   }
 
+  // "Faqat o'zi kiritgan" ruxsati — createdById bo'yicha cheklaydi.
+  private ownerFilter(createdById?: string): Record<string, any> {
+    return createdById ? { createdById } : {};
+  }
+
   private deptFilter(departmentId?: string): Record<string, any> {
     if (departmentId) return { departmentId };
     return {};
@@ -126,9 +131,9 @@ export class FinanceService implements OnApplicationBootstrap {
     return where;
   }
 
-  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string, vendorId?: string) {
+  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string, vendorId?: string, createdById?: string) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
     if (vendorId) where.vendorId = vendorId;
 
     const [transactions, total] = await Promise.all([
@@ -157,9 +162,9 @@ export class FinanceService implements OnApplicationBootstrap {
     };
   }
 
-  async getDashboard(start?: string, end?: string, branchId?: string, departmentId?: string) {
+  async getDashboard(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
 
     const [incomes, expenses] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -248,6 +253,8 @@ export class FinanceService implements OnApplicationBootstrap {
           vendorId: vendorId || null,
           departmentId: departmentId || null,
           taskId: taskId || null,
+          // Yozuvni kim kiritgani — "faqat o'zi" ruxsati uchun.
+          createdById: data.createdById || null,
           // Filial scope — bo'lmasa Kassa filiali filtri tranzaksiyani yashiradi.
           branchId: finalBranchId,
           ...(data.date ? { date: new Date(data.date) } : {}),
@@ -473,7 +480,7 @@ export class FinanceService implements OnApplicationBootstrap {
     });
   }
 
-  async getDinamika(start?: string, end?: string, branchId?: string, departmentId?: string) {
+  async getDinamika(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string) {
     let startDate = start ? this.parseDayBoundary(start, false) : null;
     if (!startDate) {
       startDate = new Date();
@@ -488,7 +495,7 @@ export class FinanceService implements OnApplicationBootstrap {
     }
 
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope };
+    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -529,9 +536,9 @@ export class FinanceService implements OnApplicationBootstrap {
     return Object.values(data);
   }
 
-  async getStatsByPaymentType(start?: string, end?: string, branchId?: string, departmentId?: string) {
+  async getStatsByPaymentType(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -564,9 +571,9 @@ export class FinanceService implements OnApplicationBootstrap {
   /**
    * Expense Breakdown by ExpenseType — for Pie/Bar chart on Dashboard
    */
-  async getExpenseBreakdown(start?: string, end?: string, branchId?: string, departmentId?: string) {
+  async getExpenseBreakdown(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
 
     const expenses = await this.prisma.transaction.findMany({
       where: { ...where, type: 'chiqim' },
@@ -586,9 +593,9 @@ export class FinanceService implements OnApplicationBootstrap {
       .slice(0, 10); // Top 10 categories
   }
 
-  async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string, vendorId?: string) {
+  async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string, vendorId?: string, createdById?: string) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope };
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
     if (vendorId) where.vendorId = vendorId;
 
     const [transactions, dashboard, allPaymentTypes] = await Promise.all([

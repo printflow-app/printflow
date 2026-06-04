@@ -167,7 +167,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const initialRoleForm = {
     name: '',
-    canViewFinance: false, canAddIncome: false, canAddExpense: false, canViewTotalBalance: false, canManagePaymentTypes: false,
+    canViewFinance: false, canAddIncome: false, canAddExpense: false, canViewTotalBalance: false, canViewOwnCashOnly: false, canManagePaymentTypes: false,
     canViewTasks: false, canViewAllTasks: false, canViewOwnTasks: false, canCreateTask: false, canEditTask: false, canDeleteTask: false, canMoveTask: false, canManageColumns: false,
     canViewCustomers: false, canManageCustomers: false,
     canViewEmployees: false, canManageEmployees: false, canManageRoles: false, canViewSalary: false, canManageAdmins: false,
@@ -324,6 +324,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         permissions: {
           canViewFinance: { label: "Sahifaga kirish — tranzaksiyalar ro'yxati", detail: "Menyu'da 'Kassa' bo'limi ko'rinadi. Kirim va chiqim tranzaksiyalari sanasi, summasi, turi bilan ro'yxati ko'rsatiladi. Sana bo'yicha filtrlash va qidirish ishlaydi." },
           canViewTotalBalance: { label: "Umumiy kassa balansini ko'rish", detail: "Sahifa yuqorisidagi 'Jami Balans' kartochkasi ko'rinadi. Ruxsat yo'q bo'lsa summa '•••••' bilan yashiriladi va faqat o'z tranzaksiyalarini ko'rish mumkin bo'ladi." },
+          canViewOwnCashOnly: { label: "Faqat o'zi kiritgan kirim/chiqimni ko'rish", detail: "Yoqilsa — xodim Kassada faqat O'ZI kiritgan kirim va chiqimlarni, hamda shulardan kelib chiqqan balansni ko'radi. Boshqalar kiritgan raqamlar va umumiy balans ko'rinmaydi. (Administrator uchun amal qilmaydi.)" },
           canAddIncome: { label: "Kirim (tushum) qo'shish", detail: "'+ Kirim' tugmasi faol bo'ladi. Mijozdan to'lov qabul qilish, buyurtma bilan bog'lash, to'lov turini tanlash — bularning barchasi kiritiladi." },
           canAddExpense: { label: "Chiqim (xarajat) qo'shish", detail: "'+ Chiqim' tugmasi faol bo'ladi. Xarajat turi, summa, izoh va to'lov usuli bilan chiqim kiritish. Xodim maoshi uchun esa alohida 'Maosh' turi mavjud." },
           canExportFinance: { label: "Excel'ga eksport qilish", detail: "Kassa sahifasida 'EKSPORT' tugmasi ko'rinadi. Joriy filtr (sana oralig'i, qidiruv) bo'yicha barcha tranzaksiyalarni .xlsx faylga yuklab olish imkoni." },

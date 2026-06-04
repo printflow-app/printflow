@@ -26,6 +26,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     || currentUser.role?.name?.toLowerCase() === 'superadmin'
     || !!p.canManageFinance;
 
+  // "Faqat o'zi kiritgan" — backend ham filtrlaydi; bu yerda faqat UI matnlari uchun.
+  const isAdminUser = currentUser.role?.name?.toLowerCase() === 'admin'
+    || currentUser.role?.name?.toLowerCase() === 'superadmin'
+    || currentUser.login === 'admin';
+  const ownCashOnly = !isAdminUser && !!p.canViewOwnCashOnly;
+
   const [page, setPage] = useState(1);
   // Default — joriy oyning 1-sanasidan oxirgi sanasigacha (turg'un oy oralig'i,
   // sirpanuvchi 30 kun emas). User filtrni qo'lda o'zgartirib qidirishi mumkin.
@@ -385,10 +391,13 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Balans</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{ownCashOnly ? 'Mening balansim' : 'Balans'}</span>
             <p className={`text-2xl font-bold tracking-tighter ${(summary?.balance || 0) >= 0 ? 'text-slate-800' : 'text-rose-600'}`}>
               {formatCurrency(summary?.balance || 0)}
             </p>
+            {ownCashOnly && (
+              <span className="mt-1 text-[8px] font-bold text-orange-500 uppercase tracking-wider">Faqat o'zingiz kiritgan</span>
+            )}
             <div className="mt-2 px-3 py-1 bg-slate-100 rounded-full">
                <span className="text-[9px] font-bold text-slate-500 uppercase">{startDate === endDate ? new Date(startDate).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) : `${startDate} → ${endDate}`}</span>
             </div>
