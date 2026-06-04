@@ -21,8 +21,8 @@ const ROOT = path.resolve(__dirname, '..');
 const PGBIN = 'C:\\Program Files\\PostgreSQL\\18\\bin';
 const pg_dump = `${PGBIN}\\pg_dump.exe`;
 const psql = `${PGBIN}\\psql.exe`;
-const TARGET_DB = 'printflow_rwtest';
-const TARGET_PORT = '5433';
+const TARGET_DB = process.env.REFRESH_TARGET_DB || 'printflow_rwtest';
+const TARGET_PORT = process.env.REFRESH_TARGET_PORT || '5433';
 
 // --- Ulanish manzillari ---
 function libpqUrl(raw) {

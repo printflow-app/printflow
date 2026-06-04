@@ -30,19 +30,19 @@ async function main() {
     console.log('ℹ️ SUPER_ADMIN_PASSWORD kiritilmagan. SuperAdmin yaratish o\'tkazib yuborildi.');
   } else {
 
-  const existingSuperAdmin = await prisma.superAdmin.findUnique({
-    where: { login: superAdminLogin },
-  });
-
-  if (!existingSuperAdmin) {
-    const passwordHash = await bcrypt.hash(superAdminPassword, 12);
-    await prisma.superAdmin.create({
-      data: { login: superAdminLogin, passwordHash },
+    const existingSuperAdmin = await prisma.superAdmin.findUnique({
+      where: { login: superAdminLogin },
     });
-    console.log(`✅ SuperAdmin yaratildi: ${superAdminLogin}`);
-  } else {
-    console.log(`ℹ️  SuperAdmin mavjud: ${superAdminLogin}`);
-  }
+
+    if (!existingSuperAdmin) {
+      const passwordHash = await bcrypt.hash(superAdminPassword, 12);
+      await prisma.superAdmin.create({
+        data: { login: superAdminLogin, passwordHash },
+      });
+      console.log(`✅ SuperAdmin yaratildi: ${superAdminLogin}`);
+    } else {
+      console.log(`ℹ️  SuperAdmin mavjud: ${superAdminLogin}`);
+    }
   }
 
   // =============================================
