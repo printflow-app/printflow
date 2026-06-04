@@ -237,6 +237,8 @@ export const tasksApi = {
   update: (id: string, data: any, employeeId: string) =>
     api.put(`/tasks/${id}?employeeId=${employeeId}`, data),
   archive: (id: string) => api.post(`/tasks/${id}/archive`),
+  // Buyurtmani butunlay o'chirish — faqat admin (backend tekshiradi).
+  remove: (id: string) => api.delete(`/tasks/${id}`),
   getArchived: () => api.get('/tasks/archived'),
   logView: (id: string, employeeId: string) =>
     api.post(`/tasks/${id}/view`, { employeeId }),
