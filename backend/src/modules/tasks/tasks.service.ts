@@ -763,6 +763,26 @@ export class TasksService {
     const branchScope = !branchId || branchId === '__main__' ? null : branchId;
     const existing = await this.prisma.kanbanColumn.findFirst({ where: { id, branchId: branchScope } as any });
     if (!existing) throw new Error('Bosqich topilmadi yoki ushbu filialga tegishli emas');
+
+    // MUHIM: Task.column relation `onDelete: Cascade`. Ustunni to'g'ridan-to'g'ri o'chirsak,
+    // undagi BARCHA buyurtma — shu jumladan arxivlanganlari ham (isArchived: true) — bazadan
+    // butunlay o'chib ketadi. Shuning uchun avval ustundagi hamma buyurtmani (faol + arxiv)
+    // o'sha filialdagi boshqa bosqichga ko'chiramiz, keyingina ustunni o'chiramiz.
+    const taskCount = await this.prisma.task.count({ where: { columnId: id } });
+    if (taskCount > 0) {
+      const fallback = await this.prisma.kanbanColumn.findFirst({
+        where: { branchId: branchScope, id: { not: id } } as any,
+        orderBy: { orderIdx: 'asc' },
+      });
+      if (!fallback) {
+        throw new Error(
+          'Bu bosqichda buyurtmalar bor, lekin ularni ko\'chirish uchun boshqa bosqich yo\'q. ' +
+          'Avval yangi bosqich yarating yoki buyurtmalarni boshqa bosqichga ko\'chiring.',
+        );
+      }
+      await this.prisma.task.updateMany({ where: { columnId: id }, data: { columnId: fallback.id } });
+    }
+
     return this.prisma.kanbanColumn.delete({ where: { id } });
   }
 
