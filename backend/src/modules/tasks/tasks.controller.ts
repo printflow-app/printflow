@@ -41,16 +41,16 @@ export class TasksController {
   }
 
   @Post('columns')
-  createColumn(@Body() body: { title: string; orderIdx: number; branchId?: string }) {
-    return this.tasksService.createColumn(body.title, body.orderIdx, body.branchId);
+  createColumn(@Body() body: { title: string; orderIdx: number; branchId?: string; isDone?: boolean }) {
+    return this.tasksService.createColumn(body.title, body.orderIdx, body.branchId, body.isDone);
   }
 
   @Put('columns/:id')
   updateColumn(
     @Param('id') id: string,
-    @Body() body: { title: string; branchId?: string },
+    @Body() body: { title?: string; isDone?: boolean; branchId?: string },
   ) {
-    return this.tasksService.updateColumn(id, body.title, body.branchId);
+    return this.tasksService.updateColumn(id, { title: body.title, isDone: body.isDone }, body.branchId);
   }
 
   @Post('columns/:id/delete')

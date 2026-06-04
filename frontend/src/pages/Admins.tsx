@@ -56,11 +56,12 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
     e.preventDefault();
     try {
       const res = await employeesApi.create({ ...newEmployee, baseSalary: Number(newEmployee.baseSalary) || 0 });
+      // Modal OCHIQ qoladi — generatedCredentials o'rnatilgach, modal kontenti
+      // login/parol ko'rsatish ekraniga almashadi. Modalni yopib yubormaymiz!
       setGeneratedCredentials({ login: res.data.login, password: res.data.password });
       setNewEmployee({ fullName: '', phone: '', roleId: '', baseSalary: '' });
       fetchData(true);
       toast.success("Admin muvaffaqiyatli qo'shildi!");
-      setIsEmployeeModalOpen(false);
     } catch (err) {
       toast.error("Admin qo'shishda xatolik yuz berdi.");
     }
@@ -155,7 +156,7 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
             <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Asoschilar va raxbarlar uchun maxsus saxifa</p>
           </div>
           {(isAdmin || p.canManageAdmins) && (
-             <button className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-6 bg-orange-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all" onClick={() => setIsEmployeeModalOpen(true)}>
+             <button className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-6 bg-orange-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all" onClick={() => { setGeneratedCredentials(null); setShowGenPass(false); setIsEmployeeModalOpen(true); }}>
                <UserPlus size={16} strokeWidth={2.5} /> Yangi Ma'mur Qo'shish
              </button>
           )}

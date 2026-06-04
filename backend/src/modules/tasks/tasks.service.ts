@@ -733,18 +733,30 @@ export class TasksService {
     });
   }
 
-  async createColumn(title: string, orderIdx: number, branchId?: string) {
+  async createColumn(title: string, orderIdx: number, branchId?: string, isDone = false) {
     const branchScope = !branchId || branchId === '__main__' ? null : branchId;
     return this.prisma.kanbanColumn.create({
-      data: { title, orderIdx, branchId: branchScope } as any,
+      data: { title, orderIdx, branchId: branchScope, isDone: !!isDone } as any,
     });
   }
 
-  async updateColumn(id: string, title: string, branchId?: string) {
+  async updateColumn(id: string, data: { title?: string; isDone?: boolean }, branchId?: string) {
     const branchScope = !branchId || branchId === '__main__' ? null : branchId;
     const existing = await this.prisma.kanbanColumn.findFirst({ where: { id, branchId: branchScope } as any });
     if (!existing) throw new Error('Bosqich topilmadi yoki ushbu filialga tegishli emas');
-    return this.prisma.kanbanColumn.update({ where: { id }, data: { title } });
+    const updateData: any = {};
+    if (typeof data.title === 'string') updateData.title = data.title;
+    if (typeof data.isDone === 'boolean') updateData.isDone = data.isDone;
+    return this.prisma.kanbanColumn.update({ where: { id }, data: updateData });
+  }
+
+  // "Bajarilgan" deb belgilangan ustun ID'lari. Hech biri belgilanmagan bo'lsa —
+  // eski xulq (oxirgi ustun) bilan moslik uchun oxirgi ustunni qaytaradi.
+  async getDoneColumnIds(): Promise<string[]> {
+    const done = await this.prisma.kanbanColumn.findMany({ where: { isDone: true } as any, select: { id: true } });
+    if (done.length) return done.map((c) => c.id);
+    const all = await this.prisma.kanbanColumn.findMany({ orderBy: { orderIdx: 'asc' }, select: { id: true } });
+    return all.length ? [all[all.length - 1].id] : [];
   }
 
   async removeColumn(id: string, branchId?: string) {

@@ -12,6 +12,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
+  // "Bajarilgan" deb belgilangan ustun ID'lari. Hech biri belgilanmagan bo'lsa,
+  // eski xulq (oxirgi ustun) bilan moslik uchun oxirgi ustunni qaytaradi.
+  private async getDoneColumnIds(): Promise<string[]> {
+    const done = await this.prisma.kanbanColumn.findMany({ where: { isDone: true } as any, select: { id: true } });
+    if (done.length) return done.map((c) => c.id);
+    const all = await this.prisma.kanbanColumn.findMany({ orderBy: { orderIdx: 'asc' }, select: { id: true } });
+    return all.length ? [all[all.length - 1].id] : [];
+  }
+
   private parseDayBoundary(input: string | undefined, end: boolean): Date | null {
     if (!input) return null;
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
@@ -168,18 +177,17 @@ export class ReportsService {
   async getEmployeeVelocity(start?: string, end?: string) {
     const { from, to } = this.resolveRange(start, end);
 
-    const [employees, columns] = await Promise.all([
+    const [employees, doneColumnIds] = await Promise.all([
       this.prisma.employee.findMany({ include: { role: true } }),
-      this.prisma.kanbanColumn.findMany({ orderBy: { orderIdx: 'asc' } }),
+      this.getDoneColumnIds(),
     ]);
-    const finalColumnId = columns.length ? columns[columns.length - 1].id : null;
 
     // PERF: explicit select — `description`, `serviceOptions`, `attachments`
     // (legacy JSON, megabaytlik bo'lishi mumkin), `materialOverrides` kabi katta
     // matn ustunlar bu yerda kerak emas. Faqat hisob-kitobga kerak bo'lganini olamiz.
     const completedTasks = await this.prisma.task.findMany({
       where: {
-        ...(finalColumnId ? { columnId: finalColumnId } : {}),
+        ...(doneColumnIds.length ? { columnId: { in: doneColumnIds } } : {}),
         updatedAt: { gte: from, lte: to },
         isArchived: false,
       },
@@ -262,9 +270,8 @@ export class ReportsService {
       ? { tasks: { some: { departmentId } } }
       : {};
 
-    const columns = await this.prisma.kanbanColumn.findMany({ orderBy: { orderIdx: 'asc' } });
-    const finalColumnId = columns.length ? columns[columns.length - 1].id : null;
-    const colFilter = finalColumnId ? { columnId: finalColumnId } : {};
+    const doneColumnIds = await this.getDoneColumnIds();
+    const colFilter = doneColumnIds.length ? { columnId: { in: doneColumnIds } } : {};
 
     const [
       currIncome, prevIncome,

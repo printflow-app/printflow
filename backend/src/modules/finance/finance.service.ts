@@ -172,15 +172,25 @@ export class FinanceService implements OnApplicationBootstrap {
       })
     ]);
 
-    // Calculate completed tasks
-    const columns = await this.prisma.kanbanColumn.findMany({
-      orderBy: { orderIdx: 'asc' },
+    // Bajarilgan buyurtmalar — "Bajarilgan" deb belgilangan ustun(lar)dagi tasklar.
+    // Hech biri belgilanmagan bo'lsa, eski xulq uchun oxirgi ustunga qaytamiz.
+    const doneCols = await this.prisma.kanbanColumn.findMany({
+      where: { isDone: true } as any,
+      select: { id: true },
     });
+    let doneColumnIds = doneCols.map((c) => c.id);
+    if (doneColumnIds.length === 0) {
+      const all = await this.prisma.kanbanColumn.findMany({
+        orderBy: { orderIdx: 'asc' },
+        select: { id: true },
+      });
+      if (all.length) doneColumnIds = [all[all.length - 1].id];
+    }
+
     let completedTasksCount = 0;
-    if (columns.length > 0) {
-      const finalColumnId = columns[columns.length - 1].id;
-      // For tasks, we use updatedAt for the date filter since that's when it was moved
-      const taskWhere: any = { columnId: finalColumnId, ...this.branchFilter(branchId), ...(departmentId ? { departmentId } : {}) };
+    if (doneColumnIds.length > 0) {
+      // Sana filtri uchun updatedAt — buyurtma shu bosqichga ko'chirilgan vaqt.
+      const taskWhere: any = { columnId: { in: doneColumnIds }, ...this.branchFilter(branchId), ...(departmentId ? { departmentId } : {}) };
       const range = this.getDateRange(start, end);
       if (range.date) {
         taskWhere.updatedAt = range.date; // reusing the gte/lte from getDateRange

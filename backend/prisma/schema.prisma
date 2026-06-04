@@ -891,6 +891,11 @@ model KanbanColumn {
   orderIdx Int    @default(0)
   tasks    Task[]
 
+  // true bo'lsa — bu ustundagi buyurtmalar "Bajarilgan" deb hisoblanadi (hisobotlar).
+  // Har tenant o'z ustun nomlaridan birini (yoki bir nechtasini) belgilashi mumkin.
+  // Arxivlashdan mustaqil.
+  isDone   Boolean @default(false)
+
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
 

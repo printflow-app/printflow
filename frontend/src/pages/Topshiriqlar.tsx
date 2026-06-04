@@ -63,6 +63,7 @@ interface Task {
 interface Column {
   id: string;
   title: string;
+  isDone?: boolean; // true → bu ustundagi buyurtmalar "Bajarilgan" deb hisoblanadi
 }
 
 const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
@@ -173,6 +174,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   // Bosqich qo'shish/tahrirlash. editingColumnId !== null → tahrirlash rejimi.
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
   const [isSavingColumn, setIsSavingColumn] = useState(false);
+  const [newColumnIsDone, setNewColumnIsDone] = useState(false); // "Bajarilgan" bosqichi flagi
   const [activeTab, setActiveTab] = useState<'details' | 'history' | 'vendors' | 'costing'>('details');
 
   // Real-time refresh — pause while user has any modal open to avoid clobbering input
@@ -700,12 +702,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const openAddColumn = () => {
     setEditingColumnId(null);
     setNewColumnTitle('');
+    setNewColumnIsDone(false);
     setIsNewColumnModalOpen(true);
   };
 
   const openEditColumn = (col: Column) => {
     setEditingColumnId(col.id);
     setNewColumnTitle(col.title);
+    setNewColumnIsDone(!!col.isDone);
     setIsNewColumnModalOpen(true);
   };
 
@@ -720,18 +724,21 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       if (editingColumnId) {
         await tasksApi.updateColumn(editingColumnId, {
           title,
+          isDone: newColumnIsDone,
           ...(activeBranchId ? { branchId: activeBranchId } : {}),
         });
-        showStatus('success', 'Bosqich nomi yangilandi.');
+        showStatus('success', 'Bosqich saqlandi.');
       } else {
         await tasksApi.createColumn({
           title,
           orderIdx: columns.length,
+          isDone: newColumnIsDone,
           ...(activeBranchId ? { branchId: activeBranchId } : {}),
         });
       }
       setNewColumnTitle('');
       setEditingColumnId(null);
+      setNewColumnIsDone(false);
       setIsNewColumnModalOpen(false);
       fetchData(true);
     } catch (err) {
@@ -1122,9 +1129,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 {/* Column Header */}
                 <div className="flex justify-between items-center px-3 mb-3 mt-1 group">
                   <div className="flex items-center gap-1.5 flex-1 pr-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                    <div className={`w-1.5 h-1.5 rounded-full ${col.isDone ? 'bg-emerald-500' : 'bg-orange-500'}`}></div>
                     <h3 className="font-bold text-slate-800 text-[10px] uppercase tracking-widest truncate">{col.title}</h3>
                     <span className="bg-white text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded-md border border-slate-200/50 shadow-sm">{colTasks.length}</span>
+                    {col.isDone && (
+                      <span title="Bu bosqich bajarilgan deb sanaladi" className="flex items-center gap-0.5 bg-emerald-50 text-emerald-600 text-[8px] font-bold px-1.5 py-0.5 rounded-md border border-emerald-100 uppercase tracking-wider"><CheckCircle2 size={9} /> Bajarilgan</span>
+                    )}
                   </div>
                   {p.canManageColumns && (
                     <div className="flex items-center gap-2 shrink-0">
@@ -2432,6 +2442,22 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               placeholder="Masalan: PECHATDA..."
             />
           </div>
+
+          {/* "Bajarilgan" bosqichi — hisobotlar shu ustundagi buyurtmalarni sanaydi */}
+          <button
+            type="button"
+            onClick={() => setNewColumnIsDone(v => !v)}
+            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${newColumnIsDone ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+          >
+            <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-colors ${newColumnIsDone ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-transparent'}`}>
+              <CheckCircle2 size={16} />
+            </span>
+            <span className="min-w-0">
+              <span className={`block text-[11px] font-bold uppercase tracking-wider ${newColumnIsDone ? 'text-emerald-700' : 'text-slate-600'}`}>"Bajarilgan" bosqichi</span>
+              <span className="block text-[10px] text-slate-400 font-medium mt-0.5">Buyurtma shu ustunga yetganda — hisobotlarda "bajarilgan" deb sanaladi.</span>
+            </span>
+          </button>
+
           <div className="flex gap-3 pt-2 items-end justify-end">
             <button type="button" className="btn-outline h-14 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest px-8" onClick={() => { setIsNewColumnModalOpen(false); setEditingColumnId(null); }}>BEKOR</button>
             <button type="submit" disabled={isSavingColumn} className="btn-primary h-14 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest shadow-amber-500/10 bg-amber-500 hover:bg-amber-600 px-10 disabled:opacity-50">{isSavingColumn ? '...' : (editingColumnId ? 'YANGILASH' : 'YARATISH')}</button>
