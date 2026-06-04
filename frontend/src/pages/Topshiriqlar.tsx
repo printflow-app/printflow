@@ -109,7 +109,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   // Attachment upload progress (% 0..100). null = upload aktiv emas.
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, type: 'task' | 'column', id: string, title: string }>({ isOpen: false, type: 'task', id: '', title: '' });
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, type: 'task' | 'column' | 'task-delete', id: string, title: string }>({ isOpen: false, type: 'task', id: '', title: '' });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // Sprint 2: Prepayment rule — RQ cache bilan, 5 daqiqa stale time.
@@ -533,6 +533,22 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       fetchData(true);
     } catch (err) {
       showStatus('error', "Arxivlashda xato!");
+    }
+  };
+
+  // Buyurtmani BUTUNLAY o'chirish — faqat admin. Backend ham admin huquqini tekshiradi.
+  const handleDeleteTask = async () => {
+    if (!confirmModal.id) return;
+    try {
+      await tasksApi.remove(confirmModal.id);
+      setIsDetailModalOpen(false);
+      setConfirmModal({ ...confirmModal, isOpen: false });
+      showStatus('success', "Buyurtma butunlay o'chirildi.");
+      fetchData(true);
+    } catch (err: any) {
+      showStatus('error', err?.response?.status === 403
+        ? "Buni faqat administrator qila oladi!"
+        : "O'chirishda xato!");
     }
   };
 
@@ -2003,9 +2019,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   );
                 })()}
 
-                {canDeleteTask && (
-                  <div className="flex justify-end pt-2">
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'task', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-bold text-amber-400 hover:text-amber-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Archive size={14} /> Buyurtmani arxivlash</button>
+                {(canDeleteTask || isAdmin) && (
+                  <div className="flex justify-end items-center gap-5 pt-2">
+                    {canDeleteTask && (
+                      <button onClick={() => setConfirmModal({ isOpen: true, type: 'task', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-bold text-amber-400 hover:text-amber-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Archive size={14} /> Buyurtmani arxivlash</button>
+                    )}
+                    {isAdmin && (
+                      <button onClick={() => setConfirmModal({ isOpen: true, type: 'task-delete', id: selectedTask.id, title: selectedTask.title })} className="text-[10px] font-bold text-rose-400 hover:text-rose-600 transition-colors flex items-center gap-2 uppercase tracking-widest"><Trash2 size={14} /> Butunlay o'chirish</button>
+                    )}
                   </div>
                 )}
               </div>
@@ -2422,7 +2443,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       <Modal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-        title={confirmModal.type === 'task' ? "Buyurtmani arxivlash" : "Bosqichni o'chirish"}
+        title={confirmModal.type === 'task' ? "Buyurtmani arxivlash" : confirmModal.type === 'task-delete' ? "Buyurtmani butunlay o'chirish" : "Bosqichni o'chirish"}
         type="danger"
       >
         <div className="space-y-6">
@@ -2433,6 +2454,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               <p className="text-xs font-bold text-rose-700 mt-1">
                 {confirmModal.type === 'task'
                   ? <>Siz <strong>{confirmModal.title}</strong> buyurtmasini arxivlamoqchisiz. Buyurtma arxivga ko'chiriladi.</>
+                  : confirmModal.type === 'task-delete'
+                  ? <>Siz <strong>{confirmModal.title}</strong> buyurtmasini <strong>butunlay</strong> o'chirmoqchisiz. Barcha bog'liq yozuvlar (tarix, xarajatlar, fayllar) ham o'chadi. Bu amalni ortga qaytarib bo'lmaydi!</>
                   : <>Siz <strong>{confirmModal.title}</strong> bosqichini o'chirmoqchisiz. Bu amalni ortga qaytarib bo'lmaydi!</>
                 }
               </p>
@@ -2449,9 +2472,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             <button
               type="button"
               className="h-14 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all px-10"
-              onClick={confirmModal.type === 'task' ? handleArchiveTask : handleRemoveColumn}
+              onClick={confirmModal.type === 'task' ? handleArchiveTask : confirmModal.type === 'task-delete' ? handleDeleteTask : handleRemoveColumn}
             >
-              {confirmModal.type === 'task' ? 'Ha, arxivlash' : "Ha, o'chirilsin"}
+              {confirmModal.type === 'task' ? 'Ha, arxivlash' : confirmModal.type === 'task-delete' ? "Ha, butunlay o'chir" : "Ha, o'chirilsin"}
             </button>
           </div>
         </div>

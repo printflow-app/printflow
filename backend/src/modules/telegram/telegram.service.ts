@@ -111,10 +111,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       console.error('❌ Telegram bot handler xatosi:', err?.message || err);
     });
 
-    const backendUrl = process.env.BACKEND_URL;
+    const webhookUrl = this.buildWebhookUrl();
 
-    if (backendUrl) {
-      const webhookUrl = `${backendUrl}/api/telegram/webhook`;
+    if (webhookUrl) {
       const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
       try {
         await this.bot.telegram.setWebhook(webhookUrl, {
@@ -148,6 +147,54 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   async handleUpdate(body: any) {
     if (!this.bot) return;
     await this.bot.handleUpdate(body);
+  }
+
+  // BACKEND_URL'dan webhook manzilini quradi. Trailing slash va xato '/api'
+  // qo'shimchalarini tozalaydi (noto'g'ri URL → Telegram update yetkaza olmaydi).
+  private buildWebhookUrl(): string | null {
+    let base = (process.env.BACKEND_URL || '').trim();
+    if (!base) return null;
+    base = base.replace(/\/+$/, '');          // oxirgi '/' larni olib tashlaymiz
+    base = base.replace(/\/api$/, '');         // BACKEND_URL xato '/api' bilan tugasa
+    return `${base}/api/telegram/webhook`;
+  }
+
+  // DIAGNOSTIKA — bot holatini va Telegram webhook ma'lumotini qaytaradi.
+  // last_error_message / pending_update_count muammoning aniq sababini ko'rsatadi.
+  async getDiagnostics() {
+    if (!this.bot) {
+      return { botActive: false, reason: "TELEGRAM_BOT_TOKEN topilmadi yoki noto'g'ri" };
+    }
+    const configuredUrl = this.buildWebhookUrl();
+    const mode = configuredUrl ? 'webhook' : 'polling';
+    try {
+      const info = await this.bot.telegram.getWebhookInfo();
+      const me = await this.bot.telegram.getMe().catch(() => null);
+      return {
+        botActive: true,
+        mode,
+        configuredUrl,
+        secretSet: !!process.env.TELEGRAM_WEBHOOK_SECRET,
+        botUsername: me?.username || null,
+        telegramWebhook: info, // { url, pending_update_count, last_error_date, last_error_message, ... }
+      };
+    } catch (e: any) {
+      return { botActive: true, mode, configuredUrl, error: e?.message || String(e) };
+    }
+  }
+
+  // Webhook'ni qayta o'rnatadi (manzil yoki secret o'zgargach foydali).
+  async resetWebhook() {
+    if (!this.bot) return { ok: false, reason: "TELEGRAM_BOT_TOKEN topilmadi" };
+    const url = this.buildWebhookUrl();
+    if (!url) return { ok: false, reason: "BACKEND_URL topilmadi — webhook o'rnatib bo'lmaydi (polling rejimi)" };
+    await this.bot.telegram.deleteWebhook({ drop_pending_updates: false }).catch(() => {});
+    await this.bot.telegram.setWebhook(url, {
+      secret_token: process.env.TELEGRAM_WEBHOOK_SECRET,
+      drop_pending_updates: true,
+    });
+    const info = await this.bot.telegram.getWebhookInfo();
+    return { ok: true, url, telegramWebhook: info };
   }
 
   // =============================================

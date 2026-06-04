@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, ForbiddenException } from '@nestjs/common';
 import { Request } from 'express';
 import { TasksService } from './tasks.service';
 
@@ -100,10 +100,22 @@ export class TasksController {
     return this.tasksService.update(id, data, employeeId);
   }
 
-  // ARCHIVE — DELETE o'rniga. Buyurtmalar hech qachon o'chirilmaydi.
+  // ARCHIVE — oddiy foydalanuvchilar uchun. Buyurtma arxivga ko'chiriladi (o'chmaydi).
   @Post(':id/archive')
   archive(@Param('id') id: string) {
     return this.tasksService.archive(id);
+  }
+
+  // HARD DELETE — buyurtmani butunlay o'chirish. Faqat workspace admin / super admin.
+  @Delete(':id')
+  remove(@Param('id') id: string, @Req() req: Request) {
+    const user = (req as any)?.user;
+    const isAdmin =
+      !!user && (user.isAdmin || user.isSuperAdmin || user.role?.toLowerCase() === 'admin');
+    if (!isAdmin) {
+      throw new ForbiddenException("Buyurtmani butunlay o'chirish faqat administrator uchun ruxsat etilgan");
+    }
+    return this.tasksService.remove(id);
   }
 
   @Post(':id/view')

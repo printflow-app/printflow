@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
@@ -649,8 +649,21 @@ export class TasksService {
     });
   }
 
-  // DELETE o'chirildi — faqat arxivlash mumkin (audit trail saqlanadi)
-  // async remove() — DISABLED intentionally (use archive() instead)
+  // Buyurtmani BUTUNLAY o'chirish — faqat administrator/super admin uchun (controller'da tekshiriladi).
+  // Oddiy foydalanuvchilar uchun arxivlash (archive) ishlatiladi.
+  async remove(id: string) {
+    const existing = await this.prisma.task.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Buyurtma topilmadi');
+
+    // Transaction.taskId — FK bog'lanmagan loose ustun. Kassa yozuvi (zakolat) saqlanadi,
+    // faqat task bilan bog'liqligini uzamiz (yetim ID qolmasligi uchun).
+    await this.prisma.transaction.updateMany({ where: { taskId: id }, data: { taskId: null } });
+
+    // Qolgan bolalar onDelete bilan avtomatik tozalanadi:
+    //   TaskHistory / TaskExpense / TaskAttachment / OrderVendorCost → Cascade
+    //   StockMovement.taskId → SetNull (default, ombor harakati tarixi saqlanadi)
+    return this.prisma.task.delete({ where: { id } });
+  }
 
   async getColumns(viewMode: 'all' | 'own' = 'all', currentUserId?: string, branchId?: string) {
     const taskBase: any = { isArchived: false };
