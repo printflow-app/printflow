@@ -65,6 +65,8 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
 
     setLoading(true);
     try {
+      // Telegram WebApp ichida register qilingan bo'lsa — egani Telegram'ga bog'laymiz.
+      const tgId = (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user?.id;
       const res = await authApi.register({
         tenantName: tenantName.trim(),
         workspaceSlug: effectiveSlug,
@@ -72,6 +74,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
         login: login.trim().toLowerCase(),
         password,
         phone: phone.trim() || undefined,
+        ...(tgId ? { telegramId: String(tgId) } : {}),
       });
 
       const { token, user, workspaceSlug: slug } = res.data;

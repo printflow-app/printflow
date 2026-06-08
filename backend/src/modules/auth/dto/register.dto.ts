@@ -62,4 +62,11 @@ export class RegisterDto {
   @IsString()
   @MaxLength(32)
   phone?: string;
+
+  // Telegram WebApp ichida register qilinganda — initData'dan keladigan
+  // Telegram user id. Hisobni Telegram'ga bog'lash uchun (ixtiyoriy).
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  telegramId?: string;
 }

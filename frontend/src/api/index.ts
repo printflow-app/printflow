@@ -108,7 +108,9 @@ api.interceptors.response.use(
 // =============================================
 export const authApi = {
   // Workspace login: { workspaceSlug, login, password }
-  login: (data: { workspaceSlug: string; login: string; password: string }) =>
+  // telegramId — Telegram WebApp ichida login qilinganda yuboriladi; backend
+  // hisobni Telegram'ga avtomatik bog'laydi (botda alohida login shart emas).
+  login: (data: { workspaceSlug: string; login: string; password: string; telegramId?: string }) =>
     api.post('/auth/login', data),
 
   // Self-serve tenant registration → creates Tenant + Admin + default Branch atomically,
@@ -120,6 +122,7 @@ export const authApi = {
     login: string;
     password: string;
     phone?: string;
+    telegramId?: string;
   }) => api.post('/auth/register', data),
 
   logout: () => api.post('/auth/logout'),

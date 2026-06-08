@@ -317,6 +317,19 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
     return new Date(isoStr).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
   };
 
+  // checkIn → checkOut oralig'idagi ishlagan vaqt (masalan "8s 15d").
+  // checkOut bo'lmasa null qaytadi (xodim hali ishda).
+  const formatWorkedDuration = (checkIn: string | null, checkOut: string | null) => {
+    if (!checkIn || !checkOut) return null;
+    const ms = new Date(checkOut).getTime() - new Date(checkIn).getTime();
+    if (ms <= 0) return null;
+    const totalMinutes = Math.round(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) return `${minutes}d`;
+    return `${hours}s ${minutes}d`;
+  };
+
   if (isLoading) return <LoadingSpinner fullPage />;
 
   const pendingOvertime = overtimeRequests.filter(r => r.status === 'PENDING');
@@ -780,45 +793,82 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 )}
               </div>
             </div>
-            <div className="overflow-x-auto p-4">
+            <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr>
-                    <th className="px-2 py-2 text-left text-[9px] font-bold text-slate-400 uppercase border-r border-slate-100 min-w-[120px]">Xodim</th>
-                    {Array.from({ length: new Date(matrixDate.year, matrixDate.month, 0).getDate() }).map((_, i) => (
-                      <th key={i} className="px-1 py-2 text-center text-[8px] font-bold text-slate-400 uppercase w-6">{i + 1}</th>
-                    ))}
+                  <tr className="bg-slate-50/80 border-b border-slate-100">
+                    <th className="px-4 py-3 text-left text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">Xodim</th>
+                    <th className="px-4 py-3 text-left text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">Sana</th>
+                    <th className="px-4 py-3 text-left text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">Kelgan vaqti</th>
+                    <th className="px-4 py-3 text-left text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ketgan vaqti</th>
+                    <th className="px-4 py-3 text-left text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ishlagan vaqti</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map(emp => {
-                    const empRecords = monthlyRecords.filter(r => r.employeeId === emp.id);
-                    return (
-                      <tr key={emp.id} className="border-t border-slate-50 hover:bg-slate-50/50">
-                        <td className="px-2 py-2 border-r border-slate-100">
-                          <p className="text-[10px] font-bold text-slate-700 truncate max-w-[110px]" title={emp.fullName}>{emp.fullName}</p>
-                        </td>
-                        {Array.from({ length: new Date(matrixDate.year, matrixDate.month, 0).getDate() }).map((_, i) => {
-                          const dateStr = `${matrixDate.year}-${String(matrixDate.month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
-                          const dayRecord = empRecords.find(r => r.date === dateStr);
-                          let dotClass = 'bg-slate-100';
-                          let title = 'Kelmagan';
-                          if (dayRecord?.checkIn) {
-                            if (dayRecord.lateMinutes > 0) { dotClass = 'bg-rose-400'; title = `Kech qolgan: ${dayRecord.lateMinutes}m`; }
-                            else { dotClass = 'bg-emerald-400'; title = 'Vaqtida kelgan'; }
-                          }
-                          if (dayRecord?.overtimeMinutes && dayRecord.overtimeMinutes > 0) {
-                            dotClass = 'bg-violet-500'; title = `Ortiqcha: +${dayRecord.overtimeMinutes}m`;
-                          }
-                          return (
-                            <td key={i} className="px-1 py-1 tabular-nums text-center">
-                              <div className={`w-2.5 h-2.5 rounded-full mx-auto shadow-sm ${dotClass}`} title={`${dateStr}: ${title}`} />
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
+                  {(() => {
+                    const sorted = [...monthlyRecords]
+                      .filter(r => r.checkIn)
+                      .sort((a, b) =>
+                        (a.employee?.fullName || '').localeCompare(b.employee?.fullName || '') ||
+                        a.date.localeCompare(b.date),
+                      );
+                    if (sorted.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={5} className="py-16 text-center">
+                            <Calendar size={28} className="mx-auto text-slate-200 mb-2" />
+                            <p className="text-slate-300 font-bold uppercase tracking-widest text-[10px]">Bu oy uchun davomat yo'q</p>
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return sorted.map(record => {
+                      const worked = formatWorkedDuration(record.checkIn, record.checkOut);
+                      return (
+                        <tr key={record.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center border border-orange-200">
+                                {record.employee?.fullName?.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">{record.employee?.fullName}</p>
+                                <p className="text-[8px] font-bold text-slate-400 uppercase">{record.employee?.role?.name || 'Xodim'}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-bold text-[11px] text-slate-700 tabular-nums">{record.date}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <LogIn size={12} className={record.checkIn ? 'text-emerald-500' : 'text-slate-200'} />
+                              <span className={`font-bold tabular-nums ${record.checkIn ? 'text-emerald-600' : 'text-slate-300'}`}>{formatTime(record.checkIn)}</span>
+                              {record.lateMinutes > 0 && (
+                                <span className="ml-1 inline-flex items-center bg-rose-50 text-rose-600 text-[8px] font-bold px-1.5 py-0.5 rounded-md border border-rose-100">+{record.lateMinutes}m</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <LogOut size={12} className={record.checkOut ? 'text-sky-500' : 'text-slate-200'} />
+                              <span className={`font-bold tabular-nums ${record.checkOut ? 'text-sky-600' : 'text-slate-300'}`}>{formatTime(record.checkOut)}</span>
+                              {record.overtimeMinutes && record.overtimeMinutes > 0 ? (
+                                <span className="ml-1 inline-flex items-center bg-violet-50 text-violet-700 text-[8px] font-bold px-1.5 py-0.5 rounded-md border border-violet-100">+{record.overtimeMinutes}m</span>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {worked ? (
+                              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-slate-200 tabular-nums">
+                                <Clock size={11} className="text-slate-400" /> {worked}
+                              </span>
+                            ) : (
+                              <span className="text-orange-600 text-[8px] font-bold uppercase">Ishda</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

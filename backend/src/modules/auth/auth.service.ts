@@ -41,6 +41,32 @@ function buildTenantFeatures(plan: any): Record<string, any> {
   return features;
 }
 
+// Full permission shape for a workspace owner/admin. Shared by register() and
+// telegramAuth() so an owner who connects via Telegram gets the identical
+// permission set the signup flow returns.
+const OWNER_ADMIN_ROLE = {
+  name: 'Admin',
+  canViewFinance: true, canAddIncome: true, canAddExpense: true, canViewTotalBalance: true,
+  canManagePaymentTypes: true, canViewTasks: true, canCreateTask: true, canEditTask: true,
+  canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
+  canManageCustomers: true, canViewInventory: true, canManageInventory: true,
+  canViewAttendance: true, canManageAttendance: true, canViewServices: true,
+  canManageServices: true, canViewEmployees: true, canManageEmployees: true,
+  canViewRoles: true, canManageRoles: true, canViewSalary: true, canManageAdmins: true,
+  canViewKpi: true, canManageBranches: true, canManageNotifications: true,
+  canViewExpenseCharts: true, canViewSettings: true, canAssignToOtherBranches: true,
+  canManageBilling: true, canViewVendors: true, canViewStatistics: true,
+  canViewFinanceReports: true, canViewServiceReports: true, canManageExpenseTypes: true,
+  canManageKanbanColumns: true, canManageGeneralSettings: true,
+  canViewAllTasks: true, canViewOwnTasks: false, canViewAllAttendance: true,
+  canViewGrowthCards: true, canViewIncomeByType: true, canViewExpenseByType: true,
+  canViewCostCalculator: true, canAddCustomer: true, canEditCustomer: true,
+  canDeleteCustomer: true, canAddEmployee: true, canEditEmployee: true,
+  canDeleteEmployee: true, canResetEmployeePassword: true, canAddInventoryItem: true,
+  canReceiveInventory: true, canUseInventory: true, canWriteOffInventory: true,
+  canManageVendors: true, canViewBranches: true, canViewBillingStatus: true,
+} as const;
+
 // =============================================
 // AUTH SERVICE
 // Workspace login + Super-Admin login
@@ -61,7 +87,7 @@ export class AuthService {
    * 3. Validate bcrypt password
    * 4. Sign JWT with tenantId embedded
    */
-  async login(workspaceSlug: string, login: string, password: string) {
+  async login(workspaceSlug: string, login: string, password: string, telegramId?: string) {
     // Step 1: Find tenant (not tenant-scoped — platform-level query)
     const tenant = await this.prisma.tenant.findUnique({
       where: { slug: workspaceSlug },
@@ -164,6 +190,15 @@ export class AuthService {
       },
     );
 
+    // Telegram WebApp ichida login qilingan bo'lsa — hisobni Telegram'ga bog'laymiz.
+    // Shundan keyin botda alohida login qilish shart emas; bildirishnomalar ishlaydi.
+    await this.linkTelegram({
+      telegramId,
+      isWorkspaceAdmin,
+      userId: userEntity.id,
+      tenantId: tenant.id,
+    });
+
     // Return user info (no password hash exposed)
     return {
       token,
@@ -200,7 +235,7 @@ export class AuthService {
    * Returns a signed JWT identical in shape to the workspace login flow,
    * so the frontend can drop the user straight into the dashboard.
    */
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, telegramId?: string) {
     // Refuse to sign tokens without a real secret — never fall back to a
     // committed string. (Pre-existing fallbacks in login()/telegramAuth()
     // should also be removed; tracked separately.)
@@ -307,28 +342,15 @@ export class AuthService {
 
     // Admin role permission shape — same object the login flow returns,
     // so the frontend's permission gating works identically post-register.
-    const adminRoleShape = {
-      name: 'Admin',
-      canViewFinance: true, canAddIncome: true, canAddExpense: true, canViewTotalBalance: true,
-      canManagePaymentTypes: true, canViewTasks: true, canCreateTask: true, canEditTask: true,
-      canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
-      canManageCustomers: true, canViewInventory: true, canManageInventory: true,
-      canViewAttendance: true, canManageAttendance: true, canViewServices: true,
-      canManageServices: true, canViewEmployees: true, canManageEmployees: true,
-      canViewRoles: true, canManageRoles: true, canViewSalary: true, canManageAdmins: true,
-      canViewKpi: true, canManageBranches: true, canManageNotifications: true,
-      canViewExpenseCharts: true, canViewSettings: true, canAssignToOtherBranches: true,
-      canManageBilling: true, canViewVendors: true, canViewStatistics: true,
-      canViewFinanceReports: true, canViewServiceReports: true, canManageExpenseTypes: true,
-      canManageKanbanColumns: true, canManageGeneralSettings: true,
-      canViewAllTasks: true, canViewOwnTasks: false, canViewAllAttendance: true,
-      canViewGrowthCards: true, canViewIncomeByType: true, canViewExpenseByType: true,
-      canViewCostCalculator: true, canAddCustomer: true, canEditCustomer: true,
-      canDeleteCustomer: true, canAddEmployee: true, canEditEmployee: true,
-      canDeleteEmployee: true, canResetEmployeePassword: true, canAddInventoryItem: true,
-      canReceiveInventory: true, canUseInventory: true, canWriteOffInventory: true,
-      canManageVendors: true, canViewBranches: true, canViewBillingStatus: true,
-    };
+    const adminRoleShape = OWNER_ADMIN_ROLE;
+
+    // Telegram WebApp ichida ro'yxatdan o'tilgan bo'lsa — egani Telegram'ga bog'laymiz.
+    await this.linkTelegram({
+      telegramId,
+      isWorkspaceAdmin: true,
+      userId: admin.id,
+      tenantId: tenant.id,
+    });
 
     const token = this.jwt.sign(
       {
@@ -365,26 +387,103 @@ export class AuthService {
   }
 
   /**
+   * Telegram WebApp ichida login/register qilingan foydalanuvchining hisobini
+   * uning Telegram akkauntiga bog'laydi. Shundan so'ng botda alohida login
+   * qilish shart emas va bildirishnomalar/overtime oqimi ishlaydi.
+   *
+   * Bitta telegramId = bitta hisob: avval shu telegramId bog'langan boshqa
+   * hisoblardan uzamiz, keyin joriy foydalanuvchiga biriktiramiz.
+   *
+   * Xatolik bo'lsa jim o'tadi — bu login/register'ni hech qachon buzmasligi kerak.
+   *
+   * XAVFSIZLIK ESLATMASI: telegramId hozircha frontend'da initDataUnsafe'dan
+   * keladi (kriptografik tasdiqlanmagan). Kelajakda backend'da initData HMAC
+   * tekshiruvini qo'shish kerak (Telegram bot token bilan).
+   */
+  private async linkTelegram(opts: {
+    telegramId?: string;
+    isWorkspaceAdmin: boolean;
+    userId: string;
+    tenantId: string;
+  }) {
+    const { telegramId, isWorkspaceAdmin, userId, tenantId } = opts;
+    if (!telegramId) return;
+    const tgId = telegramId.toString();
+    try {
+      // Bitta telegram = bitta hisob: eski bog'lanishlarni tozalaymiz.
+      await this.prisma.employee.updateMany({
+        where: { telegramId: tgId, id: { not: userId } },
+        data: { telegramId: null },
+      });
+      await this.prisma.workspaceAdmin.updateMany({
+        where: { telegramId: tgId, id: { not: userId } },
+        data: { telegramId: null },
+      });
+
+      if (isWorkspaceAdmin) {
+        await this.prisma.workspaceAdmin.update({
+          where: { id: userId },
+          data: { telegramId: tgId },
+        });
+      } else {
+        await this.prisma.employee.update({
+          where: { id: userId },
+          data: { telegramId: tgId },
+        });
+      }
+
+      // BotSession — bot bildirishnoma va overtime oqimi uchun kerak.
+      // employeeId faqat employee uchun; workspace admin uchun null qoldiriladi.
+      await this.prisma.botSession.upsert({
+        where: { chatId: tgId },
+        update: {
+          tenantId,
+          employeeId: isWorkspaceAdmin ? null : userId,
+          step: 'IDLE',
+          loginAttempt: null,
+        },
+        create: {
+          chatId: tgId,
+          tenantId,
+          employeeId: isWorkspaceAdmin ? null : userId,
+          step: 'IDLE',
+        },
+      });
+    } catch (err: any) {
+      console.warn('linkTelegram xatosi (e\'tiborsiz):', err?.message || err);
+    }
+  }
+
+  /**
    * Telegram WebApp auto-login.
-   * Bot orqali employee.telegramId allaqachon bog'langan bo'lsa,
+   * Bot orqali (yoki WebApp ichida login qilib) telegramId bog'langan bo'lsa,
    * shu identifikator orqali to'liq JWT auth flow'i bajariladi.
    * Parol tekshirilmaydi — Telegram'ning o'zi shaxsni tasdiqlaydi.
+   * Employee ham, workspace admin ham qo'llab-quvvatlanadi.
    */
   async telegramAuth(telegramId: string) {
     if (!telegramId) {
       throw new UnauthorizedException('Telegram ID kerak');
     }
+    const tgId = telegramId.toString();
 
     // Tenant context yo'q — employee'ni telegramId orqali to'g'ridan-to'g'ri topamiz.
     // Prisma middleware tryGetTenantId() = null bo'lsa scope qo'shmaydi.
     const employee = await this.prisma.employee.findFirst({
-      where: { telegramId: telegramId.toString() },
+      where: { telegramId: tgId },
       include: { role: true },
     });
 
     if (!employee) {
+      // Employee topilmadi — workspace admin (egasi) sifatida urinamiz.
+      const admin = await this.prisma.workspaceAdmin.findFirst({
+        where: { telegramId: tgId },
+      });
+      if (admin) {
+        return this.buildAdminTelegramSession(admin);
+      }
       throw new UnauthorizedException(
-        "Telegram hisobi tizimda bog'lanmagan. Avval botda /start orqali ro'yxatdan o'ting.",
+        "Telegram hisobi tizimda bog'lanmagan. Avval platformaga bir marta kiring.",
       );
     }
 
@@ -442,6 +541,66 @@ export class AuthService {
         baseSalary: (employee as any).baseSalary,
         givenAmount: (employee as any).givenAmount,
         workDebt: (employee as any).workDebt,
+        tenantFeatures: buildTenantFeatures(tenant.plan),
+      },
+    };
+  }
+
+  /**
+   * Telegram orqali bog'langan workspace admin (egasi) uchun sessiya quradi.
+   * login() ning admin tarmog'i bilan bir xil token/permission shaklini qaytaradi.
+   */
+  private async buildAdminTelegramSession(admin: { id: string; tenantId: string; fullName: string; login: string; phone: string | null; telegramId: string | null; passwordVersion: number }) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: admin.tenantId },
+      include: { plan: true },
+    });
+    if (!tenant || !tenant.isActive) {
+      throw new UnauthorizedException('Workspace faol emas');
+    }
+    const now = new Date();
+    if (tenant.status === 'EXPIRED') {
+      throw new UnauthorizedException('Obuna muddati tugagan. Obuna xarid qiling');
+    }
+    if (tenant.status === 'TRIAL' && tenant.trialEndsAt && now > tenant.trialEndsAt) {
+      throw new UnauthorizedException('Sinov muddati tugagan. Obuna xarid qiling');
+    }
+    if (tenant.status === 'ACTIVE' && tenant.subscriptionEndsAt && now > tenant.subscriptionEndsAt) {
+      throw new UnauthorizedException('Obuna muddati tugagan. Obuna xarid qiling');
+    }
+
+    const token = this.jwt.sign(
+      {
+        sub: admin.id,
+        tenantId: tenant.id,
+        workspaceSlug: tenant.slug,
+        role: 'Admin',
+        isAdmin: true,
+        permissions: OWNER_ADMIN_ROLE,
+        passwordVersion: admin.passwordVersion,
+      },
+      {
+        secret: process.env.JWT_SECRET || 'printflow_super_secret_key_2024',
+        expiresIn: '7d',
+      },
+    );
+
+    return {
+      token,
+      workspaceSlug: tenant.slug,
+      user: {
+        id: admin.id,
+        fullName: admin.fullName,
+        login: admin.login,
+        phone: admin.phone,
+        telegramId: admin.telegramId,
+        passwordVersion: admin.passwordVersion,
+        isFirstLogin: false,
+        role: OWNER_ADMIN_ROLE,
+        permissions: OWNER_ADMIN_ROLE,
+        tenantId: tenant.id,
+        tenantName: tenant.name,
+        workspaceSlug: tenant.slug,
         tenantFeatures: buildTenantFeatures(tenant.plan),
       },
     };

@@ -44,10 +44,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
     }
 
     try {
+      // Telegram WebApp ichida ochilgan bo'lsa — telegram user id'ni ham yuboramiz.
+      // Backend hisobni Telegram'ga bog'laydi; keyingi safar avtomatik login bo'ladi
+      // va botda alohida ro'yxatdan o'tish shart emas.
+      const tgId = (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user?.id;
       const res = await authApi.login({
         workspaceSlug: slug,
         login: username.trim(),
         password,
+        ...(tgId ? { telegramId: String(tgId) } : {}),
       });
 
       // Server httpOnly cookie qo'yadi, lekin Telegram WebApp / iOS Safari kabi

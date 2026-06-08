@@ -2,7 +2,6 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Markup } from 'telegraf';
-import * as bcrypt from 'bcrypt';
 import { OvertimeService } from '../overtime/overtime.service';
 
 // =============================================
@@ -12,6 +11,11 @@ import { OvertimeService } from '../overtime/overtime.service';
 
 const LANGS = {
   uz: {
+    welcome:
+      '👋 *PrintFlow botiga xush kelibsiz!*\n\n' +
+      'Quyidagi tugma orqali platformani oching va bir marta tizimga kiring — ' +
+      "hisobingiz Telegram'ga *avtomatik bog'lanadi*. Shundan so'ng bu yerda " +
+      'bildirishnomalar olasiz va keyingi safar parol kiritish shart emas.',
     chooseLanguage: '🌐 *Tilni tanlang:*',
     btnLatin:   "🇺🇿 O'zbek (lotin)",
     btnCyrillic:"🇺🇿 O'zbek (kirill)",
@@ -38,6 +42,11 @@ const LANGS = {
     noWorkspace: "❌ Tizimda hali hech qanday workspace yo'q.",
   },
   kril: {
+    welcome:
+      '👋 *PrintFlow ботига хуш келибсиз!*\n\n' +
+      'Қуйидаги тугма орқали платформани очинг ва бир марта тизимга киринг — ' +
+      "ҳисобингиз Телеграмга *автоматик боғланади*. Шундан сўнг бу ерда " +
+      'билдиришномалар оласиз ва кейинги сафар парол киритиш шарт эмас.',
     chooseLanguage: '🌐 *Тилни танланг:*',
     btnLatin:   '🇺🇿 Ўзбек (лотин)',
     btnCyrillic:'🇺🇿 Ўзбек (кирилл)',
@@ -69,17 +78,19 @@ function L(session: any) {
   return session?.lang === 'kril' ? LANGS.kril : LANGS.uz;
 }
 
-function langKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback(LANGS.uz.btnLatin,   'lang_uz')],
-    [Markup.button.callback(LANGS.uz.btnCyrillic, 'lang_kril')],
-  ]);
-}
-
 function logoutKeyboard(lang: typeof LANGS.uz) {
   return Markup.keyboard([
     [Markup.button.webApp('🌐 Platformani ochish', 'https://printflow-gilt.vercel.app/')],
     [lang.btnLogout]
+  ]).resize();
+}
+
+// Hali bog'lanmagan foydalanuvchi uchun — faqat platformani ochish tugmasi.
+// WebApp tugmasi Mini App'ni initData bilan ochadi; platformada login/register
+// qilinganda hisob avtomatik Telegram'ga bog'lanadi.
+function openPlatformKeyboard() {
+  return Markup.keyboard([
+    [Markup.button.webApp('🚀 Platformani ochish', 'https://printflow-gilt.vercel.app/')],
   ]).resize();
 }
 
@@ -223,12 +234,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       return next();
     });
 
-    // /start komandasi
+    // /start komandasi — endi botda alohida login YO'Q.
+    // Foydalanuvchi "Platformani ochish" tugmasi orqali Mini App'ni ochadi va
+    // platformada bir marta login/register qiladi; hisob avtomatik Telegram'ga
+    // bog'lanadi (auth.service.linkTelegram). Shundan so'ng bildirishnomalar ishlaydi.
     this.bot.start(async (ctx: any) => {
       console.log('📥 /start komandasi qabul qilindi, chatId:', ctx.chat?.id);
       try {
-        const chatId = ctx.chat.id.toString();
-
         // Allaqachon ulangan foydalanuvchi
         if (ctx.employeeId && ctx.botSession?.step === 'IDLE') {
           const lang = L(ctx.botSession);
@@ -238,62 +250,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           );
         }
 
-        // Session yangilash yoki yaratish — til tanlash bosqichiga o'tish
-        const firstTenant = await this.prisma.tenant.findFirst({ where: { isActive: true } });
-        if (!firstTenant) {
-          return ctx.reply(LANGS.uz.noWorkspace);
-        }
-
-        await this.prisma.botSession.upsert({
-          where: { chatId },
-          update: { step: 'LANG', employeeId: null, loginAttempt: null, lang: 'uz' },
-          create: { chatId, tenantId: firstTenant.id, step: 'LANG', lang: 'uz' },
-        });
-
-        console.log('✅ BotSession yaratildi/yangilandi. Til tanlash yuborilmoqda...');
-        try {
-          await ctx.reply(
-            LANGS.uz.chooseLanguage,
-            { parse_mode: 'Markdown', ...langKeyboard() },
-          );
-          console.log('✅ Til tanlash xabari Telegramga yuborildi!');
-        } catch (replyErr: any) {
-          console.error('❌ Xabar yuborishda xatolik:', replyErr?.message || replyErr);
-          // Markdownsiz jo'natib ko'ramiz
-          await ctx.reply(LANGS.uz.chooseLanguage, langKeyboard());
-        }
+        return ctx.reply(
+          LANGS.uz.welcome,
+          { parse_mode: 'Markdown', ...openPlatformKeyboard() },
+        );
       } catch (err: any) {
         console.error('❌ /start handler xatosi:', err?.message || err, err?.stack);
         return ctx.reply('❌ Xatolik yuz berdi. Iltimos qayta urinib ko\'ring.');
       }
-    });
-
-    // =============================================
-    // TIL TANLASH (inline tugmalar)
-    // =============================================
-
-    this.bot.action('lang_uz', async (ctx: any) => {
-      await ctx.answerCbQuery();
-      const chatId = ctx.chat.id.toString();
-
-      await this.prisma.botSession.update({
-        where: { chatId },
-        data: { lang: 'uz', step: 'WORKSPACE' },
-      });
-
-      return ctx.reply(LANGS.uz.enterWorkspace, { parse_mode: 'Markdown' });
-    });
-
-    this.bot.action('lang_kril', async (ctx: any) => {
-      await ctx.answerCbQuery();
-      const chatId = ctx.chat.id.toString();
-
-      await this.prisma.botSession.update({
-        where: { chatId },
-        data: { lang: 'kril', step: 'WORKSPACE' },
-      });
-
-      return ctx.reply(LANGS.kril.enterWorkspace, { parse_mode: 'Markdown' });
     });
 
     // =============================================
@@ -327,10 +291,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           }
         }
 
-        // Sessiyani IDLE yoki LANG ga qaytaramiz (qotib qolgan bo'lsa) va yangilangan xabarni beramiz
+        // Sessiyani IDLE'ga qaytaramiz (qotib qolgan bo'lsa) va yangilangan xabarni beramiz
         await this.prisma.botSession.update({
           where: { chatId },
-          data: { step: session.employeeId ? 'IDLE' : 'LANG', loginAttempt: null },
+          data: { step: 'IDLE', loginAttempt: null },
         });
 
         const lang = L(session);
@@ -340,7 +304,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
              { parse_mode: 'Markdown', ...logoutKeyboard(lang) }
            );
         } else {
-           return ctx.reply('✅ Bot yangilandi! Davom etish uchun tilni tanlang.', { parse_mode: 'Markdown', ...langKeyboard() });
+           return ctx.reply(
+             '✅ Bot yangilandi! Platformani ochib bir marta tizimga kiring — hisobingiz avtomatik bog\'lanadi.',
+             { parse_mode: 'Markdown', ...openPlatformKeyboard() },
+           );
         }
       } catch (err) {
         console.error('/update xatosi:', err);
@@ -386,80 +353,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       const { step } = ctx.botSession;
       const lang = L(ctx.botSession);
 
-      // Til tanlash bosqichida matn kelsa — tugma bosishni so'rash
-      if (step === 'LANG') {
-        return ctx.reply(lang.pressButton, { parse_mode: 'Markdown', ...langKeyboard() });
-      }
-
-      // =============================================
-      // QADAM 1: Workspace slug
-      // =============================================
-      if (step === 'WORKSPACE') {
-        const slug   = text.toLowerCase().replace(/\s+/g, '-');
-        const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
-
-        if (!tenant || !tenant.isActive) {
-          return ctx.reply(lang.workspaceNotFound(slug), { parse_mode: 'Markdown' });
-        }
-
-        await this.prisma.botSession.update({
-          where: { chatId },
-          data: { tenantId: tenant.id, step: 'LOGIN', loginAttempt: null },
-        });
-
-        return ctx.reply(lang.workspaceFound(tenant.name), { parse_mode: 'Markdown' });
-      }
-
-      // =============================================
-      // QADAM 2: Login
-      // =============================================
-      if (step === 'LOGIN') {
-        await this.prisma.botSession.update({
-          where: { chatId },
-          data: { loginAttempt: text, step: 'PASSWORD' },
-        });
-        return ctx.reply(lang.enterPassword, { parse_mode: 'Markdown' });
-      }
-
-      // =============================================
-      // QADAM 3: Parolni tekshirish va ulash
-      // =============================================
-      if (step === 'PASSWORD') {
-        if (!ctx.tenantId) {
-          await this.prisma.botSession.update({
-            where: { chatId },
-            data: { step: 'WORKSPACE' },
-          });
-          return ctx.reply(lang.error);
-        }
-
-        const emp = await this.prisma.employee.findFirst({
-          where: { login: ctx.botSession.loginAttempt, tenantId: ctx.tenantId },
-        });
-
-        if (emp && (await bcrypt.compare(text, emp.passwordHash))) {
-          await this.prisma.botSession.update({
-            where: { chatId },
-            data: { employeeId: emp.id, step: 'IDLE', loginAttempt: null },
-          });
-          await this.prisma.employee.update({
-            where: { id: emp.id },
-            data: { telegramId: chatId },
-          });
-
-          return ctx.reply(
-            lang.success(emp.fullName),
-            { parse_mode: 'Markdown', ...logoutKeyboard(lang) },
-          );
-        }
-
-        // Xato — logindan qayta boshlash
-        await this.prisma.botSession.update({
-          where: { chatId },
-          data: { step: 'LOGIN', loginAttempt: null },
-        });
-        return ctx.reply(lang.wrongCredentials, { parse_mode: 'Markdown' });
-      }
+      // Eslatma: workspace/login/parol oqimi olib tashlandi — ro'yxatdan o'tish
+      // endi faqat platformada (Mini App) bo'ladi va hisob avtomatik bog'lanadi.
+      // Bot faqat OVERTIME izohi va IDLE (logout tugmasi) holatlarini boshqaradi.
 
       // OVERTIME_AWAITING — xodim ortiqcha ish izohini yuboryapti
       if (step === 'OVERTIME_AWAITING') {

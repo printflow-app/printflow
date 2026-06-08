@@ -37,13 +37,14 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
-    @Body() body: { workspaceSlug: string; login: string; password: string },
+    @Body() body: { workspaceSlug: string; login: string; password: string; telegramId?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
     const { token, user } = await this.authService.login(
       body.workspaceSlug,
       body.login,
       body.password,
+      body.telegramId,
     );
 
     // Set httpOnly cookie — JS cannot read this (XSS protection)
@@ -77,7 +78,7 @@ export class AuthController {
     @Body() body: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { token, user, workspaceSlug } = await this.authService.register(body);
+    const { token, user, workspaceSlug } = await this.authService.register(body, body.telegramId);
 
     res.cookie('pf_token', token, {
       httpOnly: true,
