@@ -555,6 +555,9 @@ model Role {
   // Xizmatlar Katalogi ruxsatlari
   canViewServices   Boolean @default(false)
   canManageServices Boolean @default(false)
+  // true → "Price list" (mijozga ko'rsatiladigan narxnoma) tugmasi/shortcut ko'rinadi.
+  // Egasi har bir lavozim uchun alohida yoqadi. (admin uchun har doim ochiq)
+  canShowPriceList  Boolean @default(false)
 
   // Xodimlar ruxsatlari
   canViewEmployees   Boolean @default(false)

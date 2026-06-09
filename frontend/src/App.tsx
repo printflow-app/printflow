@@ -50,6 +50,7 @@ export interface User {
     canManageAttendance: boolean;
     canViewServices: boolean;
     canManageServices: boolean;
+    canShowPriceList: boolean;
     canViewEmployees: boolean;
     canManageEmployees: boolean;
     canManageRoles: boolean;
@@ -565,6 +566,7 @@ export function buildUser(emp: any): User {
       canManageAttendance: role.canManageAttendance ?? false,
       canViewServices: role.canViewServices ?? false,
       canManageServices: role.canManageServices ?? false,
+      canShowPriceList: role.canShowPriceList ?? false,
       canViewEmployees: role.canViewEmployees ?? false,
       canManageEmployees: role.canManageEmployees ?? false,
       canManageRoles: role.canManageRoles ?? false,

@@ -13,7 +13,7 @@ import CurrencyInput from '../components/CurrencyInput';
 
 const Billing = React.lazy(() => import('./Billing'));
 
-const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
+const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogOnly?: boolean }> = ({ currentUser, activeBranchId, catalogOnly }) => {
   const isAdmin = currentUser.role?.name?.toLowerCase() === 'admin' || currentUser.login === 'admin';
   const p = currentUser.permissions || {};
 
@@ -174,7 +174,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     canManageBranches: false, canViewKpi: false, canViewExpenseCharts: false, canViewSettings: false, canAssignToOtherBranches: false,
     canManageBilling: false, canManageNotifications: false,
     canViewVendors: false, canViewInventory: false, canManageInventory: false, canViewAttendance: false, canViewAllAttendance: false, canManageAttendance: false,
-    canViewServices: false, canManageServices: false,
+    canViewServices: false, canManageServices: false, canShowPriceList: false,
     canViewStatistics: false, canViewFinanceReports: false, canViewServiceReports: false,
     canViewRoles: false, canManageExpenseTypes: false, canManageKanbanColumns: false, canManageGeneralSettings: false,
     canViewGrowthCards: false, canViewIncomeByType: false, canViewExpenseByType: false, canViewCostCalculator: false,
@@ -353,6 +353,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         permissions: {
           canViewServices: { label: "Xizmatlar katalogini ko'rish", detail: "'Xizmatlar katalogi' alohida sidebar tab ko'rinadi (Operatsiya guruhida). Bosma xizmatlar: nomi, birlik, asosiy narx, opsiyalar va material normasi (BOM) ko'rsatiladi." },
           canManageServices: { label: "Xizmat va opsiyalarni qo'shish, tahrirlash, o'chirish", detail: "Yangi xizmat qo'shish va narxini belgilash. Opsiyalar (qo'shimcha parametrlar) yaratish. Material normalarini bog'lash va o'zgartirish. Xizmatni o'chirish." },
+          canShowPriceList: { label: "Mijozga narxnoma (Price list) ko'rsatish", detail: "Xizmatlar katalogida 'Price list' tugmasi va Ctrl+Shift+P tezkor tugmasi faol bo'ladi. Xodim brendlangan narxlar ro'yxatini ochib mijozga ko'rsatishi yoki eksport qilishi mumkin. Ruxsat yo'q bo'lsa tugma umuman ko'rinmaydi." },
         }
       },
       {
@@ -505,7 +506,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
   return (
     <div className="space-y-6 pb-20 animate-fade-in">
-      {/* Tabs Switcher */}
+      {/* Tabs Switcher — catalog-only ko'rinishda (Xizmatlar Katalogi tab) yashiriladi */}
+      {!catalogOnly && (
       <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
         {[
           { id: 'general', label: 'Asosiy Sozlamalar', icon: Settings, activeClass: 'bg-orange-600 text-white shadow-orange-500/20' },
@@ -524,8 +526,9 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           </button>
         ))}
       </div>
+      )}
 
-      {activeSettingsTab === 'billing' && (
+      {!catalogOnly && activeSettingsTab === 'billing' && (
         <div className="animate-fade-in">
           <React.Suspense fallback={<LoadingSpinner />}>
             <Billing />
@@ -544,7 +547,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           )}
 
           {/* Roles Section */}
-          {(isAdmin || p.canViewRoles || p.canManageRoles) && (
+          {!catalogOnly && (isAdmin || p.canViewRoles || p.canManageRoles) && (
             <section className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
                 <div>
@@ -697,7 +700,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
 
           {/* Payment Types Section */}
-          {(isAdmin || p.canManagePaymentTypes) && (
+          {!catalogOnly && (isAdmin || p.canManagePaymentTypes) && (
             <section className="space-y-4">
               <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm transition-all hover:shadow-md">
                 <form data-tour-id="payment-type-form" onSubmit={handleAddPT} className="flex flex-col md:flex-row gap-3 mb-6 pb-6 border-b border-slate-100">
@@ -763,7 +766,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           )}
 
           {/* Expense Types Section */}
-          {(isAdmin || p.canManageExpenseTypes) && (
+          {!catalogOnly && (isAdmin || p.canManageExpenseTypes) && (
             <section className="space-y-4">
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div>
@@ -832,7 +835,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           )}
 
           {/* General Settings Section */}
-          {(isAdmin || p.canManageGeneralSettings) && (
+          {!catalogOnly && (isAdmin || p.canManageGeneralSettings) && (
             <section className="space-y-6">
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
                 <div>
@@ -872,7 +875,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           )}
 
           {/* Davomat — GPS Geofencing */}
-          {(isAdmin || p.canManageAttendance) && (
+          {!catalogOnly && (isAdmin || p.canManageAttendance) && (
             <section className="space-y-6">
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
                 <div>
@@ -1012,7 +1015,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           )}
 
           {/* Services Catalog Section */}
-          {(isAdmin || p.canViewServices || p.canAddService || p.canEditService || p.canDeleteService) && (
+          {(isAdmin || p.canViewServices || p.canManageServices || p.canShowPriceList || p.canAddService || p.canEditService || p.canDeleteService) && (
             <ServicesCatalogSection services={services} onRefresh={() => fetchData(true)} showStatus={showStatus} currentUser={currentUser} activeBranchId={activeBranchId} />
           )}
 
@@ -1104,6 +1107,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   const canEdit = isAdmin || p.canManageServices;
   const canDelete = isAdmin || p.canManageServices;
   const canManageOptions = isAdmin || p.canManageServices;
+  const canShowPriceList = isAdmin || p.canShowPriceList;
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isOptionOpen, setIsOptionOpen] = useState(false);
@@ -1112,10 +1116,11 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
   // Dashboard global Ctrl+P listener'i 'pf:open-price-list' eventini yuboradi —
   // shu joyda ushlab Price List modalni ochamiz.
   useEffect(() => {
+    if (!canShowPriceList) return;
     const onOpen = () => setIsPriceListOpen(true);
     window.addEventListener('pf:open-price-list', onOpen);
     return () => window.removeEventListener('pf:open-price-list', onOpen);
-  }, []);
+  }, [canShowPriceList]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
@@ -1340,7 +1345,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Pricing Engine — xizmat va opsiyalar narxlari</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          {services.length > 0 && (
+          {canShowPriceList && services.length > 0 && (
             <button
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 h-10 px-4 text-xs font-bold uppercase tracking-widest rounded-xl border-2 border-slate-200 hover:border-orange-300 transition-all"
               onClick={() => setIsPriceListOpen(true)}
