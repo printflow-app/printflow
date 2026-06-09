@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, Layers } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, FileText } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, branchesApi, billingApi } from '../api';
 import logo from '../assets/logo.png';
@@ -26,6 +26,9 @@ const Filiallar    = React.lazy(() => import('./Filiallar'));
 const Hamkorlar    = React.lazy(() => import('./Hamkorlar'));
 const Hisobotlar   = React.lazy(() => import('./Hisobotlar'));
 const Qollanma     = React.lazy(() => import('./Qollanma'));
+const PriceListModal = React.lazy(() =>
+  import('../components/PriceListModal').then(m => ({ default: m.PriceListModal })),
+);
 
 interface DashboardProps {
   currentUser: any;
@@ -33,8 +36,8 @@ interface DashboardProps {
   onUpdateUser: (updatedFields: any) => void;
 }
 
-type TabId = 'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma' | 'xizmatlar-katalog';
-const VALID_TABS: TabId[] = ['kassa','moliya','hodimlar','topshiriqlar','mijozlar','sozlamalar','ombor','davomat','admins','billing','filiallar','hamkorlar','hisobotlar','qollanma','xizmatlar-katalog'];
+type TabId = 'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma';
+const VALID_TABS: TabId[] = ['kassa','moliya','hodimlar','topshiriqlar','mijozlar','sozlamalar','ombor','davomat','admins','billing','filiallar','hamkorlar','hisobotlar','qollanma'];
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
   const navigate = useNavigate();
@@ -138,6 +141,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const [profileForm, setProfileForm] = useState({ fullName: '', login: '', password: '', confirmPassword: '' });
   const [showProfilePass, setShowProfilePass] = useState(false);
   const [showProfileConfirmPass, setShowProfileConfirmPass] = useState(false);
+
+  // Price list — navbar tugmasi va Ctrl+Shift+P orqali ochiladigan modal.
+  const [isPriceListOpen, setIsPriceListOpen] = useState(false);
 
   // =============================================
   // PAGE LOCKING SYSTEM
@@ -352,7 +358,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       items: [
         { id: 'kassa', label: 'Kassa', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
         { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
-        { id: 'xizmatlar-katalog', label: 'Xizmatlar Katalogi', icon: Layers, show: p.canViewServices || p.canManageServices || p.canShowPriceList || isAdmin, sub: 'Narxlar va price list' },
         { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: "Qarzlar va hamkorlar" },
         { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && (tf.inventory ?? tf.warehouse), sub: 'Materiallar va qoldiqlar' },
         { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
@@ -401,8 +406,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       const tag = t?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t?.isContentEditable) return;
       e.preventDefault();
-      if (activeTab !== 'sozlamalar') handleTabChange('sozlamalar');
-      setTimeout(() => window.dispatchEvent(new Event('pf:open-price-list')), 50);
+      // Sahifani almashtirmasdan to'g'ridan-to'g'ri Price list modalni ochamiz (hamma uchun ochiq).
+      setIsPriceListOpen(true);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -739,6 +744,19 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       {/* Global command palette — Ctrl+K opens it */}
       <CommandPalette />
 
+      {/* Price list modal — navbar tugmasi yoki Ctrl+Shift+P orqali ochiladi.
+          Faqat ochilganda yuklanadi (chunk eksport kutubxonalari og'ir). */}
+      {isPriceListOpen && (
+        <React.Suspense fallback={null}>
+          <PriceListModal
+            isOpen={isPriceListOpen}
+            onClose={() => setIsPriceListOpen(false)}
+            tenantSlug={currentUser?.workspaceSlug || ''}
+            defaultBranchId={activeBranchId}
+          />
+        </React.Suspense>
+      )}
+
       <main className="flex-1 flex flex-col h-[calc(100vh-3rem)] md:h-screen overflow-hidden">
         <header className="hidden md:flex h-16 px-6 items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md z-10">
           <div className="flex flex-col">
@@ -753,6 +771,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           </div>
 
           <div className="flex items-center gap-3">
+
+            {/* Price list — hamma uchun ochiq (ruxsat talab qilinmaydi) */}
+            <button
+              onClick={() => setIsPriceListOpen(true)}
+              className="flex items-center gap-2 h-9 px-3.5 rounded-full border border-slate-200 bg-white text-[12px] font-medium text-slate-500 hover:text-orange-600 hover:border-orange-300 transition-all"
+              title="Narxnoma (Price list) — Ctrl+Shift+P"
+            >
+              <FileText size={14} />
+              <span>Price list</span>
+            </button>
 
             {/* Ctrl+K hint — visible reminder of the command palette */}
             <button
@@ -837,11 +865,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'filiallar' && (isAdmin || p.canManageBranches || !!(p as any).canViewBranches) && <Filiallar currentUser={currentUser} />}
               {activeTab === 'hisobotlar' && (isAdmin || p.canViewFinanceReports || p.canViewExpenseCharts || p.canViewServiceReports) && <Hisobotlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'sozlamalar' && (p.canViewSettings || isAdmin) && <Sozlamalar currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'xizmatlar-katalog' && (p.canViewServices || p.canManageServices || p.canShowPriceList || isAdmin) && <Sozlamalar currentUser={currentUser} activeBranchId={activeBranchId} catalogOnly />}
               {activeTab === 'qollanma' && <Qollanma />}
 
               {(() => {
-                const SPECIAL_TABS = new Set(['qollanma', 'xizmatlar-katalog', 'filiallar', 'billing']);
+                const SPECIAL_TABS = new Set(['qollanma', 'filiallar', 'billing']);
                 if (SPECIAL_TABS.has(activeTab)) return null;
                 const item = navItems.find(i => i.id === activeTab);
                 if (item?.show) return null;
