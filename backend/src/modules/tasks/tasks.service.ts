@@ -157,8 +157,14 @@ export class TasksService {
       if (!finalCustomerId && customerName) {
         let customer = await tx.customer.findFirst({ where: { name: customerName } });
         if (!customer) {
+          // Mijozni buyurtmaning filiali bilan yaratamiz — aks holda branchId=null
+          // bo'lib qoladi va filial tanlangan Mijozlar ro'yxati filtridan tushib ketadi.
           customer = await tx.customer.create({
-            data: { name: customerName, phone: customerPhone } as any
+            data: {
+              name: customerName,
+              phone: customerPhone,
+              branchId: data.branchId || data.targetBranchId || null,
+            } as any
           });
         }
         finalCustomerId = customer.id;
@@ -303,8 +309,14 @@ export class TasksService {
       if (!finalCustomerId && customerName) {
         let customer = await tx.customer.findFirst({ where: { name: customerName } });
         if (!customer) {
+          // Mijozni buyurtmaning filiali bilan yaratamiz — aks holda branchId=null
+          // bo'lib qoladi va filial tanlangan Mijozlar ro'yxati filtridan tushib ketadi.
           customer = await tx.customer.create({
-            data: { name: customerName, phone: customerPhone } as any
+            data: {
+              name: customerName,
+              phone: customerPhone,
+              branchId: branchId || null,
+            } as any
           });
         }
         finalCustomerId = customer.id;

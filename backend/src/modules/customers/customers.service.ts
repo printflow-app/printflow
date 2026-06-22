@@ -15,11 +15,14 @@ export class CustomersService {
   // them per-customer in the list caused multi-MB payloads on Railway/Vercel.
   async findAll(branchId?: string, _includeDetails = false) {
     const customers = await this.prisma.customer.findMany({
+      // Filial tanlangda — o'sha filial mijozlari + filialsiz (branchId=null) mijozlar.
+      // Filialsizlar eski kanban buyurtmalaridan qolgan (yangi mijoz branchId'siz
+      // yaratilgan); aks holda ular ro'yxat filtridan tushib ko'rinmay qolardi.
       where:
         branchId === '__main__'
           ? { branchId: null }
           : branchId
-          ? { branchId }
+          ? { OR: [{ branchId }, { branchId: null }] }
           : undefined,
       orderBy: { updatedAt: 'desc' },
       include: {

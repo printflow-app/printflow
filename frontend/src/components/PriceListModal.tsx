@@ -4,7 +4,7 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { toast } from 'react-toastify';
 import {
-  X, Printer, Download, Loader2, Building2, CheckSquare, Square, FileText, Calculator,
+  X, Printer, Download, Loader2, Building2, CheckSquare, Square, FileText, Calculator, Search,
 } from 'lucide-react';
 import { PriceListView, PriceListData, PriceService } from './PriceListView';
 import { QuoteBuilder } from './QuoteBuilder';
@@ -44,6 +44,7 @@ export const PriceListModal: React.FC<Props> = ({
   const [branding, setBranding] = useState<PriceListData['branding']>(null);
   const [exportFormat, setExportFormat] = useState<'png' | 'pdf'>('png');
   const [activeTab, setActiveTab] = useState<'overview' | 'quote'>('overview');
+  const [serviceSearch, setServiceSearch] = useState('');
 
   const printableRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +82,13 @@ export const PriceListModal: React.FC<Props> = ({
       branding,
     };
   }, [tenant, branchInfo, allServices, selectedIds, branding]);
+
+  // Chap paneldagi qidiruv — faqat ko'rsatiladigan ro'yxatni filtrlaydi, tanlovga ta'sir qilmaydi
+  const visibleServices = useMemo(() => {
+    const q = serviceSearch.trim().toLowerCase();
+    if (!q) return allServices;
+    return allServices.filter(s => s.name.toLowerCase().includes(q));
+  }, [allServices, serviceSearch]);
 
   if (!isOpen) return null;
 
@@ -276,6 +284,27 @@ export const PriceListModal: React.FC<Props> = ({
                 {allChecked ? 'Bekor' : 'Hammasi'}
               </button>
             </div>
+            {/* Qidiruv */}
+            <div className="px-3 py-2 border-b border-slate-100">
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={serviceSearch}
+                  onChange={e => setServiceSearch(e.target.value)}
+                  placeholder="Xizmatni qidirish..."
+                  className="w-full h-9 pl-8 pr-8 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-orange-300 focus:bg-white transition-colors"
+                />
+                {serviceSearch && (
+                  <button
+                    onClick={() => setServiceSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="flex-1 overflow-y-auto custom-scroll p-2">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
@@ -283,8 +312,10 @@ export const PriceListModal: React.FC<Props> = ({
                 </div>
               ) : allServices.length === 0 ? (
                 <p className="text-xs text-slate-400 text-center py-8">Xizmat yo'q</p>
+              ) : visibleServices.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-8">Topilmadi</p>
               ) : (
-                allServices.map(svc => {
+                visibleServices.map(svc => {
                   const checked = selectedIds.has(svc.id);
                   return (
                     <button
