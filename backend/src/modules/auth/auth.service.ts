@@ -186,7 +186,7 @@ export class AuthService {
       },
       {
         secret: process.env.JWT_SECRET || 'printflow_super_secret_key_2024',
-        expiresIn: '7d',
+        expiresIn: '30d',
       },
     );
 
@@ -362,7 +362,7 @@ export class AuthService {
         permissions: adminRoleShape,
         passwordVersion: admin.passwordVersion,
       },
-      { secret: jwtSecret, expiresIn: '7d' },
+      { secret: jwtSecret, expiresIn: '30d' },
     );
 
     return {
@@ -521,7 +521,7 @@ export class AuthService {
       },
       {
         secret: process.env.JWT_SECRET || 'printflow_super_secret_key_2024',
-        expiresIn: '7d',
+        expiresIn: '30d',
       },
     );
 
@@ -581,7 +581,7 @@ export class AuthService {
       },
       {
         secret: process.env.JWT_SECRET || 'printflow_super_secret_key_2024',
-        expiresIn: '7d',
+        expiresIn: '30d',
       },
     );
 
