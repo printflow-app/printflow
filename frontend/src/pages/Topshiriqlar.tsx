@@ -229,6 +229,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [isMoveDragOver, setIsMoveDragOver] = useState(false);
   const [empSearchTerm, setEmpSearchTerm] = useState('');
   const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
+  // Mas'ul tanlash dropdowni — tashqariga bosilganda yopiladi (avval faqat input bosilsa yopilardi)
+  useEffect(() => {
+    if (!isAssigneeDropdownOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-assignee-dropdown]')) {
+        setIsAssigneeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [isAssigneeDropdownOpen]);
   const [newOptionForm, setNewOptionForm] = useState({ name: '', value: '', priceAdd: '' });
   const [isSavingOption, setIsSavingOption] = useState(false);
   const [arxivPage, setArxivPage] = useState(1);
@@ -1663,7 +1675,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               )}
 
 
-              <div className="relative">
+              <div className="relative" data-assignee-dropdown>
                 <div
                   onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
                   className="w-full min-h-[50px] p-3 rounded-2xl bg-slate-50 border-2 border-slate-100 flex flex-wrap gap-2 cursor-pointer hover:border-p-sky-300 transition-all mb-2"
@@ -2284,7 +2296,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </select>
           </div>
 
-          <div className="relative">
+          <div className="relative" data-assignee-dropdown>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-3 px-1 border-b border-slate-100 pb-2 flex justify-between">
               Mas'ul Jamoani Yangilash
               <span className="text-sky-500">{moveForm.assigneeIds.length} ta tanlandi</span>
