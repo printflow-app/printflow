@@ -476,6 +476,29 @@ export const kpiApi = {
 };
 
 // =============================================
+// KPI PLANS (Rejalar / maqsadlar — lavozim shabloni + xodim override)
+// =============================================
+export const kpiPlansApi = {
+  metrics: () => api.get('/kpi-plans/metrics'),
+  list: () => api.get('/kpi-plans'),
+  create: (data: {
+    scope: 'role' | 'employee';
+    roleId?: string;
+    employeeId?: string;
+    metricKey: string;
+    targetValue: number;
+    branchId?: string;
+  }) => api.post('/kpi-plans', data),
+  update: (id: string, data: { targetValue?: number; isActive?: boolean; metricKey?: string }) =>
+    api.put(`/kpi-plans/${id}`, data),
+  delete: (id: string) => api.delete(`/kpi-plans/${id}`),
+  progress: (params?: { month?: string; branchId?: string }) =>
+    api.get('/kpi-plans/progress', { params }),
+  myProgress: (params?: { month?: string }) =>
+    api.get('/kpi-plans/my-progress', { params }),
+};
+
+// =============================================
 // BRANCHES (Multi-Filial)
 // =============================================
 export const branchesApi = {

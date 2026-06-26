@@ -34,6 +34,7 @@ import { PlansModule } from './modules/plans/plans.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { WorkspaceAdminModule } from './modules/workspace-admin/workspace-admin.module';
 import { KpiModule } from './modules/kpi/kpi.module';
+import { KpiPlansModule } from './modules/kpi-plans/kpi-plans.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { ReportsModule } from './modules/reports/reports.module';
@@ -91,6 +92,7 @@ import { SuperAdminTasksModule } from './modules/super-admin-tasks/super-admin-t
     LeadsModule,
     WorkspaceAdminModule,
     KpiModule,
+    KpiPlansModule,
     BranchesModule,
     VendorsModule,
     ReportsModule,

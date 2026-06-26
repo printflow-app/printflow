@@ -1136,3 +1136,34 @@ model SuperAdminTaskItem {
 
   @@index([funnelId])
 }
+
+// =============================================
+// KPI REJALARI — xodim/lavozim uchun oylik maqsadlar (target).
+// Progress avtomatik hisoblanadi (kpi-metrics registry). Davr hozircha: oylik.
+//   scope='role'     → roleId bo'yicha (o'sha lavozimdagi hamma xodimga tushadi)
+//   scope='employee' → employeeId bo'yicha (lavozim shablonini override qiladi)
+// metricKey — built-in metrika kaliti (kpi-metrics.ts).
+// tenantId atayin relation'siz — tenant middleware shu maydon bo'yicha scoping qiladi.
+// =============================================
+model KpiPlan {
+  id       String  @id @default(uuid())
+  tenantId String
+  branchId String?
+
+  scope      String // 'role' | 'employee'
+  roleId     String? // scope='role'
+  employeeId String? // scope='employee'
+
+  metricKey   String // 'orders_taken' | 'orders_completed' | 'revenue' | 'on_time_days' | 'activity'
+  targetValue Float  @default(0)
+  periodType  String @default("monthly") // hozircha faqat 'monthly'
+
+  isActive  Boolean  @default(true)
+  createdBy String? // yaratgan employee/admin id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, roleId])
+  @@index([tenantId, employeeId])
+}

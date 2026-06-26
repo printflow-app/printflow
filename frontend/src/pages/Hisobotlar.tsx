@@ -14,6 +14,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useDepartments } from '../hooks/queries';
 import { SkeletonStats, SkeletonCardGrid } from '../components/Skeleton';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
+import KpiPlansPanel from '../components/KpiPlansPanel';
 
 // =============================================
 // HISOBOTLAR — Tahliliy hisobotlar markazi
@@ -857,6 +858,11 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {/* ── Xizmat Hajmi & O'rtacha Chek ── */}
       {canViewServiceStats && services.length > 0 && (
         <ServiceStats services={services} />
+      )}
+
+      {/* ── KPI Rejalari (maqsadlar + bajarilish) ── */}
+      {canViewKpi && (
+        <KpiPlansPanel currentUser={currentUser} activeBranchId={activeBranchId} readOnly />
       )}
 
       {/* ── Employee Velocity ── */}

@@ -4,6 +4,7 @@ import { TrendingUp, Trophy, Activity, Clock, Calendar } from 'lucide-react';
 import { kpiApi, reportsApi } from '../api';
 import { SkeletonTable } from '../components/Skeleton';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
+import KpiPlansPanel from '../components/KpiPlansPanel';
 
 interface KpiRow {
   employeeId: string;
@@ -116,6 +117,9 @@ const Kpi: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentU
 
   return (
     <div className="space-y-6 pb-20">
+      {/* KPI Rejalari (maqsadlar) + bajarilish progressi */}
+      <KpiPlansPanel currentUser={currentUser} activeBranchId={activeBranchId} />
+
       {/* Filter tabs */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
