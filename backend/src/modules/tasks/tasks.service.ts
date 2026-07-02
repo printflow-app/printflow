@@ -131,6 +131,36 @@ export class TasksService {
     return cleaned.length > 0 ? cleaned : null;
   }
 
+  /**
+   * Mavjud mijozni topadi — avval telefon raqami (faqat raqamlar bo'yicha
+   * normalizatsiya qilib, "+998 90 123" va "998901230000" mos kelishi uchun),
+   * keyin aniq ism bo'yicha. Yangi buyurtma yaratishda dublikat mijoz paydo
+   * bo'lishining oldini oladi. tx — Prisma tranzaksiya klienti.
+   */
+  private async findExistingCustomer(
+    tx: any,
+    name?: string,
+    phone?: string,
+  ): Promise<{ id: string } | null> {
+    const digits = (phone || '').replace(/\D/g, '');
+    if (digits.length >= 7) {
+      // O'sha tenantdagi telefonli mijozlarni olib, normalizatsiya bilan solishtiramiz.
+      const candidates = await tx.customer.findMany({
+        where: { phone: { not: null } },
+        select: { id: true, phone: true },
+      });
+      const match = candidates.find(
+        (c: any) => (c.phone || '').replace(/\D/g, '') === digits,
+      );
+      if (match) return { id: match.id };
+    }
+    if (name) {
+      const byName = await tx.customer.findFirst({ where: { name } });
+      if (byName) return { id: byName.id };
+    }
+    return null;
+  }
+
   async create(data: any, employeeId?: string) {
     const {
       orderName, title, description, customerId, customerName, customerPhone,
@@ -154,8 +184,9 @@ export class TasksService {
         task = await this.prisma.$transaction(async (tx) => {
       let finalCustomerId = customerId;
 
-      if (!finalCustomerId && customerName) {
-        let customer = await tx.customer.findFirst({ where: { name: customerName } });
+      if (!finalCustomerId && (customerName || customerPhone)) {
+        // Dublikatning oldini olish — telefon (normalizatsiya bilan), keyin ism bo'yicha.
+        let customer = await this.findExistingCustomer(tx, customerName, customerPhone);
         if (!customer) {
           // Mijozni buyurtmaning filiali bilan yaratamiz — aks holda branchId=null
           // bo'lib qoladi va filial tanlangan Mijozlar ro'yxati filtridan tushib ketadi.
@@ -306,8 +337,11 @@ export class TasksService {
         tasks = await this.prisma.$transaction(async (tx) => {
       let finalCustomerId = customerId;
 
-      if (!finalCustomerId && customerName) {
-        let customer = await tx.customer.findFirst({ where: { name: customerName } });
+      if (!finalCustomerId && (customerName || customerPhone)) {
+        // Dublikatning oldini olish: avval telefon bo'yicha (raqamlar normalizatsiyasi
+        // bilan), keyin ism bo'yicha mavjud mijozni qidiramiz. Topilsa — o'shani
+        // ishlatamiz, yangi yaratmaymiz.
+        let customer = await this.findExistingCustomer(tx, customerName, customerPhone);
         if (!customer) {
           // Mijozni buyurtmaning filiali bilan yaratamiz — aks holda branchId=null
           // bo'lib qoladi va filial tanlangan Mijozlar ro'yxati filtridan tushib ketadi.

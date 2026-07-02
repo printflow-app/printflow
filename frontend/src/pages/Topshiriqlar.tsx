@@ -1281,9 +1281,33 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 onChange={(id, val) => setNewTaskForm(f => ({ ...f, customerId: id, customerName: val.name, customerPhone: val.phone || f.customerPhone }))}
               />
               {!newTaskForm.customerId && (
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 animate-fade-in">
-                  <input type="text" placeholder="Yangi mijoz ismi..." value={newTaskForm.customerName} onChange={e => setNewTaskForm(f => ({ ...f, customerName: e.target.value }))} className="input-minimal bg-white border-2" />
-                  <input type="text" placeholder="Telefon raqami..." value={newTaskForm.customerPhone} onChange={e => setNewTaskForm(f => ({ ...f, customerPhone: e.target.value }))} className="input-minimal bg-white border-2" />
+                <div className="mt-3 animate-fade-in">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input type="text" placeholder="Yangi mijoz ismi..." value={newTaskForm.customerName} onChange={e => setNewTaskForm(f => ({ ...f, customerName: e.target.value }))} className="input-minimal bg-white border-2" />
+                    <input type="text" placeholder="Telefon raqami..." value={newTaskForm.customerPhone} onChange={e => setNewTaskForm(f => ({ ...f, customerPhone: e.target.value }))} className="input-minimal bg-white border-2" />
+                  </div>
+                  {/* Dublikat aniqlash — yozilgan telefon bazadagi mijozga mos kelsa,
+                      yangi mijoz yaratish o'rniga o'shani tanlashni taklif qilamiz. */}
+                  {(() => {
+                    const digits = (newTaskForm.customerPhone || '').replace(/\D/g, '');
+                    if (digits.length < 7) return null;
+                    const dup = customers.find(c => (c.phone || '').replace(/\D/g, '') === digits);
+                    if (!dup) return null;
+                    return (
+                      <div className="mt-2 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
+                        <p className="text-[11px] font-bold text-amber-700">
+                          Bu raqam bazada bor: <span className="text-amber-900">{dup.name}</span>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setNewTaskForm(f => ({ ...f, customerId: dup.id, customerName: dup.name, customerPhone: dup.phone || f.customerPhone }))}
+                          className="flex-shrink-0 h-7 px-3 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wide rounded-lg hover:bg-amber-600 transition-all"
+                        >
+                          Tanlash
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

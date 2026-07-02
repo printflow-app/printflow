@@ -43,9 +43,14 @@ export class CustomersService {
     if (customers.length === 0) return customers;
     const ids = customers.map(c => c.id);
     const [taskSums, paidSums] = await Promise.all([
+      // MUHIM: arxivlangan tasklar ham qarz hisobiga kiradi. Aks holda buyurtma
+      // arxivlanganda totalDebt tushib, totalPaid o'zgarmay qolib, mijoz "ortiqcha
+      // to'lagan" bo'lib ko'rinardi va bu kredit yangi buyurtmalar qarzini bekor
+      // qilardi (moliya "chayilishi"). Arxiv = faqat kanban doskasidan yashirish,
+      // moliyaga tasir qilmasligi kerak.
       this.prisma.task.groupBy({
         by: ['customerId'],
-        where: { customerId: { in: ids }, isArchived: false } as any,
+        where: { customerId: { in: ids } } as any,
         _sum: { totalAmount: true },
       }),
       this.prisma.transaction.groupBy({
@@ -72,8 +77,11 @@ export class CustomersService {
   // expanded panel only ever shows the most recent ones.
   async getDetails(id: string) {
     const [tasks, transactions] = await Promise.all([
+      // Arxivlangan buyurtmalar ham mijoz kartasida ko'rinsin — arxivlash buyurtmani
+      // mijoz tarixidan o'chirmaydi, faqat kanban doskasidan yashiradi. isArchived
+      // flag'i frontendga "Arxiv" tegini ko'rsatish uchun qaytariladi.
       this.prisma.task.findMany({
-        where: { customerId: id, isArchived: false } as any,
+        where: { customerId: id } as any,
         orderBy: { createdAt: 'desc' },
         take: 50,
         select: {
@@ -81,10 +89,11 @@ export class CustomersService {
           title: true,
           totalAmount: true,
           createdAt: true,
+          isArchived: true,
           service: {
             select: { name: true }
           }
-        },
+        } as any,
       }),
       this.prisma.transaction.findMany({
         where: { customerId: id },

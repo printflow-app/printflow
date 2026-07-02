@@ -315,9 +315,13 @@ export class FinanceService implements OnApplicationBootstrap {
     });
     if (!customer) return;
 
-    // Barcha aktiv (arxivlanmagan) topshiriqlarni yaratilgan vaqti bo'yicha olamiz
+    // Barcha topshiriqlarni (arxivlanganlar ham) yaratilgan vaqti bo'yicha olamiz.
+    // To'lov FIFO taqsimlanadi: eski buyurtmalar avval to'lanadi. Arxivlangan
+    // (odatda eski, yopilgan) buyurtmalar o'z ulushini birinchi "band qiladi",
+    // shuning uchun ularning to'langan puli yangi aktiv buyurtmalarga oqib
+    // ketmaydi — bu arxivlashdagi moliya buzilishining ildiz sababi edi.
     const tasks = await tx.task.findMany({
-      where: { customerId, isArchived: false },
+      where: { customerId },
       orderBy: { createdAt: 'asc' },
       select: { id: true, totalAmount: true },
     });

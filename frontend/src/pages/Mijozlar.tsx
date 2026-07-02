@@ -42,6 +42,9 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const { data: topCustomers = [] } = useTopCustomers(10);
   const invalidate = useInvalidate();
   const [searchTerm, setSearchTerm] = useState('');
+  // Saralash: 'recent' (updatedAt bo'yicha, default) | 'debt' (eng ko'p qarz) |
+  // 'paid' (eng ko'p to'lagan) | 'name' (alfavit).
+  const [sortBy, setSortBy] = useState<'recent' | 'debt' | 'paid' | 'name'>('recent');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   // Lazy-loaded per-customer details (tasks + transactions) keyed by customer.id
   const [detailsCache, setDetailsCache] = useState<Record<string, { tasks: any[]; transactions: any[] } | 'loading'>>({});
@@ -83,11 +86,21 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     paused: isFormOpen || isContactsOpen || orderHistoryModal.isOpen || confirmModal.isOpen,
   });
 
-  const filteredCustomers = customers.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.phone || '').includes(searchTerm) ||
-    (c.companyInfo || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers
+    .filter(c =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.phone || '').includes(searchTerm) ||
+      (c.companyInfo || '').toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'debt') {
+        // Qoldiq qarz (totalDebt - totalPaid) bo'yicha kamayish tartibida.
+        return (Number(b.totalDebt) - Number(b.totalPaid)) - (Number(a.totalDebt) - Number(a.totalPaid));
+      }
+      if (sortBy === 'paid') return Number(b.totalPaid) - Number(a.totalPaid);
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      return 0; // 'recent' — backend updatedAt desc tartibini saqlaymiz
+    });
 
   const handleExport = () => {
     const rows = activeView === 'top' ? (topCustomers as any[]) : filteredCustomers;
@@ -283,16 +296,29 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             </button>
           </div>
           {activeView === 'all' && (
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-              <input
-                type="text"
-                placeholder="Qidirish (ism, tel, kompaniya)..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all placeholder:text-slate-300 shadow-inner"
-              />
-            </div>
+            <>
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
+                <input
+                  type="text"
+                  placeholder="Qidirish (ism, tel, kompaniya)..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all placeholder:text-slate-300 shadow-inner"
+                />
+              </div>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as typeof sortBy)}
+                className="h-10 px-3 text-[10px] font-bold uppercase tracking-widest bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all text-slate-600 cursor-pointer shadow-inner"
+                title="Saralash"
+              >
+                <option value="recent">Oxirgi faollik</option>
+                <option value="debt">Eng ko'p qarz</option>
+                <option value="paid">Eng ko'p to'lagan</option>
+                <option value="name">Nomi (A-Z)</option>
+              </select>
+            </>
           )}
           {(isAdmin || p.canExportCustomers) && (
             <button
@@ -515,7 +541,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                         {tasks.map((t: any) => (
                                           <div key={t.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
                                             <div>
-                                              <p className="text-xs font-bold text-slate-700">{t.title}</p>
+                                              <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                                {t.title}
+                                                {t.isArchived && (
+                                                  <span className="text-[8px] font-bold text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded uppercase tracking-wide">Arxiv</span>
+                                                )}
+                                              </p>
                                               {t.service && (
                                                 <p className="text-[9px] text-orange-600 font-bold mt-0.5 uppercase tracking-wide bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100/50 inline-block">
                                                   {t.service.name}
