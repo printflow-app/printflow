@@ -20,3 +20,6 @@ kpi_test.json
 # Lokal dev DB nusxasi (prod dump) — commit qilinmaydi
 backend/railway_clone.sql
 railway_clone.sql
+
+# Playwright MCP test artefaktlari (skrinshot/snapshot) — vaqtinchalik
+.playwright-mcp/
