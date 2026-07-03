@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, FileText } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { employeesApi, branchesApi, billingApi } from '../api';
+import { authApi, employeesApi, branchesApi, billingApi } from '../api';
 import logo from '../assets/logo.png';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -147,33 +147,53 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
   // =============================================
   // PAGE LOCKING SYSTEM
+  // PIN va sozlamalar SERVERDA akkauntga bog'lab saqlanadi (UserLockSetting) —
+  // bir kompyuterdagi boshqa akkauntlarga ta'sir qilmaydi, o'sha akkaunt esa
+  // istalgan qurilmada bir xil qulfga ega bo'ladi. PIN clientga qaytmaydi,
+  // tekshiruv /auth/lock-settings/verify orqali. Faqat "qulflangan holat"
+  // (isLocked) qurilmada qoladi — u ham user id bilan scoped.
   // =============================================
-  const [isLocked, setIsLocked] = useState(() => localStorage.getItem('pf_is_locked') === 'true');
+  const lockStateKey = `pf_is_locked_${currentUser?.id || 'anon'}`;
+  const [isLocked, setIsLocked] = useState(() => localStorage.getItem(lockStateKey) === 'true');
   const [isLockSettingsOpen, setIsLockSettingsOpen] = useState(false);
-  const [lockPin, setLockPin] = useState(() => localStorage.getItem('pf_lock_pin') || '');
-  const [lockTimeout, setLockTimeout] = useState(() => Number(localStorage.getItem('pf_lock_timeout')) || 5); // Default 5 min
+  const [hasLockPin, setHasLockPin] = useState(false);
+  const [lockTimeout, setLockTimeout] = useState(5); // Default 5 min
 
   // NEW: Per-page locking state
-  const [lockedTabs, setLockedTabs] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('pf_locked_tabs');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
+  const [lockedTabs, setLockedTabs] = useState<Set<string>>(new Set());
 
   const [pinInput, setPinInput] = useState('');
   const [newPin, setNewPin] = useState({ pin1: '', pin2: '' });
   const [showPins, setShowPins] = useState({ p1: false, p2: false, input: false });
 
+  useEffect(() => {
+    // Eski global kalitlar bir brauzerdagi BARCHA akkauntlarni qulflab qo'yardi — tozalaymiz.
+    ['pf_lock_pin', 'pf_lock_timeout', 'pf_locked_tabs', 'pf_is_locked'].forEach(k => localStorage.removeItem(k));
+    authApi.getLockSettings().then(r => {
+      const s = r.data || {};
+      setHasLockPin(!!s.hasPin);
+      if (s.timeoutMinutes) setLockTimeout(s.timeoutMinutes);
+      setLockedTabs(new Set(Array.isArray(s.lockedTabs) ? s.lockedTabs : []));
+      if (!s.hasPin) {
+        // Bu akkauntda PIN yo'q — qurilmada qolib ketgan qulf holatini ochamiz
+        setIsLocked(false);
+        localStorage.removeItem(lockStateKey);
+      }
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const idleTimerRef = useRef<any>(null);
 
   const resetIdleTimer = useCallback(() => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    if (!lockPin || isLocked) return;
+    if (!hasLockPin || isLocked) return;
 
     idleTimerRef.current = setTimeout(() => {
       setIsLocked(true);
-      localStorage.setItem('pf_is_locked', 'true');
+      localStorage.setItem(lockStateKey, 'true');
     }, lockTimeout * 60 * 1000);
-  }, [lockPin, isLocked, lockTimeout]);
+  }, [hasLockPin, isLocked, lockTimeout, lockStateKey]);
 
   useEffect(() => {
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
@@ -188,28 +208,50 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     };
   }, [resetIdleTimer]);
 
-  const handleSetLock = (e: React.FormEvent) => {
+  const handleSetLock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPin.pin1 !== newPin.pin2) {
       toast.error("PIN kodlar bir xil emas!");
       return;
     }
-    if (newPin.pin1.length < 4) {
-      toast.error("PIN kamida 4 ta raqam bo'lishi kerak!");
+    if (!/^\d{4,8}$/.test(newPin.pin1)) {
+      toast.error("PIN 4-8 ta raqamdan iborat bo'lishi kerak!");
       return;
     }
-    localStorage.setItem('pf_lock_pin', newPin.pin1);
-    localStorage.setItem('pf_lock_timeout', lockTimeout.toString());
-    setLockPin(newPin.pin1);
-    toast.success("Ekran qulfi sozlamalari saqlandi!");
-    setIsLockSettingsOpen(false);
+    try {
+      await authApi.saveLockSettings({ pin: newPin.pin1, timeoutMinutes: lockTimeout });
+      setHasLockPin(true);
+      setNewPin({ pin1: '', pin2: '' });
+      toast.success("Ekran qulfi sozlamalari saqlandi!");
+      setIsLockSettingsOpen(false);
+    } catch {
+      toast.error("Saqlashda xatolik yuz berdi!");
+    }
   };
 
   const [pendingTab, setPendingTab] = useState<string | null>(null);
 
-  const handleUnlock = (e: React.FormEvent) => {
+  // Qulflangan tablar ro'yxatini serverga yozamiz — akkaunt bilan birga yuradi
+  const persistLockedTabs = (next: Set<string>) => {
+    setLockedTabs(next);
+    authApi.saveLockSettings({ lockedTabs: Array.from(next) }).catch(() => {});
+  };
+
+  const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput === lockPin) {
+    let valid = false;
+    try {
+      const r = await authApi.verifyLockPin(pinInput);
+      valid = !!r.data?.valid;
+    } catch (err: any) {
+      if (err?.response?.status === 429) {
+        toast.error("Juda ko'p urinish — biroz kutib qayta urining!");
+      } else {
+        toast.error("Tekshirib bo'lmadi — internet aloqasini tekshiring!");
+      }
+      return;
+    }
+    if (valid) {
       if (pendingTab === 'settings_access') {
         setIsLockSettingsOpen(true);
         setPendingTab(null);
@@ -220,13 +262,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         // Unlock specific tab
         const next = new Set(lockedTabs);
         next.delete(pendingTab);
-        setLockedTabs(next);
-        localStorage.setItem('pf_locked_tabs', JSON.stringify(Array.from(next)));
+        persistLockedTabs(next);
         setPendingTab(null);
       } else {
         // Global unlock
         setIsLocked(false);
-        localStorage.setItem('pf_is_locked', 'false');
+        localStorage.setItem(lockStateKey, 'false');
       }
       setPinInput('');
       toast.success("Xush kelibsiz!");
@@ -237,32 +278,30 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   };
 
   const handleManualLock = () => {
-    if (!lockPin) {
+    if (!hasLockPin) {
       setIsLockSettingsOpen(true);
       return;
     }
     setIsLocked(true);
-    localStorage.setItem('pf_is_locked', 'true');
+    localStorage.setItem(lockStateKey, 'true');
   };
 
   const toggleTabLock = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!hasLockPin) {
+      // Serverda PIN'siz qulf saqlanmaydi — avval PIN o'rnatish kerak
+      toast.error("Avval PIN kod o'rnating!");
+      setIsLockSettingsOpen(true);
+      return;
+    }
     const next = new Set(lockedTabs);
     if (next.has(id)) {
       // Unlocking requires PIN
-      if (lockPin) {
-        setPendingTab(id);
-      } else {
-        // No PIN set, just unlock
-        next.delete(id);
-        setLockedTabs(next);
-        localStorage.setItem('pf_locked_tabs', JSON.stringify(Array.from(next)));
-      }
+      setPendingTab(id);
     } else {
       // Locking is free
       next.add(id);
-      setLockedTabs(next);
-      localStorage.setItem('pf_locked_tabs', JSON.stringify(Array.from(next)));
+      persistLockedTabs(next);
     }
   };
 
@@ -537,7 +576,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
-                if (lockPin) {
+                if (hasLockPin) {
                   setPendingTab('settings_access');
                 } else {
                   setIsLockSettingsOpen(true);
@@ -659,7 +698,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         <div className="p-3 border-t border-slate-100 bg-slate-50/50">
           <button
             onClick={() => {
-              if (lockPin) {
+              if (hasLockPin) {
                 setPendingTab('profile_access');
               } else {
                 setIsProfileModalOpen(true);

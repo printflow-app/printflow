@@ -295,6 +295,39 @@ export class AuthController {
     }
   }
 
+  // =============================================
+  // EKRAN QULFI — akkauntga bog'liq (istalgan qurilmada bir xil).
+  // JWT talab qilinadi (@Public emas) — payload.sub = joriy user id.
+  // =============================================
+
+  @Get('lock-settings')
+  async getLockSettings(@Req() req: Request) {
+    const payload = (req as any).user;
+    if (!payload) throw new UnauthorizedException();
+    return this.authService.getLockSettings(payload.sub);
+  }
+
+  @Post('lock-settings')
+  @HttpCode(HttpStatus.OK)
+  async saveLockSettings(
+    @Req() req: Request,
+    @Body() body: { pin?: string; timeoutMinutes?: number; lockedTabs?: string[] },
+  ) {
+    const payload = (req as any).user;
+    if (!payload) throw new UnauthorizedException();
+    return this.authService.saveLockSettings(payload.sub, body);
+  }
+
+  /** PIN tekshiruvi — brute-force'ga qarshi qattiq throttle (daqiqasiga 10 urinish). */
+  @Throttle({ default: { limit: 10, ttl: 60 * 1000 } })
+  @Post('lock-settings/verify')
+  @HttpCode(HttpStatus.OK)
+  async verifyLockPin(@Req() req: Request, @Body() body: { pin: string }) {
+    const payload = (req as any).user;
+    if (!payload) throw new UnauthorizedException();
+    return this.authService.verifyLockPin(payload.sub, body.pin);
+  }
+
   @Post('onboarding')
   @HttpCode(HttpStatus.OK)
   async onboarding(

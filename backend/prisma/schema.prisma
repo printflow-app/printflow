@@ -165,6 +165,22 @@ model UserTabView {
   @@index([userId])
 }
 
+// =============================================
+// UserLockSetting — ekran qulfi AKKAUNTGA bog'liq (qurilmaga emas).
+// Bir kompyuterda bir nechta akkaunt ishlatilsa, har birining o'z quli bo'ladi;
+// bitta akkaunt istalgan qurilmada bir xil PIN bilan ishlaydi.
+// userId = Employee.id YOKI WorkspaceAdmin.id (UserTabView bilan bir xil pattern, FK yo'q).
+// PIN bcrypt hash'da saqlanadi — hech qachon ochiq matnda clientga qaytarilmaydi.
+// =============================================
+model UserLockSetting {
+  id             String   @id @default(uuid())
+  userId         String   @unique // Employee.id YOKI WorkspaceAdmin.id
+  pinHash        String
+  timeoutMinutes Int      @default(5)
+  lockedTabs     Json     @default("[]") // string[] — qulflangan tab id'lari
+  updatedAt      DateTime @updatedAt
+}
+
 // Workspace Owner/Director — has full access, NOT an Employee, never shows in assignee dropdowns
 model WorkspaceAdmin {
   id       String @id @default(uuid())

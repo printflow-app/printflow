@@ -679,6 +679,86 @@ export class AuthService {
     );
   }
 
+  // =============================================
+  // EKRAN QULFI — akkauntga bog'liq (qurilmaga emas).
+  // UserLockSetting tenant-scoped EMAS (userId global unique uuid),
+  // shuning uchun to'g'ridan-to'g'ri query xavfsiz.
+  // =============================================
+
+  /** Qulf sozlamalarini qaytaradi — PIN hech qachon qaytarilmaydi, faqat hasPin. */
+  async getLockSettings(userId: string) {
+    const s = await this.prisma.userLockSetting.findUnique({ where: { userId } });
+    if (!s) return { hasPin: false, timeoutMinutes: 5, lockedTabs: [] };
+    return {
+      hasPin: true,
+      timeoutMinutes: s.timeoutMinutes,
+      lockedTabs: Array.isArray(s.lockedTabs) ? s.lockedTabs : [],
+    };
+  }
+
+  /**
+   * Qulf sozlamalarini saqlaydi. pin ixtiyoriy — berilmasa mavjud PIN saqlanadi
+   * (masalan faqat lockedTabs yangilanayotganda).
+   */
+  async saveLockSettings(
+    userId: string,
+    data: { pin?: string; timeoutMinutes?: number; lockedTabs?: string[] },
+  ) {
+    const existing = await this.prisma.userLockSetting.findUnique({ where: { userId } });
+
+    if (data.pin !== undefined) {
+      if (!/^\d{4,8}$/.test(data.pin)) {
+        throw new UnauthorizedException("PIN 4-8 ta raqamdan iborat bo'lishi kerak");
+      }
+    } else if (!existing) {
+      // PIN'siz yozuv yaratib bo'lmaydi — qulfning o'zi PIN
+      throw new UnauthorizedException('Avval PIN kod o\'rnating');
+    }
+
+    const pinHash = data.pin !== undefined ? await bcrypt.hash(data.pin, BCRYPT_ROUNDS) : undefined;
+    const timeoutMinutes =
+      data.timeoutMinutes !== undefined
+        ? Math.min(60, Math.max(1, Math.floor(data.timeoutMinutes)))
+        : undefined;
+    const lockedTabs = Array.isArray(data.lockedTabs)
+      ? data.lockedTabs.filter((t) => typeof t === 'string').slice(0, 50)
+      : undefined;
+
+    // upsert emas: pin'siz chaqiruvda Prisma create bo'lagi uchun ham pinHash
+    // talab qiladi — mavjud yozuvda update, yo'g'ida create ishlatamiz.
+    const saved = existing
+      ? await this.prisma.userLockSetting.update({
+          where: { userId },
+          data: {
+            ...(pinHash && { pinHash }),
+            ...(timeoutMinutes !== undefined && { timeoutMinutes }),
+            ...(lockedTabs !== undefined && { lockedTabs }),
+          },
+        })
+      : await this.prisma.userLockSetting.create({
+          data: {
+            userId,
+            pinHash: pinHash!,
+            timeoutMinutes: timeoutMinutes ?? 5,
+            lockedTabs: lockedTabs ?? [],
+          },
+        });
+
+    return {
+      hasPin: true,
+      timeoutMinutes: saved.timeoutMinutes,
+      lockedTabs: Array.isArray(saved.lockedTabs) ? saved.lockedTabs : [],
+    };
+  }
+
+  /** PIN'ni tekshiradi (bcrypt). Brute-force'ga qarshi controller'da throttle bor. */
+  async verifyLockPin(userId: string, pin: string): Promise<{ valid: boolean }> {
+    const s = await this.prisma.userLockSetting.findUnique({ where: { userId } });
+    if (!s || typeof pin !== 'string' || !pin) return { valid: false };
+    const valid = await bcrypt.compare(pin, s.pinHash);
+    return { valid };
+  }
+
   /**
    * Complete onboarding — updates tenant info and admin profile
    */

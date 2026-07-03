@@ -150,6 +150,13 @@ export const authApi = {
   // Telegram WebApp orqali auto-login (frontend Telegram.WebApp.initDataUnsafe.user.id'ni yuboradi)
   telegramAuth: (telegramId: string) =>
     api.post('/auth/telegram', { telegramId }),
+
+  // Ekran qulfi — akkauntga bog'liq (serverda saqlanadi, istalgan qurilmada bir xil).
+  // PIN hech qachon clientga qaytmaydi — faqat hasPin + verify endpoint.
+  getLockSettings: () => api.get('/auth/lock-settings'),
+  saveLockSettings: (data: { pin?: string; timeoutMinutes?: number; lockedTabs?: string[] }) =>
+    api.post('/auth/lock-settings', data),
+  verifyLockPin: (pin: string) => api.post('/auth/lock-settings/verify', { pin }),
 };
 
 // =============================================
