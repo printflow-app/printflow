@@ -61,6 +61,34 @@ model AiUsage {
   @@index([tenantId])
 }
 
+// =============================================
+// AgentAction — AI agent bajargan/taklif qilgan har bir amalning audit yozuvi.
+// Pul yoki o'zgartirish amallari avval "pending" holatda yaratiladi,
+// foydalanuvchi confirm kartada tasdiqlagach bajariladi (executed).
+// userId = Employee.id YOKI WorkspaceAdmin.id (UserTabView pattern, FK yo'q).
+// =============================================
+model AgentAction {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  userId   String // kim nomidan (Employee.id yoki WorkspaceAdmin.id)
+  toolName String // registry'dagi tool nomi
+  summary  String // odam o'qiydigan qisqa tavsif (confirm kartada ko'rsatiladi)
+  input    Json // tool argumentlari (snapshot)
+
+  status     String    @default("pending") // pending | executed | rejected | failed
+  result     Json? // muvaffaqiyatli natija (snapshot)
+  error      String? // failed bo'lsa sabab
+  executedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([userId, status])
+}
+
 model Tenant {
   id                 String       @id @default(uuid())
   name               String
@@ -112,6 +140,7 @@ model Tenant {
   vendorOrders      VendorOrder[]
   taskAttachments   TaskAttachment[]
   aiUsages          AiUsage[]
+  agentActions      AgentAction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

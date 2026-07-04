@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import { aiApi } from '../../api';
 
 // =============================================
 // PRINTFLOW AI COPILOT (PRO ARCHITECT VERSION)
@@ -15,8 +16,9 @@ import { DefaultChatTransport } from 'ai';
 
 const STARTER_SUGGESTIONS = [
   'Yangi buyurtma yaratish',
-  "Yangi xizmat qo'shish (masalan: Vizitka)",
-  'Xizmat uchun yangi narx qoidasi',
+  "Qarzdorlarni ko'rsat",
+  'Bu oy kassa holati qanday?',
+  'Muddati yaqin buyurtmalar',
 ];
 
 // AI ba'zan baribir markdown chiqaradi — display vaqtida tozalaymiz.
@@ -118,6 +120,87 @@ const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; childr
     </div>
   </div>
 );
+
+// [TASDIQ KARTASI] — pul/o'zgartirish amali serverda AgentAction(pending)
+// holatida turadi; foydalanuvchi shu kartada tasdiqlaydi yoki rad etadi.
+// Tasdiqlangandagina backend amalni bajaradi (registry.executeConfirmedAction).
+const PendingActionCard: React.FC<{
+  actionId: string;
+  summary: string;
+  onExecuted?: () => void;
+}> = ({ actionId, summary, onExecuted }) => {
+  const [state, setState] = useState<'idle' | 'busy' | 'executed' | 'rejected' | 'failed'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (kind: 'confirm' | 'reject') => {
+    setState('busy');
+    setError(null);
+    try {
+      if (kind === 'reject') {
+        await aiApi.rejectAction(actionId);
+        setState('rejected');
+        return;
+      }
+      const r = await aiApi.confirmAction(actionId);
+      if (r.data?.success === false) {
+        setError(r.data.error || 'Xatolik yuz berdi');
+        setState('failed');
+        return;
+      }
+      setState('executed');
+      onExecuted?.();
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || 'Xatolik yuz berdi');
+      setState('failed');
+    }
+  };
+
+  if (state === 'executed') return <SuccessBadge text={summary} />;
+
+  if (state === 'rejected') {
+    return (
+      <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-500 text-[11px] font-bold uppercase tracking-widest">
+        Bekor qilindi — {summary}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-[28px] border border-amber-200 bg-white shadow-xl shadow-amber-100/50 overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+      <div className="flex items-center gap-3 px-5 py-4 bg-amber-50/60 border-b border-amber-100">
+        <div className="w-9 h-9 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
+          <ShieldCheck size={18} strokeWidth={2.5} />
+        </div>
+        <div>
+          <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">Tasdiqlash kerak</p>
+          <p className="text-[13px] font-bold text-slate-900 tracking-tight">{summary}</p>
+        </div>
+      </div>
+      <div className="p-4">
+        {state === 'failed' && (
+          <p className="mb-3 text-[11px] font-bold text-rose-600">{error}</p>
+        )}
+        <div className="flex gap-2">
+          <button
+            onClick={() => run('confirm')}
+            disabled={state === 'busy'}
+            className="flex-1 h-11 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-[11px] font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
+          >
+            {state === 'busy' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} strokeWidth={2.5} />}
+            Tasdiqlash
+          </button>
+          <button
+            onClick={() => run('reject')}
+            disabled={state === 'busy'}
+            className="h-11 px-4 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 text-[11px] font-bold uppercase tracking-widest rounded-2xl transition-all active:scale-[0.98]"
+          >
+            Bekor
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ── Main Copilot Component ──────────────────────────────────────────
 
@@ -446,9 +529,31 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                     const state: string = part.state;
 
                     if (state === 'output-available') {
+                      const out = part.output as any;
+                      // [TASDIQ KARTASI] — server amalni pending qilib qo'ydi,
+                      // foydalanuvchi shu yerda tasdiqlaydi/rad etadi.
+                      if (out?.pendingConfirm && out?.actionId) {
+                        return (
+                          <PendingActionCard
+                            key={toolCallId}
+                            actionId={out.actionId}
+                            summary={out.summary || 'Amalni tasdiqlang'}
+                            onExecuted={onRefresh}
+                          />
+                        );
+                      }
+                      if (out?.success === false) {
+                        return (
+                          <div key={toolCallId} className="mt-3 rounded-2xl border border-rose-100 bg-rose-50/60 p-3.5 text-[11px] font-bold text-rose-600">
+                            {out.error || 'Amal bajarilmadi'}
+                          </div>
+                        );
+                      }
                       if (toolName === 'createOrder') return <SuccessBadge key={toolCallId} text="Buyurtma yaratildi" />;
                       if (toolName === 'createService') return <SuccessBadge key={toolCallId} text="Xizmat qo'shildi" />;
                       if (toolName === 'createServiceOption') return <SuccessBadge key={toolCallId} text="Optsiya saqlandi" />;
+                      if (toolName === 'addCustomer') return <SuccessBadge key={toolCallId} text="Mijoz qo'shildi" />;
+                      if (toolName === 'moveOrder') return <SuccessBadge key={toolCallId} text="Buyurtma ko'chirildi" />;
                       return null;
                     }
 

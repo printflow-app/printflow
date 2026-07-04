@@ -602,6 +602,12 @@ export const aiApi = {
       body: JSON.stringify({ messages }),
     });
   },
+
+  // Agent amallari — [TASDIQ KARTASI] tool'lari AgentAction(pending) yaratadi;
+  // karta tugmalari shu endpointlarni chaqiradi.
+  confirmAction: (id: string) => api.post(`/ai/actions/${id}/confirm`),
+  rejectAction: (id: string) => api.post(`/ai/actions/${id}/reject`),
+  listActions: (limit = 20) => api.get('/ai/actions', { params: { limit } }),
 };
 
 export default api;

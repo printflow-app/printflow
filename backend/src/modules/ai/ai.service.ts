@@ -1,9 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
+import { FinanceService } from '../finance/finance.service';
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { streamText, tool } from 'ai';
-import { z } from 'zod/v3';
+import { streamText } from 'ai';
+import { ToolContext } from './tools/types';
+import {
+  buildAiSdkTools,
+  describeTools,
+  executeConfirmedAction,
+  rejectAction,
+} from './tools/registry';
 
 @Injectable()
 export class AiService {
@@ -14,6 +21,7 @@ export class AiService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tasksService: TasksService,
+    private readonly financeService: FinanceService,
   ) {
     const apiKey = process.env.ANTHROPIC_API_KEY || '';
     if (!apiKey) {
@@ -114,6 +122,66 @@ export class AiService {
     return { allowed: true, used: result.count, limit, unlimited };
   }
 
+  /**
+   * Chaqiruvchining tool kontekstini quradi — ruxsatlar DB'dan YANGI o'qiladi
+   * (JWT'dagi eskirgan bo'lishi mumkin). userId = Employee.id yoki WorkspaceAdmin.id.
+   */
+  async buildToolContext(tenantId: string, userId: string): Promise<ToolContext> {
+    const services = {
+      prisma: this.prisma,
+      tasks: this.tasksService,
+      finance: this.financeService,
+    };
+    const admin = await this.prisma.workspaceAdmin.findFirst({
+      where: { id: userId, tenantId },
+      select: { id: true },
+    });
+    if (admin) {
+      return { tenantId, userId, branchId: null, isAdmin: true, perms: {}, services };
+    }
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: userId, tenantId },
+      include: { role: true },
+    });
+    return {
+      tenantId,
+      userId,
+      branchId: employee?.branchId || null,
+      isAdmin: employee?.role?.name?.toLowerCase() === 'admin',
+      perms: (employee?.role as any) || {},
+      services,
+    };
+  }
+
+  /** Pending amalni tasdiqlash (confirm karta tugmasi) */
+  async confirmAction(tenantId: string, userId: string, actionId: string) {
+    const ctx = await this.buildToolContext(tenantId, userId);
+    return executeConfirmedAction(ctx, actionId);
+  }
+
+  /** Pending amalni rad etish */
+  async rejectAction(tenantId: string, userId: string, actionId: string) {
+    const ctx = await this.buildToolContext(tenantId, userId);
+    return rejectAction(ctx, actionId);
+  }
+
+  /** Agent amallari lentasi (audit). Admin — butun tenant, xodim — faqat o'ziniki. */
+  async listActions(tenantId: string, userId: string, limit = 20) {
+    const ctx = await this.buildToolContext(tenantId, userId);
+    return this.prisma.agentAction.findMany({
+      where: {
+        tenantId,
+        ...(ctx.isAdmin ? {} : { userId }),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(limit, 50),
+      select: {
+        id: true, toolName: true, summary: true, status: true,
+        error: true, createdAt: true, executedAt: true, userId: true,
+      },
+    });
+  }
+
   async streamChat(
     messages: any[],
     tenantId?: string,
@@ -203,6 +271,10 @@ export class AiService {
 
       const firstColId = kanbanCols[0]?.id || '';
 
+      // Tool konteksti — chaqiruvchining ruxsatlari DB'dan yangi o'qiladi;
+      // registry shu asosda faqat ruxsat etilgan tool'larni model'ga beradi.
+      const toolCtx = await this.buildToolContext(tenantId, employeeId || '');
+
       const systemPrompt = `Sen — Girgitton. PrintFlow ERP tizimining yordamchisi. Bugungi sana: ${new Date().toLocaleDateString('uz-UZ')}.
 
 TIL QOIDASI (QAT'IY):
@@ -228,8 +300,13 @@ ASOSIY VAZIFALAR:
 NAVIGATSIYA (tezkor):
 Kassa — tranzaksiyalar; Statistika — dashboard; Hisobotlar — tahlil; Xizmatlar (Kanban) — buyurtmalar; Mijozlar — CRM; Xodimlar — jamoa; Ma'muriyat — rollar; Ombor — material; Davomat — keldi-ketdi; Hamkorlar — vendorlar; Tizim Sozlamalari — billing va sozlama.
 
-TOOL CHAQIRISH QOIDALARI:
-Sen 3 ta tool'ga egasan: createOrder (buyurtma), createService (xizmat), createServiceOption (optsiya/chegirma).
+SENING TOOL'LARING (faqat shular — ruxsatlaringga qarab berilgan):
+${describeTools(toolCtx)}
+
+TOOL ISHLATISH FALSAFASI:
+- Savolga javob berishdan OLDIN kerakli ma'lumotni o'qish tool'i bilan ol (qarz — getDebtors/searchCustomers, kassa — getFinanceSummary/getRecentTransactions, buyurtma — searchOrders/getOrdersSummary/getUpcomingDeadlines, ombor — getLowStock/searchMaterials). Taxmin qilma, o'qib kel.
+- [TASDIQ KARTASI] belgili tool chaqirilganda amal DARHOL BAJARILMAYDI — foydalanuvchiga tasdiqlash kartasi chiqadi. Sen qisqa qilib "Kartani tasdiqlasangiz kiritaman" degin va natijani da'vo qilma. Kartadan keyin tizim o'zi bajaradi.
+- Tool natijasida success:false kelsa — sababini foydalanuvchiga qisqa tushuntir.
 
 createOrder (buyurtma) uchun kerakli ma'lumotlar:
 - orderName (buyurtma nomi, masalan: "Vizitka 3000 ta")
@@ -308,116 +385,7 @@ ${JSON.stringify(contextData)}`;
         system: systemPrompt,
         messages: coreMessages,
         temperature: 0.2,
-        tools: {
-          createOrder: tool({
-            description: 'Yangi buyurtma yaratish.',
-            inputSchema: z.object({
-              orderName: z.string(),
-              title: z.string(),
-              customerName: z.string().optional(),
-              customerId: z.string().optional(),
-              serviceId: z.string().optional(),
-              quantity: z.number().default(1),
-              totalAmount: z.number(),
-              depositAmount: z.number().default(0),
-              paymentTypeId: z.string().optional(),
-              assigneeId: z.string().optional(),
-              deadlineAt: z.string().optional(),
-              columnId: z.string().default(firstColId),
-              notes: z.string().optional(),
-              // Optional analytical tag. Must be a Department id whose filial_id
-              // matches the calling employee's branchId — AI should resolve by name
-              // from contextData.bolimlar before passing here.
-              departmentId: z.string().optional(),
-              // Variant qatorlari — xizmatda variant_oqlari bo'lsa to'ldiriladi.
-              // Masalan futbolka uchun: [{atributlar:{Rang:'Oq',O\'lcham:'M'}, soni:30}, ...]
-              // Variantlar berilsa, quantity = sum(soni) avtomatik hisoblanadi.
-              variants: z.array(z.object({
-                atributlar: z.record(z.string(), z.string()),
-                soni: z.number().positive(),
-              })).optional(),
-            }),
-            execute: async (args) => {
-              const currentEmployee = employees.find(e => e.id === employeeId);
-              // Safety check: reject cross-branch department to keep reporting consistent.
-              if (args.departmentId) {
-                const dept = departmentsRaw.find((d: any) => d.id === args.departmentId);
-                if (dept && currentEmployee?.branchId && dept.branchId !== currentEmployee.branchId) {
-                  return { success: false, error: "Tanlangan bo'lim sizning filialingizga tegishli emas" };
-                }
-              }
-              const task = await this.tasksService.create(
-                {
-                  ...args,
-                  assignees: args.assigneeId ? JSON.stringify([args.assigneeId]) : '[]',
-                  deadlineAt: args.deadlineAt ? new Date(args.deadlineAt) : null,
-                  targetBranchId: currentEmployee?.branchId || null,
-                  branchId: currentEmployee?.branchId || null,
-                  departmentId: args.departmentId || null,
-                  variants: args.variants ?? undefined,
-                },
-                employeeId,
-              );
-              return { success: true, id: task.id, displayId: task.displayId };
-            },
-          }),
-          createService: tool({
-            description: "Yangi xizmat turi qo'shish.",
-            inputSchema: z.object({
-              name: z.string(),
-              basePrice: z.number().positive(),
-              unit: z.string(),
-              description: z.string().optional(),
-            }),
-            execute: async (args) => {
-              // Services are strictly branch-isolated. Use the caller's home branch;
-              // refuse to create if the AI user has no branch (e.g. workspace admin).
-              const callerEmployee = employees.find(e => e.id === employeeId);
-              const branchId = callerEmployee?.branchId;
-              if (!branchId) {
-                return { success: false, error: 'Xizmat yaratish uchun aktiv filial kerak. Filialdagi xodim sifatida kiring.' };
-              }
-              const service = await this.prisma.service.create({
-                data: {
-                  tenantId,
-                  branchId,
-                  name: args.name,
-                  basePrice: args.basePrice,
-                  unit: args.unit,
-                  description: args.description,
-                },
-              });
-              return { success: true, id: service.id };
-            },
-          }),
-          createServiceOption: tool({
-            description: 'Xizmat uchun yangi optsiya yoki narx qoidasi yaratish.',
-            inputSchema: z.object({
-              targetServiceName: z.string(),
-              optionName: z.string(),
-              optionValue: z.string(),
-              oldPrice: z.number(),
-              newPrice: z.number(),
-              note: z.string().optional(),
-            }),
-            execute: async (args) => {
-              const service = servicesRaw.find(s =>
-                s.name.toLowerCase().includes(args.targetServiceName.toLowerCase()),
-              );
-              if (!service) throw new Error('Xizmat topilmadi');
-              const option = await this.prisma.serviceOption.create({
-                data: {
-                  tenantId,
-                  serviceId: service.id,
-                  name: args.optionName,
-                  value: args.optionValue,
-                  priceAdd: args.newPrice - args.oldPrice,
-                },
-              });
-              return { success: true, id: option.id };
-            },
-          }),
-        },
+        tools: buildAiSdkTools(toolCtx),
       });
 
       // SDK v6: toUIMessageStreamResponse() is available on StreamTextResult

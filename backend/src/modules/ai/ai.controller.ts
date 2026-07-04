@@ -7,6 +7,9 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  Param,
+  Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AiService } from './ai.service';
@@ -44,6 +47,35 @@ export class AiController {
     return this.aiService.getUsage(tenantId);
   }
 
+  // =============================================
+  // AGENT AMALLARI — confirm karta oqimi + audit lentasi.
+  // [TASDIQ KARTASI] tool'lar AgentAction(pending) yaratadi; frontend shu
+  // endpointlar orqali tasdiqlaydi/rad etadi.
+  // =============================================
+
+  @Post('actions/:id/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirmAction(@Req() req: any, @Param('id') id: string) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.aiService.confirmAction(tenantId, sub, id);
+  }
+
+  @Post('actions/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  async rejectAction(@Req() req: any, @Param('id') id: string) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.aiService.rejectAction(tenantId, sub, id);
+  }
+
+  @Get('actions')
+  async listActions(@Req() req: any, @Query('limit') limit?: string) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.aiService.listActions(tenantId, sub, limit ? Number(limit) : 20);
+  }
+
   @Post('chat')
   @HttpCode(HttpStatus.OK)
   async chat(
@@ -52,7 +84,9 @@ export class AiController {
     @Req() req: any,
   ) {
     const tenantId = req.user?.tenantId;
-    const employeeId = req.user?.id;
+    // JWT payload'da `sub` bor (`id` emas) — eski `req.user?.id` doim undefined
+    // bo'lib, agent xodim filialini topolmasdi.
+    const employeeId = req.user?.sub;
 
     try {
       // Convert SDK v6 UIMessage[] → simple { role, content }[] format for backend
