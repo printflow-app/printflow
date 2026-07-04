@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   X, Send, Sparkles, Bot, User, CheckCircle2,
   Loader2, Package, Zap, ShieldCheck,
-  Plus, Settings, Mic, MicOff, AlertTriangle
+  Plus, Settings, Mic, MicOff, AlertTriangle,
+  ArrowUpRight, Wallet, UserSquare2, ClipboardList, PackageOpen
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -119,6 +121,156 @@ const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; childr
       </button>
     </div>
   </div>
+);
+
+// ── Generative UI kartalar ─────────────────────────────────────────
+// O'qish tool'lari qaytargan strukturali ma'lumot chat ichida matn emas,
+// haqiqiy interfeys bo'lagi sifatida render bo'ladi. Har karta mavjud
+// sahifaga deep-link beradi (sahifalar "manual rejim" bo'lib qoladi).
+
+const fm = (n: number) => Math.round(n ?? 0).toLocaleString('en-US').replace(/,/g, ' ');
+
+const DataCard: React.FC<{
+  title: string;
+  icon: any;
+  children: React.ReactNode;
+  onOpen?: () => void;
+  openLabel?: string;
+}> = ({ title, icon: Icon, children, onOpen, openLabel }) => (
+  <div className="mt-3 w-full rounded-[24px] border border-slate-200 bg-white shadow-lg shadow-slate-200/40 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+    <div className="flex items-center gap-2.5 px-4 py-3 bg-slate-50/60 border-b border-slate-100">
+      <div className="w-7 h-7 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
+        <Icon size={14} strokeWidth={2.5} />
+      </div>
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+    </div>
+    <div className="px-4 py-2">{children}</div>
+    {onOpen && (
+      <button
+        onClick={onOpen}
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-100 text-[10px] font-bold text-orange-600 uppercase tracking-widest hover:bg-orange-50 transition-colors"
+      >
+        {openLabel || "Bo'limni ochish"} <ArrowUpRight size={12} strokeWidth={2.5} />
+      </button>
+    )}
+  </div>
+);
+
+// Ro'yxat qatori — chapda nom/izoh, o'ngda qiymat
+const DataRow: React.FC<{ primary: string; secondary?: string | null; value: string; valueClass?: string }> = ({
+  primary, secondary, value, valueClass,
+}) => (
+  <div className="flex items-center justify-between gap-3 py-2 border-b border-slate-50 last:border-0">
+    <div className="min-w-0 flex-1">
+      <p className="text-[12px] font-bold text-slate-800 truncate">{primary}</p>
+      {secondary && <p className="text-[10px] font-semibold text-slate-400 truncate mt-0.5">{secondary}</p>}
+    </div>
+    <p className={`text-[12px] font-bold whitespace-nowrap ${valueClass || 'text-slate-700'}`}>{value}</p>
+  </div>
+);
+
+const MoreRows: React.FC<{ count: number }> = ({ count }) =>
+  count > 0 ? (
+    <p className="py-2 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+      + yana {count} ta
+    </p>
+  ) : null;
+
+// getFinanceSummary → stat tile qatori (kirim/chiqim/balans)
+const FinanceSummaryCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data, onOpen }) => (
+  <DataCard title={`Moliya — oxirgi ${data.davr_kun} kun`} icon={Wallet} onOpen={onOpen} openLabel="Kassani ochish">
+    <div className="grid grid-cols-3 gap-2 py-2">
+      <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
+        <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
+        <p className="text-[13px] font-bold text-slate-900 mt-1">{fm(data.kirim)}</p>
+      </div>
+      <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 text-center">
+        <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
+        <p className="text-[13px] font-bold text-slate-900 mt-1">{fm(data.chiqim)}</p>
+      </div>
+      <div className="p-3 rounded-2xl bg-slate-900 text-center">
+        <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
+        <p className="text-[13px] font-bold text-white mt-1">{fm(data.balans)}</p>
+      </div>
+    </div>
+  </DataCard>
+);
+
+// getDebtors / searchCustomers → mijozlar ro'yxati
+const CustomersCard: React.FC<{ title: string; items: any[]; total?: number; onOpen?: () => void }> = ({
+  title, items, total, onOpen,
+}) => (
+  <DataCard title={title} icon={UserSquare2} onOpen={onOpen} openLabel="Mijozlarni ochish">
+    {items.slice(0, 6).map((c: any) => (
+      <DataRow
+        key={c.id}
+        primary={c.name || c.ism}
+        secondary={c.phone}
+        value={(c.totalDebt ?? c.qarz) > 0 ? `${fm(c.totalDebt ?? c.qarz)} so'm` : '—'}
+        valueClass={(c.totalDebt ?? c.qarz) > 0 ? 'text-rose-600' : 'text-slate-400'}
+      />
+    ))}
+    <MoreRows count={items.length - 6} />
+    {typeof total === 'number' && total > 0 && (
+      <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
+        <p className="text-[13px] font-bold text-rose-600">{fm(total)} so'm</p>
+      </div>
+    )}
+  </DataCard>
+);
+
+// searchOrders / getUpcomingDeadlines → buyurtmalar ro'yxati
+const OrdersCard: React.FC<{ title: string; items: any[]; onOpen?: () => void }> = ({ title, items, onOpen }) => (
+  <DataCard title={title} icon={ClipboardList} onOpen={onOpen} openLabel="Kanban'ni ochish">
+    {items.slice(0, 6).map((t: any, idx: number) => (
+      <DataRow
+        key={t.id || t.displayId || idx}
+        primary={`${t.displayId ? t.displayId + ' · ' : ''}${t.nom}`}
+        secondary={[t.mijoz, t.otib_ketgan ? "MUDDAT O'TGAN" : (t.muddat ? new Date(t.muddat).toLocaleDateString('uz-UZ') : null), t.holat]
+          .filter(Boolean).join(' · ')}
+        value={t.qoldiq > 0 ? `${fm(t.qoldiq)} so'm` : (t.jami ? `${fm(t.jami)} so'm` : '—')}
+        valueClass={t.otib_ketgan ? 'text-rose-600' : 'text-slate-700'}
+      />
+    ))}
+    <MoreRows count={items.length - 6} />
+  </DataCard>
+);
+
+// getOrdersSummary → kanban ustunlari holati
+const ColumnsCard: React.FC<{ items: any[]; onOpen?: () => void }> = ({ items, onOpen }) => (
+  <DataCard title="Buyurtmalar holati" icon={ClipboardList} onOpen={onOpen} openLabel="Kanban'ni ochish">
+    {items.map((c: any) => (
+      <DataRow
+        key={c.nom}
+        primary={c.nom}
+        secondary={c.jami_qoldiq > 0 ? `qoldiq ${fm(c.jami_qoldiq)} so'm` : null}
+        value={`${c.buyurtma_soni} ta`}
+        valueClass={c.bajarilgan_ustun ? 'text-emerald-600' : 'text-slate-700'}
+      />
+    ))}
+  </DataCard>
+);
+
+// getLowStock / searchMaterials → ombor qoldiqlari
+const MaterialsCard: React.FC<{ title: string; items: any[]; onOpen?: () => void }> = ({ title, items, onOpen }) => (
+  <DataCard title={title} icon={PackageOpen} onOpen={onOpen} openLabel="Omborni ochish">
+    {items.slice(0, 6).map((m: any, idx: number) => {
+      const qoldiq = m.qoldiq ?? m.currentStock;
+      const min = m.minimal ?? m.minStock;
+      const low = typeof min === 'number' && min > 0 && qoldiq <= min;
+      return (
+        <DataRow
+          key={m.id || m.nom || m.name || idx}
+          primary={m.nom || m.name}
+          secondary={low ? `minimal: ${fm(min)}` : null}
+          value={`${fm(qoldiq)} ${m.birlik || m.unit || ''}`}
+          valueClass={low ? 'text-rose-600' : 'text-slate-700'}
+        />
+      );
+    })}
+    <MoreRows count={items.length - 6} />
+  </DataCard>
 );
 
 // [TASDIQ KARTASI] — pul/o'zgartirish amali serverda AgentAction(pending)
@@ -308,6 +460,22 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
     if (input.trim().length < 3 || isLoading) return;
     submitText(input);
   };
+
+  // Omnibox (Ctrl+K) dan kelgan so'rov — drawer'ni Dashboard ochadi,
+  // xabarni shu yerda agentga yuboramiz.
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const text = (e as CustomEvent).detail?.text;
+      if (typeof text === 'string' && text.trim().length >= 3) {
+        submitText(text);
+      }
+    };
+    window.addEventListener('pf:ai-ask', onAsk);
+    return () => window.removeEventListener('pf:ai-ask', onAsk);
+  }, [submitText]);
+
+  // Generative kartalardagi deep-link tugmalari uchun
+  const navigate = useNavigate();
 
   const stopListening = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -554,6 +722,32 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       if (toolName === 'createServiceOption') return <SuccessBadge key={toolCallId} text="Optsiya saqlandi" />;
                       if (toolName === 'addCustomer') return <SuccessBadge key={toolCallId} text="Mijoz qo'shildi" />;
                       if (toolName === 'moveOrder') return <SuccessBadge key={toolCallId} text="Buyurtma ko'chirildi" />;
+
+                      // Generative UI — o'qish tool'lari natijasi karta bo'lib chiqadi
+                      if (toolName === 'getFinanceSummary') {
+                        return <FinanceSummaryCard key={toolCallId} data={out} onOpen={() => navigate('/dashboard/kassa')} />;
+                      }
+                      if (toolName === 'getDebtors' && out?.qarzdorlar?.length) {
+                        return <CustomersCard key={toolCallId} title="Qarzdorlar" items={out.qarzdorlar} total={out.jami_qarz} onOpen={() => navigate('/dashboard/mijozlar')} />;
+                      }
+                      if (toolName === 'searchCustomers' && out?.mijozlar?.length) {
+                        return <CustomersCard key={toolCallId} title="Topilgan mijozlar" items={out.mijozlar} onOpen={() => navigate('/dashboard/mijozlar')} />;
+                      }
+                      if (toolName === 'searchOrders' && out?.buyurtmalar?.length) {
+                        return <OrdersCard key={toolCallId} title="Topilgan buyurtmalar" items={out.buyurtmalar} onOpen={() => navigate('/dashboard/topshiriqlar')} />;
+                      }
+                      if (toolName === 'getUpcomingDeadlines' && out?.buyurtmalar?.length) {
+                        return <OrdersCard key={toolCallId} title="Yaqin muddatlar" items={out.buyurtmalar} onOpen={() => navigate('/dashboard/topshiriqlar')} />;
+                      }
+                      if (toolName === 'getOrdersSummary' && out?.ustunlar?.length) {
+                        return <ColumnsCard key={toolCallId} items={out.ustunlar} onOpen={() => navigate('/dashboard/topshiriqlar')} />;
+                      }
+                      if (toolName === 'getLowStock' && out?.materiallar?.length) {
+                        return <MaterialsCard key={toolCallId} title="Kam qoldiq materiallar" items={out.materiallar} onOpen={() => navigate('/dashboard/ombor')} />;
+                      }
+                      if (toolName === 'searchMaterials' && out?.materiallar?.length) {
+                        return <MaterialsCard key={toolCallId} title="Topilgan materiallar" items={out.materiallar} onOpen={() => navigate('/dashboard/ombor')} />;
+                      }
                       return null;
                     }
 

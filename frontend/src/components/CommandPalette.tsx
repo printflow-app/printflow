@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, ArrowRight, Wallet, ClipboardList, UserSquare2, Users,
   PackageOpen, QrCode, ShieldCheck, Handshake, Settings, TrendingUp,
-  BarChart3, Building2,
+  BarChart3, Building2, Sparkles,
 } from 'lucide-react';
 
 // =============================================
-// Command Palette — Ctrl+K (yoki Cmd+K)
-// Tezkor navigatsiya: yozish + Enter
+// Omnibox — Ctrl+K (yoki Cmd+K)
+// Bitta qatordan ikkita yo'l: sahifaga o'tish YOKI Girgitton agentidan
+// so'rash. Nav mos kelmasa ham, yozilgan har qanday niyat agentga ketadi
+// ('pf:ai-ask' custom event — Dashboard drawer'ni ochadi, AICopilot yuboradi).
 // =============================================
 
 interface CommandItem {
@@ -35,7 +37,12 @@ const COMMANDS: CommandItem[] = [
   { id: 'sozlamalar',   label: 'Tizim Sozlamalari',     hint: 'Konfiguratsiya va billing',    icon: Settings,      to: '/dashboard/sozlamalar',   keywords: 'sozlama setting config' },
 ];
 
-export function CommandPalette() {
+// Ro'yxat elementi: nav sahifa yoki agentga yuborish qatori
+type Row =
+  | { kind: 'nav'; cmd: CommandItem }
+  | { kind: 'agent'; text: string };
+
+export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -64,35 +71,48 @@ export function CommandPalette() {
     }
   }, [open]);
 
-  const filtered = useMemo(() => {
+  const rows = useMemo<Row[]>(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return COMMANDS;
-    return COMMANDS.filter(c =>
-      c.label.toLowerCase().includes(q) ||
-      c.keywords.toLowerCase().includes(q) ||
-      (c.hint?.toLowerCase().includes(q) ?? false)
-    );
-  }, [query]);
+    const navs = !q
+      ? COMMANDS
+      : COMMANDS.filter(c =>
+          c.label.toLowerCase().includes(q) ||
+          c.keywords.toLowerCase().includes(q) ||
+          (c.hint?.toLowerCase().includes(q) ?? false)
+        );
+    const out: Row[] = navs.map(cmd => ({ kind: 'nav', cmd }));
+    // 3+ belgi yozilgan bo'lsa — har doim agent qatori ham bor: nav topilsa
+    // oxirida, topilmasa yagona variant sifatida.
+    if (agentEnabled && query.trim().length >= 3) {
+      out.push({ kind: 'agent', text: query.trim() });
+    }
+    return out;
+  }, [query, agentEnabled]);
 
   // Reset highlighted item when filter changes
   useEffect(() => { setActiveIndex(0); }, [query]);
 
-  const handleSelect = (cmd: CommandItem) => {
+  const handleSelect = (row: Row) => {
     setOpen(false);
-    navigate(cmd.to);
+    if (row.kind === 'nav') {
+      navigate(row.cmd.to);
+    } else {
+      // Dashboard drawer'ni ochadi, AICopilot xabarni yuboradi
+      window.dispatchEvent(new CustomEvent('pf:ai-ask', { detail: { text: row.text } }));
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIndex(i => Math.min(i + 1, filtered.length - 1));
+      setActiveIndex(i => Math.min(i + 1, rows.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActiveIndex(i => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const cmd = filtered[activeIndex];
-      if (cmd) handleSelect(cmd);
+      const row = rows[activeIndex];
+      if (row) handleSelect(row);
     }
   };
 
@@ -115,7 +135,7 @@ export function CommandPalette() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Sahifa qidirish..."
+            placeholder={agentEnabled ? "Sahifa qidirish yoki Girgitton'dan so'rash..." : 'Sahifa qidirish...'}
             className="flex-1 bg-transparent outline-none text-base font-semibold text-slate-800 placeholder:text-slate-400"
           />
           <kbd className="hidden sm:inline-block text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">ESC</kbd>
@@ -123,19 +143,45 @@ export function CommandPalette() {
 
         {/* Results */}
         <div className="max-h-[60vh] overflow-y-auto py-1">
-          {filtered.length === 0 ? (
+          {rows.length === 0 ? (
             <div className="py-8 text-center text-sm font-semibold text-slate-400">
               "{query}" — hech narsa topilmadi
             </div>
           ) : (
-            filtered.map((cmd, i) => {
-              const Icon = cmd.icon;
+            rows.map((row, i) => {
               const isActive = i === activeIndex;
+              if (row.kind === 'agent') {
+                return (
+                  <button
+                    key="__agent__"
+                    onMouseEnter={() => setActiveIndex(i)}
+                    onClick={() => handleSelect(row)}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                      isActive ? 'bg-orange-50' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isActive ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white' : 'bg-orange-100 text-orange-600'
+                    }`}>
+                      <Sparkles size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-slate-800 truncate">
+                        Girgitton'dan so'rash: <span className="text-orange-600">"{row.text}"</span>
+                      </div>
+                      <div className="text-xs text-slate-500 truncate">Agent javob beradi yoki amalni bajaradi</div>
+                    </div>
+                    {isActive && <ArrowRight size={14} className="text-orange-500" />}
+                  </button>
+                );
+              }
+              const { cmd } = row;
+              const Icon = cmd.icon;
               return (
                 <button
                   key={cmd.id}
                   onMouseEnter={() => setActiveIndex(i)}
-                  onClick={() => handleSelect(cmd)}
+                  onClick={() => handleSelect(row)}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                     isActive ? 'bg-orange-50' : 'hover:bg-slate-50'
                   }`}
@@ -161,6 +207,7 @@ export function CommandPalette() {
           <span className="flex gap-3">
             <span>↑↓ navigatsiya</span>
             <span>Enter — tanlash</span>
+            {agentEnabled && <span className="text-orange-400">Yozing → agent</span>}
           </span>
           <span>Ctrl/Cmd + K — ochish</span>
         </div>

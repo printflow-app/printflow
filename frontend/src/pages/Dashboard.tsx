@@ -108,6 +108,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       .then(r => setAiCopilotGlobalEnabled(!!r.data?.value))
       .catch(() => setAiCopilotGlobalEnabled(false));
   }, []);
+
+  // Omnibox'dan agentga so'rov kelganda drawer'ni ochamiz — xabarni
+  // AICopilot o'zi eshitib yuboradi (pf:ai-ask, CommandPalette dispatch qiladi).
+  useEffect(() => {
+    const onAsk = () => setIsAICopilotOpen(true);
+    window.addEventListener('pf:ai-ask', onAsk);
+    return () => window.removeEventListener('pf:ai-ask', onAsk);
+  }, []);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Global branch filter (multiBranch feature)
@@ -780,8 +788,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         />
       )}
 
-      {/* Global command palette — Ctrl+K opens it */}
-      <CommandPalette />
+      {/* Global omnibox — Ctrl+K: sahifa qidirish yoki Girgitton'dan so'rash */}
+      <CommandPalette agentEnabled={aiCopilotEnabled} />
 
       {/* Price list modal — navbar tugmasi yoki Ctrl+Shift+P orqali ochiladi.
           Faqat ochilganda yuklanadi (chunk eksport kutubxonalari og'ir). */}
