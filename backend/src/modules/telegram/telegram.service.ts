@@ -821,8 +821,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
    * Returns false → another instance already sent, OR a transient DB error
    *                 occurred. Fail-closed: one missed notification is far
    *                 less harmful than duplicate spam to every employee.
+   * Public: BriefingService (ai moduli) ham shu lock'dan foydalanadi.
    */
-  private async acquireCronLock(tenantId: string, lockKey: string): Promise<boolean> {
+  async acquireCronLock(tenantId: string, lockKey: string): Promise<boolean> {
     try {
       await this.prisma.systemSetting.create({
         data: { tenantId, key: lockKey, value: `${new Date().toISOString()}|${this.instanceTag}` },

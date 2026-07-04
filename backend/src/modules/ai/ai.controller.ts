@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AiService } from './ai.service';
+import { BriefingService } from './briefing.service';
 import { RequireFeature } from '../../common/decorators/feature.decorator';
 
 // SDK v6: UIMessage format sent by DefaultChatTransport
@@ -38,13 +39,24 @@ interface ChatRequestBody {
 @RequireFeature('ai_chat')
 @Controller('ai')
 export class AiController {
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly aiService: AiService,
+    private readonly briefingService: BriefingService,
+  ) {}
 
   @Get('usage')
   async usage(@Req() req: any) {
     const tenantId = req.user?.tenantId;
     if (!tenantId) return { used: 0, limit: 0, unlimited: false };
     return this.aiService.getUsage(tenantId);
+  }
+
+  /** Kunlik brifing — LLM'siz aggregation, xabar limitiga tegmaydi */
+  @Get('briefing')
+  async briefing(@Req() req: any) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) throw new UnauthorizedException();
+    return this.briefingService.buildBriefing(tenantId);
   }
 
   // =============================================

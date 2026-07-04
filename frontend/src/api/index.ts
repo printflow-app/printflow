@@ -608,6 +608,9 @@ export const aiApi = {
   confirmAction: (id: string) => api.post(`/ai/actions/${id}/confirm`),
   rejectAction: (id: string) => api.post(`/ai/actions/${id}/reject`),
   listActions: (limit = 20) => api.get('/ai/actions', { params: { limit } }),
+
+  // Kunlik brifing — LLM'siz aggregation (xabar limitiga tegmaydi)
+  getBriefing: () => api.get('/ai/briefing'),
 };
 
 export default api;

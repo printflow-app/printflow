@@ -273,6 +273,90 @@ const MaterialsCard: React.FC<{ title: string; items: any[]; onOpen?: () => void
   </DataCard>
 );
 
+// ── Kunlik brifing (bo'sh chat holati) ─────────────────────────────
+// Kun "nima muhim" bilan boshlanadi: bugungi kassa, muddatlar, qarzlar,
+// ombor. Har qator bosilsa tegishli savol agentga yuboriladi.
+const BriefingPanel: React.FC<{ briefing: any; onAsk: (text: string) => void }> = ({ briefing: b, onAsk }) => {
+  if (!b) return null;
+  const allClear =
+    b.buyurtmalar.otgan_soni === 0 && b.buyurtmalar.yaqin_soni === 0 &&
+    b.qarzdorlar.soni === 0 && b.ombor.soni === 0;
+
+  const Row: React.FC<{ icon: any; text: string; value: string; tone?: 'rose' | 'amber' | 'slate'; ask: string }> = ({
+    icon: Icon, text, value, tone = 'slate', ask,
+  }) => (
+    <button
+      onClick={() => onAsk(ask)}
+      className="w-full flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0 text-left hover:bg-slate-50 rounded-xl px-2 transition-colors"
+    >
+      <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
+        tone === 'rose' ? 'bg-rose-100 text-rose-500' : tone === 'amber' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'
+      }`}>
+        <Icon size={13} strokeWidth={2.5} />
+      </div>
+      <p className="flex-1 text-[12px] font-bold text-slate-700 min-w-0 truncate">{text}</p>
+      <p className={`text-[12px] font-bold whitespace-nowrap ${tone === 'rose' ? 'text-rose-600' : 'text-slate-700'}`}>{value}</p>
+    </button>
+  );
+
+  return (
+    <div className="rounded-[24px] border border-slate-200 bg-white shadow-lg shadow-slate-200/40 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex items-center gap-2.5 px-4 py-3 bg-orange-50/60 border-b border-orange-100">
+        <div className="w-7 h-7 rounded-xl bg-orange-500 flex items-center justify-center text-white">
+          <Sparkles size={14} strokeWidth={2.5} />
+        </div>
+        <div>
+          <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Bugungi brifing</p>
+          <p className="text-[10px] font-semibold text-slate-400">{new Date(b.sana).toLocaleDateString('uz-UZ')}</p>
+        </div>
+      </div>
+
+      {/* Bugungi kassa — stat tile qatori */}
+      <div className="grid grid-cols-3 gap-2 px-4 pt-3">
+        <div className="p-2.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
+          <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
+          <p className="text-[12px] font-bold text-slate-900 mt-0.5">{fm(b.moliya.kirim)}</p>
+        </div>
+        <div className="p-2.5 rounded-2xl bg-rose-50 border border-rose-100 text-center">
+          <p className="text-[8px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
+          <p className="text-[12px] font-bold text-slate-900 mt-0.5">{fm(b.moliya.chiqim)}</p>
+        </div>
+        <div className="p-2.5 rounded-2xl bg-slate-900 text-center">
+          <p className="text-[8px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
+          <p className="text-[12px] font-bold text-white mt-0.5">{fm(b.moliya.balans)}</p>
+        </div>
+      </div>
+
+      <div className="px-2 py-2">
+        {allClear ? (
+          <p className="py-4 text-center text-[11px] font-bold text-emerald-600 uppercase tracking-widest">
+            ✅ Hammasi joyida
+          </p>
+        ) : (
+          <>
+            {b.buyurtmalar.otgan_soni > 0 && (
+              <Row icon={AlertTriangle} tone="rose" text="Muddati o'tgan buyurtmalar" value={`${b.buyurtmalar.otgan_soni} ta`}
+                ask="Muddati o'tgan buyurtmalarni ko'rsat" />
+            )}
+            {b.buyurtmalar.yaqin_soni > 0 && (
+              <Row icon={ClipboardList} tone="amber" text="3 kun ichida muddat" value={`${b.buyurtmalar.yaqin_soni} ta`}
+                ask="Muddati yaqin buyurtmalarni ko'rsat" />
+            )}
+            {b.qarzdorlar.soni > 0 && (
+              <Row icon={UserSquare2} tone="rose" text={`Qarzdorlar (${b.qarzdorlar.soni} ta)`} value={`${fm(b.qarzdorlar.jami)} so'm`}
+                ask="Qarzdorlarni ko'rsat" />
+            )}
+            {b.ombor.soni > 0 && (
+              <Row icon={PackageOpen} tone="amber" text="Kam qoldiq materiallar" value={`${b.ombor.soni} ta`}
+                ask="Kam qolgan materiallarni ko'rsat" />
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // [TASDIQ KARTASI] — pul/o'zgartirish amali serverda AgentAction(pending)
 // holatida turadi; foydalanuvchi shu kartada tasdiqlaydi yoki rad etadi.
 // Tasdiqlangandagina backend amalni bajaradi (registry.executeConfirmedAction).
@@ -367,6 +451,7 @@ type Usage = { used: number; limit: number; unlimited: boolean; periodEnd?: stri
 const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => {
   const [input, setInput] = useState('');
   const [usage, setUsage] = useState<Usage | null>(null);
+  const [briefing, setBriefing] = useState<any>(null);
   const [limitError, setLimitError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [micPermissionDenied, setMicPermissionDenied] = useState(false);
@@ -438,6 +523,8 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 300);
       fetchUsage();
+      // Brifing — LLM'siz aggregation, har ochilishda yangilanadi
+      aiApi.getBriefing().then(r => setBriefing(r.data)).catch(() => setBriefing(null));
     }
   }, [isOpen, fetchUsage]);
 
@@ -650,10 +737,14 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
         {/* Chat window */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scroll-smooth custom-scroll bg-slate-50/30">
           {messages.length === 0 && (
-             <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-40">
+            briefing ? (
+              <BriefingPanel briefing={briefing} onAsk={submitText} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-40">
                 <Bot size={48} className="text-slate-300" />
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Qanday yordam bera olaman?</p>
-             </div>
+              </div>
+            )
           )}
 
           {messages.map((msg) => {

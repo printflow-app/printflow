@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
 import { FinanceService } from '../finance/finance.service';
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { streamText } from 'ai';
+import { streamText, stepCountIs } from 'ai';
 import { ToolContext } from './tools/types';
 import {
   buildAiSdkTools,
@@ -305,6 +305,8 @@ ${describeTools(toolCtx)}
 
 TOOL ISHLATISH FALSAFASI:
 - Savolga javob berishdan OLDIN kerakli ma'lumotni o'qish tool'i bilan ol (qarz — getDebtors/searchCustomers, kassa — getFinanceSummary/getRecentTransactions, buyurtma — searchOrders/getOrdersSummary/getUpcomingDeadlines, ombor — getLowStock/searchMaterials). Taxmin qilma, o'qib kel.
+- HECH QACHON "tekshirayapman", "ko'rib chiqaman" deb yozib TO'XTAMA — tool'ni o'sha zahoti, shu javobning o'zida chaqir. Matn yozish tool chaqirishning o'rnini bosmaydi.
+- O'qish tool'i natijasi foydalanuvchiga karta shaklida avtomatik ko'rsatiladi — natijadan keyin ro'yxatni QAYTA SANAB BERMA, bitta jumlada xulosa qil (masalan: "9 ta buyurtma muddati o'tgan, eng eskisi 27-iyun").
 - [TASDIQ KARTASI] belgili tool chaqirilganda amal DARHOL BAJARILMAYDI — foydalanuvchiga tasdiqlash kartasi chiqadi. Sen qisqa qilib "Kartani tasdiqlasangiz kiritaman" degin va natijani da'vo qilma. Kartadan keyin tizim o'zi bajaradi.
 - Tool natijasida success:false kelsa — sababini foydalanuvchiga qisqa tushuntir.
 
@@ -386,6 +388,9 @@ ${JSON.stringify(contextData)}`;
         messages: coreMessages,
         temperature: 0.2,
         tools: buildAiSdkTools(toolCtx),
+        // Default stepCountIs(1) tool natijasidan keyin modelga so'z bermasdan
+        // to'xtatadi — model natijani ko'rib qisqa xulosa yozsin (kartaga qo'shimcha).
+        stopWhen: stepCountIs(4),
       });
 
       // SDK v6: toUIMessageStreamResponse() is available on StreamTextResult
