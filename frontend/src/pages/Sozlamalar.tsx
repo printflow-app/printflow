@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake, FileText, Image as ImageIcon } from 'lucide-react';
 import { PriceListModal } from '../components/PriceListModal';
 import { PriceListBrandingSection } from '../components/PriceListBrandingSection';
+import { AgentPolicySection } from '../components/AgentPolicySection';
 import { ImageUpload } from '../components/ImageUpload';
 import { rolesApi, paymentTypesApi, expenseTypesApi, servicesApi, inventoryApi, settingsApi, branchesApi } from '../api';
 import { useRoles, usePaymentTypes, useExpenseTypes, useTaskColumns, useServices, useInvalidate } from '../hooks/queries';
@@ -1023,6 +1024,9 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           {(isAdmin || p.canManageServices) && (
             <PriceListBrandingSection tenantSlug={currentUser?.tenant?.slug} activeBranchId={activeBranchId} />
           )}
+
+          {/* Girgitton Agent — avtonom ishlar policy'si (faqat admin) */}
+          {isAdmin && <AgentPolicySection />}
 
           {/* Role Modal */}
           <Modal

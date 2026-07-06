@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
+import { AutonomousService } from './autonomous.service';
 
 // =============================================
 // KUNLIK BRIFING — Faza 3 (proaktivlik).
@@ -37,6 +38,7 @@ export class BriefingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramService,
+    private readonly autonomous: AutonomousService,
   ) {}
 
   /** Toshkent (UTC+5) bo'yicha bugungi kun boshlanishi (UTC instant) */
@@ -171,19 +173,6 @@ export class BriefingService {
     return lines.join('\n');
   }
 
-  /** Tenant tarifida AI/telegram bormi — FeatureGuard union mantiqiga mos */
-  private planHasAgent(plan: any): boolean {
-    if (!plan) return false;
-    let features: Record<string, any> = {};
-    try {
-      features =
-        typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features || {};
-    } catch {}
-    const modules: string[] = Array.isArray(plan.allowedModules) ? plan.allowedModules : [];
-    const has = (f: string) => !!features[f] || modules.includes(f);
-    return has('ai_chat') || has('telegram_bot') || has('advancedBot');
-  }
-
   // 03:00 UTC = 08:00 Toshkent. Railway UTC'da ishlaydi; lokal dev'da vaqt
   // farq qiladi, lekin cron lock baribir kuniga bir marta yuborilishini kafolatlaydi.
   @Cron('0 3 * * *')
@@ -196,13 +185,11 @@ export class BriefingService {
 
     for (const t of tenants) {
       try {
-        if (!this.planHasAgent(t.plan)) continue;
+        if (!this.autonomous.planHasAgent(t.plan)) continue;
 
-        // Tenant o'chirib qo'ygan bo'lsa hurmat qilamiz
-        const disabled = await this.prisma.systemSetting.findFirst({
-          where: { tenantId: t.id, key: 'AGENT_BRIEFING_DISABLED' },
-        });
-        if (disabled && JSON.parse(disabled.value) === true) continue;
+        // Yagona policy manbasi — Sozlamalar → Girgitton Agent (AGENT_POLICIES)
+        const policies = await this.autonomous.readPolicies(t.id);
+        if (!policies.dailyBriefing.enabled) continue;
 
         // Multi-instance dedupe — telegram.service'dagi pattern bilan bir xil
         const gotLock = await this.telegram.acquireCronLock(t.id, `cron_lock:agent_briefing:${dateStr}`);
