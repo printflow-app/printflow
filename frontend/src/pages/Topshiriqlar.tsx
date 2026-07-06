@@ -1039,49 +1039,44 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         document.body,
       )}
 
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 z-10 mx-1 sm:mx-0">
-        <div>
-          <h2 className="text-base font-bold text-slate-800 tracking-tight flex items-center gap-2 px-1">Xizmatlar & Kanban</h2>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">Ish jarayonini boshqarish</p>
-        </div>
-
+      {/* Toolbar — sahifa sarlavhasi shell headerda; bu yerda faqat amallar */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-white p-3 rounded-xl border border-[color:var(--border)] z-10 mx-1 sm:mx-0">
         {/* Search input */}
         <div className="relative flex-1 min-w-0 max-w-xs">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="ID, nomi yoki mijoz..."
+            placeholder="ID, nomi yoki mijoz bo'yicha qidirish..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full h-9 pl-8 pr-3 text-[11px] font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 focus:bg-white transition-all placeholder:text-slate-300"
+            className="input-minimal pl-9 pr-8"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors flex items-center"
               title="Tozalash"
-            ><X size={12} strokeWidth={2.5}/></button>
+            ><X size={13} strokeWidth={2.5}/></button>
           )}
         </div>
 
         <div className="flex flex-row flex-wrap items-center gap-2">
-          <button onClick={openArxivModal} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-violet-400 hover:text-violet-500 transition-all flex items-center gap-1.5 whitespace-nowrap">
-            <Archive size={12} /> ARXIV
+          <button onClick={openArxivModal} className="btn-outline h-sm">
+            <Archive size={13} /> Arxiv
           </button>
           {(isAdmin || p.canExportTasks) && (
-            <button onClick={handleExport} className="border-2 border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-emerald-400 hover:text-emerald-500 transition-all flex items-center gap-1.5 whitespace-nowrap" title="Topshiriqlarni Excel'ga eksport qilish">
-              <Download size={12} /> EKSPORT
+            <button onClick={handleExport} className="btn-outline h-sm" title="Topshiriqlarni Excel'ga eksport qilish">
+              <Download size={13} /> Eksport
             </button>
           )}
           {p.canManageColumns && (
-            <button data-tour-id="kanban-add-column" onClick={openAddColumn} className="border-2 border-dashed border-slate-200 h-9 px-3 text-[10px] font-bold uppercase text-slate-500 rounded-xl hover:border-orange-400 hover:text-orange-500 transition-all whitespace-nowrap">
-              + BOSQICH
+            <button data-tour-id="kanban-add-column" onClick={openAddColumn} className="btn-outline h-sm border-dashed">
+              <Plus size={13} /> Bosqich
             </button>
           )}
           {canCreateTask && (
-            <button onClick={() => openNewTaskModal()} className="flex items-center gap-1.5 h-9 px-4 bg-[#FF6B00] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all whitespace-nowrap">
-              <Plus size={13} strokeWidth={3} /> BUYURTMA
+            <button onClick={() => openNewTaskModal()} className="btn-primary h-sm">
+              <Plus size={14} strokeWidth={2.5} /> Buyurtma
             </button>
           )}
         </div>
@@ -1139,19 +1134,19 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   }`}
               >
                 {/* Column Header */}
-                <div className="flex justify-between items-center px-3 mb-3 mt-1 group">
-                  <div className="flex items-center gap-1.5 flex-1 pr-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${col.isDone ? 'bg-emerald-500' : 'bg-orange-500'}`}></div>
-                    <h3 className="font-bold text-slate-800 text-[10px] uppercase tracking-widest truncate">{col.title}</h3>
-                    <span className="bg-white text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded-md border border-slate-200/50 shadow-sm">{colTasks.length}</span>
+                <div className="flex justify-between items-center px-2 mb-2 mt-1 group">
+                  <div className="flex items-center gap-1.5 flex-1 pr-2 min-w-0">
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${col.isDone ? 'bg-emerald-500' : 'bg-orange-500'}`}></div>
+                    <h3 className="label-caps text-slate-700 truncate">{col.title}</h3>
+                    <span className="text-xs font-medium text-slate-400 flex-shrink-0">{colTasks.length}</span>
                     {col.isDone && (
-                      <span title="Bu bosqich bajarilgan deb sanaladi" className="flex items-center gap-0.5 bg-emerald-50 text-emerald-600 text-[8px] font-bold px-1.5 py-0.5 rounded-md border border-emerald-100 uppercase tracking-wider"><CheckCircle2 size={9} /> Bajarilgan</span>
+                      <span title="Bu bosqich bajarilgan deb sanaladi" className="badge-success flex-shrink-0"><CheckCircle2 size={10} className="mr-0.5" /> Bajarilgan</span>
                     )}
                   </div>
                   {p.canManageColumns && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button onClick={() => openEditColumn(col)} title="Nomini tahrirlash" className="text-slate-300 hover:text-orange-500 transition-colors"><Pencil size={12} /></button>
-                      <button onClick={() => setConfirmModal({ isOpen: true, type: 'column', id: col.id, title: col.title })} title="O'chirish" className="text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={12} /></button>
+                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEditColumn(col)} title="Nomini tahrirlash" className="icon-btn w-6 h-6"><Pencil size={12} /></button>
+                      <button onClick={() => setConfirmModal({ isOpen: true, type: 'column', id: col.id, title: col.title })} title="O'chirish" className="icon-btn w-6 h-6 hover:text-rose-600"><Trash2 size={12} /></button>
                     </div>
                   )}
                 </div>
@@ -1181,54 +1176,55 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                           }`}
                       >
                         <TaskIdentityBadges task={task as any} vendor={(task as any).vendor} isMyTask={isMyTask} />
-                        <h4 className="font-bold text-slate-800 text-xs mb-1.5 leading-snug group-hover:text-orange-700 transition-colors uppercase tracking-tight line-clamp-2">
-                          {task.orderName && <span className="text-orange-600">{task.orderName} — </span>}
-                          {task.title}
+                        <h4 className="font-semibold text-slate-900 text-[13px] mb-1 leading-snug transition-colors line-clamp-2">
+                          {task.orderName ? `${task.orderName} — ` : ''}{task.title}
                         </h4>
-                        <p className="text-[10px] font-medium text-slate-500 mb-3 line-clamp-2 leading-normal italic">{task.description}</p>
+                        {task.description && (
+                          <p className="text-xs text-slate-500 mb-2.5 line-clamp-2 leading-normal">{task.description}</p>
+                        )}
 
                         <TaskDeadlineBadges task={task as any} activeBranchId={activeBranchId} branches={branches} />
 
-                        <div className="flex flex-wrap gap-1 mb-3">
+                        <div className="flex flex-wrap gap-1 mb-2.5">
                           {task.totalAmount > 0 && (
-                            <span className="text-[8px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md border border-emerald-100 uppercase tracking-tighter flex items-center gap-1">
-                              <Wallet size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.totalAmount)}
+                            <span className="badge-success gap-1">
+                              <Wallet size={10} /> {new Intl.NumberFormat('uz-UZ').format(task.totalAmount)}
                             </span>
                           )}
                           {task.remainingAmount > 0 && (
-                            <span className="text-[8px] font-bold bg-rose-50 text-rose-600 px-2 py-1 rounded-md border border-rose-100 uppercase tracking-tighter flex items-center gap-1">
-                              <AlertCircle size={9} /> {new Intl.NumberFormat('uz-UZ').format(task.remainingAmount)}
+                            <span className="badge-danger gap-1">
+                              <AlertCircle size={10} /> {new Intl.NumberFormat('uz-UZ').format(task.remainingAmount)}
                             </span>
                           )}
                           {(task as any).executorBranch && (
-                            <span className="text-[8px] font-bold bg-violet-50 text-violet-600 px-2 py-1 rounded-md border border-violet-100 uppercase tracking-tighter flex items-center gap-1">
-                              <ArrowRight size={9} /> {(task as any).executorBranch.name}
+                            <span className="badge-neutral gap-1">
+                              <ArrowRight size={10} /> {(task as any).executorBranch.name}
                             </span>
                           )}
                           {(task as any).vendor && (
-                            <span className="text-[8px] font-bold bg-amber-50 text-amber-600 px-2 py-1 rounded-md border border-amber-100 uppercase tracking-tighter flex items-center gap-1">
-                              <Handshake size={9} /> {(task as any).vendor.name}
+                            <span className="badge-neutral gap-1">
+                              <Handshake size={10} /> {(task as any).vendor.name}
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between pt-2.5 border-t border-slate-50 mt-auto">
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-auto">
                           <div className="flex -space-x-1.5 overflow-hidden">
                             {parseJson(task.assignees).map((id: string) => {
                               const emp = employees.find(e => e.id === id);
                               return (
-                                <div key={id} title={emp?.fullName} className="w-5 h-5 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[9px] font-bold text-orange-500 shadow-sm">
+                                <div key={id} title={emp?.fullName} className="w-5 h-5 rounded-full bg-orange-50 border border-white flex items-center justify-center text-[11px] font-semibold text-orange-600">
                                   {emp?.fullName?.charAt(0).toUpperCase() || '?'}
                                 </div>
                               );
                             })}
                             {parseJson(task.assignees).length === 0 && (
-                              <span className="text-[9px] font-bold text-slate-300 italic">—</span>
+                              <span className="text-xs text-slate-300">—</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                            <Users size={10} className="text-slate-300" />
-                            <span className="text-[9px] font-bold text-slate-400">{parseJson(task.assignees).length}</span>
+                          <div className="flex items-center gap-1">
+                            <Users size={11} className="text-slate-300" />
+                            <span className="text-xs font-medium text-slate-400">{parseJson(task.assignees).length}</span>
                           </div>
                         </div>
                       </div>
@@ -1242,9 +1238,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
         {/* Floating Add Column Button at the end */}
         {p.canManageColumns && (
-          <button onClick={openAddColumn} className="min-w-[280px] h-20 border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 text-slate-400 hover:border-orange-400 hover:text-orange-500 hover:bg-orange-50/30 transition-all group shrink-0">
-            <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span className="font-bold text-[11px] uppercase tracking-widest">Yangi Bosqich</span>
+          <button onClick={openAddColumn} className="min-w-[240px] h-16 border border-dashed border-slate-300 rounded-xl flex items-center justify-center gap-2 text-slate-400 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50/30 transition-all shrink-0">
+            <Plus size={18} />
+            <span className="text-[13px] font-medium">Yangi bosqich</span>
           </button>
         )}
       </div>
@@ -1260,7 +1256,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {/* Order Details */}
           <div className="bg-white p-5 rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Buyurtma Nomi (Masalan: Bahor To'yi, Reklama Loyiha)</label>
+              <label className="form-label">Buyurtma Nomi (Masalan: Bahor To'yi, Reklama Loyiha)</label>
               <input
                 type="text"
                 placeholder="Buyurtma nomini kiriting..."
@@ -1315,7 +1311,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
           {/* Service Items List */}
           <div className="space-y-4">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+            <h4 className="text-xs font-medium text-slate-500 px-1 flex items-center gap-2">
               <Layers size={13} /> Buyurtma Tarkibi ({newTaskForm.items.length})
             </h4>
 
@@ -1357,7 +1353,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               {currentOrderService.serviceId && (
                 <div className="space-y-4 animate-fade-in">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest">
+                    <p className="text-xs font-medium text-slate-500">
                       Opsiyalar: {selectedServiceOptions.length === 0 && <span className="text-slate-300 font-bold normal-case">(mavjud emas)</span>}
                     </p>
                     <button
@@ -1485,7 +1481,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1.5">
+                            <label className="block text-xs font-medium text-slate-500 mb-1.5">
                               Miqdor <span className="text-slate-400 capitalize font-medium">({selSvc?.unit})</span>
                               {hasVariants && variantQtySum > 0 && <span className="ml-1 text-amber-600 normal-case">— variantlardan</span>}
                             </label>
@@ -1498,7 +1494,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                             />
                           </div>
                           <div>
-                            <label className="block text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-1.5">Koeffitsiyent</label>
+                            <label className="block text-xs font-medium text-slate-500 mb-1.5">Koeffitsiyent</label>
                             <input
                               type="number" min="0.1" step="0.1"
                               value={currentOrderService.coefficient}
@@ -1514,7 +1510,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   {priceBreakdown && (
                     <div className="bg-white border-2 border-orange-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Xizmat summasi</p>
+                        <p className="text-xs font-medium text-slate-500 mb-0.5">Xizmat summasi</p>
                         <span className="text-lg font-bold text-orange-700">{priceBreakdown.total.toLocaleString()} UZS</span>
                       </div>
                       <button
@@ -1564,7 +1560,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Sizga berilgan zakolat</label>
+              <label className="form-label">Sizga berilgan zakolat</label>
               <CurrencyInput
                 value={newTaskForm.depositAmount}
                 onChange={(uzs) => setNewTaskForm(f => ({ ...f, depositAmount: String(uzs) }))}
@@ -1604,7 +1600,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             })()}
 
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">To'lov Turi (Zakolat uchun)</label>
+              <label className="form-label">To'lov Turi (Zakolat uchun)</label>
               <select value={newTaskForm.paymentTypeId} onChange={(e) => setNewTaskForm({ ...newTaskForm, paymentTypeId: e.target.value })} className="select-minimal h-12 font-bold">
                 <option value="">Tanlang...</option>
                 {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
@@ -1612,7 +1608,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1 px-1 flex justify-between">
+              <label className="form-label px-1 flex justify-between">
                 Mas'ul Jamoani Tanlang
                 <span className="text-sky-500">{newTaskForm.assigneeIds.length} ta tanlandi</span>
               </label>
@@ -1620,7 +1616,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               {/* Bajaruvchi — executor routing (self / branch / vendor) */}
               {(branches.length > 0 || vendors.length > 0) && (isAdmin || p.canAssignToOtherBranches) && (
                 <div className="mb-3 mt-5 space-y-2 animate-fade-in">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Bajaruvchi</p>
+                  <p className="text-xs font-medium text-slate-500 px-1">Bajaruvchi</p>
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { key: 'self', label: "O'zimiz", icon: <Building2 size={13} /> },
@@ -1769,22 +1765,22 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
             {/* Deadline field */}
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1 flex items-center gap-1.5">
+              <label className="form-label flex items-center gap-1.5">
                 <Clock size={11} className="text-amber-500" /> Topshiriq muddati (ixtiyoriy)
               </label>
               <input
                 type="datetime-local"
                 value={newTaskForm.deadlineAt}
                 onChange={e => setNewTaskForm(f => ({ ...f, deadlineAt: e.target.value }))}
-                className="input-minimal font-bold text-amber-700 border-2 border-amber-100 bg-amber-50/30 h-12"
+                className="input-minimal"
               />
             </div>
 
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-4 mt-6 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row gap-2 pt-4 mt-6 border-t border-slate-100">
               <button
                 type="button"
-                className="h-12 sm:h-14 flex-1 rounded-2xl uppercase tracking-widest font-bold text-[11px] border-2 border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 whitespace-nowrap px-6"
+                className="btn-outline flex-1"
                 onClick={() => setIsNewTaskModalOpen(false)}
               >
                 Bekor qilish
@@ -1798,9 +1794,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   <button
                     type="submit"
                     disabled={blocked}
-                    className={`h-12 sm:h-14 flex-[1.5] rounded-2xl uppercase tracking-widest font-bold shadow-xl active:scale-95 transition-all text-[11px] whitespace-nowrap px-6 ${blocked ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
+                    className="btn-primary flex-[1.5]"
                   >
-                    Buyurtma Qo'shish
+                    Buyurtma qo'shish
                   </button>
                 );
               })()}
@@ -1843,13 +1839,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               <div className="space-y-6 animate-fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-sky-200 transition-all">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Mijoz</p>
+                    <p className="text-xs font-medium text-slate-500 mb-1">Mijoz</p>
                     <p className="font-bold text-slate-800 text-sm">{selectedTask.customerName || "Noma'lum"}</p>
                     <p className="text-[11px] font-bold text-sky-500 mt-1.5">{selectedTask.customerPhone || 'Tel kiritilmagan'}</p>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="flex justify-between items-center mb-2">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mas'ul Jamoa</p>
+                      <p className="text-xs font-medium text-slate-500">Mas'ul Jamoa</p>
                       {canEditTask && (
                         <button onClick={() => { setIsDetailModalOpen(false); openMoveModal(selectedTask); }} className="text-[10px] font-bold text-sky-600 hover:text-sky-700 transition-colors uppercase">Tahrirlash</button>
                       )}
@@ -1938,7 +1934,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                   <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                    <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
+                    <h4 className="text-xs font-medium text-slate-500 flex items-center gap-2"><ClipboardList size={14} /> BATAFSIL IZOH</h4>
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadProgress !== null}
@@ -1959,7 +1955,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       JSON parse qilish yo'q. */}
                   {(selectedTask.attachmentRecords?.length ?? 0) > 0 && (
                     <div className="space-y-2 mt-3 pt-3 border-t border-slate-100">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Yuklangan fayllar ({selectedTask.attachmentRecords!.length})</p>
+                      <p className="text-xs font-medium text-slate-500 mb-2">Yuklangan fayllar ({selectedTask.attachmentRecords!.length})</p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {selectedTask.attachmentRecords!.map((raw) => {
                           const att = parseAttachmentItem(raw);
@@ -2011,7 +2007,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                   <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                    <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 font-sans"><Package size={14} /> XLMASHYO SARFI (TAXMINIY)</h4>
+                    <h4 className="text-xs font-medium text-slate-500 flex items-center gap-2 font-sans"><Package size={14} /> XLMASHYO SARFI (TAXMINIY)</h4>
                     <button onClick={() => setIsOverrideModalOpen(true)} className="text-[10px] font-bold text-violet-600 hover:text-violet-700 transition-colors uppercase">Sarfni tahrirlash</button>
                   </div>
                   {overrides.length === 0 ? (
@@ -2042,7 +2038,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   return (
                     <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                       <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
-                        <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <h4 className="text-xs font-medium text-slate-500 flex items-center gap-2">
                           <ClipboardList size={14} /> IZOHLAR ({notes.length})
                         </h4>
                       </div>
@@ -2111,11 +2107,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             ) : activeTab === 'vendors' ? (
               <div className="space-y-5 animate-fade-in">
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                  <h4 className="text-xs font-medium text-slate-500 flex items-center gap-2 mb-1">
                     <Handshake size={14} className="text-orange-500" /> Hamkorga biriktirish
                   </h4>
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkorni tanlang</label>
+                    <label className="block text-xs font-medium text-slate-500 mb-2 px-1">Hamkorni tanlang</label>
                     <select
                       value={vendorCostForm.vendorId}
                       onChange={e => setVendorCostForm(f => ({ ...f, vendorId: e.target.value }))}
@@ -2128,7 +2124,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Xizmat narxi (Hamkorga to'lanadigan summa)</label>
+                    <label className="block text-xs font-medium text-slate-500 mb-2 px-1">Xizmat narxi (Hamkorga to'lanadigan summa)</label>
                     <CurrencyInput
                       value={vendorCostForm.amount}
                       onChange={(uzs) => setVendorCostForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
@@ -2314,7 +2310,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Yangi holat (Varonka)</label>
+            <label className="form-label">Yangi holat (Varonka)</label>
             <select value={moveForm.columnId} onChange={(e) => setMoveForm({ ...moveForm, columnId: e.target.value })} className="select-minimal font-bold text-orange-600">
               {columns.map(col => <option key={col.id} value={col.id}>{col.title}</option>)}
             </select>
@@ -2388,7 +2384,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">O'zgarish Haqida Izoh (History)</label>
+            <label className="form-label">O'zgarish Haqida Izoh (History)</label>
             <textarea required value={moveForm.note} onChange={(e) => setMoveForm({ ...moveForm, note: e.target.value })} className="input-minimal" placeholder="Nima ish qilindi? Masalan: Dizayn tasdiqlandi..." />
           </div>
 
@@ -2467,7 +2463,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       >
         <form onSubmit={handleSaveColumn} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">Ustun Nomi</label>
+            <label className="form-label">Ustun Nomi</label>
             <input
               type="text"
               required
@@ -2566,7 +2562,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             return (
               <div>
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <p className="text-xs font-medium text-slate-500">
                     Jami: <span className="text-slate-600">{arxivTasks.length}</span> ta
                   </p>
                   <p className="text-[10px] font-bold text-slate-400">
@@ -2650,7 +2646,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </p>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Opsiya Nomi *</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5 px-1">Opsiya Nomi *</label>
             <input
               type="text"
               required
@@ -2662,7 +2658,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qiymat *</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5 px-1">Qiymat *</label>
             <input
               type="text"
               required
@@ -2673,7 +2669,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qo'shimcha narx (asosiy narxga qo'shiladi, UZS)</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5 px-1">Qo'shimcha narx (asosiy narxga qo'shiladi, UZS)</label>
             <input
               type="number"
               min="0"
@@ -2717,7 +2713,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             {overrides.map((ov, idx) => (
               <div key={ov.materialId} className="flex flex-col gap-2 p-4 bg-white border-2 border-slate-100 rounded-3xl shadow-sm">
                 <div className="flex justify-between items-center px-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{ov.name}</p>
+                  <p className="text-xs font-medium text-slate-500">{ov.name}</p>
                   <p className="text-[9px] font-bold text-slate-300 uppercase">{ov.unit}</p>
                 </div>
                 <div className="relative">

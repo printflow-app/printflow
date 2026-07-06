@@ -342,64 +342,64 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kirim {startDate === endDate ? `(${startDate})` : `(${startDate} → ${endDate})`}</span>
+            <span className="label-caps">Kirim {startDate === endDate ? `(${startDate})` : `(${startDate} → ${endDate})`}</span>
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><TrendingUp size={16}/></div>
           </div>
           <p className="text-xl font-bold text-emerald-600 tracking-tight">{formatCurrency(summary?.totalKirim || 0)}</p>
           <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
             {summary?.kirimBreakdown?.map((b: any, idx: number) => (
-              <div key={idx} className="flex justify-between items-center text-[10px] font-bold">
+              <div key={idx} className="flex justify-between items-center text-xs">
                 <span className="text-slate-400">{b.name}</span>
                 <span className="text-emerald-500">+{formatCurrency(b.amount)}</span>
               </div>
             ))}
-            {!summary?.kirimBreakdown?.length && <p className="text-[10px] font-bold text-slate-300 uppercase italic">Kirimlar yo'q</p>}
+            {!summary?.kirimBreakdown?.length && <p className="text-xs text-slate-400">Kirimlar yo'q</p>}
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chiqim {startDate === endDate ? `(${startDate})` : `(${startDate} → ${endDate})`}</span>
+            <span className="label-caps">Chiqim {startDate === endDate ? `(${startDate})` : `(${startDate} → ${endDate})`}</span>
             <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><TrendingDown size={16}/></div>
           </div>
           <p className="text-xl font-bold text-rose-600 tracking-tight">{formatCurrency(summary?.totalChiqim || 0)}</p>
           <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
             {summary?.chiqimBreakdown?.map((b: any, idx: number) => (
-              <div key={idx} className="flex justify-between items-center text-[10px] font-bold">
+              <div key={idx} className="flex justify-between items-center text-xs">
                 <span className="text-slate-400">{b.name}</span>
                 <span className="text-rose-500">-{formatCurrency(b.amount)}</span>
               </div>
             ))}
-            {!summary?.chiqimBreakdown?.length && <p className="text-[10px] font-bold text-slate-300 uppercase italic">Chiqimlar yo'q</p>}
+            {!summary?.chiqimBreakdown?.length && <p className="text-xs text-slate-400">Chiqimlar yo'q</p>}
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Xarajat Yo'nalishlari</span>
+            <span className="label-caps">Xarajat Yo'nalishlari</span>
             <div className="p-2 bg-slate-50 text-slate-400 rounded-lg"><Wallet size={16}/></div>
           </div>
           <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scroll pr-1">
             {summary?.expenseBreakdown?.map((b: any, idx: number) => (
-              <div key={idx} className="flex justify-between items-center text-[10px] font-bold">
+              <div key={idx} className="flex justify-between items-center text-xs">
                 <span className="text-slate-500">{b.name}</span>
                 <span className="text-slate-700">{formatCurrency(b.amount)}</span>
               </div>
             ))}
-            {!summary?.expenseBreakdown?.length && <p className="text-[10px] font-bold text-slate-300 uppercase italic">Xarajatlar yo'q</p>}
+            {!summary?.expenseBreakdown?.length && <p className="text-xs text-slate-400">Xarajatlar yo'q</p>}
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{ownCashOnly ? 'Mening balansim' : 'Balans'}</span>
+            <span className="label-caps mb-1">{ownCashOnly ? 'Mening balansim' : 'Balans'}</span>
             <p className={`text-2xl font-bold tracking-tighter ${(summary?.balance || 0) >= 0 ? 'text-slate-800' : 'text-rose-600'}`}>
               {formatCurrency(summary?.balance || 0)}
             </p>
             {ownCashOnly && (
-              <span className="mt-1 text-[8px] font-bold text-orange-500 uppercase tracking-wider">Faqat o'zingiz kiritgan</span>
+              <span className="mt-1 text-[11px] font-medium text-orange-600">Faqat o'zingiz kiritgan</span>
             )}
             <div className="mt-2 px-3 py-1 bg-slate-100 rounded-full">
-               <span className="text-[9px] font-bold text-slate-500 uppercase">{startDate === endDate ? new Date(startDate).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) : `${startDate} → ${endDate}`}</span>
+               <span className="text-xs font-medium text-slate-500">{startDate === endDate ? new Date(startDate).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) : `${startDate} → ${endDate}`}</span>
             </div>
         </div>
       </div>
@@ -408,10 +408,10 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row justify-between lg:items-center gap-4 bg-slate-50/30">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                Kassa Amaliyotlari <Wallet size={18} className="text-orange-500" />
+              <h3 className="card-title flex items-center gap-2">
+                <Wallet size={16} className="text-[color:var(--primary)]" /> Kassa amaliyotlari
               </h3>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Kunlik tranzaksiyalar tarixi</p>
+              <p className="text-hint mt-0.5">Kunlik tranzaksiyalar tarixi</p>
             </div>
             
             <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
@@ -421,7 +421,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                  max={draftEnd}
                  onChange={(e) => setDraftStart(e.target.value)}
                  onKeyDown={(e) => { if (e.key === 'Enter') applyDateFilter(); }}
-                 className="text-[10px] font-bold uppercase tracking-widest text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
+                 className="text-xs font-medium text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
                />
                <span className="text-[10px] font-bold text-slate-400">→</span>
                <input
@@ -430,7 +430,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                  min={draftStart}
                  onChange={(e) => setDraftEnd(e.target.value)}
                  onKeyDown={(e) => { if (e.key === 'Enter') applyDateFilter(); }}
-                 className="text-[10px] font-bold uppercase tracking-widest text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
+                 className="text-xs font-medium text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
                />
                <button
                  onClick={applyDateFilter}
@@ -442,9 +442,9 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                </button>
                <button
                  onClick={() => { const t = new Date().toLocaleDateString('en-CA'); setDraftStart(t); setDraftEnd(t); setStartDate(t); setEndDate(t); setPage(1); }}
-                 className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-[8px] font-bold uppercase tracking-widest rounded-lg transition-colors text-slate-500"
+                 className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-xs font-medium rounded-md transition-colors text-slate-600"
                >
-                 BUGUN
+                 Bugun
                </button>
             </div>
           </div>
@@ -452,7 +452,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             <select
               value={departmentId}
               onChange={e => { setDepartmentId(e.target.value); setPage(1); }}
-              className="select-minimal h-9 text-[10px] font-bold"
+              className="select-minimal h-control-sm w-auto text-xs"
             >
               <option value="">Barcha bo'limlar</option>
               {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -463,7 +463,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             <select
               value={vendorFilterId}
               onChange={e => { setVendorFilterId(e.target.value); setPage(1); }}
-              className="select-minimal h-9 text-[10px] font-bold"
+              className="select-minimal h-control-sm w-auto text-xs"
               title="Ma'lum hamkorga oid kirim/chiqimlar"
             >
               <option value="">Barcha hamkorlar</option>
@@ -475,20 +475,20 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                <button
                  onClick={handleExport}
                  disabled={isExporting}
-                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all disabled:opacity-50"
+                 className="btn-outline h-sm flex-1 sm:flex-none"
                  title="Joriy oraliqdagi tranzaksiyalarni Excel'ga eksport qilish"
                >
-                 <Download size={14} strokeWidth={2.5}/> {isExporting ? 'EKSPORT...' : 'EKSPORT'}
+                 <Download size={14}/> {isExporting ? 'Eksport...' : 'Eksport'}
                </button>
              )}
              {p.canAddIncome && (
-               <button onClick={() => setIsKirimModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-6 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
-                 <TrendingUp size={14} strokeWidth={2.5}/> KIRIM
+               <button onClick={() => setIsKirimModalOpen(true)} className="btn-success h-sm flex-1 sm:flex-none">
+                 <TrendingUp size={14}/> Kirim
                </button>
              )}
              {p.canAddExpense && (
-               <button onClick={() => setIsChiqimModalOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-9 px-6 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all hover:-translate-y-0.5">
-                 <TrendingDown size={14} strokeWidth={2.5}/> CHIQIM
+               <button onClick={() => setIsChiqimModalOpen(true)} className="btn-danger h-sm flex-1 sm:flex-none">
+                 <TrendingDown size={14}/> Chiqim
                </button>
              )}
           </div>
@@ -498,13 +498,13 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <table className="w-full text-left">
             <thead className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-md">
               <tr className="border-b border-slate-100">
-                <th className="py-3 px-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest w-12">Turi</th>
-                <th className="py-3 px-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mijoz / Sabab</th>
-                <th className="py-3 px-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right">Summa</th>
-                <th className="py-3 px-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center hidden md:table-cell">To'lov</th>
-                <th className="py-3 px-5 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right pr-6">Sana</th>
+                <th className="py-3 px-5 label-caps w-12">Turi</th>
+                <th className="py-3 px-5 label-caps">Mijoz / Sabab</th>
+                <th className="py-3 px-5 label-caps text-right">Summa</th>
+                <th className="py-3 px-5 label-caps text-center hidden md:table-cell">To'lov</th>
+                <th className="py-3 px-5 label-caps text-right pr-6">Sana</th>
                 {canManageFinance && (
-                  <th className="py-3 px-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center w-24">Amallar</th>
+                  <th className="py-3 px-3 label-caps text-center w-24">Amallar</th>
                 )}
               </tr>
             </thead>
@@ -522,8 +522,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                           ? (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.customer?.name || t.customerName || t.serviceType || '—'))
                           : (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.employeeId && !p.canViewSalary) ? 'Xodim maoshi' : (t.expenseReason || (t.expenseType?.name + (t.employee?.fullName ? ' - ' + t.employee.fullName : ''))))}
                       </p>
-                      {t.vendor && <span className="text-[8px] font-bold text-sky-500 uppercase tracking-widest mt-0.5">{Array.isArray(t.vendor.roles) && t.vendor.roles.length ? t.vendor.roles.join(', ') : 'Hamkor'}</span>}
-                      {!t.vendor && t.expenseType && <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{t.expenseType.name}</span>}
+                      {t.vendor && <span className="text-[11px] font-medium text-sky-600 mt-0.5">{Array.isArray(t.vendor.roles) && t.vendor.roles.length ? t.vendor.roles.join(', ') : 'Hamkor'}</span>}
+                      {!t.vendor && t.expenseType && <span className="text-[11px] font-medium text-slate-400 mt-0.5">{t.expenseType.name}</span>}
                   </td>
                   <td className="py-3 px-5 text-right whitespace-nowrap">
                       <span className={`font-bold text-xs tabular-nums ${t.type === 'kirim' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -581,17 +581,17 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             <button 
               disabled={page === 1}
               onClick={() => setPage(p => p - 1)}
-              className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+              className="btn-outline h-sm disabled:opacity-30"
             >
               Oldingi
             </button>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            <span className="text-xs font-medium text-slate-500">
               Sahifa {page} / {meta.lastPage}
             </span>
             <button 
               disabled={page === meta.lastPage}
               onClick={() => setPage(p => p + 1)}
-              className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+              className="btn-outline h-sm disabled:opacity-30"
             >
               Keyingi
             </button>

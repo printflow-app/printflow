@@ -201,7 +201,7 @@
   .page-title {
     @apply text-lg font-semibold text-slate-900 tracking-tight;
   }
-  .section-title {
+  .card-title {
     @apply text-[15px] font-semibold text-slate-900 tracking-tight;
   }
   /* Yordamchi/izoh matni — 12px dan kichik matn taqiqlangan (PRODUCT.md) */
