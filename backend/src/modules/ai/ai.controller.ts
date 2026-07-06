@@ -88,6 +88,14 @@ export class AiController {
     return this.aiService.listActions(tenantId, sub, limit ? Number(limit) : 20);
   }
 
+  /** Agent statistikasi — davr bo'yicha bajarilgan ishlar (Faza 5, billing'ga tegmaydi) */
+  @Get('agent-stats')
+  async agentStats(@Req() req: any) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.aiService.getAgentStats(tenantId, sub);
+  }
+
   @Post('chat')
   @HttpCode(HttpStatus.OK)
   async chat(

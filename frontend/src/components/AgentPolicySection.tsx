@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles, Save, Loader2, Sunrise, BarChart3, AlarmClock } from 'lucide-react';
+import { Sparkles, Save, Loader2, Sunrise, BarChart3, AlarmClock, Bot, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { settingsApi } from '../api';
+import { settingsApi, aiApi } from '../api';
 
 // =============================================
 // GIRGITTON AGENT SOZLAMALARI — Faza 4 (avtonom fon agentlar).
@@ -35,10 +35,29 @@ const Toggle: React.FC<{ on: boolean; onChange: (v: boolean) => void }> = ({ on,
   </button>
 );
 
+// Jurnal yozuvi status chipi
+const StatusChip: React.FC<{ status: string }> = ({ status }) => {
+  const map: Record<string, { text: string; cls: string; icon: any }> = {
+    executed: { text: 'Bajarildi', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: CheckCircle2 },
+    pending: { text: 'Kutilmoqda', cls: 'bg-amber-50 text-amber-600 border-amber-100', icon: Clock },
+    rejected: { text: 'Rad etildi', cls: 'bg-slate-50 text-slate-500 border-slate-200', icon: XCircle },
+    failed: { text: 'Xato', cls: 'bg-rose-50 text-rose-600 border-rose-100', icon: XCircle },
+  };
+  const m = map[status] || map.failed;
+  const Icon = m.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider ${m.cls}`}>
+      <Icon size={10} /> {m.text}
+    </span>
+  );
+};
+
 export const AgentPolicySection: React.FC = () => {
   const [policies, setPolicies] = useState<Policies>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+  const [journal, setJournal] = useState<any[]>([]);
 
   useEffect(() => {
     settingsApi
@@ -53,6 +72,10 @@ export const AgentPolicySection: React.FC = () => {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    // Statistika + jurnal — agent nima qilgani shaffof ko'rinadi (Faza 5)
+    aiApi.getAgentStats().then((r) => setStats(r.data)).catch(() => {});
+    aiApi.listActions(10).then((r) => setJournal(r.data || [])).catch(() => {});
   }, []);
 
   const save = async () => {
@@ -166,6 +189,60 @@ export const AgentPolicySection: React.FC = () => {
             Barcha avtonom amallar jurnalga yoziladi — agent nima qilgani har doim ko'rinadi.
             Xabarlar faqat tarifingizda AI/Telegram bo'lsa yuboriladi.
           </p>
+
+          {/* Davr statistikasi — agent qancha ish qildi */}
+          {stats && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Davrda amallar</p>
+                <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.davrda}</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
+                <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Bajarilgan</p>
+                <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.bajarilgan}</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
+                <p className="text-[9px] font-bold text-orange-600 uppercase tracking-widest">Avtonom</p>
+                <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.avtonom}</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">AI xabarlar</p>
+                <p className="text-xl font-bold text-slate-900 mt-1">
+                  {stats.xabarlar.ishlatilgan}
+                  {!stats.xabarlar.cheksiz && <span className="text-xs text-slate-400"> / {stats.xabarlar.limit}</span>}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Agent jurnali — so'nggi amallar */}
+          {journal.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 bg-slate-50/60 border-b border-slate-100">
+                <Bot size={14} className="text-slate-400" />
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Agent jurnali — so'nggi amallar</p>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {journal.map((a) => (
+                  <div key={a.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      a.userId === 'autonomous' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {a.userId === 'autonomous' ? <Sparkles size={12} /> : <Bot size={12} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-bold text-slate-700 truncate">{a.summary}</p>
+                      <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                        {a.userId === 'autonomous' ? 'Girgitton (avtonom)' : 'Chat orqali'} ·{' '}
+                        {new Date(a.createdAt).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <StatusChip status={a.status} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>

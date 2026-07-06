@@ -182,6 +182,54 @@ export class AiService {
     });
   }
 
+  /**
+   * Agent statistikasi (Faza 5 — AaaS ko'rinish qatlami): joriy AI davri
+   * bo'yicha AgentAction aggregation. Admin butun tenantni ko'radi,
+   * xodim faqat o'z amallarini. Narx/billing MANTIG'IGA TEGILMAYDI —
+   * bu faqat "agent qancha ish qildi" ko'rsatkichi.
+   */
+  async getAgentStats(tenantId: string, userId: string) {
+    const ctx = await this.buildToolContext(tenantId, userId);
+    const usage = await this.getUsage(tenantId);
+    // Anchor kelajakda bo'lsa (masalan qo'lda uzaytirilgan obuna) davr boshi
+    // ham kelajakka tushadi — statistika uchun oxirgi 30 kunga tushiramiz.
+    // Billing/limit mantig'iga tegilmaydi, bu faqat ko'rsatkich oynasi.
+    let periodStart = new Date(usage.periodStart);
+    if (periodStart.getTime() > Date.now()) {
+      periodStart = new Date(Date.now() - 30 * 86400000);
+    }
+    const scope = ctx.isAdmin ? {} : { userId };
+
+    const [byStatus, autonomousCount, totalAllTime] = await Promise.all([
+      this.prisma.agentAction.groupBy({
+        by: ['status'],
+        where: { tenantId, ...scope, createdAt: { gte: periodStart } },
+        _count: { id: true },
+      }),
+      this.prisma.agentAction.count({
+        where: { tenantId, ...scope, userId: 'autonomous', createdAt: { gte: periodStart } },
+      }),
+      this.prisma.agentAction.count({ where: { tenantId, ...scope } }),
+    ]);
+    const statusMap: Record<string, number> = {};
+    for (const s of byStatus) statusMap[s.status] = (s as any)._count.id;
+
+    return {
+      davr: { boshi: usage.periodStart, oxiri: usage.periodEnd },
+      xabarlar: { ishlatilgan: usage.used, limit: usage.limit, cheksiz: usage.unlimited },
+      amallar: {
+        davrda: Object.values(statusMap).reduce((a, b) => a + b, 0),
+        bajarilgan: statusMap['executed'] || 0,
+        kutilmoqda: statusMap['pending'] || 0,
+        rad_etilgan: statusMap['rejected'] || 0,
+        xato: statusMap['failed'] || 0,
+        avtonom: autonomousCount,
+        jami_umumiy: totalAllTime,
+      },
+      isAdmin: ctx.isAdmin,
+    };
+  }
+
   async streamChat(
     messages: any[],
     tenantId?: string,

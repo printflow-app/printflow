@@ -611,6 +611,9 @@ export const aiApi = {
 
   // Kunlik brifing — LLM'siz aggregation (xabar limitiga tegmaydi)
   getBriefing: () => api.get('/ai/briefing'),
+
+  // Agent statistikasi — davr bo'yicha bajarilgan ishlar (Faza 5)
+  getAgentStats: () => api.get('/ai/agent-stats'),
 };
 
 export default api;
