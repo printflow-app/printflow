@@ -59,18 +59,18 @@ const Modal: React.FC<ModalProps> = ({
         style={{ height: '100dvh', width: '100vw' }}
         onClick={onClose}
       />
-      <div className={`relative bg-white rounded-2xl sm:rounded-[2rem] shadow-2xl w-full ${maxWidth} overflow-hidden animate-slide-up border border-slate-100 flex flex-col max-h-[95vh] sm:max-h-[90vh] z-10`}>
-        <div className={`p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center ${typeConfig[type].bg}`}>
-          <div className="flex items-center gap-3">
+      <div className={`relative bg-white rounded-xl shadow-2xl w-full ${maxWidth} overflow-hidden animate-slide-up border border-slate-100 flex flex-col max-h-[95vh] sm:max-h-[90vh] z-10`}>
+        <div className={`px-4 sm:px-5 py-3.5 border-b border-slate-100 flex justify-between items-center ${typeConfig[type].bg}`}>
+          <div className="flex items-center gap-2.5">
             {typeConfig[type].icon}
-            <h3 className={`text-base sm:text-lg font-bold tracking-tight ${typeConfig[type].color}`}>{title}</h3>
+            <h3 className={`text-[15px] font-semibold tracking-tight ${typeConfig[type].color}`}>{title}</h3>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-slate-200/50 flex items-center justify-center text-slate-400 transition-colors">
-            <X size={20} />
+          <button onClick={onClose} className="icon-btn">
+            <X size={18} />
           </button>
         </div>
 
-        <div className="p-4 sm:p-8 overflow-y-auto flex-1 custom-scroll">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 custom-scroll">
           {children}
         </div>
 

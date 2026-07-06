@@ -25,6 +25,8 @@ export default {
           DEFAULT: "var(--muted)",
           foreground: "var(--muted-foreground)",
         },
+        // Ikkinchi neytral qatlam — sidebar/panel/toolbar fonlari
+        surface2: "var(--surface-2)",
       },
       fontFamily: {
         // Inter first — it's loaded as a webfont (index.html) so it renders

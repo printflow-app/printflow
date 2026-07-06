@@ -3,34 +3,39 @@
 @tailwind utilities;
 
 :root {
-  /* iOS systemGroupedBackground — a hair warmer/softer than the old #fafafa.
-     Keeps the same neutral family; only the temperature shifts toward iOS. */
-  --background: #f2f2f7;
-  --foreground: #1c1c1e;
-  --primary: #FF6B00;
-  --primary-hover: #E66100;
+  /* ============================================================
+     LINEAR-PROFESSIONAL TOKENLAR (2026-07 redizayn)
+     Zich, tartibli, ishbilarmon dashboard: kichik radiuslar, sovuq
+     neytrallar, past shovqin. Orange faqat amal/tanlov uchun.
+     PRODUCT.md: "Zichlik — hurmat", "Bitta lug'at — hamma joyda".
+     ============================================================ */
+  --background: #f7f8f9;      /* kontent foni — sovuq, deyarli oq   */
+  --foreground: #18181b;
+  --primary: #f2610d;         /* orange — biroz chuqurlashtirilgan  */
+  --primary-hover: #dd570b;
   --primary-foreground: #ffffff;
   --card: #ffffff;
-  --card-foreground: #1c1c1e;
-  /* Border tokens — iOS hairline separators. Slightly lighter than slate-200
-     so cards separate by tone rather than by a hard outline. */
-  --border: #e5e5ea;
-  --border-strong: #d1d1d6;
-  --muted: #8e8e93;
-  --muted-foreground: #1c1c1e;
+  --card-foreground: #18181b;
+  /* Ikkinchi neytral qatlam — sidebar/panel kontentdan tonda ajraladi */
+  --surface-2: #fcfcfd;
+  --border: #e5e7ea;
+  --border-strong: #d3d6db;
+  --muted: #71717a;
+  --muted-foreground: #18181b;
 
-  /* Design tokens — single source for radius and control heights.
-     iOS uses generous, continuous-looking corners. These cascade to the
-     Tailwind rounded-{sm,md,lg,xl,2xl,3xl} scale via tailwind.config.js. */
-  --radius-sm: 9px;
-  --radius-md: 12px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-2xl: 24px;
-  --radius-3xl: 30px;
-  --control-h-sm: 34px;
-  --control-h:    44px;  /* iOS HIG minimum tap target */
-  --control-h-lg: 52px;
+  /* Radius shkalasi — Linear zichligi. Har inline rounded-{...}
+     shu yerdan keladi (tailwind.config.js remap). */
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 9px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
+  /* Control balandliklari — desktop zich (36px), telefonda tap target
+     media-query bilan 40px ga ko'tariladi (pastda). */
+  --control-h-sm: 30px;
+  --control-h:    36px;
+  --control-h-lg: 44px;
 
   /* Backward compatibility for existing utility classes */
   --bg-main: var(--background);
@@ -39,6 +44,15 @@
   --color-primary: var(--primary);
   --color-success: #10b981;
   --color-danger: #ef4444;
+}
+
+/* Telefonda barmoq uchun controllar kattaroq (WCAG/HIG tap target) */
+@media (max-width: 640px) {
+  :root {
+    --control-h-sm: 34px;
+    --control-h:    40px;
+    --control-h-lg: 48px;
+  }
 }
 
 /* Spinner */
@@ -99,18 +113,20 @@
 
 @layer base {
   html {
-    @apply text-[14px] sm:text-[15px];
+    @apply text-[14px];
   }
 
   body {
-    @apply bg-[#f2f2f7] text-slate-900 font-sans antialiased overflow-x-hidden;
+    @apply bg-[color:var(--background)] text-slate-900 font-sans antialiased overflow-x-hidden;
   }
 
   h1,
   h2,
   h3,
   h4 {
-    @apply font-bold tracking-tight text-slate-800;
+    /* semibold — bold o'rniga: Linear ierarxiyasi og'irlik bilan emas,
+       o'lcham + rang bilan ishlaydi. Italic/uppercase sarlavha taqiq. */
+    @apply font-semibold tracking-tight text-slate-900;
   }
 }
 
@@ -122,37 +138,53 @@
      border radius, and ring style.
      Override the per-component height with .h-sm or .h-lg modifier.
      ========================================================= */
+  /* =========================================================
+     TUGMA LUG'ATI — yagona. Har tugma shu 5 sinfdan biri.
+     Balandlik var(--control-h) dan (desktop 36 / mobil 40px),
+     radius rounded-lg (9px), matn 13px medium. Normal registr —
+     UPPERCASE tugma taqiqlangan (PRODUCT.md).
+     ========================================================= */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 h-10 px-5 bg-orange-500 text-white font-semibold rounded-xl shadow-sm shadow-orange-500/30 hover:bg-orange-600 hover:shadow-orange-500/40 active:bg-orange-700 active:scale-[0.98] transition-all duration-200 disabled:bg-slate-300 disabled:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed text-sm;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-[color:var(--primary)] text-white text-[13px] font-semibold rounded-lg shadow-sm hover:bg-[color:var(--primary-hover)] active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed whitespace-nowrap;
   }
 
   .btn-success {
-    @apply inline-flex items-center justify-center gap-2 h-10 px-5 bg-emerald-500 text-white font-semibold rounded-xl shadow-sm shadow-emerald-500/30 hover:bg-emerald-600 hover:shadow-emerald-500/40 active:bg-emerald-700 active:scale-[0.98] transition-all duration-200 text-sm;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-emerald-600 text-white text-[13px] font-semibold rounded-lg shadow-sm hover:bg-emerald-700 active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:cursor-not-allowed whitespace-nowrap;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 h-10 px-5 bg-rose-500 text-white font-semibold rounded-xl shadow-sm shadow-rose-500/30 hover:bg-rose-600 border border-transparent active:bg-rose-700 active:scale-[0.98] transition-all duration-200 text-sm;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-rose-600 text-white text-[13px] font-semibold rounded-lg shadow-sm hover:bg-rose-700 active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:cursor-not-allowed whitespace-nowrap;
   }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 h-10 px-5 border border-slate-200 bg-white text-slate-700 font-semibold rounded-xl shadow-sm hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 active:scale-[0.98] transition-all duration-200 text-sm;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 border border-[color:var(--border)] bg-white text-slate-700 text-[13px] font-medium rounded-lg hover:bg-slate-50 hover:border-[color:var(--border-strong)] active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+  }
+
+  /* Matn tugmasi — fon yo'q, hover'da yumshoq fon */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-3 text-slate-600 text-[13px] font-medium rounded-lg hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+  }
+
+  /* Kvadrat ikon tugmasi — toolbar/karta amallari uchun yagona shakl */
+  .icon-btn {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:scale-95 transition-all duration-150 flex-shrink-0;
   }
 
   /* Size modifiers — apply alongside the color class: <button class="btn-primary h-sm"> */
-  .h-sm { @apply h-8 px-3 text-xs; }
-  .h-lg { @apply h-12 px-7 text-base; }
+  .h-sm { @apply h-control-sm px-3 text-xs; }
+  .h-lg { @apply h-control-lg px-6 text-sm; }
 
   .card-minimal {
-    @apply bg-white border border-slate-200/60 p-4 sm:p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300;
+    @apply bg-white border border-[color:var(--border)] p-4 rounded-xl shadow-sm transition-shadow duration-200;
   }
 
   /* Inputs share the EXACT height + radius + focus ring as buttons */
   .input-minimal {
-    @apply w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-900 text-sm font-medium focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 placeholder-slate-400;
+    @apply w-full h-control bg-white border border-[color:var(--border)] rounded-lg px-3 text-slate-900 text-[13px] font-normal focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 placeholder-slate-400;
   }
 
   .select-minimal {
-    @apply w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-4 text-slate-900 text-sm font-medium focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 appearance-none;
+    @apply w-full h-control bg-white border border-[color:var(--border)] rounded-lg px-3 pr-9 text-slate-900 text-[13px] font-normal focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 appearance-none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.75rem center;
     background-repeat: no-repeat;
@@ -161,7 +193,30 @@
 
   /* Textarea — same family, multi-line. Padded instead of fixed-height. */
   .textarea-minimal {
-    @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm font-medium leading-relaxed focus:outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all duration-200 placeholder-slate-400 resize-y min-h-[80px];
+    @apply w-full bg-white border border-[color:var(--border)] rounded-lg px-3 py-2 text-slate-900 text-[13px] font-normal leading-relaxed focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 placeholder-slate-400 resize-y min-h-[80px];
+  }
+
+  /* Sahifa sarlavhasi va bo'lim sarlavhasi — bitta ierarxiya, hamma sahifada.
+     Eski "text-2xl font-bold uppercase italic" o'rniga. */
+  .page-title {
+    @apply text-lg font-semibold text-slate-900 tracking-tight;
+  }
+  .section-title {
+    @apply text-[15px] font-semibold text-slate-900 tracking-tight;
+  }
+  /* Yordamchi/izoh matni — 12px dan kichik matn taqiqlangan (PRODUCT.md) */
+  .text-hint {
+    @apply text-xs font-normal text-slate-500;
+  }
+  /* Jadval/ro'yxat ustun yorlig'i — uppercase'ga ruxsat berilgan YAGONA joy
+     (badge'lardan tashqari). 11px, keng emas — tracking-wider maksimum. */
+  .label-caps {
+    @apply text-[11px] font-medium uppercase tracking-wider text-slate-500;
+  }
+  /* Forma yorlig'i — normal registr, 12px. Eski uppercase-tracking-widest
+     mikro-yorliqlarning o'rnini bosadi. */
+  .form-label {
+    @apply block text-xs font-medium text-slate-600 mb-1.5;
   }
 
   /* Minimal Table */
@@ -170,13 +225,11 @@
   }
 
   .table-minimal th {
-    /* font-bold (700) instead of font-bold (900) — looks less shouty,
-       still clearly hierarchical against the body text. */
-    @apply border-b border-slate-200 py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-50/70 truncate;
+    @apply border-b border-slate-200 py-2.5 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-500 bg-slate-50/70 truncate;
   }
 
   .table-minimal td {
-    @apply border-b border-slate-100 py-3 px-4 text-sm font-medium text-slate-700 align-middle;
+    @apply border-b border-slate-100 py-2.5 px-3 text-[13px] font-normal text-slate-700 align-middle;
   }
 
   .table-minimal tr {
