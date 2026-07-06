@@ -161,6 +161,22 @@ export class TasksService {
     return null;
   }
 
+  /**
+   * TaskHistory.employeeId FK faqat Employee.id qabul qiladi. Chaqiruvchi
+   * workspace admin bo'lsa (WorkspaceAdmin.id — Employee jadvalida YO'Q)
+   * yoki legacy 'admin' string kelsa null qaytaramiz; aks holda FK buzilib
+   * butun buyurtma tranzaksiyasi yiqiladi (agent orqali admin buyurtma
+   * yaratganda aynan shu xato chiqardi).
+   */
+  private async historyEmployeeId(employeeId?: string | null): Promise<string | null> {
+    if (!employeeId || employeeId === 'admin') return null;
+    const emp = await this.prisma.employee.findFirst({
+      where: { id: employeeId },
+      select: { id: true },
+    });
+    return emp ? employeeId : null;
+  }
+
   async create(data: any, employeeId?: string) {
     const {
       orderName, title, description, customerId, customerName, customerPhone,
@@ -169,6 +185,7 @@ export class TasksService {
     } = data;
 
     const remainingAmount = Math.max(0, Math.round(Number(totalAmount || 0) - Number(depositAmount || 0)));
+    const historyEmpId = await this.historyEmployeeId(employeeId);
 
     // Variant qatorlari — agar berilgan bo'lsa, jami soni avtomatik hisoblanadi
     const normalizedVariants = this.normalizeVariants(data.variants);
@@ -288,7 +305,7 @@ export class TasksService {
       await tx.taskHistory.create({
         data: {
           taskId: createdTask.id,
-          employeeId: employeeId === 'admin' ? null : employeeId,
+          employeeId: historyEmpId,
           action: 'yaratildi',
           details: `Buyurtma yaratildi. Summa: ${totalAmount}, Zakolat: ${depositAmount}`
         } as any
@@ -329,6 +346,7 @@ export class TasksService {
     const totalDepositNum = Math.round(Number(totalDeposit || 0));
     const perTaskDepositFloor = Math.floor(totalDepositNum / items.length);
     const remainder = totalDepositNum % items.length;
+    const historyEmpId = await this.historyEmployeeId(employeeId);
 
     let tasks: any[] | null = null;
     let bulkRetry = 0;
@@ -446,7 +464,7 @@ export class TasksService {
         await tx.taskHistory.create({
           data: {
             taskId: task.id,
-            employeeId: employeeId === 'admin' ? null : employeeId,
+            employeeId: historyEmpId,
             action: 'yaratildi',
             details: `Buyurtma (bulk) yaratildi. Summa: ${totalAmount}, Zakolat: ${depositForThisTask}`,
             note: justification
@@ -517,6 +535,7 @@ export class TasksService {
     });
     if (!oldTask) throw new Error('Task topilmadi');
 
+    const historyEmpId = await this.historyEmployeeId(employeeId);
     const { historyNote, ...taskData } = data;
 
     // Variant qatorlari berilgan bo'lsa — quantity ni avtomatik yangilaymiz.
@@ -554,7 +573,7 @@ export class TasksService {
         await tx.taskHistory.create({
           data: {
             taskId: id,
-            employeeId: employeeId === 'admin' ? null : employeeId,
+            employeeId: historyEmpId,
             action: 'ko\'chirildi',
             details: `Bosqich o'zgardi: ${oldCol?.title} -> ${newCol?.title}`,
             note: historyNote
@@ -605,7 +624,7 @@ export class TasksService {
         await tx.taskHistory.create({
           data: {
             taskId: id,
-            employeeId: employeeId === 'admin' ? null : employeeId,
+            employeeId: historyEmpId,
             action: 'o\'zgartirildi',
             details: 'Ma\'lumotlar yangilandi'
           } as any
@@ -688,7 +707,7 @@ export class TasksService {
     return this.prisma.taskHistory.create({
       data: {
         taskId: id,
-        employeeId: employeeId === 'admin' ? null : employeeId,
+        employeeId: await this.historyEmployeeId(employeeId),
         action: 'ko\'rildi',
         details: 'Topshiriq tafsilotlari ko\'rildi'
       } as any
