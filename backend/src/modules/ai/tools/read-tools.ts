@@ -34,8 +34,128 @@ export const READ_TOOLS: AgentToolDef[] = [
   },
   {
     ...READ_DEFAULTS,
+    name: 'getDebtorsReport',
+    description:
+      "Qarzdorlar bo'yicha TAFSILOTLI hisobot: har mijozning qaysi buyurtmalarida qancha qarzi bor, "
+      + "necha kundan beri turibdi. 'Qarzdorlar hisoboti' so'ralganda shuni ishlat. "
+      + "customerName berilsa — faqat o'sha mijoz.",
+    permissions: ['canViewCustomers'],
+    inputSchema: z.object({
+      customerName: z.string().optional().describe("Bitta mijoz bo'yicha hisobot uchun ism"),
+      limit: z.number().int().min(1).max(30).default(10).describe('Nechta mijoz'),
+    }),
+    summarize: (i) => i.customerName ? `Qarz hisoboti: ${i.customerName}` : 'Qarzdorlar tafsilotli hisoboti',
+    execute: async (i, ctx) => {
+      const debtors = await ctx.services.prisma.customer.findMany({
+        where: {
+          tenantId: ctx.tenantId,
+          totalDebt: { gt: 0 },
+          ...(i.customerName ? { name: { contains: i.customerName, mode: 'insensitive' } } : {}),
+        },
+        select: {
+          id: true, name: true, phone: true, totalDebt: true,
+          tasks: {
+            where: { isArchived: false, remainingAmount: { gt: 0 } },
+            select: {
+              displayId: true, orderName: true, title: true,
+              totalAmount: true, remainingAmount: true,
+              createdAt: true, deadlineAt: true,
+              column: { select: { title: true } },
+            },
+            orderBy: { createdAt: 'asc' },
+            take: 10,
+          },
+        },
+        orderBy: { totalDebt: 'desc' },
+        take: i.limit ?? 10,
+      });
+      const now = Date.now();
+      const jami = debtors.reduce((s, d) => s + (d.totalDebt || 0), 0);
+      return {
+        soni: debtors.length,
+        jami_qarz: jami,
+        qarzdorlar: debtors.map((d) => {
+          const eng_eski = d.tasks[0]?.createdAt
+            ? Math.floor((now - d.tasks[0].createdAt.getTime()) / 86400000)
+            : null;
+          return {
+            id: d.id, name: d.name, phone: d.phone, totalDebt: d.totalDebt,
+            eng_eski_qarz_kun: eng_eski,
+            buyurtmalar: d.tasks.map((t) => ({
+              displayId: t.displayId,
+              nom: t.orderName || t.title,
+              jami: t.totalAmount,
+              qoldiq: t.remainingAmount,
+              necha_kun: Math.floor((now - t.createdAt.getTime()) / 86400000),
+              muddat: t.deadlineAt,
+              holat: t.column?.title || null,
+            })),
+          };
+        }),
+      };
+    },
+  },
+  {
+    ...READ_DEFAULTS,
+    name: 'getVendorsReport',
+    description:
+      "Hamkorlar (vendorlar) hisoboti: har hamkor bo'yicha xarid/sotuv, to'lovlar va joriy balans "
+      + "(kim kimga qarz). 'Hamkorlar haqida hisobot' so'ralganda shuni ishlat.",
+    permissions: ['canViewVendors'],
+    inputSchema: z.object({
+      query: z.string().optional().describe("Bitta hamkor bo'yicha — nomi yoki qismi"),
+    }),
+    summarize: (i) => i.query ? `Hamkor hisoboti: ${i.query}` : 'Hamkorlar hisoboti',
+    execute: async (i, ctx) => {
+      const vendors = await ctx.services.prisma.vendor.findMany({
+        where: {
+          tenantId: ctx.tenantId,
+          // Xodim o'z filialidagi hamkorlarni ko'radi (app UI bilan bir xil);
+          // workspace admin (branchId=null) — butun tenant.
+          ...(ctx.branchId ? { branchId: ctx.branchId } : {}),
+          ...(i.query ? { name: { contains: i.query, mode: 'insensitive' } } : {}),
+        },
+        select: {
+          id: true, name: true, phone: true, roles: true,
+          tasks: { select: { vendorCost: true } },
+          transactions: {
+            where: { type: { in: ['kirim', 'chiqim'] } },
+            select: { amount: true, type: true },
+          },
+          ledgerEntries: { select: { amount: true, direction: true } },
+        },
+        orderBy: { name: 'asc' },
+        take: 30,
+      });
+      // Balans formulasi vendors.service.computeTotals bilan AYNAN bir xil:
+      // balance = (weOwe − paidByUs) − (theyOwe − paidToUs); >0 → biz qarzdormiz.
+      const rows = vendors.map((v: any) => {
+        const subpudrat = v.tasks.reduce((s: number, t: any) => s + (Number(t.vendorCost) || 0), 0);
+        const xarid = v.ledgerEntries.filter((l: any) => l.direction === 'we_owe').reduce((s: number, l: any) => s + (Number(l.amount) || 0), 0);
+        const sotuv = v.ledgerEntries.filter((l: any) => l.direction === 'they_owe').reduce((s: number, l: any) => s + (Number(l.amount) || 0), 0);
+        const biz_toladik = v.transactions.filter((t: any) => t.type === 'chiqim').reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
+        const ular_toladi = v.transactions.filter((t: any) => t.type === 'kirim').reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0);
+        const balans = (subpudrat + xarid - biz_toladik) - (sotuv - ular_toladi);
+        return {
+          id: v.id, nom: v.name, telefon: v.phone, rollar: v.roles,
+          xarid_jami: subpudrat + xarid, sotuv_jami: sotuv,
+          biz_toladik, ular_toladi,
+          balans, // >0 → biz qarzdormiz, <0 → hamkor bizga qarzdor
+        };
+      }).sort((a, b) => Math.abs(b.balans) - Math.abs(a.balans));
+
+      return {
+        soni: rows.length,
+        biz_qarzmiz_jami: rows.filter(r => r.balans > 0).reduce((s, r) => s + r.balans, 0),
+        ular_qarz_jami: rows.filter(r => r.balans < 0).reduce((s, r) => s + Math.abs(r.balans), 0),
+        hamkorlar: rows,
+      };
+    },
+  },
+  {
+    ...READ_DEFAULTS,
     name: 'getDebtors',
-    description: "Qarzdor mijozlar ro'yxati (qarzi kattasidan boshlab).",
+    description: "Qarzdor mijozlar QISQA ro'yxati (ism+summa). Tafsilot (qaysi buyurtmada qancha, necha kundan beri) kerak bo'lsa getDebtorsReport'ni ishlat.",
     permissions: ['canViewCustomers'],
     inputSchema: z.object({
       limit: z.number().int().min(1).max(50).default(10).describe('Nechta mijoz'),

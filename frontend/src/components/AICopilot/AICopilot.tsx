@@ -252,6 +252,68 @@ const ColumnsCard: React.FC<{ items: any[]; onOpen?: () => void }> = ({ items, o
   </DataCard>
 );
 
+// getDebtorsReport → mijoz-buyurtma darajasidagi qarz hisoboti
+const DebtorsReportCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data, onOpen }) => (
+  <DataCard title={`Qarzdorlar hisoboti — ${data.soni} ta mijoz`} icon={UserSquare2} onOpen={onOpen} openLabel="Mijozlarni ochish">
+    {(data.qarzdorlar || []).slice(0, 5).map((d: any) => (
+      <div key={d.id} className="py-2 border-b border-slate-50 last:border-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[12px] font-bold text-slate-800 truncate">{d.name}</p>
+            {d.eng_eski_qarz_kun !== null && (
+              <p className="text-[10px] font-semibold text-slate-400">{d.eng_eski_qarz_kun} kundan beri</p>
+            )}
+          </div>
+          <p className="text-[12px] font-bold text-rose-600 whitespace-nowrap">{fm(d.totalDebt)} so'm</p>
+        </div>
+        {(d.buyurtmalar || []).slice(0, 4).map((b: any, idx: number) => (
+          <div key={idx} className="flex items-center justify-between gap-2 pl-3 mt-1">
+            <p className="text-[11px] text-slate-500 truncate">
+              {b.displayId ? `${b.displayId} · ` : ''}{b.nom}
+              <span className="text-slate-400"> · {b.necha_kun} kun</span>
+            </p>
+            <p className="text-[11px] font-semibold text-rose-500 whitespace-nowrap">{fm(b.qoldiq)}</p>
+          </div>
+        ))}
+        {(d.buyurtmalar || []).length > 4 && (
+          <p className="pl-3 mt-1 text-[10px] font-semibold text-slate-400">+ yana {d.buyurtmalar.length - 4} ta buyurtma</p>
+        )}
+      </div>
+    ))}
+    <MoreRows count={(data.qarzdorlar || []).length - 5} />
+    <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
+      <p className="text-[13px] font-bold text-rose-600">{fm(data.jami_qarz)} so'm</p>
+    </div>
+  </DataCard>
+);
+
+// getVendorsReport → hamkorlar balansi (ikki yo'nalishli)
+const VendorsReportCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data, onOpen }) => (
+  <DataCard title={`Hamkorlar — ${data.soni} ta`} icon={ClipboardList} onOpen={onOpen} openLabel="Hamkorlarni ochish">
+    {(data.hamkorlar || []).slice(0, 6).map((v: any) => (
+      <DataRow
+        key={v.id}
+        primary={v.nom}
+        secondary={[
+          Array.isArray(v.rollar) && v.rollar.length ? v.rollar.join(', ') : null,
+          v.xarid_jami > 0 ? `xarid ${fm(v.xarid_jami)}` : null,
+          v.sotuv_jami > 0 ? `sotuv ${fm(v.sotuv_jami)}` : null,
+        ].filter(Boolean).join(' · ') || null}
+        value={v.balans === 0 ? 'Hisob toza' : `${fm(Math.abs(v.balans))} so'm`}
+        valueClass={v.balans > 0 ? 'text-rose-600' : v.balans < 0 ? 'text-emerald-600' : 'text-slate-400'}
+      />
+    ))}
+    <MoreRows count={(data.hamkorlar || []).length - 6} />
+    {(data.biz_qarzmiz_jami > 0 || data.ular_qarz_jami > 0) && (
+      <div className="flex items-center justify-between py-2.5 border-t border-slate-100 text-[11px] font-bold">
+        <span className="text-rose-600">Biz qarzmiz: {fm(data.biz_qarzmiz_jami)}</span>
+        <span className="text-emerald-600">Ular qarz: {fm(data.ular_qarz_jami)}</span>
+      </div>
+    )}
+  </DataCard>
+);
+
 // getLowStock / searchMaterials → ombor qoldiqlari
 const MaterialsCard: React.FC<{ title: string; items: any[]; onOpen?: () => void }> = ({ title, items, onOpen }) => (
   <DataCard title={title} icon={PackageOpen} onOpen={onOpen} openLabel="Omborni ochish">
@@ -817,6 +879,12 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       // Generative UI — o'qish tool'lari natijasi karta bo'lib chiqadi
                       if (toolName === 'getFinanceSummary') {
                         return <FinanceSummaryCard key={toolCallId} data={out} onOpen={() => navigate('/dashboard/kassa')} />;
+                      }
+                      if (toolName === 'getDebtorsReport' && out?.qarzdorlar?.length) {
+                        return <DebtorsReportCard key={toolCallId} data={out} onOpen={() => navigate('/dashboard/mijozlar')} />;
+                      }
+                      if (toolName === 'getVendorsReport' && out?.hamkorlar?.length) {
+                        return <VendorsReportCard key={toolCallId} data={out} onOpen={() => navigate('/dashboard/hamkorlar')} />;
                       }
                       if (toolName === 'getDebtors' && out?.qarzdorlar?.length) {
                         return <CustomersCard key={toolCallId} title="Qarzdorlar" items={out.qarzdorlar} total={out.jami_qarz} onOpen={() => navigate('/dashboard/mijozlar')} />;
