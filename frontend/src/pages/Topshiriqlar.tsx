@@ -451,6 +451,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     });
   };
 
+  // Har bir xizmatning narxini alohida o'zgartirish — shu narx aynan o'sha taskka yoziladi.
+  // Jami narx = xizmatlar narxlari yig'indisi (qayta taqsimlash yo'q).
+  const updateItemPrice = (index: number, uzs: number) => {
+    setNewTaskForm(f => {
+      const newItems = f.items.map((it, i) => i === index ? { ...it, totalAmount: Number(uzs) || 0 } : it);
+      const newTotal = newItems.reduce((sum, it) => sum + (Number(it.totalAmount) || 0), 0);
+      return { ...f, items: newItems, totalAmount: String(newTotal) };
+    });
+  };
+
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -481,16 +491,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       return;
     }
 
-    // Check if justification is needed for price override
-    // Jami — effectiveItems'dan qayta hisoblanadi (pending item totalAmount'ga kirmagan bo'lishi mumkin).
-    const calculatedTotal = effectiveItems.reduce((sum, it) => sum + (Number(it.totalAmount) || 0), 0);
-    const finalTotal = newTaskForm.manualTotal ? Number(newTaskForm.manualTotal) : calculatedTotal;
-
-    if (finalTotal !== calculatedTotal && calculatedTotal !== 0 && !newTaskForm.justification) {
-      showStatus('error', "Narx o'zgartirilgan bo'lsa, izoh (sabab) yozish shart!");
-      return;
-    }
-
     try {
       const payload = {
         orderName: newTaskForm.orderName,
@@ -506,22 +506,13 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         branchId: activeBranchId || undefined,
         executorBranchId: executorType === 'branch' ? executorBranchId : null,
         departmentId: selectedDepartmentId || null,
-        items: effectiveItems.map(it => {
-          let adjustedTotal = it.totalAmount;
-          if (finalTotal !== calculatedTotal) {
-            if (calculatedTotal === 0) {
-              adjustedTotal = finalTotal / effectiveItems.length;
-            } else {
-              adjustedTotal = it.totalAmount * (finalTotal / calculatedTotal);
-            }
-          }
-          return {
-            ...it,
-            totalAmount: adjustedTotal,
-            vendorId: executorType === 'vendor' ? vendorAssign.vendorId : undefined,
-            vendorCost: executorType === 'vendor' ? Number(vendorAssign.amount) : 0,
-          };
-        })
+        // Har task O'Z xizmatining aniq narxini oladi — umumiy summa qayta taqsimlanmaydi.
+        items: effectiveItems.map(it => ({
+          ...it,
+          totalAmount: Math.round(Number(it.totalAmount) || 0),
+          vendorId: executorType === 'vendor' ? vendorAssign.vendorId : undefined,
+          vendorCost: executorType === 'vendor' ? Number(vendorAssign.amount) : 0,
+        }))
       };
 
       await tasksApi.createBulk(payload, currentUser.id);
@@ -1326,9 +1317,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                       </div>
                       <p className="text-[10px] font-bold text-slate-400 mt-0.5 italic">{it.optionsSummary}</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-bold text-slate-800">{it.totalAmount.toLocaleString()} UZS</span>
-                      <button type="button" onClick={() => removeItemFromOrder(idx)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-32 sm:w-40">
+                        <CurrencyInput
+                          value={String(it.totalAmount || '')}
+                          onChange={(uzs) => updateItemPrice(idx, uzs || 0)}
+                          colorClass="text-slate-800"
+                          className="input-minimal font-bold text-right h-9 text-sm"
+                        />
+                      </div>
+                      <button type="button" onClick={() => removeItemFromOrder(idx)} className="text-slate-300 hover:text-rose-500 transition-colors shrink-0">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -1529,34 +1527,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
             <div className="md:col-span-2 p-4 sm:p-5 bg-emerald-50/50 border border-emerald-100 rounded-3xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <div>
-                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Hisoblangan jami narx</p>
+                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Jami narx</p>
                   <span className="text-2xl font-bold text-slate-800">{Number(newTaskForm.totalAmount).toLocaleString()} UZS</span>
                 </div>
-                <div className="w-full sm:w-64">
-                  <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-2">Manual o'zgartirish</label>
-                  <CurrencyInput
-                    value={newTaskForm.manualTotal}
-                    onChange={(uzs) => setNewTaskForm(f => ({ ...f, manualTotal: uzs ? String(uzs) : "" }))}
-                    colorClass="text-emerald-600"
-                    className="input-minimal font-bold border-2 border-emerald-100 bg-white"
-                  />
-                </div>
+                <p className="text-[11px] text-slate-400 sm:text-right max-w-xs">
+                  Har bir xizmatning narxini yuqoridagi ro'yxatda alohida o'zgartirishingiz mumkin. Har xizmat o'z aniq summasi bilan alohida task bo'lib yaratiladi.
+                </p>
               </div>
-
-              {newTaskForm.manualTotal && Number(newTaskForm.manualTotal) !== Number(newTaskForm.totalAmount) && Number(newTaskForm.totalAmount) !== 0 && (
-                <div className="animate-fade-in space-y-2">
-                  <label className="block text-[10px] font-bold text-rose-500 uppercase px-1">Narx o'zgargani uchun izoh (sabab) yozing *</label>
-                  <textarea
-                    required
-                    value={newTaskForm.justification}
-                    onChange={e => setNewTaskForm(f => ({ ...f, justification: e.target.value }))}
-                    className="input-minimal min-h-[60px] border-2 border-rose-100 bg-white"
-                    placeholder="Chegirma qilindi / Mijoz bilan kelishilgan..."
-                  />
-                </div>
-              )}
             </div>
 
             <div>

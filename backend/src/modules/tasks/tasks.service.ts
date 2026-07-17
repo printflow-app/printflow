@@ -344,8 +344,19 @@ export class TasksService {
     } = data;
 
     const totalDepositNum = Math.round(Number(totalDeposit || 0));
-    const perTaskDepositFloor = Math.floor(totalDepositNum / items.length);
-    const remainder = totalDepositNum % items.length;
+    // Zakolatni har taskning O'Z summasiga proporsional taqsimlaymiz (teng emas).
+    // Butun son, yig'indisi aniq totalDeposit'ga teng (oxirgi task qoldiqni oladi).
+    // Bu bilan har taskning depositi ≤ o'z narxi bo'ladi → remaining manfiy chiqmaydi.
+    const itemsTotalSum = items.reduce((s: number, it: any) => s + Number(it.totalAmount || 0), 0);
+    let depositAllocated = 0;
+    const depositPerTask: number[] = items.map((it: any, idx: number) => {
+      if (idx === items.length - 1) return Math.max(0, totalDepositNum - depositAllocated);
+      const share = itemsTotalSum > 0
+        ? Math.round(totalDepositNum * (Number(it.totalAmount || 0) / itemsTotalSum))
+        : Math.floor(totalDepositNum / items.length);
+      depositAllocated += share;
+      return share;
+    });
     const historyEmpId = await this.historyEmployeeId(employeeId);
 
     let tasks: any[] | null = null;
@@ -415,10 +426,8 @@ export class TasksService {
           ? itemVariants.reduce((s, v) => s + (Number(v.soni) || 0), 0)
           : Number(quantity || 1);
 
-        // Distribute deposit: the last item gets the remainder if any
-        const depositForThisTask = (i === items.length - 1)
-          ? (perTaskDepositFloor + remainder)
-          : perTaskDepositFloor;
+        // Zakolat — har taskning summasiga proporsional (yuqorida hisoblangan).
+        const depositForThisTask = depositPerTask[i] || 0;
 
         const displayId = buildDisplayIdFromService(
           bulkPrefixSource,
