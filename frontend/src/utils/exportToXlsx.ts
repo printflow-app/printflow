@@ -2,9 +2,14 @@ import XLSX from 'xlsx-js-style';
 
 // Bitta jadval (sheet) bilan .xlsx fayl yaratib brauzer orqali yuklaydi.
 // columns'da har bir ustun uchun: header (sarlavha) va accessor (qator → qiymat).
+//   type='number' — hujayra haqiqiy son bo'ladi (numFmt bo'yicha formatlanadi,
+//                    standart: "#,##0" — mingliklar ajratuvchisi bilan).
+//   type='text'/undefined — matn hujayra.
 export interface ExportColumn<T> {
   header: string;
   accessor: (row: T) => string | number | null | undefined;
+  type?: 'text' | 'number';
+  numFmt?: string; // masalan "#,##0" yoki "#,##0.00"
 }
 
 export interface ExportSheet<T> {
@@ -56,22 +61,33 @@ function buildSheet<T>(rows: T[], columns: ExportColumn<T>[]): XLSX.WorkSheet {
   ];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-  // Har bir hujayraga stil berish.
+  // Har bir hujayraga to'g'ri TUR (son/matn), FORMAT va STIL berish.
   for (let r = 0; r < aoa.length; r++) {
     for (let c = 0; c < columns.length; c++) {
+      const col = columns[c];
       const cellRef = XLSX.utils.encode_cell({ r, c });
       const value = aoa[r][c];
       if (!ws[cellRef]) {
         ws[cellRef] = { t: 's', v: '' };
       }
+
       if (r === 0) {
         ws[cellRef].s = HEADER_STYLE;
+        continue;
+      }
+
+      // Tanani hujayrasi — son bo'lsa haqiqiy raqam + format, aks holda matn.
+      const wantsNumber = col.type === 'number' || (col.type === undefined && isNumeric(value));
+      const base = r % 2 === 0 ? BODY_STYLE_ALT : BODY_STYLE;
+
+      if (wantsNumber && isNumeric(value)) {
+        const cell = ws[cellRef];
+        cell.t = 'n';
+        cell.v = value;
+        cell.z = col.numFmt || '#,##0'; // mingliklar ajratuvchisi bilan
+        cell.s = { ...base, alignment: { ...base.alignment, horizontal: 'right' } };
       } else {
-        const base = r % 2 === 0 ? BODY_STYLE_ALT : BODY_STYLE;
-        // Raqamlarni o'ngga tekislash.
-        ws[cellRef].s = isNumeric(value)
-          ? { ...base, alignment: { ...base.alignment, horizontal: 'right' } }
-          : base;
+        ws[cellRef].s = base;
       }
     }
   }
@@ -88,8 +104,14 @@ function buildSheet<T>(rows: T[], columns: ExportColumn<T>[]): XLSX.WorkSheet {
   // Header qatori biroz balandroq.
   ws['!rows'] = aoa.map((_, idx) => ({ hpt: idx === 0 ? 24 : 20 }));
 
-  // Birinchi qatorni muzlatish — uzun jadvalda header har doim ko'rinadi.
-  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+  // AVTOFILTR — sarlavha qatoriga filtr tugmalari qo'shadi (haqiqiy "jadval" hissi).
+  // Diapazon: A1'dan oxirgi ustun/qatorgacha.
+  ws['!autofilter'] = {
+    ref: XLSX.utils.encode_range({
+      s: { r: 0, c: 0 },
+      e: { r: Math.max(0, aoa.length - 1), c: columns.length - 1 },
+    }),
+  };
 
   return ws;
 }
