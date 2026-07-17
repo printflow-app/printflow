@@ -141,6 +141,9 @@ model Tenant {
   taskAttachments   TaskAttachment[]
   aiUsages          AiUsage[]
   agentActions      AgentAction[]
+  cashBoxes         CashBox[]
+  cashTransfers     CashTransfer[]
+  salaryRecords     SalaryRecord[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -544,6 +547,7 @@ model Branch {
   roles         Role[]
   kanbanColumns KanbanColumn[]
   materials     Material[]
+  cashBoxes     CashBox[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -575,6 +579,15 @@ model Role {
   // true → Kassada faqat o'zi kiritgan kirim/chiqim va shulardan kelib chiqqan
   // balansni ko'radi. Boshqalarning raqamlarini ko'rmaydi. (admin uchun amal qilmaydi)
   canViewOwnCashOnly    Boolean @default(false)
+
+  // Kassa (Cashbox) ruxsatlari — ko'p kassali tizim
+  canManageCashBoxes  Boolean @default(false) // Kassa qo'shish/tahrirlash/biriktirish/o'chirish + topshirishni qabul qilish
+  canViewAllCashBoxes Boolean @default(false) // Boshqa kassalarni ko'rish (yo'q bo'lsa — faqat o'ziga biriktirilgan)
+  canTransferCash     Boolean @default(false) // Pulni boshqa kassaga topshirish
+
+  // true → kirim/chiqim qo'shish/tahrirlashda SANANI o'zgartira oladi (orqa sana).
+  // yo'q bo'lsa — sana har doim joriy vaqt (server) bo'ladi. (admin uchun ochiq)
+  canSetTransactionDate Boolean @default(false)
 
   // Topshiriqlar (Xizmatlar) ruxsatlari
   canViewTasks     Boolean @default(false)
@@ -610,6 +623,10 @@ model Role {
   canManageRoles     Boolean @default(false)
   canViewSalary      Boolean @default(false)
   canManageAdmins    Boolean @default(false)
+
+  // Maosh (Payroll) ruxsatlari — oylik hisob-kitob bo'limi
+  canViewPayroll   Boolean @default(false) // Maosh bo'limini (oylik jadval) ko'rish
+  canManagePayroll Boolean @default(false) // Maosh hisoblash, saqlash va to'lash (chiqim)
 
   // Yangi ruxsatlar (Feature-gated)
   canViewKpi               Boolean @default(false) // KPI ko'rsatkichlarini ko'rish
@@ -712,9 +729,52 @@ model Employee {
   attendanceRecords AttendanceRecord[]
   overtimeRequests  OvertimeRequest[]
   transactions      Transaction[]
+  salaryRecords     SalaryRecord[]
 
   @@unique([tenantId, login])
   @@index([tenantId])
+}
+
+// =============================================
+// MAOSH VARAQASI (Payroll) — har xodim × har oy uchun bitta yozuv.
+// sofMaosh = fixedSalary + bonus − penalty.
+// To'langanда: berish kerak = sofMaosh − advanceDeducted − prevDebt.
+//   ≥ 0 → paidAmount = shu summa, carriedDebt = 0
+//   < 0 → paidAmount = 0, carriedDebt = |manfiy| (keyingi oy maoshdan ushlanadi)
+// Ortiqcha avans Employee.workDebt orqali oydan oyga ko'chadi.
+// =============================================
+model SalaryRecord {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  branchId   String?
+
+  period      String // 'YYYY-MM'
+  fixedSalary Float   @default(0) // fiksa (shu oy uchun snapshot, tahrirlanadi)
+  bonus       Float   @default(0)
+  bonusNote   String?
+  penalty     Float   @default(0) // jarima
+  penaltyNote String?
+
+  // To'lash paytidagi snapshotlar (audit uchun)
+  advanceDeducted Float @default(0) // shu oy ushlangan avans
+  prevDebt        Float @default(0) // oldingi oydan ko'chgan qarz
+  netSalary       Float @default(0) // fixed + bonus − penalty
+  paidAmount      Float @default(0) // haqiqatda berilgan summa
+  carriedDebt     Float @default(0) // keyingi oyga ko'chgan qarz
+
+  status            String    @default("draft") // draft | paid
+  paidTransactionId String? // Kassa chiqim id
+  paidAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, employeeId, period])
+  @@index([tenantId, period])
+  @@index([employeeId])
 }
 
 // =============================================
@@ -907,6 +967,15 @@ model Transaction {
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
 
+  // Kassa bog'liq — qaysi kassaga tegishli. Nullable: migratsiyagacha bo'lgan
+  // yozuvlar bootstrap orqali filialning "Asosiy kassa"siga biriktiriladi.
+  cashBoxId String?
+  cashBox   CashBox? @relation(fields: [cashBoxId], references: [id], onDelete: SetNull)
+
+  // true → bu chiqim xodimга AVANS (oylik hisob-kitobida maoshdan ushlanadi).
+  // false → oddiy xarajat qoplash (material/yo'lkira), maoshга tegmaydi.
+  isSalaryAdvance Boolean @default(false)
+
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
 
@@ -920,6 +989,75 @@ model Transaction {
   @@index([tenantId])
   @@index([departmentId])
   @@index([createdById])
+  @@index([cashBoxId])
+}
+
+// =============================================
+// KASSALAR (Cashboxes) — ko'p kassali tizim
+// Kassa = alohida pul qutisi. Balans = shu cashBoxId'li Transaction'lar
+// yig'indisi (kirim − chiqim), aynan filial-darajali eski modeldek.
+//   type='main'     → filialning "Asosiy kassa"si (o'chirilmaydi)
+//   type='personal' → kassir/moliyachi kassasi
+// assignedUserId — kassa operatori (Employee.id yoki WorkspaceAdmin.id, FK yo'q).
+// canViewAllCashBoxes ruxsati yo'q foydalanuvchi faqat o'ziga biriktirilganini ko'radi.
+// =============================================
+model CashBox {
+  id       String  @id @default(uuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  name           String
+  type           String  @default("personal") // 'main' | 'personal'
+  assignedUserId String? // Employee.id YOKI WorkspaceAdmin.id (FK yo'q — UserTabView pattern)
+  isActive       Boolean @default(true)
+
+  transactions  Transaction[]
+  transfersFrom CashTransfer[] @relation("FromCashBox")
+  transfersTo   CashTransfer[] @relation("ToCashBox")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@index([assignedUserId])
+}
+
+// =============================================
+// KASSALARARO TOPSHIRISH (Cash hand-off)
+// Kassir pulni boshqa kassaga topshiradi:
+//   yuborishda  → source kassada chiqim (sourceTxId), status=pending
+//   qabulda     → dest kassada kirim (destTxId),   status=accepted
+//   rad etilsa  → sourceTx o'chiriladi (pul qaytadi), status=rejected
+// initiatedById/respondedById = Employee.id yoki WorkspaceAdmin.id (FK yo'q).
+// =============================================
+model CashTransfer {
+  id            String  @id @default(uuid())
+  tenantId      String
+  tenant        Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fromCashBoxId String
+  fromCashBox   CashBox @relation("FromCashBox", fields: [fromCashBoxId], references: [id], onDelete: Cascade)
+  toCashBoxId   String
+  toCashBox     CashBox @relation("ToCashBox", fields: [toCashBoxId], references: [id], onDelete: Cascade)
+
+  amount        Float
+  note          String?
+  paymentTypeId String?
+  status        String  @default("pending") // pending | accepted | rejected
+
+  initiatedById String
+  respondedById String?
+  respondedAt   DateTime?
+  sourceTxId    String? // yuborishda source kassadagi chiqim Transaction.id
+  destTxId      String? // qabulda dest kassadagi kirim Transaction.id
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([toCashBoxId, status])
 }
 
 model ExpenseType {

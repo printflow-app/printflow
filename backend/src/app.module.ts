@@ -29,6 +29,8 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { FinanceModule } from './modules/finance/finance.module';
+import { CashboxModule } from './modules/cashbox/cashbox.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { LeadsModule } from './modules/leads/leads.module';
@@ -82,6 +84,8 @@ import { SuperAdminTasksModule } from './modules/super-admin-tasks/super-admin-t
     ExpenseTypesModule,
     TasksModule,
     FinanceModule,
+    CashboxModule,
+    PayrollModule,
     TelegramModule,
     ServicesModule,
     InventoryModule,

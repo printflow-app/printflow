@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 import { SkeletonTable } from '../components/Skeleton';
 import CurrencyInput from '../components/CurrencyInput';
 import { exportToXlsx } from '../utils/exportToXlsx';
+import { PayrollSection } from '../components/PayrollSection';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
@@ -20,6 +21,11 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const canAdd           = isAdmin || p.canAddEmployee || p.canManageEmployees;
   const canDelete        = isAdmin || p.canDeleteEmployee || p.canManageEmployees;
   const canResetPassword = isAdmin || p.canResetEmployeePassword || p.canManageEmployees;
+
+  // Maosh (payroll) bo'limi ruxsatlari + tab holati
+  const canViewPayroll   = isAdmin || !!p.canViewPayroll;
+  const canManagePayroll = isAdmin || !!p.canManagePayroll;
+  const [activeTab, setActiveTab] = useState<'xodimlar' | 'maosh'>('xodimlar');
 
   // RQ — cache'lanadi, derived data effect orqali tayyorlanadi
   const { data: rawEmployees = [], isLoading: empLoading } = useEmployees();
@@ -166,7 +172,18 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in relative">
-      <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      {canViewPayroll && (
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+          <button onClick={() => setActiveTab('xodimlar')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeTab === 'xodimlar' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Xodimlar</button>
+          <button onClick={() => setActiveTab('maosh')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeTab === 'maosh' ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}>Maosh</button>
+        </div>
+      )}
+
+      {activeTab === 'maosh' && canViewPayroll && (
+        <PayrollSection activeBranchId={activeBranchId} canManage={canManagePayroll} />
+      )}
+
+      <div className={`space-y-4 sm:space-y-6 animate-fade-in ${activeTab !== 'xodimlar' ? 'hidden' : ''}`}>
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
             <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight">Jamoa A'zolari</h3>

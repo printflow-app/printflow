@@ -329,6 +329,43 @@ export const financeApi = {
 };
 
 // =============================================
+// KASSALAR (Cashboxes) — ko'p kassali tizim + kassalararo topshirish
+// =============================================
+export const cashBoxApi = {
+  // Ko'rinadigan kassalar + har biriga hisoblangan balans.
+  list: (branchId?: string) => api.get('/cashboxes', { params: branchId ? { branchId } : {} }),
+  create: (data: { name: string; type?: string; branchId?: string | null; assignedUserId?: string | null }) =>
+    api.post('/cashboxes', data),
+  update: (id: string, data: any) => api.patch(`/cashboxes/${id}`, data),
+  remove: (id: string) => api.delete(`/cashboxes/${id}`),
+
+  // Topshirishlar (kassalararo)
+  listTransfers: (params?: { direction?: 'incoming' | 'outgoing'; status?: string }) =>
+    api.get('/cashboxes/transfers', { params: params || {} }),
+  createTransfer: (data: { fromCashBoxId: string; toCashBoxId: string; amount: number; note?: string; paymentTypeId?: string }) =>
+    api.post('/cashboxes/transfers', data),
+  accept: (id: string) => api.post(`/cashboxes/transfers/${id}/accept`),
+  reject: (id: string) => api.post(`/cashboxes/transfers/${id}/reject`),
+  pendingCount: () => api.get('/cashboxes/pending-count'),
+};
+
+// =============================================
+// MAOSH (Payroll) — oylik hisob-kitob
+// =============================================
+export const payrollApi = {
+  // Berilgan oy (YYYY-MM) uchun barcha xodimlar maosh qatori
+  list: (period: string, branchId?: string) =>
+    api.get('/payroll', { params: { period, ...(branchId ? { branchId } : {}) } }),
+  // Fiksa/bonus/jarima saqlash (qoralama)
+  save: (data: { employeeId: string; period: string; fixedSalary?: number; bonus?: number; bonusNote?: string; penalty?: number; penaltyNote?: string }) =>
+    api.post('/payroll/save', data),
+  // To'lash (Kassadan chiqim)
+  pay: (data: { employeeId: string; period: string }) => api.post('/payroll/pay', data),
+  // To'lovni bekor qilish
+  revert: (data: { employeeId: string; period: string }) => api.post('/payroll/revert', data),
+};
+
+// =============================================
 // XIZMATLAR KATALOGI (Pricing Engine)
 // =============================================
 // Strict isolation — every read/mutation must carry activeBranchId.

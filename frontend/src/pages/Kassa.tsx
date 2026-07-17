@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2, Download, Search, Pencil, Trash2 } from 'lucide-react';
-import { financeApi, customersApi } from '../api';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2, Download, Search, Pencil, Trash2, Plus, ArrowRightLeft, Inbox, Check, X } from 'lucide-react';
+import { financeApi, customersApi, cashBoxApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
 import {
   usePaymentTypes, useCustomers, useEmployees, useExpenseTypes,
@@ -31,6 +31,29 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     || currentUser.role?.name?.toLowerCase() === 'superadmin'
     || currentUser.login === 'admin';
   const ownCashOnly = !isAdminUser && !!p.canViewOwnCashOnly;
+
+  // Kassa (ko'p kassali tizim) ruxsatlari
+  const canManageCashBoxes = isAdminUser || !!p.canManageCashBoxes;
+  const canTransferCash = isAdminUser || !!p.canTransferCash;
+  // Kirim/chiqim sanasini o'zgartirish (orqa sana) ruxsati.
+  const canSetDate = isAdminUser || !!p.canSetTransactionDate;
+
+  // Tanlangan kassa — tenant bo'yicha localStorage'da saqlanadi (filiallar naqshi kabi).
+  const tenantId = (() => {
+    try { return JSON.parse(localStorage.getItem('pf_user_info') || '{}')?.tenantId || ''; } catch { return ''; }
+  })();
+  const CB_KEY = `pf_active_cashbox_${tenantId}`;
+
+  // Kirim/chiqim sanasi uchun — bugungi kun (YYYY-MM-DD, lokal).
+  const getToday = () => new Date().toLocaleDateString('en-CA');
+  // Tanlangan kun uchun tranzaksiya sanasini quradi. Bugun tanlansa (yaratishda)
+  // — server hozirgi vaqtni ishlatishi uchun date yuborilmaydi; boshqa kun tanlansa
+  // o'sha kunning mahalliy tush payti (12:00) — UTC kun chegarasi filtriga xavfsiz tushadi.
+  const buildDatePayload = (dateStr: string, isEdit: boolean): { date?: string } => {
+    if (!dateStr) return {};
+    if (!isEdit && dateStr === getToday()) return {};
+    return { date: new Date(`${dateStr}T12:00:00`).toISOString() };
+  };
 
   const [page, setPage] = useState(1);
   // Default — joriy oyning 1-sanasidan oxirgi sanasigacha (turg'un oy oralig'i,
@@ -70,19 +93,50 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const { data: vendors = [] } = useVendors(activeBranchId);
   const { data: departments = [] } = useDepartments(activeBranchId);
 
-  // Transactions & summary — branch+range+dept+page dependent, custom cache keys
+  // === KASSALAR (cashboxes) — ko'p kassali tizim ===
+  const cashBoxesQuery = useQuery({
+    queryKey: ['cashboxes', activeBranchId],
+    queryFn: async () => (await cashBoxApi.list(activeBranchId)).data,
+  });
+  const cashBoxes: any[] = cashBoxesQuery.data || [];
+
+  // '' = "Barcha kassalar" (ko'rinadigan kassalar yig'indisi). Aks holda bitta kassa.
+  const [selectedCashBoxId, setSelectedCashBoxId] = useState<string>(() => {
+    try { return localStorage.getItem(CB_KEY) || ''; } catch { return ''; }
+  });
+  // Tanlangan kassa ro'yxatdan yo'qolsa (filial almashsa) — "Barcha"ga qaytamiz.
+  useEffect(() => {
+    if (selectedCashBoxId && cashBoxes.length && !cashBoxes.some(b => b.id === selectedCashBoxId)) {
+      setSelectedCashBoxId('');
+    }
+  }, [cashBoxes, selectedCashBoxId]);
+  useEffect(() => {
+    try {
+      if (selectedCashBoxId) localStorage.setItem(CB_KEY, selectedCashBoxId);
+      else localStorage.removeItem(CB_KEY);
+    } catch { /* private mode */ }
+  }, [selectedCashBoxId]);
+
+  // Menga kelgan, qabul kutayotgan topshirishlar (panelda ko'rsatiladi).
+  const incomingTransfersQuery = useQuery({
+    queryKey: ['cash-transfers-incoming'],
+    queryFn: async () => (await cashBoxApi.listTransfers({ direction: 'incoming', status: 'pending' })).data,
+  });
+  const incomingTransfers: any[] = incomingTransfersQuery.data || [];
+
+  // Transactions & summary — branch+range+dept+page+cashbox dependent, custom cache keys
   const transactionsQuery = useQuery({
-    queryKey: ['kassa-transactions', activeBranchId, startDate, endDate, departmentId, vendorFilterId, page],
+    queryKey: ['kassa-transactions', activeBranchId, selectedCashBoxId, startDate, endDate, departmentId, vendorFilterId, page],
     queryFn: async () => {
-      const params = { branchId: activeBranchId, page, limit: 20, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}), ...(vendorFilterId ? { vendorId: vendorFilterId } : {}) };
+      const params = { branchId: activeBranchId, page, limit: 20, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}), ...(vendorFilterId ? { vendorId: vendorFilterId } : {}), ...(selectedCashBoxId ? { cashBoxId: selectedCashBoxId } : {}) };
       const r = await financeApi.getTransactions({ params });
       return r.data;
     },
   });
   const summaryQuery = useQuery({
-    queryKey: ['kassa-summary', activeBranchId, startDate, endDate, departmentId, vendorFilterId],
+    queryKey: ['kassa-summary', activeBranchId, selectedCashBoxId, startDate, endDate, departmentId, vendorFilterId],
     queryFn: async () => {
-      const params = { branchId: activeBranchId, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}), ...(vendorFilterId ? { vendorId: vendorFilterId } : {}) };
+      const params = { branchId: activeBranchId, start: startDate, end: endDate, ...(departmentId ? { departmentId } : {}), ...(vendorFilterId ? { vendorId: vendorFilterId } : {}), ...(selectedCashBoxId ? { cashBoxId: selectedCashBoxId } : {}) };
       const r = await financeApi.getDailySummary({ params });
       return r.data;
     },
@@ -98,6 +152,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const fetchData = async (_silent = false) => {
     transactionsQuery.refetch();
     summaryQuery.refetch();
+    cashBoxesQuery.refetch(); // balanslar o'zgargan bo'lishi mumkin
+    incomingTransfersQuery.refetch(); // yangi topshirishlar
     invalidate.customers(); // debt could have changed
     invalidate.tasks(); // task remainingAmount could have changed
   };
@@ -122,14 +178,25 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         return;
       }
 
+      // Sanani toza, bir xil "YYYY-MM-DD HH:MM" ko'rinishida beramiz — lokal
+      // formatga bog'liq "g'alati" chiqishlarni oldini oladi.
+      const fmtDateTime = (v: any) => {
+        const d = new Date(v);
+        if (isNaN(d.getTime())) return '';
+        const p = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+      };
+
       exportToXlsx({
         filename: `kassa_${startDate}_${endDate}`,
         sheetName: 'Kassa',
         rows: all,
         columns: [
-          { header: 'Sana', accessor: (t) => new Date(t.date || t.createdAt).toLocaleString('uz-UZ') },
+          { header: 'Sana', accessor: (t) => fmtDateTime(t.date || t.createdAt) },
           { header: 'Turi', accessor: (t) => t.type === 'kirim' ? 'Kirim' : 'Chiqim' },
-          { header: 'Summa (UZS)', accessor: (t) => t.amount },
+          { header: 'Kassa', accessor: (t) => t.cashBox?.name || '' },
+          { header: 'Kirim (UZS)', accessor: (t) => t.type === 'kirim' ? Number(t.amount) : '', type: 'number' },
+          { header: 'Chiqim (UZS)', accessor: (t) => t.type === 'chiqim' ? Number(t.amount) : '', type: 'number' },
           { header: "To'lov turi", accessor: (t) => t.paymentType?.name || '' },
           { header: 'Mijoz / Hamkor', accessor: (t) => t.vendor?.name || t.customer?.name || t.customerName || '' },
           { header: 'Xizmat / Sabab', accessor: (t) => t.serviceType || t.expenseReason || t.expenseType?.name || '' },
@@ -154,14 +221,21 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   const [isDeleting, setIsDeleting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+  // Kassalar — topshirish, yangi kassa, qabul/rad modal holatlari
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferForm, setTransferForm] = useState({ fromCashBoxId: '', toCashBoxId: '', amount: '', paymentTypeId: '', note: '' });
+  const [isNewBoxModalOpen, setIsNewBoxModalOpen] = useState(false);
+  const [newBoxForm, setNewBoxForm] = useState({ name: '', type: 'personal', assignedUserId: '' });
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+
   useAutoRefresh(() => fetchData(true), {
     intervalMs: 15000,
     paused: isKirimModalOpen || isChiqimModalOpen,
   });
 
   // Forms
-  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '' });
-  const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
+  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '', date: getToday() });
+  const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '', date: getToday(), isSalaryAdvance: false });
   const [customerTasks, setCustomerTasks] = useState<any[]>([]);
 
   const handleCustomerChange = async (cid: string) => {
@@ -188,8 +262,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     }
   }, [hasDebt]);
 
-  const resetKirimForm = () => setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '' });
-  const resetChiqimForm = () => setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '' });
+  const resetKirimForm = () => setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '', date: getToday() });
+  const resetChiqimForm = () => setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '', date: getToday(), isSalaryAdvance: false });
 
   const closeKirimModal = () => {
     setIsKirimModalOpen(false);
@@ -206,13 +280,16 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     e.preventDefault();
     try {
       setIsSubmitting(true);
+      const { date: _kdate, ...kirimRest } = kirimForm;
       const payload = {
-        ...kirimForm,
+        ...kirimRest,
         type: 'kirim',
         vendorId: kirimForm.vendorId && kirimForm.vendorId !== '_' ? kirimForm.vendorId : null,
         customerId: kirimForm.vendorId ? null : (kirimForm.customerId || null),
         taskId: kirimForm.taskId || null,
         branchId: activeBranchId || null,
+        cashBoxId: selectedCashBoxId || null,
+        ...(canSetDate ? buildDatePayload(kirimForm.date, !!editingTx) : {}),
       };
       if (editingTx) {
         await financeApi.updateTransaction(editingTx.id, payload);
@@ -234,13 +311,17 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     e.preventDefault();
     try {
       setIsSubmitting(true);
+      const { date: _cdate, ...chiqimRest } = chiqimForm;
       const payload = {
-        ...chiqimForm,
+        ...chiqimRest,
         type: 'chiqim',
         employeeId: chiqimForm.isEmployeeExpense ? (chiqimForm.employeeId || null) : null,
         vendorId: chiqimForm.isVendorExpense ? (chiqimForm.vendorId || null) : null,
         expenseTypeId: chiqimForm.isVendorExpense || chiqimForm.isEmployeeExpense ? null : (chiqimForm.expenseTypeId || null),
+        isSalaryAdvance: chiqimForm.isEmployeeExpense ? chiqimForm.isSalaryAdvance : false,
         branchId: activeBranchId || null,
+        cashBoxId: selectedCashBoxId || null,
+        ...(canSetDate ? buildDatePayload(chiqimForm.date, !!editingTx) : {}),
       };
       if (editingTx) {
         await financeApi.updateTransaction(editingTx.id, payload);
@@ -272,6 +353,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         taskId: t.taskId || '',
         forExistingDebt: false,
         vendorId: t.vendorId || '',
+        date: t.date ? new Date(t.date).toLocaleDateString('en-CA') : getToday(),
       });
       // Preload customer's task list so the "bog'liq buyurtma" select works in edit mode.
       if (t.customerId) {
@@ -295,6 +377,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         isEmployeeExpense: !!t.employeeId && !t.vendorId,
         isVendorExpense: !!t.vendorId,
         vendorId: t.vendorId || '',
+        date: t.date ? new Date(t.date).toLocaleDateString('en-CA') : getToday(),
+        isSalaryAdvance: !!t.isSalaryAdvance,
       });
       setIsChiqimModalOpen(true);
     }
@@ -320,6 +404,90 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
+  // === KASSALAR: topshirish / yangi kassa / qabul-rad ===
+  const openTransferModal = () => {
+    setTransferForm({
+      fromCashBoxId: selectedCashBoxId || (cashBoxes[0]?.id || ''),
+      toCashBoxId: '',
+      amount: '',
+      paymentTypeId: '',
+      note: '',
+    });
+    setIsTransferModalOpen(true);
+  };
+
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (transferForm.fromCashBoxId === transferForm.toCashBoxId) {
+      showStatus('error', 'Bir xil kassaga topshirib bo\'lmaydi');
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      await cashBoxApi.createTransfer({
+        fromCashBoxId: transferForm.fromCashBoxId,
+        toCashBoxId: transferForm.toCashBoxId,
+        amount: Number(transferForm.amount),
+        note: transferForm.note || undefined,
+        paymentTypeId: transferForm.paymentTypeId || undefined,
+      });
+      setIsTransferModalOpen(false);
+      showStatus('success', 'Pul topshirildi — qabul qilinishi kutilmoqda');
+      fetchData(true);
+    } catch (err: any) {
+      showStatus('error', err?.response?.data?.message || 'Topshirishda xatolik');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateBox = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsSubmitting(true);
+      await cashBoxApi.create({
+        name: newBoxForm.name,
+        type: newBoxForm.type,
+        branchId: activeBranchId || null,
+        assignedUserId: newBoxForm.assignedUserId || null,
+      });
+      setIsNewBoxModalOpen(false);
+      setNewBoxForm({ name: '', type: 'personal', assignedUserId: '' });
+      showStatus('success', 'Kassa yaratildi');
+      cashBoxesQuery.refetch();
+    } catch (err: any) {
+      showStatus('error', err?.response?.data?.message || 'Kassa yaratishda xatolik');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAcceptTransfer = async (id: string) => {
+    try {
+      setRespondingId(id);
+      await cashBoxApi.accept(id);
+      showStatus('success', 'Qabul qilindi — kassangizga kirim bo\'ldi');
+      fetchData(true);
+    } catch (err: any) {
+      showStatus('error', err?.response?.data?.message || 'Qabul qilishda xatolik');
+    } finally {
+      setRespondingId(null);
+    }
+  };
+
+  const handleRejectTransfer = async (id: string) => {
+    try {
+      setRespondingId(id);
+      await cashBoxApi.reject(id);
+      showStatus('success', 'Rad etildi — pul yuboruvchi kassaga qaytdi');
+      fetchData(true);
+    } catch (err: any) {
+      showStatus('error', err?.response?.data?.message || 'Rad etishda xatolik');
+    } finally {
+      setRespondingId(null);
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in relative">
       {isLoading && (
@@ -335,6 +503,90 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
           {statusMessage.type === 'success' ? <CheckCircle2 size={20}/> : <AlertCircle size={20}/>}
           <span className="font-bold text-sm">{statusMessage.text}</span>
+        </div>
+      )}
+
+      {/* Kassa selektori + amallar */}
+      {(cashBoxes.length > 0 || canManageCashBoxes) && (
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-1 flex-1">
+            <button
+              onClick={() => setSelectedCashBoxId('')}
+              className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors border ${!selectedCashBoxId ? 'bg-[color:var(--primary)] text-white border-transparent shadow' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+            >
+              Barcha kassalar
+            </button>
+            {cashBoxes.map((b: any) => {
+              const active = selectedCashBoxId === b.id;
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => setSelectedCashBoxId(b.id)}
+                  title={b.assignedUserName ? `Mas'ul: ${b.assignedUserName}` : undefined}
+                  className={`shrink-0 px-3.5 py-2 rounded-xl text-left transition-colors border ${active ? 'bg-[color:var(--primary)] text-white border-transparent shadow' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold whitespace-nowrap">{b.name}</span>
+                    {b.type === 'main' && (
+                      <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${active ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>asosiy</span>
+                    )}
+                  </div>
+                  <div className={`text-[11px] font-bold tabular-nums mt-0.5 ${active ? 'text-white/90' : ((b.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600')}`}>
+                    {formatCurrency(b.balance || 0)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {canTransferCash && cashBoxes.length >= 2 && (
+              <button onClick={openTransferModal} className="btn-outline h-sm">
+                <ArrowRightLeft size={14}/> Topshirish
+              </button>
+            )}
+            {canManageCashBoxes && (
+              <button onClick={() => setIsNewBoxModalOpen(true)} className="btn-outline h-sm">
+                <Plus size={14}/> Yangi kassa
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Qabul qilinishi kutilayotgan topshirishlar */}
+      {incomingTransfers.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><Inbox size={16}/></div>
+            <div>
+              <h3 className="text-sm font-bold text-amber-900">Qabul qilinishi kutilmoqda</h3>
+              <p className="text-[11px] text-amber-700">Sizga topshirilgan pulni sanab, tasdiqlang</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {incomingTransfers.map((t: any) => (
+              <div key={t.id} className="bg-white rounded-xl border border-amber-100 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-800 truncate">
+                    {t.fromCashBoxName || 'Kassa'} <span className="text-slate-400">→</span> {t.toCashBoxName || 'Kassa'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    {t.initiatedByName ? `${t.initiatedByName} yubordi` : 'Topshirildi'}
+                    {t.note ? ` · ${t.note}` : ''} · {new Date(t.createdAt).toLocaleString('uz-UZ')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-base font-bold text-emerald-600 tabular-nums mr-1">+{formatCurrency(t.amount)}</span>
+                  <button onClick={() => handleAcceptTransfer(t.id)} disabled={respondingId === t.id} className="btn-success h-sm">
+                    <Check size={14}/> Qabul qildim
+                  </button>
+                  <button onClick={() => handleRejectTransfer(t.id)} disabled={respondingId === t.id} className="btn-outline h-sm">
+                    <X size={14}/> Rad etish
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -702,6 +954,13 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </select>
           </div>
 
+          {canSetDate && (
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Sana (qaysi kunga)</label>
+              <input type="date" value={kirimForm.date} onChange={(e) => setKirimForm(f => ({ ...f, date: e.target.value }))} className="input-minimal" />
+            </div>
+          )}
+
 
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={closeKirimModal} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
@@ -736,14 +995,28 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </div>
           )}
           {chiqimForm.isEmployeeExpense && (
-            <div className="animate-fade-in">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Hodimni tanlang</label>
-              <SearchableSelect
-                options={employees.map(e => ({ id: e.id, label: e.fullName, subLabel: e.role?.name || 'Xodim', value: e }))}
-                value={chiqimForm.employeeId}
-                onChange={(id) => setChiqimForm(f => ({ ...f, employeeId: id }))}
-                placeholder="Hodim qidirish..."
-              />
+            <div className="animate-fade-in space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Hodimni tanlang</label>
+                <SearchableSelect
+                  options={employees.map(e => ({ id: e.id, label: e.fullName, subLabel: e.role?.name || 'Xodim', value: e }))}
+                  value={chiqimForm.employeeId}
+                  onChange={(id) => setChiqimForm(f => ({ ...f, employeeId: id }))}
+                  placeholder="Hodim qidirish..."
+                />
+              </div>
+              <label className="flex items-start gap-3 cursor-pointer bg-orange-50 border border-orange-200 rounded-2xl p-3">
+                <input
+                  type="checkbox"
+                  checked={chiqimForm.isSalaryAdvance}
+                  onChange={(e) => setChiqimForm(f => ({ ...f, isSalaryAdvance: e.target.checked }))}
+                  className="w-5 h-5 rounded-lg border-2 border-orange-300 text-orange-500 focus:ring-orange-200 mt-0.5 cursor-pointer"
+                />
+                <span className="text-xs font-bold text-orange-800">
+                  Bu avans (oylikdan ushlanadi)
+                  <span className="block text-[10px] font-medium text-orange-500 mt-0.5">Belgilansa — oy oxirida maoshdan avtomatik ayiriladi. Belgilanmasa — oddiy xarajat qoplash (maoshga tegmaydi).</span>
+                </span>
+              </label>
             </div>
           )}
           {chiqimForm.isVendorExpense && (
@@ -777,6 +1050,13 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
             </select>
           </div>
+
+          {canSetDate && (
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Sana (qaysi kunga)</label>
+              <input type="date" value={chiqimForm.date} onChange={(e) => setChiqimForm(f => ({ ...f, date: e.target.value }))} className="input-minimal" />
+            </div>
+          )}
 
 
           <div className="flex gap-3 pt-4">
@@ -834,6 +1114,93 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Modal: Pulni topshirish (kassalararo) */}
+      <Modal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        title="Pulni topshirish"
+        type="default"
+      >
+        <form onSubmit={handleTransfer} className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassadan</label>
+            <select required value={transferForm.fromCashBoxId} onChange={e => setTransferForm(f => ({ ...f, fromCashBoxId: e.target.value }))} className="select-minimal">
+              <option value="">Tanlang...</option>
+              {cashBoxes.map((b: any) => <option key={b.id} value={b.id}>{b.name} — {formatCurrency(b.balance || 0)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassaga</label>
+            <select required value={transferForm.toCashBoxId} onChange={e => setTransferForm(f => ({ ...f, toCashBoxId: e.target.value }))} className="select-minimal">
+              <option value="">Tanlang...</option>
+              {cashBoxes.filter((b: any) => b.id !== transferForm.fromCashBoxId).map((b: any) => (
+                <option key={b.id} value={b.id}>{b.name}{b.assignedUserName ? ` — ${b.assignedUserName}` : ''}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <CurrencyInput
+              value={transferForm.amount}
+              onChange={(uzs) => setTransferForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
+              colorClass="text-slate-800 focus:border-[color:var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov turi (ixtiyoriy)</label>
+            <select value={transferForm.paymentTypeId} onChange={e => setTransferForm(f => ({ ...f, paymentTypeId: e.target.value }))} className="select-minimal">
+              <option value="">Tanlang...</option>
+              {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Izoh (ixtiyoriy)</label>
+            <input type="text" value={transferForm.note} onChange={e => setTransferForm(f => ({ ...f, note: e.target.value }))} className="input-minimal" placeholder="Masalan: Kunlik tushum" />
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[11px] text-slate-500 flex items-start gap-2">
+            <AlertCircle size={14} className="text-slate-400 mt-0.5 shrink-0" />
+            <span>Topshirilgach pul sizning kassangizdan chiqim bo'ladi. Qabul qiluvchi tasdiqlaganda uning kassasiga kirim bo'ladi.</span>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={() => setIsTransferModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
+            <button type="submit" disabled={isSubmitting} className="flex-1 btn-primary h-11">
+              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : 'TOPSHIRISH'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Yangi kassa */}
+      <Modal
+        isOpen={isNewBoxModalOpen}
+        onClose={() => setIsNewBoxModalOpen(false)}
+        title="Yangi kassa"
+        type="default"
+      >
+        <form onSubmit={handleCreateBox} className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Kassa nomi</label>
+            <input type="text" required value={newBoxForm.name} onChange={e => setNewBoxForm(f => ({ ...f, name: e.target.value }))} className="input-minimal" placeholder="Masalan: Kassir kassasi, Moliyachi kassasi..." />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Mas'ul xodim (ixtiyoriy)</label>
+            <SearchableSelect
+              options={employees.map(e => ({ id: e.id, label: e.fullName, subLabel: e.role?.name || 'Xodim', value: e }))}
+              value={newBoxForm.assignedUserId}
+              onChange={(id) => setNewBoxForm(f => ({ ...f, assignedUserId: id }))}
+              placeholder="Xodim qidirish..."
+            />
+            <p className="text-[11px] text-slate-400 mt-1.5 px-1">Biriktirilgan xodim (agar "Boshqa kassalarni ko'rish" ruxsati bo'lmasa) faqat shu kassani ko'radi.</p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={() => setIsNewBoxModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
+            <button type="submit" disabled={isSubmitting} className="flex-1 btn-primary h-11">
+              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : 'YARATISH'}
+            </button>
+          </div>
+        </form>
       </Modal>
 
     </>)}

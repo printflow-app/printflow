@@ -48,8 +48,63 @@ export class FinanceService implements OnApplicationBootstrap {
               data: { branchId: primaryBranchId },
             });
           }
+
+          // === KASSA (Cashbox) migratsiyasi ===
+          // Har filialga "Asosiy kassa" (main) kafolatlanadi va cashBoxId'siz
+          // tranzaksiyalar shunga biriktiriladi. Idempotent — har bootda xavfsiz.
+          const ensureMainBox = async (bId: string | null): Promise<string> => {
+            const existing = await this.prisma.cashBox.findFirst({
+              where: { tenantId: t.id, branchId: bId, type: 'main' },
+              select: { id: true },
+            });
+            if (existing) return existing.id;
+            const created = await this.prisma.cashBox.create({
+              data: { tenantId: t.id, branchId: bId, name: 'Asosiy kassa', type: 'main' },
+              select: { id: true },
+            });
+            return created.id;
+          };
+
+          for (const b of branches) {
+            const boxId = await ensureMainBox(b.id);
+            await this.prisma.transaction.updateMany({
+              where: { tenantId: t.id, branchId: b.id, cashBoxId: null },
+              data: { cashBoxId: boxId },
+            });
+          }
+
+          // Filialsiz (branchId=null) qolgan tranzaksiyalar — tenant-darajali main kassa.
+          const nullBranchCount = await this.prisma.transaction.count({
+            where: { tenantId: t.id, branchId: null, cashBoxId: null },
+          });
+          if (nullBranchCount > 0) {
+            const boxId = await ensureMainBox(null);
+            await this.prisma.transaction.updateMany({
+              where: { tenantId: t.id, branchId: null, cashBoxId: null },
+              data: { cashBoxId: boxId },
+            });
+          }
+
+          // Bir martalik: eski rollar (canViewFinance=true) avvalgidek hamma pulni
+          // ko'rishda davom etsin — canViewAllCashBoxes=true. Marker orqali FAQAT
+          // bir marta bajariladi (aks holda har bootda yangi "kassir" rolini ham
+          // qayta ochib yuborardi).
+          const MARKER = 'cashbox_migrated_v1';
+          const marker = await this.prisma.systemSetting.findFirst({
+            where: { tenantId: t.id, key: MARKER },
+            select: { id: true },
+          });
+          if (!marker) {
+            await this.prisma.role.updateMany({
+              where: { tenantId: t.id, canViewFinance: true },
+              data: { canViewAllCashBoxes: true },
+            });
+            await this.prisma.systemSetting.create({
+              data: { tenantId: t.id, key: MARKER, value: new Date().toISOString() },
+            });
+          }
         }
-        console.log('[FinanceService] Self-healing branch backfill completed successfully.');
+        console.log('[FinanceService] Self-healing branch + cashbox backfill completed successfully.');
       } catch (e) {
         console.error('[FinanceService] Self-healing branch backfill failed:', e);
       }
@@ -131,9 +186,9 @@ export class FinanceService implements OnApplicationBootstrap {
     return where;
   }
 
-  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string, vendorId?: string, createdById?: string) {
+  async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string, vendorId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
     if (vendorId) where.vendorId = vendorId;
 
     const [transactions, total] = await Promise.all([
@@ -144,6 +199,7 @@ export class FinanceService implements OnApplicationBootstrap {
           customer: true,
           expenseType: true,
           vendor: { select: { id: true, name: true } },
+          cashBox: { select: { id: true, name: true } },
         },
         orderBy: { date: 'desc' },
         skip: (page - 1) * limit,
@@ -162,9 +218,9 @@ export class FinanceService implements OnApplicationBootstrap {
     };
   }
 
-  async getDashboard(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string) {
+  async getDashboard(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
 
     const [incomes, expenses] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -238,6 +294,17 @@ export class FinanceService implements OnApplicationBootstrap {
       }
     }
 
+    // Kassa (cashbox) — frontend tanlagan kassa. Berilmasa filialning "Asosiy kassa"siga
+    // tushadi (bootstrap har filialga bittasini kafolatlaydi). Topilmasa null qoladi.
+    let finalCashBoxId = data.cashBoxId || null;
+    if (!finalCashBoxId) {
+      const mainBox = await this.prisma.cashBox.findFirst({
+        where: { type: 'main', branchId: finalBranchId },
+        select: { id: true },
+      });
+      if (mainBox) finalCashBoxId = mainBox.id;
+    }
+
     const transaction = await this.prisma.$transaction(async (tx) => {
       const createdTransaction = await tx.transaction.create({
         data: {
@@ -257,6 +324,10 @@ export class FinanceService implements OnApplicationBootstrap {
           createdById: data.createdById || null,
           // Filial scope — bo'lmasa Kassa filiali filtri tranzaksiyani yashiradi.
           branchId: finalBranchId,
+          // Kassa scope — qaysi kassaga tegishli.
+          cashBoxId: finalCashBoxId,
+          // Xodimga avans belgisi — oylik hisob-kitobida maoshdan ushlanadi.
+          isSalaryAdvance: !!data.isSalaryAdvance,
           ...(data.date ? { date: new Date(data.date) } : {}),
         } as any,
       });
@@ -437,6 +508,8 @@ export class FinanceService implements OnApplicationBootstrap {
       const nextPaymentTypeId = pick(data.paymentTypeId, existing.paymentTypeId);
       const nextDepartmentId = pick(data.departmentId, existing.departmentId);
       const nextBranchId = pick(data.branchId, existing.branchId);
+      const nextCashBoxId = pick(data.cashBoxId, (existing as any).cashBoxId);
+      const nextIsSalaryAdvance = pick(data.isSalaryAdvance, (existing as any).isSalaryAdvance);
       const nextServiceType = pick(data.serviceType, existing.serviceType);
       const nextExpenseReason = pick(data.expenseReason, existing.expenseReason);
       const nextCustomerName = pick(data.customerName, existing.customerName);
@@ -467,6 +540,8 @@ export class FinanceService implements OnApplicationBootstrap {
           departmentId: nextDepartmentId,
           taskId: nextTaskId,
           branchId: nextBranchId,
+          cashBoxId: nextCashBoxId,
+          isSalaryAdvance: nextIsSalaryAdvance,
           date: nextDate,
         } as any,
       });
@@ -484,7 +559,7 @@ export class FinanceService implements OnApplicationBootstrap {
     });
   }
 
-  async getDinamika(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string) {
+  async getDinamika(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     let startDate = start ? this.parseDayBoundary(start, false) : null;
     if (!startDate) {
       startDate = new Date();
@@ -499,7 +574,7 @@ export class FinanceService implements OnApplicationBootstrap {
     }
 
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
+    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -540,9 +615,9 @@ export class FinanceService implements OnApplicationBootstrap {
     return Object.values(data);
   }
 
-  async getStatsByPaymentType(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string) {
+  async getStatsByPaymentType(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -575,9 +650,9 @@ export class FinanceService implements OnApplicationBootstrap {
   /**
    * Expense Breakdown by ExpenseType — for Pie/Bar chart on Dashboard
    */
-  async getExpenseBreakdown(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string) {
+  async getExpenseBreakdown(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
 
     const expenses = await this.prisma.transaction.findMany({
       where: { ...where, type: 'chiqim' },
@@ -597,9 +672,9 @@ export class FinanceService implements OnApplicationBootstrap {
       .slice(0, 10); // Top 10 categories
   }
 
-  async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string, vendorId?: string, createdById?: string) {
+  async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string, vendorId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById) };
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
     if (vendorId) where.vendorId = vendorId;
 
     const [transactions, dashboard, allPaymentTypes] = await Promise.all([
@@ -610,7 +685,7 @@ export class FinanceService implements OnApplicationBootstrap {
           expenseType: true,
         },
       }),
-      this.getDashboard(start, end, branchId),
+      this.getDashboard(start, end, branchId, departmentId, createdById, cashBoxWhere),
       this.prisma.paymentType.findMany(),
     ]);
 

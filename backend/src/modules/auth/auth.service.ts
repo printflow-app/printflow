@@ -65,6 +65,9 @@ const OWNER_ADMIN_ROLE = {
   canDeleteEmployee: true, canResetEmployeePassword: true, canAddInventoryItem: true,
   canReceiveInventory: true, canUseInventory: true, canWriteOffInventory: true,
   canManageVendors: true, canViewBranches: true, canViewBillingStatus: true,
+  canManageCashBoxes: true, canViewAllCashBoxes: true, canTransferCash: true,
+  canSetTransactionDate: true,
+  canViewPayroll: true, canManagePayroll: true,
 } as const;
 
 // =============================================
@@ -146,6 +149,9 @@ export class AuthService {
             canAddEmployee: true, canEditEmployee: true, canDeleteEmployee: true, canResetEmployeePassword: true,
             canAddInventoryItem: true, canReceiveInventory: true, canUseInventory: true, canWriteOffInventory: true,
             canManageVendors: true, canViewBranches: true, canViewBillingStatus: true,
+            canManageCashBoxes: true, canViewAllCashBoxes: true, canTransferCash: true,
+            canSetTransactionDate: true,
+            canViewPayroll: true, canManagePayroll: true,
           };
           return admin;
         }

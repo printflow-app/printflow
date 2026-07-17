@@ -4,6 +4,7 @@ import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, C
 import { PriceListModal } from '../components/PriceListModal';
 import { PriceListBrandingSection } from '../components/PriceListBrandingSection';
 import { AgentPolicySection } from '../components/AgentPolicySection';
+import { CashBoxManagerSection } from '../components/CashBoxManagerSection';
 import { ImageUpload } from '../components/ImageUpload';
 import { rolesApi, paymentTypesApi, expenseTypesApi, servicesApi, inventoryApi, settingsApi, branchesApi } from '../api';
 import { useRoles, usePaymentTypes, useExpenseTypes, useTaskColumns, useServices, useInvalidate } from '../hooks/queries';
@@ -169,9 +170,11 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
   const initialRoleForm = {
     name: '',
     canViewFinance: false, canAddIncome: false, canAddExpense: false, canViewTotalBalance: false, canViewOwnCashOnly: false, canManagePaymentTypes: false,
+    canManageCashBoxes: false, canViewAllCashBoxes: false, canTransferCash: false, canSetTransactionDate: false,
     canViewTasks: false, canViewAllTasks: false, canViewOwnTasks: false, canCreateTask: false, canEditTask: false, canDeleteTask: false, canMoveTask: false, canManageColumns: false,
     canViewCustomers: false, canManageCustomers: false,
     canViewEmployees: false, canManageEmployees: false, canManageRoles: false, canViewSalary: false, canManageAdmins: false,
+    canViewPayroll: false, canManagePayroll: false,
     canManageBranches: false, canViewKpi: false, canViewExpenseCharts: false, canViewSettings: false, canAssignToOtherBranches: false,
     canManageBilling: false, canManageNotifications: false,
     canViewVendors: false, canViewInventory: false, canManageInventory: false, canViewAttendance: false, canViewAllAttendance: false, canManageAttendance: false,
@@ -329,6 +332,10 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canAddIncome: { label: "Kirim (tushum) qo'shish", detail: "'+ Kirim' tugmasi faol bo'ladi. Mijozdan to'lov qabul qilish, buyurtma bilan bog'lash, to'lov turini tanlash — bularning barchasi kiritiladi." },
           canAddExpense: { label: "Chiqim (xarajat) qo'shish", detail: "'+ Chiqim' tugmasi faol bo'ladi. Xarajat turi, summa, izoh va to'lov usuli bilan chiqim kiritish. Xodim maoshi uchun esa alohida 'Maosh' turi mavjud." },
           canExportFinance: { label: "Excel'ga eksport qilish", detail: "Kassa sahifasida 'EKSPORT' tugmasi ko'rinadi. Joriy filtr (sana oralig'i, qidiruv) bo'yicha barcha tranzaksiyalarni .xlsx faylga yuklab olish imkoni." },
+          canViewAllCashBoxes: { label: "Boshqa kassalarni ko'rish", detail: "Yoqilsa — barcha kassalar (kassir, moliyachi, asosiy) va ularning balanslari ko'rinadi. Yo'q bo'lsa — xodim faqat o'ziga biriktirilgan kassa(lar)ni ko'radi. (Administrator uchun har doim ochiq.)" },
+          canManageCashBoxes: { label: "Kassa ochish va boshqarish", detail: "'Yangi kassa' tugmasi faol bo'ladi. Yangi kassa yaratish, nomini o'zgartirish, xodimga biriktirish va o'chirish. Bundan tashqari — kassaga topshirilgan pulni qabul qilish/rad etish huquqini ham beradi." },
+          canTransferCash: { label: "Pulni boshqa kassaga topshirish", detail: "Kassada 'Topshirish' tugmasi faol bo'ladi. Kassir kunlik/haftalik pulni moliyachi kassasiga topshiradi — pul uning kassasidan chiqim bo'lib, qabul qilinishi kutiladi." },
+          canSetTransactionDate: { label: "Kirim/chiqim sanasini o'zgartirish (orqa sana)", detail: "Kirim yoki chiqim qo'shish/tahrirlash oynasida 'Sana' maydoni ko'rinadi — xodim tranzaksiyani boshqa (o'tgan) kunga yozishi mumkin. Ruxsat yo'q bo'lsa sana har doim joriy vaqt bo'ladi va maydon umuman ko'rinmaydi." },
         }
       },
       {
@@ -434,6 +441,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canDeleteEmployee: { label: "Xodim hisobini o'chirish", detail: "Xodim qatorida 'O'chirish' tugmasi ko'rinadi. Xodim tizimdan chiqariladi va uning hisobiga kirish bloklanadi." },
           canResetEmployeePassword: { label: "Login va parol yangilash", detail: "'Yangi parol' tugmasi ko'rinadi. Xodim parolini qayta generatsiya qilish va yangi login ma'lumotlarini ko'rish imkoni." },
           canViewSalary: { label: "Xodim maosh summalarini ko'rish", detail: "Xodimlar jadvalida va profilida boshlang'ich maosh, berilgan avans va qarz summasi ko'rinadi. Ruxsat yo'q bo'lsa bu raqamlar yashiriladi." },
+          canViewPayroll: { label: "Maosh bo'limini (oylik hisob-kitob) ko'rish", detail: "Xodimlar sahifasida 'Maosh' tabi ko'rinadi — oy bo'yicha har xodimning fiksa, bonus, jarima, avans va berish kerak summasi jadvali. Faqat ko'rish (o'zgartirmasdan)." },
+          canManagePayroll: { label: "Maosh hisoblash, saqlash va to'lash", detail: "Maosh bo'limida bonus/jarima kiritish, maosh varaqasini saqlash va 'To'lash' (Kassadan chiqim) qilish imkoni. Ortiqcha avans keyingi oyga qarz bo'lib ko'chadi." },
           canExportEmployees: { label: "Excel'ga eksport qilish", detail: "Xodimlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha xodimlarni ism, lavozim, telefon, login va filial ma'lumotlari bilan .xlsx faylga yuklab olish." },
         }
       },
@@ -764,6 +773,20 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                 </div>
               </div>
             </section>
+          )}
+
+          {/* Kassalar (Cashboxes) Section */}
+          {!catalogOnly && (isAdmin || p.canManageCashBoxes) && (
+            <CashBoxManagerSection
+              activeBranchId={activeBranchId}
+              onStatus={showStatus}
+              onConfirm={(opts) => setConfirmModal({
+                isOpen: true,
+                title: opts.title,
+                message: opts.message,
+                onConfirm: async () => { await opts.onConfirm(); setConfirmModal(null); },
+              })}
+            />
           )}
 
           {/* Expense Types Section */}
