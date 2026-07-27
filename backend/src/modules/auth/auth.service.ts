@@ -68,6 +68,7 @@ const OWNER_ADMIN_ROLE = {
   canManageCashBoxes: true, canViewAllCashBoxes: true, canTransferCash: true,
   canSetTransactionDate: true,
   canViewPayroll: true, canManagePayroll: true,
+  canUseAi: true,
 } as const;
 
 // =============================================
@@ -152,6 +153,7 @@ export class AuthService {
             canManageCashBoxes: true, canViewAllCashBoxes: true, canTransferCash: true,
             canSetTransactionDate: true,
             canViewPayroll: true, canManagePayroll: true,
+            canUseAi: true,
           };
           return admin;
         }

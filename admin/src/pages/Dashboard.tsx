@@ -1,29 +1,114 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Building2, CreditCard, Users, Clock, MessageSquare, AlertTriangle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
+import {
+  Sparkles, Building2, CreditCard, Users, Clock, MessageSquare, AlertTriangle,
+  ArrowRight, TrendingUp,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  LineChart, Line, CartesianGrid,
+} from 'recharts';
 import { settingsApi } from '../api';
 import { useTenants, useTenantStats } from '../hooks/queries';
 import { getAttPct, getActiveModules } from '../shared/constants';
 
-const CUSTOM_STATUS_COLORS: Record<string, string> = {
-  ACTIVE: '#10b981',           // Emerald-500
-  TRIAL: '#3b82f6',            // Blue-500
-  EXPIRED: '#f43f5e',          // Rose-500
-  PENDING_PAYMENT: '#f59e0b',  // Amber-500
+// =============================================
+// PLATFORMA NAZORATI — 2026-07 redizayn.
+// Chart qoidalari (dataviz): bitta o'q, ingichka marklar, hairline solid grid
+// (dashsiz), bitta seriya = bitta rang, ≥2 seriyada legend. Status ranglari
+// faqat holat uchun (categorical "seriya 4" sifatida ishlatilmaydi).
+// =============================================
+
+const BRAND = '#f97316';
+const GRID = '#e4e7ec';
+const AXIS = '#94a3b8';
+
+const STATUS_META: Record<string, { label: string; dot: string; chip: string }> = {
+  ACTIVE:          { label: 'Faol',    dot: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-700' },
+  TRIAL:           { label: 'Trial',   dot: 'bg-orange-500',  chip: 'bg-orange-50 text-orange-700' },
+  EXPIRED:         { label: 'Tugagan', dot: 'bg-rose-500',    chip: 'bg-rose-50 text-rose-700' },
+  PENDING_PAYMENT: { label: "To'lov",  dot: 'bg-amber-500',   chip: 'bg-amber-50 text-amber-700' },
+};
+const STATUS_BAR: Record<string, string> = {
+  ACTIVE: '#10b981', TRIAL: '#f97316', EXPIRED: '#f43f5e', PENDING_PAYMENT: '#f59e0b',
 };
 
-const CUSTOM_STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'Faol',
-  TRIAL: 'Trial',
-  EXPIRED: 'Tugagan',
-  PENDING_PAYMENT: "To'lov",
+const num = (n: number) => (n ?? 0).toLocaleString('uz-UZ').replace(/,/g, ' ');
+const short = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}K` : String(n));
+
+// ── Qurilish bloklari ───────────────────────────────────────────────
+
+const Kpi: React.FC<{
+  label: string; value: string; sub: string; icon: any; accent?: boolean; to?: string;
+}> = ({ label, value, sub, icon: Icon, accent, to }) => {
+  const body = (
+    <div className={`h-full bg-white rounded-xl border p-4 transition-colors ${
+      accent ? 'border-orange-200' : 'border-[color:var(--border)]'
+    } ${to ? 'hover:border-slate-300' : ''}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+          <p className="text-[26px] leading-none font-extrabold text-slate-900 mt-2 tracking-tight">{value}</p>
+          <p className="text-[11px] font-medium text-slate-400 mt-1.5 flex items-center gap-1">
+            {sub}
+            {to && <ArrowRight size={11} className="text-slate-300" />}
+          </p>
+        </div>
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+          accent ? 'bg-orange-50 text-orange-600' : 'bg-slate-100 text-slate-400'
+        }`}>
+          <Icon size={17} />
+        </div>
+      </div>
+    </div>
+  );
+  return to ? <Link to={to} className="block h-full">{body}</Link> : body;
 };
+
+const Card: React.FC<{ title: string; sub?: string; children: React.ReactNode; action?: React.ReactNode; className?: string }> = ({
+  title, sub, children, action, className = '',
+}) => (
+  <section className={`bg-white rounded-xl border border-[color:var(--border)] p-4 flex flex-col ${className}`}>
+    <div className="flex items-start justify-between gap-3 mb-3">
+      <div>
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{title}</h2>
+        {sub && <p className="text-[11px] font-medium text-slate-400 mt-0.5">{sub}</p>}
+      </div>
+      {action}
+    </div>
+    {children}
+  </section>
+);
+
+const NoData: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+  <div className="h-full min-h-[120px] flex flex-col items-center justify-center gap-1.5">
+    <TrendingUp size={18} className="text-slate-300" />
+    <p className="text-[11px] font-semibold text-slate-400">{children || "Hali ma'lumot yo'q"}</p>
+  </div>
+);
+
+const Tip: React.FC<any> = ({ active, payload, label, suffix = '' }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-[color:var(--border)] rounded-lg shadow-lg px-3 py-2">
+      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} className="text-[12px] font-bold text-slate-900 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+          {num(p.value)} {suffix}
+        </p>
+      ))}
+    </div>
+  );
+};
+
+// ── Sahifa ──────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { data: stats = {} } = useTenantStats() as { data: any };
+  const { data: stats = {}, isLoading } = useTenantStats() as { data: any; isLoading: boolean };
   const { data: workspaces = [] } = useTenants();
-  const [aiCopilotEnabled, setAiCopilotEnabled] = useState<boolean>(false);
-  const [aiToggleSaving, setAiToggleSaving] = useState<boolean>(false);
+  const [aiCopilotEnabled, setAiCopilotEnabled] = useState(false);
+  const [aiToggleSaving, setAiToggleSaving] = useState(false);
 
   useEffect(() => {
     settingsApi.get('AI_COPILOT_ENABLED').then(r => setAiCopilotEnabled(!!r.data?.value)).catch(() => {});
@@ -42,242 +127,210 @@ export default function Dashboard() {
     }
   };
 
+  // Status taqsimoti — pie o'rniga gorizontal bar (yaqin qiymatlarni
+  // taqqoslash uchun aniqroq; dataviz: "donut/pie for comparing close values" ❌)
+  const statusRows = (stats.statusDistribution || []).map((s: any) => {
+    const key = s.status || Object.keys(STATUS_META).find(k => STATUS_META[k].label === s.name) || '';
+    return { key, nom: STATUS_META[key]?.label || s.name, soni: s.value, rang: STATUS_BAR[key] || '#94a3b8' };
+  });
+  const statusTotal = statusRows.reduce((a: number, c: any) => a + c.soni, 0);
+
   const kpis = [
-    { label: 'Jami Workspacelar', value: stats.totalTenants ?? 0, sub: `${stats.activeTenants ?? 0} faol`, icon: Building2 },
-    { label: "Jami Daromad (UZS)", value: (stats.totalRevenue ?? 0).toLocaleString(), sub: 'tasdiqlangan to\'lovlar', icon: CreditCard },
-    { label: 'Jami Xodimlar', value: stats.totalEmployees ?? 0, sub: 'barcha workspacelarda', icon: Users },
-    { label: "Kutilayotgan To'lovlar", value: stats.pendingPayments ?? 0, sub: 'tasdiqlash kerak', icon: Clock },
-    { label: "Demo So'rovlar", value: stats.totalLeads ?? 0, sub: 'jami so\'rovlar', icon: MessageSquare },
-    { label: 'Trial Tugaydi', value: stats.trialsExpiringSoon ?? 0, sub: '7 kun ichida', icon: AlertTriangle },
+    { label: 'Workspacelar', value: num(stats.totalTenants ?? 0), sub: `${stats.activeTenants ?? 0} faol`, icon: Building2, to: '/tenants' },
+    { label: 'Jami daromad', value: num(stats.totalRevenue ?? 0), sub: 'UZS · tasdiqlangan', icon: CreditCard },
+    { label: 'AI xarajati', value: `$${(stats.monthAiCostUsd ?? 0).toFixed(2)}`, sub: `${num(stats.monthAiMessages ?? 0)} xabar · bu oy`, icon: Sparkles, accent: true, to: '/ai-usage' },
+    { label: 'Jami xodimlar', value: num(stats.totalEmployees ?? 0), sub: 'barcha workspacelarda', icon: Users },
+    { label: "Kutilayotgan to'lov", value: num(stats.pendingPayments ?? 0), sub: 'tasdiqlash kerak', icon: Clock, to: '/payments' },
+    { label: "Demo so'rovlar", value: num(stats.totalLeads ?? 0), sub: 'jami', icon: MessageSquare, to: '/leads' },
+    { label: 'Trial tugaydi', value: num(stats.trialsExpiringSoon ?? 0), sub: '7 kun ichida', icon: AlertTriangle },
   ];
 
-  const chartCard = (title: string, children: React.ReactNode) => (
-    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">{title}</p>
-      {children}
-    </div>
-  );
-
-  const formatTooltip = ({ active, payload, label }: any, suffix: string = '') => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white border border-slate-200 text-slate-800 p-2.5 rounded-lg shadow-lg text-xs font-semibold">
-          <p className="text-slate-400 text-[9px] uppercase tracking-wider">{label}</p>
-          <p className="text-xs font-bold text-orange-500 mt-0.5">
-            {payload[0].value?.toLocaleString()} {suffix}
-          </p>
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-16 bg-white rounded-xl border border-[color:var(--border)] animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[0, 1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-[104px] bg-white rounded-xl border border-[color:var(--border)] animate-pulse" />
+          ))}
         </div>
-      );
-    }
-    return null;
-  };
+        <div className="h-64 bg-white rounded-xl border border-[color:var(--border)] animate-pulse" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Global Feature Toggles */}
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-            aiCopilotEnabled
-              ? 'bg-orange-500 text-white'
-              : 'bg-slate-100 text-slate-400 border border-slate-200'
+    <div className="space-y-4">
+      {/* Global AI kaliti */}
+      <div className="bg-white rounded-xl border border-[color:var(--border)] px-4 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+            aiCopilotEnabled ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-400'
           }`}>
-            <Sparkles size={18} className={aiCopilotEnabled ? 'animate-pulse' : ''} />
+            <Sparkles size={17} />
           </div>
-          <div>
-            <div className="text-xs font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
-              AI Copilot (Global)
-              {aiCopilotEnabled && (
-                <span className="text-[8px] font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                  Faol
-                </span>
-              )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-[13px] font-extrabold text-slate-900 tracking-tight">AI Copilot</p>
+              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                aiCopilotEnabled ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {aiCopilotEnabled ? 'Faol' : "O'chiq"}
+              </span>
             </div>
-            <div className="text-[11px] font-medium text-slate-500 mt-0.5">
+            <p className="text-[11px] font-medium text-slate-400 truncate">
               {aiCopilotEnabled
-                ? 'Yoqilgan — barcha workspacelarda AI yordamchi tugmasi ko\'rinadi'
-                : 'O\'chirilgan — hech kim AI yordamchidan foydalana olmaydi'}
-            </div>
+                ? "Barcha workspacelarda AI yordamchi tugmasi ko'rinadi"
+                : 'Hech kim AI yordamchidan foydalana olmaydi'}
+            </p>
           </div>
         </div>
 
         <button
           onClick={toggleAiCopilot}
           disabled={aiToggleSaving}
-          className={`relative w-12 h-7 rounded-full transition-colors duration-200 focus:outline-none flex-shrink-0 ${
+          role="switch"
+          aria-checked={aiCopilotEnabled}
+          aria-label="AI Copilot global kaliti"
+          className={`relative w-11 h-6 rounded-full shrink-0 transition-colors duration-200 ${
             aiCopilotEnabled ? 'bg-orange-500' : 'bg-slate-300'
           } ${aiToggleSaving ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
         >
-          <div
-            className="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-200"
-            style={{ left: aiCopilotEnabled ? '22px' : '2px' }}
+          <span
+            className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200"
+            style={{ transform: aiCopilotEnabled ? 'translateX(22px)' : 'translateX(2px)' }}
           />
         </button>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {kpis.map((k, i) => {
-          const Icon = k.icon;
-          return (
-            <div
-              key={i}
-              className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center justify-between"
-            >
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">{k.label}</span>
-                <span className="text-2xl font-black text-slate-900 tracking-tight block leading-none">{k.value}</span>
-                <span className="text-[11px] text-slate-500 font-medium block">{k.sub}</span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-orange-50 border border-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
-                <Icon size={18} />
-              </div>
-            </div>
-          );
-        })}
+      {/* KPI to'ri */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {kpis.map(k => <Kpi key={k.label} {...k} />)}
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          {chartCard('Oylik Daromad (MRR)',
-            <div className="h-60">
-              {(stats.revenueChart?.length ?? 0) > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.revenueChart}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} content={props => formatTooltip(props, 'UZS')} />
-                    <Bar dataKey="amount" name="Daromad" fill="#f97316" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : <div className="h-full flex items-center justify-center text-slate-400 text-xs">Ma'lumot yo'q</div>}
-            </div>
-          )}
-        </div>
+      {/* Chartlar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <Card title="Oylik daromad" sub="so'nggi 6 oy · UZS" className="lg:col-span-2">
+          <div className="h-60">
+            {(stats.revenueChart?.length ?? 0) > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.revenueChart} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
+                  <CartesianGrid stroke={GRID} strokeWidth={1} vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={{ stroke: GRID }} />
+                  <YAxis tickFormatter={short} tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={false} width={44} />
+                  <Tooltip cursor={{ fill: 'rgba(148,163,184,0.08)' }} content={<Tip suffix="UZS" />} />
+                  <Bar dataKey="amount" name="Daromad" fill={BRAND} radius={[4, 4, 0, 0]} maxBarSize={44} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <NoData />}
+          </div>
+        </Card>
 
-        <div>
-          {chartCard('Status Taqsimoti',
-            <div className="flex flex-col h-full justify-between">
-              <div className="h-40 relative flex items-center justify-center">
-                {(stats.statusDistribution?.length ?? 0) > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={stats.statusDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={68} paddingAngle={3} dataKey="value">
-                        {stats.statusDistribution.map((e: any, i: number) => {
-                          const statusKey = e.status || Object.keys(CUSTOM_STATUS_LABELS).find(k => CUSTOM_STATUS_LABELS[k] === e.name) || '';
-                          const color = CUSTOM_STATUS_COLORS[statusKey] || e.color || '#475569';
-                          return <Cell key={i} fill={color} />;
-                        })}
-                      </Pie>
-                      <Tooltip content={props => formatTooltip(props, 'ta')} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : <div className="h-full flex items-center justify-center text-slate-400 text-xs">Ma'lumot yo'q</div>}
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Jami</span>
-                  <span className="text-lg font-black text-slate-900 tracking-tight">
-                    {(stats.statusDistribution || []).reduce((acc: number, curr: any) => acc + curr.value, 0)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5 mt-2">
-                {(stats.statusDistribution || []).map((s: any, i: number) => {
-                  const statusKey = s.status || Object.keys(CUSTOM_STATUS_LABELS).find(k => CUSTOM_STATUS_LABELS[k] === s.name) || '';
-                  const color = CUSTOM_STATUS_COLORS[statusKey] || s.color || '#475569';
-                  const label = CUSTOM_STATUS_LABELS[statusKey] || s.name;
-                  return (
-                    <div key={i} className="flex items-center justify-between text-xs font-semibold border-b border-slate-100 pb-1 last:border-0 last:pb-0">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                        <span className="text-slate-500">{label}</span>
-                      </div>
-                      <span className="font-bold text-slate-900">{s.value}</span>
+        <Card title="Status taqsimoti" sub={`${statusTotal} ta workspace`}>
+          {statusRows.length > 0 ? (
+            <div className="flex flex-col gap-2.5 pt-1">
+              {statusRows.map((s: any) => {
+                const pct = statusTotal ? Math.round((s.soni / statusTotal) * 100) : 0;
+                return (
+                  <div key={s.nom}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-600">
+                        <span className="w-2 h-2 rounded-full" style={{ background: s.rang }} />
+                        {s.nom}
+                      </span>
+                      <span className="text-[12px] font-bold text-slate-900 font-mono">
+                        {s.soni}
+                        <span className="text-slate-400 font-medium ml-1.5">{pct}%</span>
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: s.rang }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
+          ) : <NoData />}
+        </Card>
       </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {chartCard("Workspace O'sishi",
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card title="Workspace o'sishi" sub="so'nggi 6 oy">
           <div className="h-52">
             {(stats.tenantGrowthChart?.length ?? 0) > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.tenantGrowthChart}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} allowDecimals={false} />
-                  <Tooltip content={props => formatTooltip(props, 'workspace')} />
-                  <Line type="monotone" dataKey="count" name="Yangi Tenantlar" stroke="#f97316" strokeWidth={2} dot={{ r: 3, stroke: '#fff', strokeWidth: 1.5 }} activeDot={{ r: 5 }} />
+                <LineChart data={stats.tenantGrowthChart} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid stroke={GRID} strokeWidth={1} vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={{ stroke: GRID }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={false} width={36} />
+                  <Tooltip content={<Tip suffix="workspace" />} />
+                  <Line type="monotone" dataKey="count" name="Yangi" stroke={BRAND} strokeWidth={2}
+                    dot={{ r: 3, fill: BRAND, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
                 </LineChart>
               </ResponsiveContainer>
-            ) : <div className="h-full flex items-center justify-center text-slate-400 text-xs">Ma'lumot yo'q</div>}
+            ) : <NoData />}
           </div>
-        )}
+        </Card>
 
-        {chartCard("Demo So'rovlar (Leads)",
+        <Card title="Demo so'rovlar" sub="so'nggi 6 oy">
           <div className="h-52">
             {(stats.leadsChart?.length ?? 0) > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.leadsChart}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} allowDecimals={false} />
-                  <Tooltip content={props => formatTooltip(props, "so'rov")} />
-                  <Line type="monotone" dataKey="count" name="So'rovlar" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, stroke: '#fff', strokeWidth: 1.5 }} activeDot={{ r: 5 }} />
+                <LineChart data={stats.leadsChart} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid stroke={GRID} strokeWidth={1} vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={{ stroke: GRID }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={false} width={36} />
+                  <Tooltip content={<Tip suffix="so'rov" />} />
+                  <Line type="monotone" dataKey="count" name="So'rovlar" stroke={BRAND} strokeWidth={2}
+                    dot={{ r: 3, fill: BRAND, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
                 </LineChart>
               </ResponsiveContainer>
-            ) : <div className="h-full flex items-center justify-center text-slate-400 text-xs">Ma'lumot yo'q</div>}
+            ) : <NoData />}
           </div>
-        )}
+        </Card>
       </div>
 
-      {/* Recent Workspace Activity */}
+      {/* So'nggi workspacelar */}
       {workspaces.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">So'nggi Workspacelar</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card
+          title="So'nggi workspacelar"
+          sub={`${workspaces.length} tadan 6 tasi`}
+          action={
+            <Link to="/tenants" className="text-[11px] font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
+              Barchasi <ArrowRight size={12} />
+            </Link>
+          }
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
             {workspaces.slice(0, 6).map(w => {
-              const label = CUSTOM_STATUS_LABELS[w.status] || w.status;
-              const attPct = getAttPct(w);
-              const modules = getActiveModules(w);
-
-              const dotColor =
-                w.status === 'ACTIVE' ? 'bg-emerald-500' :
-                w.status === 'TRIAL' ? 'bg-blue-500' :
-                w.status === 'EXPIRED' ? 'bg-rose-500' : 'bg-amber-500';
-
+              const meta = STATUS_META[w.status] || { label: w.status, dot: 'bg-slate-400', chip: 'bg-slate-100 text-slate-600' };
               return (
-                <div key={w.id} className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 transition-all">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-slate-900 truncate">{w.name}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">@{w.slug}</p>
+                <div key={w.id} className="rounded-lg border border-[color:var(--border)] p-3 hover:border-slate-300 transition-colors">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-[12px] font-extrabold shrink-0">
+                        {String(w.name || '?').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-bold text-slate-900 truncate">{w.name}</p>
+                        <p className="text-[10px] font-mono text-slate-400 truncate">@{w.slug}</p>
+                      </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600">
-                      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
-                      {label}
+                    <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${meta.chip}`}>
+                      {meta.label}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-4 border-t border-slate-100 pt-3 text-center">
+                  <div className="grid grid-cols-4 gap-1 border-t border-[color:var(--border)] pt-2.5">
                     {[
-                      { label: 'Xodim', value: w._count?.employees ?? 0 },
-                      { label: 'Buyurtma', value: w.activeTasksCount ?? w._count?.tasks ?? 0 },
-                      { label: 'Davomat', value: `${attPct}%` },
-                      { label: 'Modullar', value: `${modules}/4` },
-                    ].map((m, idx) => (
-                      <div key={idx} className={idx < 3 ? 'border-r border-slate-100' : ''}>
-                        <p className="text-xs font-bold text-slate-800">{m.value}</p>
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wide mt-1">{m.label}</p>
+                      { label: 'Xodim', value: num(w._count?.employees ?? 0) },
+                      { label: 'Buyurtma', value: num(w.activeTasksCount ?? w._count?.tasks ?? 0) },
+                      { label: 'Davomat', value: `${getAttPct(w)}%` },
+                      { label: 'Modul', value: `${getActiveModules(w)}/4` },
+                    ].map(m => (
+                      <div key={m.label} className="text-center">
+                        <p className="text-[12px] font-bold text-slate-800 font-mono">{m.value}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{m.label}</p>
                       </div>
                     ))}
                   </div>
@@ -285,7 +338,7 @@ export default function Dashboard() {
               );
             })}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

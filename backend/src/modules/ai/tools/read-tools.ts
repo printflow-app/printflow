@@ -332,13 +332,42 @@ export const READ_TOOLS: AgentToolDef[] = [
         },
         select: {
           id: true, displayId: true, orderName: true, title: true, deadlineAt: true,
-          remainingAmount: true,
+          remainingAmount: true, assignees: true,
           customer: { select: { name: true } }, customerName: true,
           column: { select: { title: true } },
         },
         orderBy: { deadlineAt: 'asc' },
         take: 30,
       });
+
+      // Mas'ul xodim — kechikish sababini aniqlashda birinchi savol shu bo'ladi
+      // ("kimda qolib ketgan?"). `assignees` JSON matn ko'rinishida ID saqlaydi,
+      // shuning uchun ismlarni alohida o'qib almashtiramiz.
+      const assigneeIds = new Set<string>();
+      for (const t of tasks) {
+        try {
+          const ids = JSON.parse(t.assignees || '[]');
+          if (Array.isArray(ids)) ids.forEach((id: string) => assigneeIds.add(id));
+        } catch {}
+      }
+      const employees = assigneeIds.size
+        ? await ctx.services.prisma.employee.findMany({
+            where: { id: { in: [...assigneeIds] } },
+            select: { id: true, fullName: true },
+          })
+        : [];
+      const nameById = new Map(employees.map((e) => [e.id, e.fullName]));
+      const namesFor = (raw: string | null) => {
+        try {
+          const ids = JSON.parse(raw || '[]');
+          if (!Array.isArray(ids) || ids.length === 0) return null;
+          const names = ids.map((id: string) => nameById.get(id)).filter(Boolean);
+          return names.length ? names.join(', ') : null;
+        } catch {
+          return null;
+        }
+      };
+
       const now = Date.now();
       return {
         soni: tasks.length,
@@ -348,6 +377,7 @@ export const READ_TOOLS: AgentToolDef[] = [
           muddat: t.deadlineAt, holat: t.column?.title,
           otib_ketgan: !!t.deadlineAt && t.deadlineAt.getTime() < now,
           qoldiq: t.remainingAmount,
+          masul_xodim: namesFor(t.assignees),
         })),
       };
     },

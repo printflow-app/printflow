@@ -267,4 +267,38 @@ export const WRITE_TOOLS: AgentToolDef[] = [
       };
     },
   },
+  {
+    name: 'reassignTask',
+    description:
+      "Buyurtmani boshqa xodimga qayta tayinlash — masalan, hozirgi tayinlangan xodim ishga kelmagan bo'lsa (dashboarddagi xavf kartasidan). Buyurtmani searchOrders bilan top, yangi xodim ID'sini contextData.xodimlar'dan ol.",
+    permissions: ['canEditTask', 'canMoveTask'],
+    requiresConfirm: true, // pul emas, lekin mas'uliyat o'zgarishi — tasdiq kerak
+    audit: true,
+    inputSchema: z.object({
+      taskId: z.string().describe("Buyurtma ID (searchOrders'dan)"),
+      newAssigneeId: z.string().describe("Yangi mas'ul xodim ID (contextData.xodimlar'dan)"),
+    }),
+    summarize: (i) => `Buyurtmani yangi xodimga qayta tayinlash`,
+    execute: async (args, ctx) => {
+      const [task, employee] = await Promise.all([
+        ctx.services.prisma.task.findFirst({
+          where: { id: args.taskId, tenantId: ctx.tenantId },
+          select: { id: true, displayId: true, orderName: true, title: true },
+        }),
+        ctx.services.prisma.employee.findFirst({
+          where: { id: args.newAssigneeId, tenantId: ctx.tenantId },
+          select: { id: true, fullName: true },
+        }),
+      ]);
+      if (!task) return { success: false, error: 'Buyurtma topilmadi' };
+      if (!employee) return { success: false, error: 'Xodim topilmadi' };
+      await ctx.services.tasks.update(task.id, { assignees: JSON.stringify([employee.id]) }, ctx.userId);
+      return {
+        success: true,
+        displayId: task.displayId,
+        nom: task.orderName || task.title,
+        yangi_masul: employee.fullName,
+      };
+    },
+  },
 ];

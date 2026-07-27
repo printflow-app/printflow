@@ -382,7 +382,7 @@ export function TenantsDataTable() {
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{p.displayName}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8' }}>{p.name}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>{p.price3m?.toLocaleString() ?? '—'} / 3oy</div>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>{p.price6m?.toLocaleString() ?? '—'} / 6oy</div>
                 </button>
               ))}
             </div>

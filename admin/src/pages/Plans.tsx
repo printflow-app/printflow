@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Trash2, AlertCircle, Eye } from 'lucide-react';
 import { plansApi } from '../api';
 import { usePlans, useInvalidate } from '../hooks/queries';
-import { ALLOWED_MODULES, defaultPlanForm as defaultForm } from '../shared/constants';
+import { ALLOWED_MODULES, defaultPlanForm as defaultForm, computePlanPrices, PLAN_DURATION_DISCOUNTS } from '../shared/constants';
 
 export default function Plans() {
   const { data: plans = [] } = usePlans();
@@ -21,9 +21,11 @@ export default function Plans() {
   };
 
   const openEdit = (p: any) => {
+    // 6 oylik narxdan (-5% chegirma bilan) oylik baza narxni teskari hisoblaymiz
+    const monthlyPrice = p.price6m ? Math.round(p.price6m / 6 / (1 - PLAN_DURATION_DISCOUNTS[6])) : 0;
     setForm({
       name: p.name, displayName: p.displayName,
-      price3m: p.price3m, price6m: p.price6m, price12m: p.price12m,
+      monthlyPrice,
       maxEmployees: p.maxEmployees ?? 8,
       maxBranches: p.maxBranches ?? 1,
       maxDepartments: p.maxDepartments ?? 1,
@@ -36,7 +38,8 @@ export default function Plans() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form };
+    const { monthlyPrice, ...rest } = form;
+    const payload = { ...rest, ...computePlanPrices(monthlyPrice) };
     try {
       if (editing) {
         await plansApi.update(editing.id, payload);
@@ -76,7 +79,7 @@ export default function Plans() {
           <p className="text-xs text-slate-500">Mijoz workspacelari uchun obuna rejalari va tizim ruxsatlari</p>
         </div>
         <button
-          className="h-9 px-3 flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-orange-500/20"
+          className="h-9 px-3 flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all shadow-orange-500/20"
           onClick={openCreate}
         >
           <Plus size={14} /> Yangi Tarif
@@ -89,10 +92,10 @@ export default function Plans() {
           <div
             key={p.id}
             onClick={() => openEdit(p)}
-            className={`bg-white rounded-xl p-5 border shadow-sm transition-all duration-200 hover:border-slate-300 flex flex-col justify-between cursor-pointer ${
+            className={`bg-white rounded-xl p-5 border transition-all duration-200 hover:border-slate-300 flex flex-col justify-between cursor-pointer ${
               p.isPopular
                 ? 'border-orange-500/80 ring-1 ring-orange-500/20'
-                : 'border-slate-200'
+                : 'border-[color:var(--border)]'
             }`}
           >
             <div>
@@ -110,10 +113,16 @@ export default function Plans() {
               </div>
 
               {/* Price section */}
-              <div className="py-3 border-t border-b border-slate-100 mb-4">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-black text-slate-900">{(p.price3m || 0).toLocaleString()}</span>
-                  <span className="text-[9px] text-slate-500 font-bold uppercase">UZS / 3 oy</span>
+              <div className="py-3 border-t border-b border-[color:var(--border)] mb-4">
+                <div className="flex items-baseline gap-3">
+                  <div>
+                    <span className="text-lg font-extrabold text-slate-900">{(p.price6m || 0).toLocaleString()}</span>
+                    <span className="text-[9px] text-slate-500 font-bold uppercase"> / 6 oy</span>
+                  </div>
+                  <div>
+                    <span className="text-lg font-extrabold text-slate-900">{(p.price12m || 0).toLocaleString()}</span>
+                    <span className="text-[9px] text-slate-500 font-bold uppercase"> / 12 oy</span>
+                  </div>
                 </div>
                 {p.description && (
                   <p className="text-[11px] text-slate-500 mt-1 italic font-medium">"{p.description}"</p>
@@ -137,11 +146,11 @@ export default function Plans() {
             </div>
 
             {/* Footer usage summary */}
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-500">
+            <div className="mt-5 pt-3 border-t border-[color:var(--border)] flex items-center justify-between text-[10px] font-bold text-slate-500">
               <span className="flex items-center gap-1 hover:text-slate-700 transition-colors">
                 <Eye size={12} /> Tahrirlash
               </span>
-              <span className="bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-slate-600">
+              <span className="bg-slate-50 border border-[color:var(--border)] px-2 py-0.5 rounded text-slate-600">
                 {p._count?.tenants || 0} ta workspace ulangan
               </span>
             </div>
@@ -152,8 +161,8 @@ export default function Plans() {
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content max-w-xl max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white border border-slate-200 text-slate-900">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+          <div className="modal-content max-w-xl max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white border border-[color:var(--border)] text-slate-900">
+            <div className="flex items-center justify-between p-4 border-b border-[color:var(--border)]">
               <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 {editing ? 'Tarif Rejasini Tahrirlash' : 'Yangi Tarif Rejasi'}
               </h2>
@@ -178,7 +187,7 @@ export default function Plans() {
                     onChange={e => setForm({ ...form, name: e.target.value.toUpperCase() })}
                     placeholder="Masalan: STARTER, BUSINESS"
                     disabled={!!editing}
-                    className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 disabled:bg-slate-50 disabled:text-slate-500"
+                    className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 disabled:bg-slate-50 disabled:text-slate-500"
                   />
                 </div>
                 <div>
@@ -188,52 +197,52 @@ export default function Plans() {
                     value={form.displayName}
                     onChange={e => setForm({ ...form, displayName: e.target.value })}
                     placeholder="Starter Tarif"
-                    className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500"
+                    className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">3 OYLIK NARX (UZS)</label>
-                  <input type="number" required value={form.price3m} onChange={e => setForm({ ...form, price3m: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">6 OYLIK NARX (UZS)</label>
-                  <input type="number" required value={form.price6m} onChange={e => setForm({ ...form, price6m: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">12 OYLIK NARX (UZS)</label>
-                  <input type="number" required value={form.price12m} onChange={e => setForm({ ...form, price12m: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">OYLIK NARX — BAZA (UZS)</label>
+                <input type="number" required min={0} value={form.monthlyPrice} onChange={e => setForm({ ...form, monthlyPrice: +e.target.value })} className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div className="bg-slate-50 border border-[color:var(--border)] rounded-lg px-2.5 py-2">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">6 oy (-5%)</p>
+                    <p className="text-xs font-bold text-slate-800">{computePlanPrices(form.monthlyPrice).price6m.toLocaleString()} UZS</p>
+                  </div>
+                  <div className="bg-slate-50 border border-[color:var(--border)] rounded-lg px-2.5 py-2">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">12 oy (-10%)</p>
+                    <p className="text-xs font-bold text-slate-800">{computePlanPrices(form.monthlyPrice).price12m.toLocaleString()} UZS</p>
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">MAKS. XODIMLAR (0 = CHEKSIZ)</label>
-                  <input type="number" required min={0} value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                  <input type="number" required min={0} value={form.maxEmployees} onChange={e => setForm({ ...form, maxEmployees: +e.target.value })} className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">MAKS. FILIALLAR (0 = CHEKSIZ)</label>
-                  <input type="number" required min={0} value={form.maxBranches} onChange={e => setForm({ ...form, maxBranches: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                  <input type="number" required min={0} value={form.maxBranches} onChange={e => setForm({ ...form, maxBranches: +e.target.value })} className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">MAKS. BO'LIMLAR (0 = CHEKSIZ)</label>
-                  <input type="number" required min={0} value={form.maxDepartments} onChange={e => setForm({ ...form, maxDepartments: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                  <input type="number" required min={0} value={form.maxDepartments} onChange={e => setForm({ ...form, maxDepartments: +e.target.value })} className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">AI XABARLAR / 30 KUN (0 = CHEKSIZ)</label>
-                  <input type="number" required min={0} value={form.aiMessagesPerMonth} onChange={e => setForm({ ...form, aiMessagesPerMonth: +e.target.value })} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                  <input type="number" required min={0} value={form.aiMessagesPerMonth} onChange={e => setForm({ ...form, aiMessagesPerMonth: +e.target.value })} className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
                   <p className="text-[10px] text-slate-500 mt-1">Foydalanuvchi obuna boshlangan kunidan 30 kunlik davr ichida yuborishi mumkin bo'lgan AI xabarlar soni.</p>
                 </div>
               </div>
 
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">TARIF TAVSIFI</label>
-                <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Qisqacha izoh..." className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
+                <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Qisqacha izoh..." className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
               </div>
 
               <div className="flex items-center gap-2 py-1">
@@ -262,7 +271,7 @@ export default function Plans() {
                         className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
                           active
                             ? 'border-orange-500 bg-orange-50'
-                            : 'border-slate-200 bg-white hover:border-slate-300'
+                            : 'border-[color:var(--border)] bg-white hover:border-slate-300'
                         }`}
                       >
                         <div className="min-w-0 pr-2">
@@ -283,7 +292,7 @@ export default function Plans() {
             </form>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center gap-2">
+            <div className="p-4 border-t border-[color:var(--border)] bg-slate-50 flex items-center gap-2">
               <button
                 type="submit"
                 form="plan-form"
@@ -309,7 +318,7 @@ export default function Plans() {
       {/* Delete Confirm Modal */}
       {showDeleteConfirm && (
         <div className="modal-overlay">
-          <div className="modal-content max-w-xs text-center p-5 space-y-3 bg-white border border-slate-200 text-slate-900">
+          <div className="modal-content max-w-xs text-center p-5 space-y-3 bg-white border border-[color:var(--border)] text-slate-900">
             <div className="w-10 h-10 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-center text-amber-600 mx-auto">
               <AlertCircle size={20} />
             </div>
@@ -324,7 +333,7 @@ export default function Plans() {
             )}
             <div className="flex gap-2">
               <button
-                className="flex-1 h-8 text-xs font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-md transition-all"
+                className="flex-1 h-8 text-xs font-semibold bg-slate-50 hover:bg-slate-100 border border-[color:var(--border)] text-slate-700 rounded-md transition-all"
                 onClick={() => { setShowDeleteConfirm(false); setErrorMsg(''); }}
               >
                 Bekor qilish

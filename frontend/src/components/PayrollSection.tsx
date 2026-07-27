@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Wallet, Save, Check, RotateCcw, TrendingDown } from 'lucide-react';
+import { Wallet, Save, Check, RotateCcw, TrendingDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { payrollApi } from '../api';
 import CurrencyInput from './CurrencyInput';
@@ -21,6 +21,7 @@ export const PayrollSection: React.FC<{
   const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [edits, setEdits] = useState<Record<string, Edit>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [openRow, setOpenRow] = useState<string | null>(null);
 
   const q = useQuery({
     queryKey: ['payroll', period, activeBranchId],
@@ -154,10 +155,30 @@ export const PayrollSection: React.FC<{
                 const busy = busyId === row.employeeId;
                 const toPay = liveToPay(row);
                 return (
-                  <tr key={row.employeeId} className="hover:bg-slate-50/50 transition-colors">
+                  <React.Fragment key={row.employeeId}>
+                  <tr className="hover:bg-slate-50/50 transition-colors">
                     <td className="py-2.5 px-4">
-                      <p className="text-xs font-bold text-slate-800">{row.fullName}</p>
-                      <p className="text-[10px] text-slate-400">{row.roleName}</p>
+                      <div className="flex items-center gap-2">
+                        {/* Sxema bo'yicha hisoblangan bo'lsa — tafsilotni ochish */}
+                        {row.breakdown?.length ? (
+                          <button
+                            onClick={() => setOpenRow(openRow === row.employeeId ? null : row.employeeId)}
+                            title="Hisob tafsiloti"
+                            className="w-5 h-5 rounded-md text-slate-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center flex-shrink-0"
+                          >
+                            {openRow === row.employeeId ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                          </button>
+                        ) : (
+                          <span className="w-5 flex-shrink-0" />
+                        )}
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{row.fullName}</p>
+                          <p className="text-[10px] text-slate-400">
+                            {row.roleName}
+                            {row.avtomatik && <span className="ml-1.5 text-orange-500 font-bold">· avtomatik</span>}
+                          </p>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-2.5 px-3 w-32">
                       {paid ? (
@@ -213,6 +234,51 @@ export const PayrollSection: React.FC<{
                       </div>
                     </td>
                   </tr>
+
+                  {/* Hisob tafsiloti — qaysi qator nimadan chiqdi, qaysi biri
+                      shart bajarilmagani uchun tushib qolgan. */}
+                  {openRow === row.employeeId && row.breakdown?.length > 0 && (
+                    <tr className="bg-slate-50/70">
+                      <td colSpan={9} className="px-4 py-3">
+                        <div className="max-w-3xl space-y-1.5">
+                          {row.breakdown.map((b: any) => (
+                            <div key={b.id} className="flex items-center gap-3 text-[11px]">
+                              <span className={`w-4 flex-shrink-0 font-bold ${b.skipped ? 'text-slate-300' : 'text-emerald-600'}`}>
+                                {b.skipped ? '—' : '✓'}
+                              </span>
+                              <span className={`font-bold w-44 flex-shrink-0 ${b.skipped ? 'text-slate-400' : 'text-slate-700'}`}>
+                                {b.label}
+                              </span>
+                              <span className={`font-bold tabular-nums w-24 text-right ${
+                                b.skipped ? 'text-slate-300' : b.group === 'jarima' ? 'text-rose-600' : 'text-slate-800'
+                              }`}>
+                                {b.group === 'jarima' && b.amount ? '−' : ''}{fmt(b.amount)}
+                              </span>
+                              <span className={`${b.skipped ? 'text-slate-400' : 'text-slate-500'} font-medium`}>{b.note}</span>
+                            </div>
+                          ))}
+
+                          {row.taklifJarima > 0 && !paid && canManage && (
+                            <div className="flex items-center gap-3 pt-2 mt-2 border-t border-slate-200">
+                              <span className="text-[11px] font-bold text-rose-700">
+                                Taklif qilingan jarima: {fmt(row.taklifJarima)} so'm
+                              </span>
+                              <button
+                                onClick={() => setEdit(row.employeeId, 'penalty', row.taklifJarima)}
+                                className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors"
+                              >
+                                Qabul qilish
+                              </button>
+                              <span className="text-[10px] font-medium text-slate-400">
+                                yoki jarima ustuniga o'zingiz yozing
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
               {rows.length === 0 && (

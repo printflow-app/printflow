@@ -63,7 +63,7 @@ export default function Logos() {
       </div>
 
       {/* Upload Zone */}
-      <label className="block border border-dashed border-slate-300 hover:border-orange-500/80 rounded-xl p-8 text-center cursor-pointer transition-all bg-white hover:bg-orange-50/20 shadow-sm">
+      <label className="block border border-dashed border-slate-300 hover:border-orange-500/80 rounded-xl p-8 text-center cursor-pointer transition-all bg-white hover:bg-orange-50/20">
         <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={saving} />
         <Upload size={24} className="mx-auto mb-2 text-slate-400" />
         <p className="text-xs font-bold text-slate-700">Logo yuklash uchun bosing</p>
@@ -76,13 +76,13 @@ export default function Logos() {
           {logos.map((src, i) => (
             <div
               key={i}
-              className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-4 h-24 flex items-center justify-center relative group transition-all shadow-sm"
+              className="bg-white border border-[color:var(--border)] hover:border-slate-300 rounded-xl p-4 h-24 flex items-center justify-center relative group transition-all"
             >
               <img src={src} alt={`Client Logo ${i + 1}`} className="max-w-full max-h-full object-contain filter grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all" />
 
               <button
                 onClick={() => save(logos.filter((_, j) => j !== i))}
-                className="absolute top-1.5 right-1.5 w-6 h-6 rounded bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all border border-slate-200"
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all border border-[color:var(--border)]"
                 title="Logoni o'chirish"
               >
                 <Trash2 size={12} />
@@ -91,7 +91,7 @@ export default function Logos() {
           ))}
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+        <div className="bg-white border border-[color:var(--border)] rounded-xl p-12 text-center">
           <Image size={32} className="mx-auto mb-2 text-slate-300" />
           <p className="text-xs font-bold text-slate-500">Logotiplar yuklanmagan</p>
           <p className="text-[10px] text-slate-500 mt-0.5">Yuqoridagi maydon orqali yangi rasm yuklang.</p>

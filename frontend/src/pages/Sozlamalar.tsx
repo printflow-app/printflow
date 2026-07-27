@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake, FileText, Image as ImageIcon } from 'lucide-react';
+import { Shield, CreditCard, Plus, Trash2, Check, X, Save, Edit3, ChevronDown, ChevronUp, AlertCircle, LayoutGrid, ReceiptText, Layers, Package, MapPin, Navigation, Wallet, BarChart2, BarChart3, Users, UserCheck, Clock, Building2, Settings, Tag, ShieldCheck, Receipt, Copy, Handshake, FileText, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { PriceListModal } from '../components/PriceListModal';
 import { PriceListBrandingSection } from '../components/PriceListBrandingSection';
 import { AgentPolicySection } from '../components/AgentPolicySection';
@@ -189,6 +189,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
     // Excel eksport ruxsatlari — sahifa-bo'yicha
     canExportFinance: false, canExportTasks: false, canExportCustomers: false, canExportInventory: false,
     canExportEmployees: false, canExportAttendance: false, canExportVendors: false, canExportReports: false,
+    canUseAi: false,
   };
   const [newRole, setNewRole] = useState(initialRoleForm);
 
@@ -505,6 +506,14 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
         icon: <Building2 size={15} />,
         permissions: {
           canAssignToOtherBranches: { label: "Boshqa filial xodimlariga buyurtma berish", detail: "Buyurtma yaratish yoki tahrirlashda o'z filialidan tashqaridagi xodimlarni mas'ul qilib tayinlash imkoni paydo bo'ladi. Multi-filial kompaniyalarda outsourcing uchun ishlatiladi." },
+        }
+      },
+      {
+        title: '16. AI Yordamchi',
+        color: 'orange',
+        icon: <Sparkles size={15} />,
+        permissions: {
+          canUseAi: { label: "AI Copilot chatini ochish", detail: "Sidebar pastida va Ctrl+K orqali AI yordamchi tugmasi ko'rinadi. Xodim AI bilan suhbatlashishi, hisobot so'rashi va (ruxsati bo'lsa) amallarni AI orqali bajarishi mumkin bo'ladi. Bu ruxsat workspace tarifida AI modul yoqilgan bo'lishini talab qiladi." },
         }
       },
     ];

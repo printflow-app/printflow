@@ -565,6 +565,19 @@ export class TasksService {
       oldTask.serviceId ? this.prisma.stockMovement.findFirst({ where: { taskId: id, type: 'chiqim' } }) : Promise.resolve(null),
     ]);
 
+    // "Bajarildi" vaqtini belgilaymiz — maosh hisobi (KPI) shu maydonga
+    // tayanadi. Ustun sarlavhasidan taxmin qilmaymiz: KanbanColumn.isDone
+    // aniq belgi, tenant o'zi qaysi ustun tugatuvchi ekanini shunda beladi.
+    if (taskData.columnId && taskData.columnId !== oldTask.columnId) {
+      if (newCol?.isDone) {
+        // Qayta-qayta ko'chirilsa birinchi tugatish vaqti saqlanib qoladi.
+        if (!oldTask.completedAt) taskData.completedAt = new Date();
+      } else {
+        // Ishga qaytarildi — tugatilgan hisoblanmaydi.
+        taskData.completedAt = null;
+      }
+    }
+
     // Katta attachment'lar (CDR/TIF base64) yozilishi 5s'dan uzunroq vaqt olishi mumkin —
     // Prisma'ning default transaction timeout'i (5000ms) bilan ishlamaydi. Limitni oshiramiz.
     const updatedTask = await this.prisma.$transaction(async (tx) => {

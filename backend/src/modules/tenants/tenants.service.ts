@@ -88,6 +88,18 @@ export class TenantsService {
       ? (tenant.plan as any).allowedModules
       : [];
 
+    // AI xarajati — barcha vaqt bo'yicha yig'indi (AiUsageDaily, Faza 2'da to'ldirilgan)
+    const aiUsageAgg = await this.prisma.aiUsageDaily.aggregate({
+      where: { tenantId: tenant.id },
+      _sum: { count: true, inputTokens: true, outputTokens: true, costUsd: true },
+    });
+    const aiUsage = {
+      totalMessages: aiUsageAgg._sum.count || 0,
+      totalInputTokens: aiUsageAgg._sum.inputTokens || 0,
+      totalOutputTokens: aiUsageAgg._sum.outputTokens || 0,
+      totalCostUsd: aiUsageAgg._sum.costUsd || 0,
+    };
+
     return {
       ...tenant,
       totalPaid,
@@ -96,6 +108,7 @@ export class TenantsService {
       attendanceToday,
       activeTasks,
       planAllowedModules,
+      aiUsage,
     };
   }
 
@@ -393,6 +406,18 @@ export class TenantsService {
     // Total leads
     const totalLeads = await this.prisma.demoRequest.count();
 
+    // Platforma bo'yicha umumiy AI xarajati (joriy oy) — mijozlar qanchalik
+    // AI ishlatayotganini bir qarashda ko'rsatadi (admin Dashboard karta).
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStartStr = monthStart.toISOString().slice(0, 10);
+    const [aiCostAllTime, aiCostThisMonth] = await Promise.all([
+      this.prisma.aiUsageDaily.aggregate({ _sum: { costUsd: true, count: true } }),
+      this.prisma.aiUsageDaily.aggregate({
+        where: { date: { gte: monthStartStr } },
+        _sum: { costUsd: true, count: true },
+      }),
+    ]);
+
     return {
       totalTenants,
       activeTenants,
@@ -404,11 +429,104 @@ export class TenantsService {
       approvedPaymentsCount: approvedPayments._count,
       pendingPayments,
       totalLeads,
+      // AI xarajati
+      totalAiCostUsd: aiCostAllTime._sum.costUsd || 0,
+      totalAiMessages: aiCostAllTime._sum.count || 0,
+      monthAiCostUsd: aiCostThisMonth._sum.costUsd || 0,
+      monthAiMessages: aiCostThisMonth._sum.count || 0,
       // Chart data
       statusDistribution,
       revenueChart,
       leadsChart,
       tenantGrowthChart,
+    };
+  }
+
+  /**
+   * Workspace bo'yicha AI foydalanish/xarajat tafsiloti (super-admin).
+   * Har tenant uchun: jami xabar/token/$ + joriy oy + so'nggi 30 kunlik trend.
+   * Manba — AiUsageDaily (Faza 2'da har javobdan keyin onFinish bilan to'ladi).
+   */
+  async getAiUsageByTenant() {
+    const now = new Date();
+    const monthStartStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const trendStartStr = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+
+    const [tenants, allTime, thisMonth, trendRows] = await Promise.all([
+      this.prisma.tenant.findMany({
+        select: { id: true, name: true, slug: true, status: true, aiExtraCredits: true, plan: { select: { displayName: true, aiMessagesPerMonth: true, aiMessagesPerDay: true } } },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.aiUsageDaily.groupBy({
+        by: ['tenantId'],
+        _sum: { count: true, inputTokens: true, outputTokens: true, costUsd: true },
+      }),
+      this.prisma.aiUsageDaily.groupBy({
+        by: ['tenantId'],
+        where: { date: { gte: monthStartStr } },
+        _sum: { count: true, costUsd: true },
+      }),
+      this.prisma.aiUsageDaily.findMany({
+        where: { date: { gte: trendStartStr } },
+        select: { date: true, count: true, costUsd: true },
+        orderBy: { date: 'asc' },
+      }),
+    ]);
+
+    const allById = new Map(allTime.map((r) => [r.tenantId, r._sum]));
+    const monthById = new Map(thisMonth.map((r) => [r.tenantId, r._sum]));
+
+    const rows = tenants
+      .map((t) => {
+        const a = allById.get(t.id);
+        const m = monthById.get(t.id);
+        return {
+          id: t.id,
+          name: t.name,
+          slug: t.slug,
+          status: t.status,
+          planName: t.plan?.displayName || null,
+          monthlyLimit: t.plan?.aiMessagesPerMonth ?? 0,
+          dailyLimit: t.plan?.aiMessagesPerDay ?? 0,
+          extraCredits: t.aiExtraCredits,
+          totalMessages: a?.count || 0,
+          totalInputTokens: a?.inputTokens || 0,
+          totalOutputTokens: a?.outputTokens || 0,
+          totalCostUsd: a?.costUsd || 0,
+          monthMessages: m?.count || 0,
+          monthCostUsd: m?.costUsd || 0,
+        };
+      })
+      .sort((x, y) => y.totalCostUsd - x.totalCostUsd);
+
+    // Platforma bo'yicha 30 kunlik kunlik trend (barcha tenantlar yig'indisi)
+    const byDate = new Map<string, { xabar: number; xarajat: number }>();
+    for (let i = 29; i >= 0; i--) {
+      const key = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      byDate.set(key, { xabar: 0, xarajat: 0 });
+    }
+    for (const r of trendRows) {
+      const cur = byDate.get(r.date);
+      if (cur) {
+        cur.xabar += r.count;
+        cur.xarajat += r.costUsd;
+      }
+    }
+    const trend = [...byDate.entries()].map(([kun, v]) => ({
+      kun: kun.slice(5),
+      xabar: v.xabar,
+      xarajat: Number(v.xarajat.toFixed(4)),
+    }));
+
+    return {
+      rows,
+      trend,
+      totals: {
+        costUsd: rows.reduce((s, r) => s + r.totalCostUsd, 0),
+        messages: rows.reduce((s, r) => s + r.totalMessages, 0),
+        monthCostUsd: rows.reduce((s, r) => s + r.monthCostUsd, 0),
+        monthMessages: rows.reduce((s, r) => s + r.monthMessages, 0),
+      },
     };
   }
 
@@ -433,6 +551,19 @@ export class TenantsService {
       where: { id: paymentId },
     });
     if (!payment) throw new NotFoundException('Payment not found');
+
+    // AI_TOPUP — obuna holatiga (status/planId/subscriptionEndsAt) TEGMAYDI,
+    // faqat tenant'ning qo'shimcha AI kredit zaxirasini oshiradi.
+    if (payment.type === 'AI_TOPUP') {
+      await this.prisma.payment.update({
+        where: { id: paymentId },
+        data: { status: 'APPROVED', approvedBy: superAdminId, approvedAt: new Date() },
+      });
+      return this.prisma.tenant.update({
+        where: { id: payment.tenantId },
+        data: { aiExtraCredits: { increment: payment.aiCreditsGranted || 0 } },
+      });
+    }
 
     const durationMonths = payment.duration;
     const subscriptionEndsAt = new Date();
@@ -470,6 +601,11 @@ export class TenantsService {
       where: { id: paymentId },
       data: { status: 'REJECTED' },
     });
+
+    // AI_TOPUP rad etilsa — obuna holati o'zgarmaydi, faqat to'lov REJECTED bo'ladi.
+    if (payment.type === 'AI_TOPUP') {
+      return this.prisma.tenant.findUnique({ where: { id: payment.tenantId } });
+    }
 
     // Revert tenant status to EXPIRED
     return this.prisma.tenant.update({

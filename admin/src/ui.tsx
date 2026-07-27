@@ -49,7 +49,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const colors: Record<ToastKind, { bg: string; border: string; text: string }> = {
     success: { bg: '#ecfdf5', border: '#10b981', text: '#065f46' },
     error: { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' },
-    info: { bg: '#eff6ff', border: '#3b82f6', text: '#1e3a8a' },
+    info: { bg: '#fff7ed', border: '#f97316', text: '#7c2d12' },
   };
 
   return (
@@ -76,7 +76,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       {confirmReq && (
         <div className="modal-overlay" style={{ zIndex: 99998 }}>
           <div className="modal-content" style={{ maxWidth: 420, padding: 28, textAlign: 'center' }}>
-            <div style={{ marginBottom: 12, color: confirmReq.danger ? '#ef4444' : '#3b82f6', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ marginBottom: 12, color: confirmReq.danger ? '#ef4444' : '#f97316', display: 'flex', justifyContent: 'center' }}>
               {confirmReq.danger ? <AlertTriangle size={40} strokeWidth={2.2} /> : <HelpCircle size={40} strokeWidth={2.2} />}
             </div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 8 }}>{confirmReq.title}</h3>

@@ -26,11 +26,11 @@ export default function PromoCodes() {
       </div>
 
       {/* Promocodes Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-[color:var(--border)] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-[color:var(--border)] bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <th className="py-3 px-4">Kod</th>
                 <th className="py-3 px-4">Hamkor (Workspace)</th>
                 <th className="py-3 px-4">Jalb qildi</th>
@@ -43,7 +43,7 @@ export default function PromoCodes() {
               {promos.map(p => (
                 <React.Fragment key={p.id}>
                   {/* Promo Code Row */}
-                  <tr className="hover:bg-slate-50 border-b border-slate-100 font-semibold">
+                  <tr className="hover:bg-slate-50 border-b border-[color:var(--border)] font-semibold">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-1.5 text-orange-600">
                         <Key size={13} className="text-orange-500" />
@@ -76,14 +76,14 @@ export default function PromoCodes() {
                   {/* Referral usages detail row */}
                   {p.usages && p.usages.length > 0 && (
                     <tr>
-                      <td colSpan={6} className="bg-slate-50 p-0 border-b border-slate-100">
+                      <td colSpan={6} className="bg-slate-50 p-0 border-b border-[color:var(--border)]">
                         <div className="py-3 px-6 space-y-2">
                           <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Tarix va komissiyalar:</p>
                           <div className="space-y-1.5">
                             {p.usages.map((u: any) => (
                               <div
                                 key={u.id}
-                                className="bg-white border border-slate-200 rounded-lg p-2.5 flex items-center justify-between text-[11px]"
+                                className="bg-white border border-[color:var(--border)] rounded-lg p-2.5 flex items-center justify-between text-[11px]"
                               >
                                 <div className="flex items-center gap-4">
                                   <span className="font-bold text-slate-900">{u.usingTenant?.name}</span>

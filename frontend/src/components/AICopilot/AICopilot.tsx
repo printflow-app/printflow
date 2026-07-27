@@ -4,11 +4,12 @@ import {
   X, Send, Sparkles, Bot, User, CheckCircle2,
   Loader2, Package, Zap, ShieldCheck,
   Plus, Settings, Mic, MicOff, AlertTriangle,
-  ArrowUpRight, Wallet, UserSquare2, ClipboardList, PackageOpen
+  ArrowUpRight, Wallet, UserSquare2, ClipboardList, PackageOpen, ShieldAlert
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { aiApi } from '../../api';
+import { isRiskMessage, stripRiskPrefix } from '../../utils/riskPrompt';
 
 // =============================================
 // PRINTFLOW AI COPILOT (PRO ARCHITECT VERSION)
@@ -338,6 +339,57 @@ const MaterialsCard: React.FC<{ title: string; items: any[]; onOpen?: () => void
 // ── Kunlik brifing (bo'sh chat holati) ─────────────────────────────
 // Kun "nima muhim" bilan boshlanadi: bugungi kassa, muddatlar, qarzlar,
 // ombor. Har qator bosilsa tegishli savol agentga yuboriladi.
+// Xavf kartalari — butun tizimni kuzatuvchi ko'p-detektorli korrelyatsiya
+// (LLM'siz, risk-detection.service.ts): Kanban x Davomat, Kanban x Ombor,
+// Kanban x Mijozlar/Moliya va h.k. "Bartaraf etish" bosilganda xavf matni
+// chatga yuboriladi — AI kontekstga qarab tegishli tool'ni (reassignTask va
+// h.k.) taklif qiladi, [TASDIQ KARTASI] orqali bajariladi.
+const RISK_TONE: Record<string, { border: string; bg: string; icon: string; title: string; text: string; btn: string; btnHover: string; dismiss: string; dismissHover: string }> = {
+  critical: { border: 'border-rose-200', bg: 'bg-rose-50/60', icon: 'bg-rose-100 text-rose-600', title: 'text-rose-800', text: 'text-rose-700/90', btn: 'bg-rose-600', btnHover: 'hover:bg-rose-700', dismiss: 'text-rose-700', dismissHover: 'hover:bg-rose-100' },
+  warning: { border: 'border-amber-200', bg: 'bg-amber-50/60', icon: 'bg-amber-100 text-amber-600', title: 'text-amber-800', text: 'text-amber-700/90', btn: 'bg-amber-600', btnHover: 'hover:bg-amber-700', dismiss: 'text-amber-700', dismissHover: 'hover:bg-amber-100' },
+  info: { border: 'border-slate-200', bg: 'bg-slate-50', icon: 'bg-slate-100 text-slate-500', title: 'text-slate-700', text: 'text-slate-500', btn: 'bg-slate-700', btnHover: 'hover:bg-slate-800', dismiss: 'text-slate-500', dismissHover: 'hover:bg-slate-100' },
+};
+
+const RiskInsightsPanel: React.FC<{
+  risks: any[];
+  onResolve: (text: string) => void;
+  onDismiss: (id: string) => void;
+}> = ({ risks, onResolve, onDismiss }) => {
+  if (risks.length === 0) return null;
+  return (
+    <div className="space-y-2 mb-4">
+      {risks.map((r) => {
+        const tone = RISK_TONE[r.severity] || RISK_TONE.warning;
+        return (
+          <div key={r.id} className={`rounded-2xl border ${tone.border} ${tone.bg} p-4 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+            <div className={`w-8 h-8 rounded-xl ${tone.icon} flex items-center justify-center flex-shrink-0`}>
+              <ShieldAlert size={15} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[11px] font-bold ${tone.title}`}>{r.title}</p>
+              <p className={`text-[11px] font-semibold ${tone.text} mt-0.5 leading-snug`}>{r.message}</p>
+              <div className="flex items-center gap-2 mt-2.5">
+                <button
+                  onClick={() => onResolve(`Xavf: ${r.message} Buni qanday hal qilishni maslahat bera olasizmi, kerak bo'lsa o'zing bajar.`)}
+                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider ${tone.btn} ${tone.btnHover} text-white rounded-lg transition-colors`}
+                >
+                  Bartaraf etish
+                </button>
+                <button
+                  onClick={() => onDismiss(r.id)}
+                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider ${tone.dismiss} ${tone.dismissHover} rounded-lg transition-colors`}
+                >
+                  E'tiborsiz qoldirish
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const BriefingPanel: React.FC<{ briefing: any; onAsk: (text: string) => void }> = ({ briefing: b, onAsk }) => {
   if (!b) return null;
   const allClear =
@@ -508,12 +560,17 @@ interface AICopilotProps {
   onRefresh?: () => void;
 }
 
-type Usage = { used: number; limit: number; unlimited: boolean; periodEnd?: string };
+type Usage = {
+  used: number; limit: number; unlimited: boolean; periodEnd?: string;
+  daily?: { used: number; limit: number; unlimited: boolean; resetAt?: string };
+  extraCredits?: number;
+};
 
 const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => {
   const [input, setInput] = useState('');
   const [usage, setUsage] = useState<Usage | null>(null);
   const [briefing, setBriefing] = useState<any>(null);
+  const [risks, setRisks] = useState<any[]>([]);
   const [limitError, setLimitError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [micPermissionDenied, setMicPermissionDenied] = useState(false);
@@ -587,26 +644,37 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
       fetchUsage();
       // Brifing — LLM'siz aggregation, har ochilishda yangilanadi
       aiApi.getBriefing().then(r => setBriefing(r.data)).catch(() => setBriefing(null));
+      // Xavf kartalari — Buyurtma x Davomat korrelyatsiyasi, LLM'siz
+      aiApi.getRisks().then(r => setRisks(r.data || [])).catch(() => setRisks([]));
     }
   }, [isOpen, fetchUsage]);
+
+  const dismissRisk = useCallback((id: string) => {
+    setRisks(prev => prev.filter(r => r.id !== id));
+    aiApi.dismissRisk(id).catch(() => {});
+  }, []);
 
   const submitText = useCallback((text: string) => {
     const t = text.trim();
     // 3 belgidan qisqa — STT noto'g'ri eshitgan bo'lishi mumkin. Yubormaymiz.
-    if (t.length < 3) {
+    // LEKIN suhbat allaqachon boshlangan bo'lsa qisqa javob normal: xavf
+    // kartasidan keyin "1" deb variant tanlanadi, tasdiqda "ha" deyiladi.
+    if (t.length < 3 && messages.length === 0) {
       setInput('');
       inputRefVal.current = '';
       return;
     }
+    if (t.length === 0) return;
     setLimitError(null);
     sendMessage({ text: t });
     setInput('');
     inputRefVal.current = '';
-  }, [sendMessage]);
+  }, [sendMessage, messages.length]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim().length < 3 || isLoading) return;
+    if (isLoading) return;
+    if (input.trim().length < 3 && messages.length === 0) return;
     submitText(input);
   };
 
@@ -729,17 +797,28 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
   const quotaPct = usage && !usage.unlimited && usage.limit > 0
     ? Math.min(100, Math.round((usage.used / usage.limit) * 100))
     : 0;
-  const quotaLow = !!(usage && !usage.unlimited && quotaPct >= 80);
-  const quotaExhausted = !!(usage && !usage.unlimited && usage.used >= usage.limit);
+  const daily = usage?.daily;
+  const dailyPct = daily && !daily.unlimited && daily.limit > 0
+    ? Math.min(100, Math.round((daily.used / daily.limit) * 100))
+    : 0;
+  const quotaLow = !!(usage && !usage.unlimited && quotaPct >= 80) || (!!daily && !daily.unlimited && dailyPct >= 80);
+  const baseLimitHit = !!(usage && !usage.unlimited && usage.used >= usage.limit) || (!!daily && !daily.unlimited && daily.used >= daily.limit);
+  // Asosiy limit tugagan bo'lsa ham — qo'shimcha kredit bor ekan, yuborish hali mumkin.
+  const quotaExhausted = baseLimitHit && !(usage?.extraCredits && usage.extraCredits > 0);
 
   return (
     <>
+      {/* Mobil fon — telefonda joy yo'q, shuning uchun overlay bo'lib qoladi */}
       <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm md:hidden animate-in fade-in duration-300" onClick={onClose} />
 
-      <div className="fixed inset-y-0 right-0 z-[70] w-full md:w-[460px] bg-white border-l border-slate-200 shadow-[-20px_0_50px_rgba(0,0,0,0.15)] flex flex-col animate-in slide-in-from-right duration-500 ease-out">
+      {/* Desktopda panel LAYOUT ICHIDA turadi (md:static) — sahifa ustiga
+          chiqmaydi, balki kontentni qisqartiradi va yonma-yon turadi.
+          Shu sababli chatni doim ochiq qoldirib ishlash mumkin.
+          Telefonda esa avvalgidek to'liq ekranli overlay. */}
+      <aside className="fixed inset-y-0 right-0 z-[70] w-full md:static md:z-auto md:w-[360px] lg:w-[400px] md:shrink-0 md:h-screen bg-white border-l border-[color:var(--border)] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] md:shadow-none flex flex-col animate-in slide-in-from-right duration-300 ease-out">
 
         {/* Header */}
-        <div className="relative flex items-center gap-4 px-6 py-6 border-b border-slate-100 bg-white/80 backdrop-blur-md flex-shrink-0">
+        <div className="relative flex items-center gap-3 px-4 py-4 border-b border-slate-100 bg-white/80 backdrop-blur-md flex-shrink-0">
           <div className="relative">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-xl shadow-orange-500/30">
               <Sparkles size={22} className="text-white" strokeWidth={2.5} />
@@ -756,9 +835,14 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
               <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${
                 quotaExhausted ? 'text-rose-500' : quotaLow ? 'text-amber-500' : 'text-emerald-500'
               }`}>
-                {usage.unlimited
+                {daily && !daily.unlimited && daily.limit > 0
+                  ? `${daily.used} / ${daily.limit} xabar — bugun`
+                  : usage.unlimited
                   ? 'Cheksiz xabarlar'
                   : `${usage.used} / ${usage.limit} xabar — 30 kun davri`}
+                {!!usage.extraCredits && usage.extraCredits > 0 && (
+                  <span className="text-orange-500"> · +{usage.extraCredits} qo'shimcha</span>
+                )}
               </p>
             )}
           </div>
@@ -767,9 +851,20 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           </button>
         </div>
 
-        {/* Quota progress bar */}
-        {usage && !usage.unlimited && usage.limit > 0 && (
-          <div className="px-6 pt-2 flex-shrink-0">
+        {/* Quota progress bar — kunlik limit bo'lsa shu ustuvor, aks holda oylik */}
+        {daily && !daily.unlimited && daily.limit > 0 ? (
+          <div className="px-4 pt-2 flex-shrink-0">
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${
+                  quotaExhausted ? 'bg-rose-500' : quotaLow ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+                style={{ width: `${dailyPct}%` }}
+              />
+            </div>
+          </div>
+        ) : usage && !usage.unlimited && usage.limit > 0 && (
+          <div className="px-4 pt-2 flex-shrink-0">
             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all ${
@@ -783,12 +878,12 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
 
         {/* Limit reached banner */}
         {limitError && (
-          <div className="mx-6 mt-3 p-3 rounded-2xl border border-rose-200 bg-rose-50 flex items-start gap-2 flex-shrink-0">
+          <div className="mx-4 mt-3 p-3 rounded-2xl border border-rose-200 bg-rose-50 flex items-start gap-2 flex-shrink-0">
             <AlertTriangle size={16} className="text-rose-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-bold text-rose-700">AI limit tugadi</p>
               <p className="text-[10px] font-bold text-rose-600 mt-0.5 leading-snug">{limitError}</p>
-              <a href="/billing" className="text-[10px] font-bold text-orange-600 underline mt-1 inline-block">Tarifni yangilash →</a>
+              <a href="/dashboard/billing" className="text-[10px] font-bold text-orange-600 underline mt-1 inline-block">Qo'shimcha so'rov paketi sotib olish →</a>
             </div>
             <button onClick={() => setLimitError(null)} className="text-rose-400 hover:text-rose-600">
               <X size={14} />
@@ -797,10 +892,13 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
         )}
 
         {/* Chat window */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scroll-smooth custom-scroll bg-slate-50/30">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 scroll-smooth custom-scroll bg-slate-50/30">
           {messages.length === 0 && (
             briefing ? (
-              <BriefingPanel briefing={briefing} onAsk={submitText} />
+              <>
+                <RiskInsightsPanel risks={risks} onResolve={submitText} onDismiss={dismissRisk} />
+                <BriefingPanel briefing={briefing} onAsk={submitText} />
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-40">
                 <Bot size={48} className="text-slate-300" />
@@ -824,6 +922,29 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             const toolParts = msg.parts.filter(p =>
               p.type === 'dynamic-tool' || p.type.startsWith('tool-')
             ) as any[];
+
+            // Dashboard'dagi xavf kartasidan kelgan xabar — foydalanuvchi uni
+            // yozmagan, shuning uchun "Siz" pufagi sifatida emas, neytral
+            // kontekst kartasi ko'rinishida chiziladi.
+            if (msg.role === 'user' && isRiskMessage(rawText)) {
+              return (
+                <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+                      <ShieldAlert size={14} strokeWidth={2.5} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-amber-700/70 mb-0.5">
+                        Dashboard'dan xavf
+                      </p>
+                      <p className="text-[12px] font-semibold text-amber-900 leading-snug">
+                        {stripRiskPrefix(rawText)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
@@ -1000,7 +1121,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 p-6 bg-white border-t border-slate-100">
+        <div className="flex-shrink-0 p-4 bg-white border-t border-slate-100">
           {messages.length === 0 && (
             <div className="flex flex-wrap gap-2 mb-6">
               {STARTER_SUGGESTIONS.map((suggestion, i) => (
@@ -1054,7 +1175,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Girgitton AI</p>
           </div>
         </div>
-      </div>
+      </aside>
     </>
   );
 };

@@ -24,6 +24,19 @@ export class BillingController {
     return this.billingService.getMyPayments();
   }
 
+  // --- AI QO'SHIMCHA SO'ROV PAKETI ---
+
+  @Post('ai-topup')
+  submitAiTopupPurchase(@Body() body: any) {
+    return this.billingService.submitAiTopupPurchase(body);
+  }
+
+  @Public()
+  @Get('settings/ai-topup-packages')
+  getAiTopupPackages() {
+    return this.billingService.getSetting('AI_TOPUP_PACKAGES');
+  }
+
   // --- PROMO CODE ---
 
   @Get('promo/my-code')

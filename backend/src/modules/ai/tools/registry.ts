@@ -25,6 +25,23 @@ export function describeTools(ctx: ToolContext): string {
     .join('\n');
 }
 
+/**
+ * Faqat tasdiq talab qiladigan tool nomlari.
+ *
+ * Nega describeTools o'rniga shu ishlatiladi: tool nomi, tavsifi va
+ * parametrlari modelga `tools` parametri orqali allaqachon to'liq yuboriladi
+ * (~3600 token). describeTools o'sha ma'lumotni system prompt'da SO'ZMA-SO'Z
+ * takrorlaydi — yana ~870 token, har so'rovda. Takrorda modelga yangi
+ * ma'lumot yo'q; yagona qo'shimcha signal — qaysi tool tasdiq kartasi
+ * chiqarishi. Shuning uchun faqat shuni yuboramiz.
+ */
+export function describeConfirmTools(ctx: ToolContext): string {
+  const names = visibleTools(ctx)
+    .filter((d) => d.requiresConfirm)
+    .map((d) => d.name);
+  return names.length ? names.join(', ') : 'yo\'q';
+}
+
 async function writeAudit(
   ctx: ToolContext,
   def: AgentToolDef,

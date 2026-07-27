@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, Download } from 'lucide-react';
+import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, Download, Pencil } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { employeesApi, billingApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { SkeletonTable } from '../components/Skeleton';
 import CurrencyInput from '../components/CurrencyInput';
 import { exportToXlsx } from '../utils/exportToXlsx';
 import { PayrollSection } from '../components/PayrollSection';
+import { SalarySchemeSection } from '../components/SalarySchemeSection';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
@@ -19,13 +20,14 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const p = currentUser.permissions || {};
 
   const canAdd           = isAdmin || p.canAddEmployee || p.canManageEmployees;
+  const canEdit          = isAdmin || p.canEditEmployee || p.canManageEmployees;
   const canDelete        = isAdmin || p.canDeleteEmployee || p.canManageEmployees;
   const canResetPassword = isAdmin || p.canResetEmployeePassword || p.canManageEmployees;
 
   // Maosh (payroll) bo'limi ruxsatlari + tab holati
   const canViewPayroll   = isAdmin || !!p.canViewPayroll;
   const canManagePayroll = isAdmin || !!p.canManagePayroll;
-  const [activeTab, setActiveTab] = useState<'xodimlar' | 'maosh'>('xodimlar');
+  const [activeTab, setActiveTab] = useState<'xodimlar' | 'maosh' | 'sxema'>('xodimlar');
 
   // RQ — cache'lanadi, derived data effect orqali tayyorlanadi
   const { data: rawEmployees = [], isLoading: empLoading } = useEmployees();
@@ -54,6 +56,9 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   });
   // Modals
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editEmployee, setEditEmployee] = useState<any>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState<any>(null);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void } | null>(null);
@@ -93,6 +98,45 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     setIsEmployeeModalOpen(false);
     setGeneratedCredentials(null);
     setShowGenPass(true);
+  };
+
+  // ── Xodimni tahrirlash ────────────────────────────────────────────
+  // Login/parol bu yerda o'zgartirilmaydi — parol uchun alohida
+  // "Parolni yangilash" amali bor (xavfsizlik oqimi buzilmasin).
+  const openEditModal = (emp: any) => {
+    setEditEmployee({
+      id: emp.id,
+      fullName: emp.fullName || '',
+      phone: emp.phone || '',
+      roleId: emp.roleId || '',
+      branchId: emp.branchId || '',
+      baseSalary: emp.baseSalary ?? '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editEmployee?.id) return;
+    setSavingEdit(true);
+    try {
+      const { id, ...data } = editEmployee;
+      await employeesApi.update(id, {
+        fullName: data.fullName.trim(),
+        phone: data.phone?.trim() || null,
+        roleId: data.roleId,
+        branchId: data.branchId || null,
+        baseSalary: Number(data.baseSalary) || 0,
+      });
+      fetchData(true);
+      toast.success("Xodim ma'lumotlari yangilandi");
+      setIsEditModalOpen(false);
+      setEditEmployee(null);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Yangilashda xatolik yuz berdi');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const handleDeleteEmployee = (id: string) => {
@@ -176,11 +220,16 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
           <button onClick={() => setActiveTab('xodimlar')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeTab === 'xodimlar' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Xodimlar</button>
           <button onClick={() => setActiveTab('maosh')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeTab === 'maosh' ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}>Maosh</button>
+          <button onClick={() => setActiveTab('sxema')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeTab === 'sxema' ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}>Maosh sxemasi</button>
         </div>
       )}
 
       {activeTab === 'maosh' && canViewPayroll && (
         <PayrollSection activeBranchId={activeBranchId} canManage={canManagePayroll} />
+      )}
+
+      {activeTab === 'sxema' && canViewPayroll && (
+        <SalarySchemeSection canManage={canManagePayroll} />
       )}
 
       <div className={`space-y-4 sm:space-y-6 animate-fade-in ${activeTab !== 'xodimlar' ? 'hidden' : ''}`}>
@@ -259,7 +308,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   <tr key={emp.id} className="hover:bg-slate-50/40 transition-colors group">
                     <td className="py-3 px-5">
                       <p className="font-bold text-slate-800 text-xs lowercase first-letter:uppercase tracking-tight">{emp.fullName}</p>
-                      <p className="text-[10px] font-bold text-sky-500 mt-0.5">{emp.phone}</p>
+                      <p className="text-[10px] font-bold text-slate-500 mt-0.5">{emp.phone}</p>
                     </td>
                     <td className="px-5">
                       <span className="bg-orange-50 text-orange-700 text-[9px] font-bold px-2 py-1 rounded-lg border border-orange-100 uppercase tracking-tight">
@@ -270,7 +319,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                       <div className="flex items-center gap-1.5">
                         {emp.login}
                         {canResetPassword && (
-                          <button onClick={() => openCredentialsModal(emp)} className="text-slate-300 hover:text-sky-500 transition-colors p-1" title="Ma'lumotlarni ko'rish">
+                          <button onClick={() => openCredentialsModal(emp)} className="text-slate-300 hover:text-orange-500 transition-colors p-1" title="Ma'lumotlarni ko'rish">
                             <Eye size={12} strokeWidth={2.5} />
                           </button>
                         )}
@@ -279,7 +328,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                     {branches.length > 0 && (
                       <td className="px-5">
                         {emp.branchId ? (
-                          <span className="text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded-lg uppercase tracking-tight">
+                          <span className="text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 px-2 py-1 rounded-lg uppercase tracking-tight">
                             {branches.find(b => b.id === emp.branchId)?.name || '—'}
                           </span>
                         ) : (
@@ -290,6 +339,15 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                     {(isAdmin || p.canViewSalary) && <td className="px-5 font-bold text-xs text-slate-700 tabular-nums">{formatCurrency(emp.baseSalary)}</td>}
                     <td className="text-right pr-6">
                       <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {canEdit && (
+                          <button
+                            onClick={() => openEditModal(emp)}
+                            className="w-7 h-7 rounded-lg text-slate-400 hover:text-orange-500 hover:bg-orange-50 flex items-center justify-center border border-transparent hover:border-orange-100 shadow-sm"
+                            title="Tahrirlash"
+                          >
+                            <Pencil size={12} strokeWidth={3} />
+                          </button>
+                        )}
                         {canResetPassword && (
                           <button onClick={() => handleRegeneratePassword(emp.id)} className="w-7 h-7 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 flex items-center justify-center border border-transparent hover:border-amber-100 shadow-sm" title="Parolni yangilash">
                             <RefreshCw size={12} strokeWidth={3} />
@@ -403,6 +461,65 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                </div>
             </form>
           )}
+      </Modal>
+
+      {/* Employee Modal: Edit */}
+      <Modal
+        isOpen={isEditModalOpen && !!editEmployee}
+        onClose={() => { setIsEditModalOpen(false); setEditEmployee(null); }}
+        title="Xodim ma'lumotlarini tahrirlash"
+        maxWidth="max-w-md"
+      >
+        {editEmployee && (
+          <form onSubmit={handleUpdateEmployee} className="space-y-5">
+             <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">F.I.SH</label>
+                <input type="text" required value={editEmployee.fullName} onChange={(e) => setEditEmployee({...editEmployee, fullName: e.target.value})} className="input-minimal w-full" placeholder="Ism Familiya" />
+             </div>
+             <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Telefon</label>
+                <input type="text" value={editEmployee.phone} onChange={(e) => setEditEmployee({...editEmployee, phone: e.target.value})} className="input-minimal w-full" placeholder="+998 90 123 45 67" />
+             </div>
+             <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Lavozimi</label>
+                <select required value={editEmployee.roleId} onChange={(e) => setEditEmployee({...editEmployee, roleId: e.target.value})} className="select-minimal font-bold w-full">
+                   <option value="">Tanlang...</option>
+                   {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+             </div>
+             {branches.length > 0 && (
+               <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Filial</label>
+                  <select value={editEmployee.branchId} onChange={(e) => setEditEmployee({...editEmployee, branchId: e.target.value})} className="select-minimal font-bold w-full">
+                     <option value="">Filial tanlanmagan</option>
+                     {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+               </div>
+             )}
+             {(isAdmin || p.canViewSalary) && (
+               <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Maoshi</label>
+                  <CurrencyInput
+                    value={editEmployee.baseSalary}
+                    onChange={(uzs) => setEditEmployee({...editEmployee, baseSalary: uzs || ''})}
+                    colorClass="text-emerald-600"
+                    className="input-minimal font-bold w-full"
+                  />
+               </div>
+             )}
+             <p className="text-[10px] font-bold text-slate-400 leading-relaxed bg-slate-50 border border-slate-200 rounded-xl p-3">
+               Login va parol bu yerda o'zgartirilmaydi. Parolni yangilash uchun qatordagi
+               <RefreshCw size={10} className="inline mx-1 -mt-0.5" strokeWidth={3} />
+               tugmasidan foydalaning.
+             </p>
+             <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
+               <button type="button" className="btn-outline h-12 px-6 flex-1 rounded-xl text-xs font-bold uppercase" onClick={() => { setIsEditModalOpen(false); setEditEmployee(null); }}>Bekor qilish</button>
+               <button type="submit" disabled={savingEdit} className="btn-primary h-12 px-10 font-bold flex-1 rounded-xl text-xs uppercase shadow-lg shadow-orange-500/20 bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50">
+                 {savingEdit ? 'SAQLANMOQDA...' : 'SAQLASH'}
+               </button>
+             </div>
+          </form>
+        )}
       </Modal>
 
       {/* Credentials Modal: View */}

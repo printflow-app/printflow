@@ -43,8 +43,16 @@ async function bootstrap() {
     }),
   );
 
+  // Ishlab chiqishda Vite portlari o'zgarib turadi: 5173 band bo'lsa o'zi
+  // 5174, 5175... ga o'tadi. Ilgari ro'yxatda faqat 3000 va 5173 bor edi,
+  // shuning uchun boshqa portga tushgan ilova CORS'da to'xtab qolardi va
+  // brauzer buni "login yoki parol xato" ko'rinishida ko'rsatardi.
+  // Shu sababli dev'da HAR QANDAY localhost porti ochiq; productionda esa
+  // avvalgidek qat'iy ro'yxat ishlaydi.
+  const isDev = process.env.NODE_ENV !== 'production';
   app.enableCors({
     origin: [
+      ...(isDev ? [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/] : []),
       'http://localhost:3000',
       'http://localhost:5173',
       /^https:\/\/printflow.*\.vercel\.app$/

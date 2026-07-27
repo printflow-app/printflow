@@ -12,6 +12,7 @@ import Leads from './pages/Leads';
 import Logos from './pages/Logos';
 import PromoCodes from './pages/PromoCodes';
 import TaskManager from './pages/TaskManager';
+import AiUsage from './pages/AiUsage';
 
 // =============================================
 // Super Admin entry — auth gate + router
@@ -41,6 +42,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/tenants" element={<Tenants />} />
+              <Route path="/ai-usage" element={<AiUsage />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/payments" element={<Payments />} />
               <Route path="/leads" element={<Leads />} />

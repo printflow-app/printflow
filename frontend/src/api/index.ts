@@ -363,6 +363,13 @@ export const payrollApi = {
   pay: (data: { employeeId: string; period: string }) => api.post('/payroll/pay', data),
   // To'lovni bekor qilish
   revert: (data: { employeeId: string; period: string }) => api.post('/payroll/revert', data),
+
+  // ── Maosh sxemalari (lavozim bo'yicha avtomatik hisob) ──────────────
+  // Metrika katalogi — sxema muharririda tanlanadigan o'lchovlar
+  metrics: () => api.get('/payroll/metrics'),
+  listSchemes: () => api.get('/payroll/schemes'),
+  saveScheme: (data: any) => api.post('/payroll/schemes', data),
+  deleteScheme: (id: string) => api.delete(`/payroll/schemes/${id}`),
 };
 
 // =============================================
@@ -496,6 +503,7 @@ export const settingsApi = {
 // =============================================
 export const billingApi = {
   submitPayment: (data: any) => api.post('/billing/payment', data),
+  submitAiTopupPurchase: (data: any) => api.post('/billing/ai-topup', data),
   getPayments: () => api.get('/billing/payments'),
   getStatus: () => api.get('/billing/status'),
   getMyPayments: () => api.get('/billing/my-payments'),
@@ -649,8 +657,18 @@ export const aiApi = {
   // Kunlik brifing — LLM'siz aggregation (xabar limitiga tegmaydi)
   getBriefing: () => api.get('/ai/briefing'),
 
+  // Xavf kartalari — LLM'siz korrelyatsiya (Buyurtma x Davomat), xabar limitiga tegmaydi
+  getRisks: () => api.get('/ai/risks'),
+  dismissRisk: (id: string) => api.post(`/ai/risks/${id}/dismiss`),
+
   // Agent statistikasi — davr bo'yicha bajarilgan ishlar (Faza 5)
   getAgentStats: () => api.get('/ai/agent-stats'),
+};
+
+// Bosh sahifa — bitta so'rovda kirim/chiqim + buyurtmalar + davomat holati.
+// Har bo'lim faqat ruxsat bo'lsa keladi (backend darajasida cheklangan).
+export const dashboardApi = {
+  getSummary: () => api.get('/dashboard/summary'),
 };
 
 export default api;

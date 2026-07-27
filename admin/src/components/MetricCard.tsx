@@ -1,57 +1,66 @@
 import React from 'react';
 
 // =============================================
-// Utilitarian metric card — grayscale, no animations.
-// Optional trend delta (positive = green, negative = red).
+// Ko'rsatkich kartasi — 2026-07 redizayn.
+// Inline style o'rniga Tailwind (loyihaning styling tizimi bilan bir xil).
+// Raqam — proporsional figuralar (hero qiymatda tabular-nums ishlatilmaydi),
+// yordamchi matn — neytral. Accent faqat 1-2 ta muhim ko'rsatkichda.
 // =============================================
 
 interface MetricCardProps {
   label: string;
   value: string | number;
   sub?: string;
-  delta?: { value: number; suffix?: string }; // e.g. { value: 12, suffix: '%' }
+  /** Masalan { value: 12, suffix: '%' } — musbat yashil, manfiy qizil */
+  delta?: { value: number; suffix?: string };
   icon?: React.ReactNode;
-  /** Use sparingly — only for the one or two metrics that warrant attention */
+  /** Kam ishlating — faqat e'tibor talab qiladigan ko'rsatkichda */
   accent?: boolean;
 }
 
 export function MetricCard({ label, value, sub, delta, icon, accent }: MetricCardProps) {
-  const deltaColor = delta == null ? '#94a3b8' : delta.value > 0 ? '#059669' : delta.value < 0 ? '#dc2626' : '#94a3b8';
-  const deltaSign  = delta == null ? '' : delta.value > 0 ? '+' : '';
+  const deltaTone =
+    delta == null || delta.value === 0
+      ? 'text-slate-400'
+      : delta.value > 0
+      ? 'text-emerald-600'
+      : 'text-rose-600';
 
   return (
     <div
-      style={{
-        background: '#fff',
-        border: '1px solid #e2e8f0',
-        borderLeft: accent ? '3px solid #FF6B00' : '1px solid #e2e8f0',
-        borderRadius: 10,
-        padding: '14px 16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        minWidth: 0,
-      }}
+      className={`bg-white rounded-xl border p-4 min-w-0 flex flex-col gap-1 ${
+        accent ? 'border-orange-200' : 'border-[color:var(--border)]'
+      }`}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{
-          fontSize: 11, fontWeight: 600, color: '#64748b',
-          textTransform: 'uppercase', letterSpacing: 0.6,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>{label}</span>
-        {icon && <span style={{ color: '#94a3b8', display: 'inline-flex' }}>{icon}</span>}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <span style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', letterSpacing: -0.5, lineHeight: 1.1 }}>
-          {value}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 truncate">
+          {label}
         </span>
-        {delta != null && (
-          <span style={{ fontSize: 12, fontWeight: 600, color: deltaColor }}>
-            {deltaSign}{delta.value}{delta.suffix ?? ''}
+        {icon && (
+          <span
+            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+              accent ? 'bg-orange-50 text-orange-600' : 'bg-slate-100 text-slate-400'
+            }`}
+          >
+            {icon}
           </span>
         )}
       </div>
-      {sub && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{sub}</span>}
+
+      <div className="flex items-baseline gap-2">
+        <span className="text-[22px] leading-none font-extrabold text-slate-900 tracking-tight">
+          {value}
+        </span>
+        {delta != null && (
+          <span className={`text-[12px] font-bold font-mono ${deltaTone}`}>
+            {delta.value > 0 ? '+' : ''}
+            {delta.value}
+            {delta.suffix ?? ''}
+          </span>
+        )}
+      </div>
+
+      {sub && <span className="text-[11px] font-medium text-slate-400">{sub}</span>}
     </div>
   );
 }

@@ -200,6 +200,59 @@ export class BillingService {
     return payment;
   }
 
+  // =============================================
+  // AI QO'SHIMCHA SO'ROV PAKETI (AI_TOPUP)
+  // Obuna to'lovidan mustaqil — tenant.status/planId/subscriptionEndsAt'ga
+  // TEGMAYDI, faqat tasdiqlangach Tenant.aiExtraCredits'ga qo'shiladi
+  // (tenants.service.ts approvePayment'da type='AI_TOPUP' shoxobchasi).
+  // =============================================
+
+  async submitAiTopupPurchase(data: {
+    packageId: string;
+    sender: string;
+    receiptUrl?: string;
+    notes?: string;
+  }) {
+    const tenantId = TenantContext.getTenantId();
+    if (!tenantId) throw new BadRequestException('Tenant not found');
+
+    const packages = (await this.getSetting('AI_TOPUP_PACKAGES')) || [];
+    const pkg = packages.find((p: any) => p.id === data.packageId);
+    if (!pkg) throw new BadRequestException('Paket topilmadi');
+
+    // Narx/kredit miqdori serverdagi katalogdan olinadi — mijoz tomonidan
+    // yuborilgan qiymatlarga ishonilmaydi.
+    const payment = await this.prisma.payment.create({
+      data: {
+        tenantId,
+        type: 'AI_TOPUP',
+        planName: pkg.label,
+        duration: 0,
+        amount: pkg.priceUzs,
+        originalAmount: pkg.priceUzs,
+        aiCreditsGranted: pkg.credits,
+        sender: data.sender,
+        receiptUrl: data.receiptUrl,
+        notes: data.notes,
+        status: 'PENDING',
+      },
+    });
+
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    try {
+      await this.telegramService.notifyAdmins(
+        tenantId,
+        `🤖 *Yangi AI So'rov Paketi So'rovi!*\n\n` +
+        `🏢 *Workspace:* ${tenant?.name}\n` +
+        `📦 *Paket:* ${pkg.label} (+${pkg.credits} so'rov)\n` +
+        `💰 *Summa:* ${pkg.priceUzs.toLocaleString()} UZS\n` +
+        `👤 *Yuboruvchi:* ${data.sender}`,
+      );
+    } catch {}
+
+    return payment;
+  }
+
   async getMyPayments() {
     const tenantId = TenantContext.getTenantId();
     return this.prisma.payment.findMany({

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles, Save, Loader2, Sunrise, BarChart3, AlarmClock, Bot, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Sparkles, Save, Loader2, Sunrise, BarChart3, AlarmClock, Bot, CheckCircle2, Clock, XCircle, ShieldAlert } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { settingsApi, aiApi } from '../api';
 
@@ -14,12 +14,14 @@ interface Policies {
   dailyBriefing: { enabled: boolean };
   weeklyReport: { enabled: boolean };
   deadlineWatchdog: { enabled: boolean; graceDays: number };
+  riskMonitoring: { enabled: boolean };
 }
 
 const DEFAULTS: Policies = {
   dailyBriefing: { enabled: true },
   weeklyReport: { enabled: true },
   deadlineWatchdog: { enabled: true, graceDays: 1 },
+  riskMonitoring: { enabled: true },
 };
 
 const Toggle: React.FC<{ on: boolean; onChange: (v: boolean) => void }> = ({ on, onChange }) => (
@@ -68,6 +70,7 @@ export const AgentPolicySection: React.FC = () => {
           dailyBriefing: { ...DEFAULTS.dailyBriefing, ...saved.dailyBriefing },
           weeklyReport: { ...DEFAULTS.weeklyReport, ...saved.weeklyReport },
           deadlineWatchdog: { ...DEFAULTS.deadlineWatchdog, ...saved.deadlineWatchdog },
+          riskMonitoring: { ...DEFAULTS.riskMonitoring, ...saved.riskMonitoring },
         });
       })
       .catch(() => {})
@@ -184,6 +187,13 @@ export const AgentPolicySection: React.FC = () => {
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">kun</span>
             </div>
           </Row>
+          <Row
+            icon={ShieldAlert}
+            title="Xavf nazorati (butun tizim)"
+            desc="AI barcha modullarni (buyurtmalar, davomat, ombor, mijozlar) o'zaro bog'lab kuzatadi va bir-biriga ta'sir qiladigan muammolarni topadi — masalan buyurtma bugun kerak, lekin xodim kelmagan; buyurtma uchun material yetmaydi; qarzdor mijozga yangi buyurtma berilgan. Telegram xabar yubormaydi, faqat AI Copilot panelida ko'rinadi."
+            on={policies.riskMonitoring.enabled}
+            onChange={(v) => setPolicies({ ...policies, riskMonitoring: { enabled: v } })}
+          />
 
           <p className="text-[10px] font-semibold text-slate-400 leading-relaxed px-1">
             Barcha avtonom amallar jurnalga yoziladi — agent nima qilgani har doim ko'rinadi.

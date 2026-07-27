@@ -215,7 +215,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
-  const [duration, setDuration] = useState(3);
+  const [duration, setDuration] = useState(6);
   const [formData, setFormData] = useState({ firstName: '', lastName: '', companyName: '', role: '', phone: '', telegramUser: '' });
   const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [clientLogos, setClientLogos] = useState<string[]>([]);
@@ -264,7 +264,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
   };
 
   const getPrice = (plan: any) => {
-    const v = duration === 3 ? plan?.price3m : duration === 6 ? plan?.price6m : plan?.price12m;
+    const v = duration === 6 ? plan?.price6m : plan?.price12m;
     return typeof v === 'number' ? v : 0;
   };
 
@@ -688,9 +688,8 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               {/* Duration Toggle */}
               <motion.div variants={fadeUp} className="inline-flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl gap-1">
                 {[
-                  { m: 3, label: '3 Oy' },
-                  { m: 6, label: '6 Oy (-10%)' },
-                  { m: 12, label: '12 Oy (-25%)' },
+                  { m: 6, label: '6 Oy (-5%)' },
+                  { m: 12, label: '12 Oy (-10%)' },
                 ].map(({ m, label }) => (
                   <button
                     key={m}
@@ -708,7 +707,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
             </motion.div>
 
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto"
+              className="flex flex-wrap justify-center gap-5 max-w-5xl mx-auto"
               variants={stagger}
               initial="hidden"
               whileInView="show"
@@ -737,7 +736,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                   <motion.div
                     key={plan.id}
                     variants={fadeUp}
-                    className={`pricing-card-pop relative rounded-2xl p-6 flex flex-col ${
+                    className={`pricing-card-pop relative rounded-2xl p-6 flex flex-col w-full sm:w-[340px] ${
                       plan.isPopular
                         ? 'bg-orange-500 text-white shadow-2xl shadow-orange-500/30'
                         : 'bg-slate-900 border border-slate-800 text-white'

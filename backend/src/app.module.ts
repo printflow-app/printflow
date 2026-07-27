@@ -46,6 +46,7 @@ import { DepartmentsModule } from './modules/departments/departments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SupportBotModule } from './modules/support-bot/support-bot.module';
 import { SuperAdminTasksModule } from './modules/super-admin-tasks/super-admin-tasks.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 // =============================================
 // APP MODULE — PrintFlow Multi-Tenant SaaS
@@ -102,6 +103,7 @@ import { SuperAdminTasksModule } from './modules/super-admin-tasks/super-admin-t
     ReportsModule,
     OvertimeModule,
     AiModule,
+    DashboardModule,
     DepartmentsModule,
     NotificationsModule,
     SupportBotModule,
