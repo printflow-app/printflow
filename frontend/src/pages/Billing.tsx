@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck, Tag, Gift, Flame } from 'lucide-react';
+import { AlertTriangle, Check, ArrowRight, Copy, Upload, ShieldCheck, Tag, Gift, Flame, Sparkles } from 'lucide-react';
 import { billingApi } from '../api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -33,16 +33,23 @@ export default function Billing() {
     queryKey: ['billing-promo'],
     queryFn: async () => (await billingApi.getOrCreatePromoCode().catch(() => null))?.data || null,
   });
+  const aiPackagesQuery = useQuery({
+    queryKey: ['billing-ai-packages'],
+    queryFn: async () => (await fetch(`${API_URL}/billing/settings/ai-topup-packages`).then(r => r.json())) || [],
+    staleTime: 5 * 60_000,
+  });
   const status = statusQuery.data as any;
   const plans = (plansQuery.data as any[]) || [];
   const cardNumbers = (cardsQuery.data as any[]) || [];
   const myPromo = promoQuery.data as any;
+  const aiPackages = (aiPackagesQuery.data as any[]) || [];
   const loading = statusQuery.isLoading || plansQuery.isLoading;
   const [submitting, setSubmitting] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [duration, setDuration] = useState(3);
+  const [selectedAiPackage, setSelectedAiPackage] = useState<any>(null);
+  const [duration, setDuration] = useState(6);
   const [sender, setSender] = useState('');
-  const [step, setStep] = useState<'plans' | 'form'>('plans');
+  const [step, setStep] = useState<'plans' | 'form' | 'ai-topup'>('plans');
   const [receipt, setReceipt] = useState<File | null>(null);
   // Promo code state
   const [promoCode, setPromoCode] = useState('');
@@ -74,7 +81,6 @@ export default function Billing() {
   };
 
   const getPrice = (plan: any) => {
-    if (duration === 3) return plan.price3m;
     if (duration === 6) return plan.price6m;
     return plan.price12m;
   };
@@ -113,6 +119,28 @@ export default function Billing() {
       setPromoCode(''); setPromoStatus('idle'); setUseCashback(false);
     } catch (err) {
       toast.error("Xatolik yuz berdi");
+    } finally { setSubmitting(false); }
+  };
+
+  const handleSubmitAiTopup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sender.trim()) return toast.error('Yuboruvchi ismini kiriting');
+    if (!selectedAiPackage) return toast.error('Paketni tanlang');
+    setSubmitting(true);
+    try {
+      await billingApi.submitAiTopupPurchase({
+        packageId: selectedAiPackage.id,
+        sender: sender.trim(),
+        receiptUrl: receipt ? `receipt_${Date.now()}.png` : undefined,
+        notes: `To'lov cheki yuklangan: ${receipt ? 'Ha' : 'Yo\'q'}`,
+      });
+      toast.success("So'rov paketi so'rovi muvaffaqiyatli yuborildi!");
+      fetchData();
+      setStep('plans');
+      setSelectedAiPackage(null);
+      setSender(''); setReceipt(null);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Xatolik yuz berdi");
     } finally { setSubmitting(false); }
   };
 
@@ -216,20 +244,20 @@ export default function Billing() {
           <div className="flex flex-col items-center gap-4 w-full">
             <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em] text-center">To'lov muddatini tanlang</h3>
             <div className="flex flex-wrap justify-center bg-slate-100 p-1 rounded-2xl shadow-inner w-full sm:w-auto">
-               {[3, 6, 12].map(m => (
-                 <button 
-                    key={m} 
+               {[6, 12].map(m => (
+                 <button
+                    key={m}
                     onClick={() => setDuration(m)}
                     className={`flex-1 sm:flex-none px-2 sm:px-8 py-3 text-[10px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap ${duration === m ? 'bg-white shadow-md text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
                  >
-                   {m} OY {m === 6 ? '(-10%)' : m === 12 ? '(-25%)' : ''}
+                   {m} OY {m === 6 ? '(-5%)' : '(-10%)'}
                  </button>
                ))}
             </div>
           </div>
 
           {/* Pricing Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 max-w-5xl mx-auto">
             {plans.map(plan => {
               const features = parseFeatures(plan.features);
               const price = getPrice(plan);
@@ -237,7 +265,7 @@ export default function Billing() {
               return (
                 <div
                   key={plan.id}
-                  className={`relative bg-white border rounded-2xl p-5 sm:p-8 flex flex-col transition-all duration-300 hover:shadow-xl ${plan.isPopular ? 'border-[#FF6B00] shadow-xl shadow-orange-500/10' : 'border-slate-200 shadow-sm'}`}
+                  className={`relative bg-white border rounded-2xl p-5 sm:p-8 flex flex-col w-full sm:w-[340px] transition-all duration-300 hover:shadow-xl ${plan.isPopular ? 'border-[#FF6B00] shadow-xl shadow-orange-500/10' : 'border-slate-200 shadow-sm'}`}
                 >
                   {plan.isPopular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF6B00] text-white text-[9px] font-bold uppercase tracking-widest px-4 py-1 rounded-full shadow-lg flex items-center gap-1.5">
@@ -301,8 +329,33 @@ export default function Billing() {
               );
             })}
           </div>
+
+          {/* AI So'rov Paketlari — kunlik/oylik limit tugaganda qo'shimcha sotib olish */}
+          {aiPackages.length > 0 && (
+            <div className="max-w-5xl mx-auto w-full pt-2">
+              <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em] text-center mb-4">Qo'shimcha AI so'rov paketlari</h3>
+              <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+                {aiPackages.map((pkg: any) => (
+                  <div key={pkg.id} className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 w-full sm:w-64 flex flex-col shadow-sm hover:shadow-md transition-all">
+                    <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center mb-3">
+                      <Sparkles size={16} />
+                    </div>
+                    <p className="text-sm font-bold text-slate-900 tracking-tight">{pkg.label}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">+{pkg.credits} so'rov</p>
+                    <p className="text-lg font-bold text-slate-900 mt-3">{Number(pkg.priceUzs || 0).toLocaleString().replace(/,/g, ' ')} <span className="text-xs text-slate-400 font-bold">UZS</span></p>
+                    <button
+                      onClick={() => { setSelectedAiPackage(pkg); setStep('ai-topup'); }}
+                      className="mt-4 w-full py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest bg-slate-900 text-white hover:bg-black transition-all"
+                    >
+                      Sotib olish
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
+      ) : step === 'form' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 animate-fade-in">
            {/* Payment Details */}
            <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-sm space-y-6 sm:space-y-8">
@@ -461,6 +514,123 @@ export default function Billing() {
                  <div className="pt-6">
                     <button 
                       type="submit" 
+                      disabled={submitting}
+                      className="w-full h-16 bg-[#FF6B00] hover:bg-[#E65A00] text-white font-bold uppercase tracking-[0.3em] rounded-2xl transition-all shadow-xl shadow-orange-500/30 disabled:bg-slate-300 disabled:shadow-none flex items-center justify-center gap-3"
+                    >
+                      {submitting ? (
+                        <>
+                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                           <span>Yuborilmoqda...</span>
+                        </>
+                      ) : (
+                        <>
+                           <span>TASDIQLASHGA YUBORISH</span>
+                           <ArrowRight size={20} strokeWidth={3} />
+                        </>
+                      )}
+                    </button>
+                 </div>
+              </form>
+           </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 animate-fade-in">
+           {/* AI Topup — Payment Details */}
+           <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-sm space-y-6 sm:space-y-8">
+              <button onClick={() => { setStep('plans'); setSelectedAiPackage(null); }} className="text-[10px] font-bold text-[#FF6B00] uppercase tracking-widest hover:translate-x-[-4px] transition-transform flex items-center gap-2 mb-4">← Paketlarga qaytish</button>
+
+              <div>
+                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">To'lov ma'lumotlari</h2>
+                 <p className="text-sm font-bold text-slate-500">Quyidagi karta raqamlariga summani o'tkazing va chekni yuklang</p>
+              </div>
+
+              <div className="space-y-4">
+                 {cardNumbers.map((c, i) => (
+                   <div key={i} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 group hover:border-[#FF6B00] transition-colors relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-orange-100 opacity-20 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125"></div>
+                      <div className="relative flex items-center justify-between">
+                         <div>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{c.name}</p>
+                            <p className="text-lg font-bold text-slate-800 tracking-wider font-mono">{c.number}</p>
+                            <p className="text-[10px] font-bold text-slate-500 mt-1">{c.owner}</p>
+                         </div>
+                         <button onClick={() => handleCopy(c.number)} className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#FF6B00] hover:border-[#FF6B00] transition-all shadow-sm">
+                            <Copy size={18} />
+                         </button>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center gap-4">
+                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 shadow-sm"><AlertTriangle size={20}/></div>
+                 <p className="text-[11px] font-bold text-amber-900 leading-relaxed">To'lovni amalga oshirgandan so'ng, chekni (screenshot) yuklashni unutmang. Tasdiqlangach qo'shimcha so'rovlar darhol qo'shiladi.</p>
+              </div>
+           </div>
+
+           {/* AI Topup — Confirmation Form */}
+           <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-sm flex flex-col">
+              <div className="mb-6 sm:mb-10 text-center lg:text-left">
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 italic">Yuborish shakli</p>
+                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Paket sotib olish so'rovi</h2>
+              </div>
+
+              <form onSubmit={handleSubmitAiTopup} className="space-y-6 flex-1">
+                 <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 px-1">Yuboruvchi ism-familiyasi</label>
+                    <input
+                      type="text"
+                      required
+                      value={sender}
+                      onChange={e => setSender(e.target.value)}
+                      placeholder="Masalan: Sardor Rustamov"
+                      className="input-minimal !h-14 font-bold tracking-tight !text-base"
+                    />
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Paket</p>
+                       <p className="text-xs font-bold text-slate-800">{selectedAiPackage?.label} (+{selectedAiPackage?.credits} so'rov)</p>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Summa</p>
+                       <p className="text-xs font-bold text-emerald-600">{Number(selectedAiPackage?.priceUzs || 0).toLocaleString()} UZS</p>
+                    </div>
+                 </div>
+
+                 <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2 px-1">To'lov cheki (Image)</label>
+                    <div className="relative">
+                       <input
+                         type="file"
+                         accept="image/*"
+                         onChange={e => setReceipt(e.target.files?.[0] || null)}
+                         className="hidden"
+                         id="ai-receipt-upload"
+                       />
+                       <label
+                         htmlFor="ai-receipt-upload"
+                         className={`w-full h-24 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all ${receipt ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-[#FF6B00] hover:bg-orange-50/50'}`}
+                       >
+                          {receipt ? (
+                            <>
+                               <Check className="text-emerald-500 mb-1" size={24} strokeWidth={3} />
+                               <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">{receipt.name}</p>
+                            </>
+                          ) : (
+                            <>
+                               <Upload className="text-slate-400 mb-1" size={24} />
+                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">Rasm tanlash uchun bosing</p>
+                            </>
+                          )}
+                       </label>
+                    </div>
+                 </div>
+
+                 <div className="pt-6">
+                    <button
+                      type="submit"
                       disabled={submitting}
                       className="w-full h-16 bg-[#FF6B00] hover:bg-[#E65A00] text-white font-bold uppercase tracking-[0.3em] rounded-2xl transition-all shadow-xl shadow-orange-500/30 disabled:bg-slate-300 disabled:shadow-none flex items-center justify-center gap-3"
                     >

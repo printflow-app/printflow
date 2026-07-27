@@ -252,6 +252,7 @@ export class AuthController {
           canManageCustomers: true, canViewInventory: true, canManageInventory: true,
           canViewAttendance: true, canManageAttendance: true, canViewServices: true, canManageServices: true,
           canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true,
+          canUseAi: true,
         };
         return {
           id: admin.id,

@@ -18,7 +18,17 @@ export const qk = {
   promoCodes:     ['admin', 'promo-codes'] as const,
   clientLogos:    ['admin', 'client-logos'] as const,
   taskFunnels:    ['admin', 'task-funnels'] as const,
+  aiUsage:        ['admin', 'ai-usage'] as const,
 };
+
+// -------- AI USAGE (workspace bo'yicha sarf) --------
+export function useAiUsage() {
+  return useQuery({
+    queryKey: qk.aiUsage,
+    queryFn: async () => (await tenantsApi.getAiUsage()).data as any,
+    staleTime: 60_000,
+  });
+}
 
 // -------- SUPER ADMIN IDENTITY --------
 export function useSuperAdminMe() {

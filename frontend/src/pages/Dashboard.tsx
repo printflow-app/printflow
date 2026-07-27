@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, FileText } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, FileText, Home } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { authApi, employeesApi, branchesApi, billingApi } from '../api';
 import logo from '../assets/logo.png';
@@ -10,8 +10,11 @@ import AICopilot from '../components/AICopilot/AICopilot';
 import { OnboardingWizard, isOnboardingComplete } from '../components/OnboardingWizard';
 import { OnboardingTour, isTourComplete } from '../components/OnboardingTour';
 import { CommandPalette } from '../components/CommandPalette';
+import { ReleaseBanner, ReleaseTour } from '../components/ReleaseNotes';
+import { hasUnseenRelease } from '../data/releases';
 import { useSidebarCounts, markTabSeen } from '../hooks/useSidebarCounts';
 
+const BoshSahifa   = React.lazy(() => import('./BoshSahifa'));
 const Moliya       = React.lazy(() => import('./Moliya'));
 const Hodimlar     = React.lazy(() => import('./Hodimlar'));
 const Topshiriqlar = React.lazy(() => import('./Topshiriqlar'));
@@ -36,8 +39,8 @@ interface DashboardProps {
   onUpdateUser: (updatedFields: any) => void;
 }
 
-type TabId = 'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma';
-const VALID_TABS: TabId[] = ['kassa','moliya','hodimlar','topshiriqlar','mijozlar','sozlamalar','ombor','davomat','admins','billing','filiallar','hamkorlar','hisobotlar','qollanma'];
+type TabId = 'boshsahifa' | 'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma';
+const VALID_TABS: TabId[] = ['boshsahifa','kassa','moliya','hodimlar','topshiriqlar','mijozlar','sozlamalar','ombor','davomat','admins','billing','filiallar','hamkorlar','hisobotlar','qollanma'];
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
   const navigate = useNavigate();
@@ -53,6 +56,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   })();
 
   const [activeTab, setActiveTab] = useState<TabId>(tabFromUrl);
+
+  // Yangi platforma relizi ko'rilmagan bo'lsa banner chiqadi, undan tour ochiladi.
+  const [showReleaseBanner, setShowReleaseBanner] = useState(() =>
+    hasUnseenRelease(currentUser?.tenantId),
+  );
+  const [releaseTourOpen, setReleaseTourOpen] = useState(false);
 
   // Onboarding wizard — eski 3-qadamli forma (saqlangan, lekin endi default tour)
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
@@ -394,7 +403,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   //   2) tenant'ning tarifi (plan) AI Copilot'ni o'z ichiga oladi
   // Tarif aliaslari: ai_chat | telegram_bot | advancedBot (backend FeatureGuard bilan mos)
   const planHasAiCopilot = !!(tf.ai_chat || tf.telegram_bot || tf.advancedBot);
-  const aiCopilotEnabled = aiCopilotGlobalEnabled && planHasAiCopilot;
+  // Lavozim darajasidagi ruxsat — CEO Sozlamalar'dan har lavozim uchun yoqadi/o'chiradi.
+  const employeeHasAiPermission = !!p.canUseAi || isAdmin;
+  const aiCopilotEnabled = aiCopilotGlobalEnabled && planHasAiCopilot && employeeHasAiPermission;
 
   // Sidebar grouped into 3 logical sections for visual hierarchy.
   // Sections render with a small caps label between them.
@@ -403,6 +414,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       label: 'Operatsiya',
       icon: Briefcase,
       items: [
+        { id: 'boshsahifa', label: 'Dashboard', icon: Home, show: true, sub: 'Umumiy holat va AI xavflar' },
         { id: 'kassa', label: 'Kassa', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
         { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
         { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: "Qarzlar va hamkorlar" },
@@ -776,6 +788,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         />
       )}
 
+      {/* Yangilanish tour'i — "nima o'zgardi" qadamma-qadam */}
+      {releaseTourOpen && currentUser?.tenantId && (
+        <ReleaseTour
+          tenantId={currentUser.tenantId}
+          onClose={() => { setReleaseTourOpen(false); setShowReleaseBanner(false); }}
+          onNavigate={(tab) => handleTabChange(tab as TabId)}
+        />
+      )}
+
       {/* Global omnibox — Ctrl+K: sahifa qidirish yoki Girgitton'dan so'rash */}
       <CommandPalette agentEnabled={aiCopilotEnabled} />
 
@@ -876,6 +897,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
           ) : (
             <React.Suspense fallback={<LoadingSpinner fullPage />}>
+              {/* Yangi reliz e'loni — ko'rilmagan bo'lsa har sahifada tepada turadi */}
+              {showReleaseBanner && (
+                <div className="mb-4">
+                  <ReleaseBanner
+                    onOpen={() => setReleaseTourOpen(true)}
+                    onDismiss={() => setShowReleaseBanner(false)}
+                  />
+                </div>
+              )}
+              {activeTab === 'boshsahifa' && <BoshSahifa currentUser={currentUser} />}
               {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
               { activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} activeBranchId={activeBranchId} /> }

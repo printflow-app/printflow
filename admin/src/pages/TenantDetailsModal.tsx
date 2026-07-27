@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Check, X, XCircle, User, Building2, Phone, Send,
-  CalendarDays, Wallet, Users, UserSquare2, Layers, ShieldCheck,
+  CalendarDays, Wallet, Users, UserSquare2, Layers, ShieldCheck, Sparkles,
 } from 'lucide-react';
 import { tenantsApi } from '../api';
 import { ALLOWED_MODULES, getAttPct } from '../shared/constants';
@@ -68,7 +68,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
 
   const statusDot =
     tenant.status === 'ACTIVE' ? 'bg-emerald-500' :
-    tenant.status === 'TRIAL' ? 'bg-blue-500' :
+    tenant.status === 'TRIAL' ? 'bg-orange-500' :
     tenant.status === 'EXPIRED' ? 'bg-rose-500' : 'bg-amber-500';
 
   const admins: any[] = tenant.admins || [];
@@ -78,9 +78,9 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content max-w-2xl max-h-[88vh] overflow-y-auto p-6 bg-white border border-slate-200 text-slate-900">
+      <div className="modal-content max-w-2xl max-h-[88vh] overflow-y-auto p-6 bg-white border border-[color:var(--border)] text-slate-900">
         {/* Header */}
-        <div className="flex justify-between items-start mb-5 pb-4 border-b border-slate-100">
+        <div className="flex justify-between items-start mb-5 pb-4 border-b border-[color:var(--border)]">
           <div className="min-w-0 pr-3">
             <h2 className="text-lg font-bold text-slate-900 tracking-tight truncate">{tenant.name}</h2>
             <p className="text-[11px] text-slate-500 font-mono mt-0.5">@{tenant.slug}</p>
@@ -106,7 +106,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
           ].map((item, i) => {
             const Icon = item.icon;
             return (
-              <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <div key={i} className="bg-slate-50 border border-[color:var(--border)] rounded-xl p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Icon size={11} className="text-slate-400" />
                   <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{item.label}</span>
@@ -123,13 +123,34 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
             <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-700">Bugungi davomat</p>
             <p className="text-sm font-bold text-emerald-700 mt-1">{tenant.attendanceToday ?? 0} ta · {attPct}%</p>
           </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-            <p className="text-[9px] font-bold uppercase tracking-wider text-blue-700">Faol topshiriqlar</p>
-            <p className="text-sm font-bold text-blue-700 mt-1">{tenant.activeTasks ?? 0} ta</p>
+          <div className="bg-slate-50 border border-[color:var(--border)] rounded-xl p-3">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Faol topshiriqlar</p>
+            <p className="text-sm font-bold text-slate-700 mt-1">{tenant.activeTasks ?? 0} ta</p>
           </div>
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
             <p className="text-[9px] font-bold uppercase tracking-wider text-amber-700">Tranzaksiyalar</p>
             <p className="text-sm font-bold text-amber-700 mt-1">{tenant._count?.transactions ?? 0} ta</p>
+          </div>
+        </div>
+
+        {/* AI foydalanish — Faza 6, AiUsageDaily yig'indisi */}
+        <div className="mb-5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+            <Sparkles size={12} /> AI foydalanish
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-orange-700">Jami xabarlar</p>
+              <p className="text-sm font-bold text-orange-700 mt-1">{tenant.aiUsage?.totalMessages ?? 0} ta</p>
+            </div>
+            <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-orange-700">Jami xarajat</p>
+              <p className="text-sm font-bold text-orange-700 mt-1">${(tenant.aiUsage?.totalCostUsd ?? 0).toFixed(3)}</p>
+            </div>
+            <div className="bg-slate-50 border border-[color:var(--border)] rounded-xl p-3">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Qo'shimcha kredit</p>
+              <p className="text-sm font-bold text-slate-700 mt-1">{tenant.aiExtraCredits ?? 0} ta</p>
+            </div>
           </div>
         </div>
 
@@ -143,7 +164,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
           ) : (
             <div className="space-y-1.5">
               {admins.map(a => (
-                <div key={a.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+                <div key={a.id} className="bg-slate-50 border border-[color:var(--border)] rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 border border-orange-200 flex items-center justify-center flex-shrink-0">
                       <User size={14} />
@@ -160,7 +181,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
                       </span>
                     )}
                     {a.telegramId && (
-                      <span className="inline-flex items-center gap-1 text-blue-600">
+                      <span className="inline-flex items-center gap-1 text-emerald-600">
                         <Send size={10} /> {a.telegramId}
                       </span>
                     )}
@@ -181,7 +202,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {branches.map(b => (
-                <div key={b.id} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex items-center justify-between text-xs">
+                <div key={b.id} className="bg-slate-50 border border-[color:var(--border)] rounded-lg px-3 py-2 flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-800 truncate pr-2">{b.name}</span>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
                     b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
@@ -215,13 +236,13 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
         </div>
 
         {/* Subscription controls */}
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5 space-y-4 text-xs">
+        <div className="bg-slate-50 border border-[color:var(--border)] rounded-xl p-4 mb-5 space-y-4 text-xs">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Obuna Sozlamalari</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Status</label>
-              <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 transition-colors">
+              <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 transition-colors">
                 <option value="ACTIVE">Faol (ACTIVE)</option>
                 <option value="TRIAL">Trial</option>
                 <option value="EXPIRED">Muddati tugagan</option>
@@ -231,7 +252,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
 
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Tarif Rejasi</label>
-              <select value={newPlanId} onChange={e => setNewPlanId(e.target.value)} className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 transition-colors">
+              <select value={newPlanId} onChange={e => setNewPlanId(e.target.value)} className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 transition-colors">
                 <option value="">— Tarifisiz —</option>
                 {plans.map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
               </select>
@@ -251,7 +272,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
                   setNewStatus('ACTIVE');
                 }
               }}
-              className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 transition-colors"
+              className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 transition-colors"
             />
           </div>
 
@@ -263,7 +284,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
                   key={btn.months}
                   type="button"
                   onClick={() => addMonths(btn.months)}
-                  className="h-7 px-3 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition-all"
+                  className="h-7 px-3 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-[color:var(--border)] rounded-lg transition-all"
                 >
                   {btn.label}
                 </button>
@@ -287,7 +308,7 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
           {tenant.payments?.length > 0 ? (
             <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
               {tenant.payments.map((p: any) => (
-                <div key={p.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs">
+                <div key={p.id} className="flex items-center justify-between bg-slate-50 border border-[color:var(--border)] rounded-lg p-2.5 text-xs">
                   <div className="min-w-0 pr-2">
                     <p className="font-semibold text-slate-800 truncate">{p.planName} · {p.duration} oy</p>
                     <p className="text-[10px] text-slate-500 font-medium mt-0.5">{new Date(p.createdAt).toLocaleDateString('uz-UZ')}</p>

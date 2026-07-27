@@ -254,22 +254,37 @@
   }
 }
 
+/* Scrollbar — ko'rinadigan bo'lishi shart. 6px shaffof trek bilan
+   foydalanuvchi sahifada yana kontent borligini sezmasdi. */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 11px;
+  height: 11px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #eef0f4;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: #b6bdc9;
+  border-radius: 999px;
+  border: 3px solid #eef0f4;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #8d96a6;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: #eef0f4;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #b6bdc9 #eef0f4;
 }
 
 /* Custom UI enhancements */
@@ -296,23 +311,9 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg);
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
-}
+/* Scrollbar qoidalari yuqorida (bitta manba) belgilangan — bu yerda
+   takroriy blok bor edi va yuqoridagini bekor qilardi (shaffof trek,
+   ingichka thumb). Olib tashlandi. */
 
 .container {
   max-width: 1280px;

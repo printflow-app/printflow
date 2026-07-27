@@ -15,6 +15,10 @@ export default function Payments() {
   const [cardsLoading, setCardsLoading] = useState(true);
   const [savingCards, setSavingCards] = useState(false);
 
+  const [aiPackages, setAiPackages] = useState<any[]>([]);
+  const [aiPackagesLoading, setAiPackagesLoading] = useState(true);
+  const [savingAiPackages, setSavingAiPackages] = useState(false);
+
   const loadPayments = () => invalidate.payments();
 
   const loadCards = () => {
@@ -24,7 +28,14 @@ export default function Payments() {
       .finally(() => setCardsLoading(false));
   };
 
-  useEffect(() => { loadCards(); }, []);
+  const loadAiPackages = () => {
+    settingsApi.get('AI_TOPUP_PACKAGES')
+      .then(r => { setAiPackages(r.data.value || []); })
+      .catch(() => { setAiPackages([]); })
+      .finally(() => setAiPackagesLoading(false));
+  };
+
+  useEffect(() => { loadCards(); loadAiPackages(); }, []);
 
   const approve = async (id: string) => {
     const ok = await confirm({ title: "To'lovni tasdiqlash", message: 'Ushbu to\'lovni tasdiqlaysizmi?', confirmText: 'Tasdiqlash' });
@@ -63,6 +74,23 @@ export default function Payments() {
     setCards(newCards);
   };
 
+  const handleSaveAiPackages = async () => {
+    setSavingAiPackages(true);
+    try {
+      await settingsApi.update('AI_TOPUP_PACKAGES', aiPackages);
+      toast('AI paketlar saqlandi!', 'success');
+    } catch { toast('Xatolik!', 'error'); }
+    finally { setSavingAiPackages(false); }
+  };
+
+  const addAiPackage = () => setAiPackages([...aiPackages, { id: `pkg_${Date.now()}`, label: '', credits: 0, priceUzs: 0 }]);
+  const removeAiPackage = (idx: number) => setAiPackages(aiPackages.filter((_, i) => i !== idx));
+  const updateAiPackage = (idx: number, field: string, val: string) => {
+    const next = [...aiPackages];
+    next[idx][field] = field === 'credits' || field === 'priceUzs' ? Number(val) || 0 : val;
+    setAiPackages(next);
+  };
+
   const statusBadge = (s: string) => {
     if (s === 'APPROVED') {
       return (
@@ -98,7 +126,7 @@ export default function Payments() {
             <p className="text-xs text-slate-500">Obuna rejalari uchun kelib tushgan to'lovlar tarixi</p>
           </div>
 
-          <div className="bg-white border border-slate-200 p-0.5 rounded-lg flex items-center gap-1 shadow-sm">
+          <div className="bg-white border border-[color:var(--border)] p-0.5 rounded-lg flex items-center gap-1">
             <button
               className={`h-8 px-4 rounded-md text-xs font-bold transition-all ${
                 tab === 'pending' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'
@@ -118,11 +146,11 @@ export default function Payments() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-[color:var(--border)] rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <tr className="border-b border-[color:var(--border)] bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   <th className="py-3 px-4">Sana</th>
                   <th className="py-3 px-4">Workspace</th>
                   <th className="py-3 px-4">Tarif</th>
@@ -142,8 +170,13 @@ export default function Payments() {
                     <td className="py-3.5 px-4 font-semibold text-slate-900">
                       {p.tenant?.name || '—'}
                     </td>
-                    <td className="py-3.5 px-4">{p.planName}</td>
-                    <td className="py-3.5 px-4 text-slate-500">{p.duration} oy</td>
+                    <td className="py-3.5 px-4">
+                      {p.planName}
+                      {p.type === 'AI_TOPUP' && (
+                        <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider text-orange-600 bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded">AI</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-500">{p.type === 'AI_TOPUP' ? '—' : `${p.duration} oy`}</td>
                     <td className="py-3.5 px-4 font-bold text-slate-900">
                       {p.amount?.toLocaleString()} UZS
                     </td>
@@ -153,13 +186,13 @@ export default function Payments() {
                       {p.status === 'PENDING' && (
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            className="h-7 px-3 text-[11px] font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-all flex items-center gap-1 shadow-sm"
+                            className="h-7 px-3 text-[11px] font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-all flex items-center gap-1"
                             onClick={() => approve(p.id)}
                           >
                             Tasdiqlash
                           </button>
                           <button
-                            className="h-7 w-7 flex items-center justify-center bg-white hover:bg-rose-50 text-rose-500 border border-slate-200 hover:border-rose-200 rounded-md transition-all"
+                            className="h-7 w-7 flex items-center justify-center bg-white hover:bg-rose-50 text-rose-500 border border-[color:var(--border)] hover:border-rose-200 rounded-md transition-all"
                             onClick={() => reject(p.id)}
                             title="Rad etish"
                           >
@@ -184,7 +217,7 @@ export default function Payments() {
       </div>
 
       {/* 2. Card Management */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-5">
+      <div className="bg-white border border-[color:var(--border)] rounded-xl p-5 space-y-5">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">To'lov Kartalari</h3>
@@ -194,7 +227,7 @@ export default function Payments() {
           <div className="flex items-center gap-2">
             <button
               onClick={addCard}
-              className="h-8 px-3 text-xs font-bold border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg transition-all flex items-center gap-1"
+              className="h-8 px-3 text-xs font-bold border border-[color:var(--border)] hover:bg-slate-50 text-slate-700 rounded-lg transition-all flex items-center gap-1"
             >
               <Plus size={13} /> Karta Qo'shish
             </button>
@@ -213,7 +246,7 @@ export default function Payments() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {cards.length === 0 && (
-              <div className="col-span-full border border-dashed border-slate-200 rounded-lg p-8 text-center bg-slate-50">
+              <div className="col-span-full border border-dashed border-[color:var(--border)] rounded-lg p-8 text-center bg-slate-50">
                 <ShieldAlert size={20} className="mx-auto mb-2 text-slate-400" />
                 <p className="text-xs font-medium text-slate-500">
                   Kartalar mavjud emas. To'lov tizimi ishlashi uchun karta ma'lumotlarini qo'shing.
@@ -224,13 +257,13 @@ export default function Payments() {
             {cards.map((c, i) => (
               <div
                 key={i}
-                className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 relative group"
+                className="bg-slate-50 border border-[color:var(--border)] rounded-xl p-4 space-y-3 relative group"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Karta #{i + 1}</span>
                   <button
                     onClick={() => removeCard(i)}
-                    className="h-6 w-6 rounded-md bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-500 flex items-center justify-center transition-all"
+                    className="h-6 w-6 rounded-md bg-white border border-[color:var(--border)] hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-500 flex items-center justify-center transition-all"
                     title="O'chirish"
                   >
                     <Trash2 size={12} />
@@ -245,7 +278,7 @@ export default function Payments() {
                       value={c.name}
                       onChange={e => updateCard(i, 'name', e.target.value)}
                       placeholder="Masalan: UZCARD yoki HUMO"
-                      className="w-full h-8 px-2.5 bg-white border border-slate-200 text-slate-900 focus:border-orange-500 rounded-lg outline-none font-medium transition-all"
+                      className="w-full h-8 px-2.5 bg-white border border-[color:var(--border)] text-slate-900 focus:border-orange-500 rounded-lg outline-none font-medium transition-all"
                     />
                   </div>
 
@@ -256,7 +289,7 @@ export default function Payments() {
                       value={c.number}
                       onChange={e => updateCard(i, 'number', e.target.value)}
                       placeholder="0000 0000 0000 0000"
-                      className="w-full h-8 px-2.5 bg-white border border-slate-200 text-slate-900 focus:border-orange-500 rounded-lg outline-none font-mono tracking-wider transition-all"
+                      className="w-full h-8 px-2.5 bg-white border border-[color:var(--border)] text-slate-900 focus:border-orange-500 rounded-lg outline-none font-mono tracking-wider transition-all"
                     />
                   </div>
 
@@ -267,7 +300,101 @@ export default function Payments() {
                       value={c.owner}
                       onChange={e => updateCard(i, 'owner', e.target.value)}
                       placeholder="Ism Familiya"
-                      className="w-full h-8 px-2.5 bg-white border border-slate-200 text-slate-900 focus:border-orange-500 rounded-lg outline-none font-medium transition-all"
+                      className="w-full h-8 px-2.5 bg-white border border-[color:var(--border)] text-slate-900 focus:border-orange-500 rounded-lg outline-none font-medium transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 3. AI Topup Package Management */}
+      <div className="bg-white border border-[color:var(--border)] rounded-xl p-5 space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">AI So'rov Paketlari</h3>
+            <p className="text-xs text-slate-500">Kunlik/oylik limit tugaganda mijozlar sotib oladigan qo'shimcha AI so'rov paketlari</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={addAiPackage}
+              className="h-8 px-3 text-xs font-bold border border-[color:var(--border)] hover:bg-slate-50 text-slate-700 rounded-lg transition-all flex items-center gap-1"
+            >
+              <Plus size={13} /> Paket Qo'shish
+            </button>
+            <button
+              onClick={handleSaveAiPackages}
+              disabled={savingAiPackages}
+              className="h-8 px-4 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all disabled:bg-slate-300"
+            >
+              {savingAiPackages ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+          </div>
+        </div>
+
+        {aiPackagesLoading ? (
+          <div className="py-6 text-center text-slate-500 text-xs">Yuklanmoqda...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiPackages.length === 0 && (
+              <div className="col-span-full border border-dashed border-[color:var(--border)] rounded-lg p-8 text-center bg-slate-50">
+                <ShieldAlert size={20} className="mx-auto mb-2 text-slate-400" />
+                <p className="text-xs font-medium text-slate-500">
+                  Hali paket qo'shilmagan. Mijozlar limit tugaganda qo'shimcha sotib olishi uchun kamida bitta paket qo'shing.
+                </p>
+              </div>
+            )}
+
+            {aiPackages.map((p, i) => (
+              <div
+                key={i}
+                className="bg-slate-50 border border-[color:var(--border)] rounded-xl p-4 space-y-3 relative group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Paket #{i + 1}</span>
+                  <button
+                    onClick={() => removeAiPackage(i)}
+                    className="h-6 w-6 rounded-md bg-white border border-[color:var(--border)] hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-500 flex items-center justify-center transition-all"
+                    title="O'chirish"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wide block mb-1">Nomi</label>
+                    <input
+                      type="text"
+                      value={p.label}
+                      onChange={e => updateAiPackage(i, 'label', e.target.value)}
+                      placeholder="Masalan: 500 ta so'rov"
+                      className="w-full h-8 px-2.5 bg-white border border-[color:var(--border)] text-slate-900 focus:border-orange-500 rounded-lg outline-none font-medium transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wide block mb-1">So'rovlar soni</label>
+                    <input
+                      type="number"
+                      value={p.credits}
+                      onChange={e => updateAiPackage(i, 'credits', e.target.value)}
+                      placeholder="500"
+                      className="w-full h-8 px-2.5 bg-white border border-[color:var(--border)] text-slate-900 focus:border-orange-500 rounded-lg outline-none font-mono transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wide block mb-1">Narxi (UZS)</label>
+                    <input
+                      type="number"
+                      value={p.priceUzs}
+                      onChange={e => updateAiPackage(i, 'priceUzs', e.target.value)}
+                      placeholder="150000"
+                      className="w-full h-8 px-2.5 bg-white border border-[color:var(--border)] text-slate-900 focus:border-orange-500 rounded-lg outline-none font-mono transition-all"
                     />
                   </div>
                 </div>

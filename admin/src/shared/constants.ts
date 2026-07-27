@@ -58,8 +58,18 @@ export const ALLOWED_MODULES: { key: string; label: string; icon: LucideIcon; de
   { key: 'ai_chat',       label: 'AI Copilot',          icon: Sparkles,      desc: 'AI chatbot yordamchisi' },
 ];
 
+// Yagona tarif tizimi: admin faqat oylik baza narxni kiritadi,
+// 6 va 12 oylik umumiy narxlar shu bazadan avtomatik hisoblanadi.
+export const PLAN_DURATION_DISCOUNTS = { 6: 0.05, 12: 0.10 } as const;
+
+export const computePlanPrices = (monthlyPrice: number) => ({
+  price3m: Math.round(monthlyPrice * 3),
+  price6m: Math.round(monthlyPrice * 6 * (1 - PLAN_DURATION_DISCOUNTS[6])),
+  price12m: Math.round(monthlyPrice * 12 * (1 - PLAN_DURATION_DISCOUNTS[12])),
+});
+
 export const defaultPlanForm = () => ({
-  name: '', displayName: '', price3m: 0, price6m: 0, price12m: 0,
+  name: '', displayName: '', monthlyPrice: 500000,
   maxEmployees: 8, maxBranches: 1, maxDepartments: 1,
   aiMessagesPerMonth: 100,
   allowedModules: [] as string[],

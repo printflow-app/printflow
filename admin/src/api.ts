@@ -47,6 +47,7 @@ export const tenantsApi = {
   update: (id: string, data: any) => api.put(`/super-admin/tenants/${id}`, data),
   delete: (id: string) => api.delete(`/super-admin/tenants/${id}`),
   getStats: () => api.get('/super-admin/tenants/stats/overview'),
+  getAiUsage: () => api.get('/super-admin/tenants/ai-usage'),
   getPendingPayments: () => api.get('/super-admin/tenants/payments/pending'),
   getAllPayments: () => api.get('/super-admin/tenants/payments/all'),
   approvePayment: (id: string) => api.post(`/super-admin/tenants/payments/${id}/approve`),

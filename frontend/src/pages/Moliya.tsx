@@ -113,10 +113,10 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
         </div>
         )}
 
-        <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125" />
+        <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125" />
           <div className="relative">
-            <div className="w-9 h-9 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-3 border border-blue-200 shadow-sm">
+            <div className="w-9 h-9 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-3 border border-orange-200 shadow-sm">
               <CheckCircle size={18} />
             </div>
             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilgan Buyurtmalar</p>

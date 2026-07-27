@@ -11,10 +11,12 @@ const STATUS_LABELS: Record<string, string> = {
   closed: 'Yopilgan',
 };
 
+// Voronka bosqichi — tartibli (yangi → yopilgan), shuning uchun brand
+// orange'dan neytralgacha bitta yo'nalishda. Tizim palitrasidan chiqmaydi.
 const STATUS_COLORS: Record<string, string> = {
-  new: 'bg-blue-500',
+  new: 'bg-orange-500',
   contacted: 'bg-amber-500',
-  demo_done: 'bg-purple-500',
+  demo_done: 'bg-emerald-500',
   closed: 'bg-slate-400',
 };
 
@@ -78,11 +80,11 @@ export default function Leads() {
       </div>
 
       {/* Leads Table Card */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-[color:var(--border)] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-[color:var(--border)] bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <th className="py-3 px-4">Sana</th>
                 <th className="py-3 px-4">Mijoz</th>
                 <th className="py-3 px-4">Kompaniya</th>
@@ -111,7 +113,7 @@ export default function Leads() {
                         href={`https://t.me/${l.telegramUser.replace('@', '')}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                        className="text-orange-600 hover:text-orange-700 font-medium inline-flex items-center gap-1"
                       >
                         <Send size={10} />
                         <span>{l.telegramUser}</span>
@@ -129,7 +131,7 @@ export default function Leads() {
                       <select
                         value={l.status}
                         onChange={e => updateStatus(l.id, e.target.value)}
-                        className="h-7 border border-slate-200 rounded-md px-1.5 text-[11px] font-bold outline-none bg-white text-slate-700 hover:border-slate-300 transition-all cursor-pointer focus:border-orange-500"
+                        className="h-7 border border-[color:var(--border)] rounded-md px-1.5 text-[11px] font-bold outline-none bg-white text-slate-700 hover:border-slate-300 transition-all cursor-pointer focus:border-orange-500"
                       >
                         <option value="new">Yangi</option>
                         <option value="contacted">Bog'lanildi</option>
@@ -140,7 +142,7 @@ export default function Leads() {
                       {l.status !== 'closed' && (
                         <button
                           onClick={() => openCreateModal(l)}
-                          className="h-7 px-2.5 text-[11px] font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-all shadow-sm"
+                          className="h-7 px-2.5 text-[11px] font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-all"
                         >
                           Workspace Ochish
                         </button>
@@ -153,7 +155,7 @@ export default function Leads() {
                           try { await leadsApi.delete(l.id); toast('So\'rov o\'chirildi', 'success'); load(); }
                           catch (e: any) { toast(e?.response?.data?.message || 'Xatolik', 'error'); }
                         }}
-                        className="h-7 w-7 flex items-center justify-center bg-white hover:bg-rose-50 text-rose-500 border border-slate-200 hover:border-rose-200 rounded-md transition-all"
+                        className="h-7 w-7 flex items-center justify-center bg-white hover:bg-rose-50 text-rose-500 border border-[color:var(--border)] hover:border-rose-200 rounded-md transition-all"
                         title="O'chirish"
                       >
                         <Trash2 size={12} />
@@ -177,8 +179,8 @@ export default function Leads() {
       {/* Workspace Create Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content max-w-sm bg-white border border-slate-200 text-slate-900">
-            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+          <div className="modal-content max-w-sm bg-white border border-[color:var(--border)] text-slate-900">
+            <div className="flex items-center justify-between p-4 border-b border-[color:var(--border)]">
               <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 {generatedCreds ? 'Workspace Yaratildi!' : 'Workspace Yaratish'}
               </h2>
@@ -192,7 +194,7 @@ export default function Leads() {
                 <form onSubmit={handleCreateWorkspace} className="space-y-4 text-xs">
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Mijoz Kompaniyasi</label>
-                    <input readOnly value={selectedLead?.companyName || ''} className="bg-slate-50 cursor-not-allowed font-semibold w-full h-9 text-xs border border-slate-200 rounded-lg text-slate-700 px-2.5" />
+                    <input readOnly value={selectedLead?.companyName || ''} className="bg-slate-50 cursor-not-allowed font-semibold w-full h-9 text-xs border border-[color:var(--border)] rounded-lg text-slate-700 px-2.5" />
                   </div>
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Workspace Slug (Tizim URL manzili)</label>
@@ -202,7 +204,7 @@ export default function Leads() {
                       onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
                       placeholder="idealprint"
                       autoFocus
-                      className="w-full h-9 text-xs border border-slate-200 bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500"
+                      className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500"
                     />
                     <span className="text-[10px] font-bold text-slate-500 mt-1 block">
                       printflow.uz/t/{slug || '...'}
@@ -213,7 +215,7 @@ export default function Leads() {
                     <select
                       value={planId}
                       onChange={e => setPlanId(e.target.value)}
-                      className="w-full h-9 border border-slate-200 bg-white text-slate-700 rounded-lg px-2 text-xs outline-none focus:border-orange-500"
+                      className="w-full h-9 border border-[color:var(--border)] bg-white text-slate-700 rounded-lg px-2 text-xs outline-none focus:border-orange-500"
                     >
                       <option value="">Tanlanmagan (7 kunlik trial)</option>
                       {plans.map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
@@ -232,13 +234,13 @@ export default function Leads() {
                   <p className="text-slate-700 font-medium">
                     Mijoz uchun tizimga kirish ma'lumotlari yaratildi:
                   </p>
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+                  <div className="bg-slate-50 border border-[color:var(--border)] rounded-lg p-3 space-y-2">
                     <p><span className="text-slate-500">Workspace URL:</span> <span className="text-slate-900 select-all font-semibold">/t/{generatedCreds.slug}</span></p>
                     <p><span className="text-slate-500">Login:</span> <span className="text-slate-900 select-all font-semibold">{generatedCreds.login}</span></p>
                     <p><span className="text-slate-500">Parol:</span> <span className="text-slate-900 select-all font-semibold">{generatedCreds.password}</span></p>
                   </div>
                   <button
-                    className="w-full h-9 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all mt-2"
+                    className="w-full h-9 bg-slate-100 hover:bg-slate-200 border border-[color:var(--border)] text-slate-700 text-xs font-bold rounded-lg transition-all mt-2"
                     onClick={() => setShowModal(false)}
                   >
                     Yopish

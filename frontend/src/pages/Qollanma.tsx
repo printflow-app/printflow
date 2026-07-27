@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import {
   Search, Book, ChevronRight, ChevronLeft, ChevronDown, Menu, X,
   PlayCircle, LayoutTemplate, Layers, Users, CreditCard,
-  Building2, ShieldCheck, BarChart3, QrCode, Bot, Command, Sparkles, Send,
+  Building2, ShieldCheck, BarChart3, QrCode, Bot, Command, Sparkles, Send, FileText, Wallet, Calculator,
   Info, AlertTriangle, Lightbulb,
 } from 'lucide-react';
 
@@ -73,6 +73,43 @@ const GUIDES: Guide[] = [
         blocks: [
           { type: 'callout', tone: 'tip', title: 'Maslahat',
             html: 'Ushbu sahifa chap panelida <strong>"Yo\'l-yo\'riqni qaytadan ko\'rish"</strong> tugmasini bosing — tour qaytadan boshlanadi.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'dashboard',
+    category: 'boshlanish',
+    icon: <LayoutTemplate size={16} />,
+    title: 'Dashboard',
+    tags: ['dashboard', 'bosh sahifa', 'widget', 'vidjet', 'chart', 'grafik', 'umumiy'],
+    intro: "Butun tizimning bir ekrandagi manzarasi — moliya, buyurtmalar, davomat, mijozlar, ombor, hamkorlar va xodimlar bo'yicha kartalar hamda grafiklar.",
+    sections: [
+      {
+        id: 'nima-bor', title: 'Qanday kartalar bor',
+        blocks: [
+          { type: 'list', items: [
+            "<strong>AI xavf nazorati</strong> — tizim topgan muammolar (eng yuqorida)",
+            "<strong>Moliya</strong> — bugungi va 30 kunlik kirim/chiqim, 14 kunlik trend grafigi, to'lov turlari kesimi",
+            "<strong>Buyurtmalar</strong> — umumiy soni, muddati o'tganlari va Kanban ustunlari bo'yicha taqsimot",
+            "<strong>Davomat</strong> — bugun kelganlar foizi va 7 kunlik trend",
+            "<strong>Mijozlar</strong> — eng katta qarzdor 5 ta mijoz",
+            "<strong>Ombor</strong> — minimal chegaradan pastga tushgan materiallar",
+            "<strong>Hamkorlar</strong> — vendorlar bo'yicha balans holati",
+            "<strong>Xodimlar</strong> — lavozimlar bo'yicha taqsimot",
+          ]},
+        ],
+      },
+      {
+        id: 'sozlash', title: 'Kartalarni sozlash',
+        blocks: [
+          { type: 'steps', items: [
+            "O'ng yuqoridagi <strong>sozlash</strong> tugmasini bosing",
+            "Kerak bo'lmagan kartalarni belgisini olib tashlang",
+            "Tanlov shu brauzerda saqlanadi — keyingi kirishda ham o'sha holatda ochiladi",
+          ]},
+          { type: 'callout', tone: 'info', title: 'Ruxsatlar',
+            html: 'Har karta o\'z ruxsatini mustaqil tekshiradi. Masalan moliyani ko\'rish huquqi yo\'q xodimga moliya kartasi umuman ko\'rinmaydi — sozlamada ham chiqmaydi.' },
         ],
       },
     ],
@@ -160,12 +197,53 @@ const GUIDES: Guide[] = [
   },
 
   {
+    id: 'narx-royxati',
+    category: 'buyurtmalar',
+    icon: <FileText size={16} />,
+    title: "Narxlar ro'yxati va buyurtma taklifi",
+    tags: ['narx', 'royxat', 'pricelist', 'taklif', 'kommercheskiy', 'pdf', 'qidiruv'],
+    intro: "Mijozga yuboriladigan narxlar varag'i va tayyor buyurtma taklifi (quote) — PDF yoki PNG ko'rinishida.",
+    sections: [
+      {
+        id: 'ochish', title: 'Qayerdan ochiladi',
+        blocks: [
+          { type: 'steps', items: [
+            "<strong>Sozlamalar</strong> sahifasini oching",
+            "<strong>Narxlar ro'yxati</strong> bo'limidagi tugmani bosing",
+            "Yuqoridagi ikkita rejimdan birini tanlang: <strong>Narxlar varag'i</strong> yoki <strong>Buyurtma taklifi</strong>",
+          ]},
+        ],
+      },
+      {
+        id: 'taklif', title: 'Buyurtma taklifini tuzish',
+        blocks: [
+          { type: 'steps', items: [
+            "Yuqoridagi <strong>qidiruv maydoniga</strong> mahsulot nomini yozing — ro'yxat darhol filtrlanadi (xizmat nomi, o'lchov birligi va opsiya qiymatlari bo'yicha qidiradi)",
+            "Kerakli opsiyalarni tanlang — dona narxi jonli o'zgaradi",
+            "Sonini kiriting va <strong>Qo'shish</strong> bosing",
+            "O'ngdagi savatda qatorlar to'planadi, <strong>JAMI</strong> summa avtomatik hisoblanadi",
+            "Pastdagi tanlovdan PDF yoki PNG ni tanlab <strong>Yuklab olish</strong> bosing",
+          ]},
+          { type: 'callout', tone: 'tip', title: 'Qidiruv haqida',
+            html: 'Qidiruv katta-kichik harfga sezgir emas va opsiya qiymatlari ichidan ham qidiradi — masalan <em>"kraft"</em> deb yozsangiz, kraft qog\'oz opsiyasi bor barcha xizmatlar chiqadi. Maydonni tozalash uchun o\'ng tomondagi × belgisini bosing.' },
+        ],
+      },
+      {
+        id: 'ommaviy', title: 'Ommaviy havola',
+        blocks: [
+          { type: 'p', html: "Narxlar ro'yxatini ommaviy havola sifatida ham ulashish mumkin — mijoz tizimga kirmasdan ko'radi. Havola va brending sozlamalari shu bo'limning o'zida." },
+        ],
+      },
+    ],
+  },
+
+  {
     id: 'xodim-qoshish',
     category: 'xodimlar',
     icon: <Users size={16} />,
     title: 'Xodim qo\'shish',
-    tags: ['xodim', 'ishchi', 'qoshish', 'parol', 'hodim'],
-    intro: 'Yangi xodimlarni tizimga kiritish va ularga login/parol berish.',
+    tags: ['xodim', 'ishchi', 'qoshish', 'parol', 'hodim', 'tahrirlash', 'maosh', 'ozgartirish'],
+    intro: 'Yangi xodimlarni tizimga kiritish, ularga login/parol berish va keyinchalik ma\'lumotlarini tahrirlash.',
     sections: [
       {
         id: 'tartib', title: 'Qanday amalga oshiriladi',
@@ -180,10 +258,25 @@ const GUIDES: Guide[] = [
         ],
       },
       {
+        id: 'tahrirlash', title: 'Xodim ma\'lumotlarini tahrirlash',
+        blocks: [
+          { type: 'steps', items: [
+            'Xodimlar sahifasida kerakli xodim qatoriga sichqonchani olib boring',
+            'O\'ng tomonda chiqadigan <strong>qalam</strong> belgisini bosing',
+            'Ism-familiya, telefon, lavozim, filial va <strong>maosh</strong>ni o\'zgartiring',
+            '<strong>Saqlash</strong> bosing — o\'zgarish darhol kuchga kiradi',
+          ]},
+          { type: 'callout', tone: 'warn', title: 'Login va parol bu yerda o\'zgarmaydi',
+            html: 'Xavfsizlik uchun parol alohida oqimda yangilanadi: o\'sha qatordagi <strong>aylanma strelka</strong> tugmasini bosing — yangi parol yaratiladi va ekranda ko\'rsatiladi. Parol yangilangan zahoti xodim barcha qurilmalardan chiqariladi.' },
+        ],
+      },
+      {
         id: 'eslatma', title: 'Eslatma',
         blocks: [
           { type: 'callout', tone: 'info',
             html: 'Yangi xodimga kerakli ruxsat yo\'q bo\'lsa, avval <strong>Sozlamalar → Lavozimlar</strong> bo\'limidan mos rol yarating va checkbox\'lar bilan huquqlarni belgilang.' },
+          { type: 'callout', tone: 'info', title: 'Ruxsat',
+            html: 'Tahrirlash tugmasi faqat <strong>Xodimni tahrirlash</strong> yoki <strong>Xodimlarni boshqarish</strong> ruxsati bor lavozimlarda ko\'rinadi.' },
         ],
       },
     ],
@@ -219,6 +312,106 @@ const GUIDES: Guide[] = [
             '<strong>canDelete*</strong> — o\'chirish',
             '<strong>canManage*</strong> — to\'liq boshqaruv (CRUD + qo\'shimcha)',
           ]},
+        ],
+      },
+    ],
+  },
+  {
+    id: 'maosh',
+    category: 'xodimlar',
+    icon: <Wallet size={16} />,
+    title: 'Maosh — oylik hisob-kitob',
+    tags: ['maosh', 'oylik', 'payroll', 'avans', 'bonus', 'jarima', 'kpi'],
+    intro: "Oylik hisob-kitob, avans ushlash va Kassadan to'lash. Hisobni lavozimga qarab avtomatlashtirish mumkin.",
+    sections: [
+      {
+        id: 'oylik-chiqarish', title: 'Oylikni chiqarish',
+        blocks: [
+          { type: 'steps', items: [
+            "<strong>Xodimlar → Maosh</strong> tabini oching",
+            "Yuqoridan kerakli <strong>oyni</strong> tanlang",
+            "Har xodim qatorida <strong>fiksa, bonus, jarima</strong> ustunlarini to'ldiring (yoki avtomatik to'lganini tekshiring)",
+            "<strong>To'lash</strong> bosing — Kassadan chiqim yoziladi",
+          ]},
+          { type: 'code', rows: [
+            { cmd: 'Sof maosh', desc: 'fiksa + bonus − jarima' },
+            { cmd: 'Berish kerak', desc: 'sof maosh − shu oy avansi − oldingi qarz' },
+          ]},
+          { type: 'callout', tone: 'info', title: 'Avans va qarz',
+            html: 'Kassadan berilgan avans oy yakunida <strong>avtomatik ushlanadi</strong>. Agar avans sof maoshdan ko\'p bo\'lsa, farq keyingi oyga qarz bo\'lib ko\'chadi va o\'sha oyda ushlab qolinadi.' },
+          { type: 'callout', tone: 'warn', title: 'Xato bo\'lsa',
+            html: "To'langan oyni tahrirlab bo'lmaydi. Avval <strong>Bekor qilish</strong> bosing — Kassadagi chiqim ham qaytariladi, keyin tuzatib qayta to'lang." },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'maosh-sxema',
+    category: 'xodimlar',
+    icon: <Calculator size={16} />,
+    title: 'Maosh sxemasi (avtomatik hisob)',
+    tags: ['sxema', 'kpi', 'fiksa', 'avtomatik', 'maosh', 'bonus'],
+    intro: "Har lavozim uchun oylik qanday hisoblanishini bir marta belgilaysiz — keyin har oy avtomatik hisoblanadi.",
+    sections: [
+      {
+        id: 'nima-uchun', title: 'Nima uchun kerak',
+        blocks: [
+          { type: 'p', html: "Har lavozimning oyligi boshqacha hisoblanadi: kimdir faqat qat'iy summa oladi, kimdiki davomatga bog'liq, kimdiki bajargan ishiga qarab o'zgaradi. Sxema shu qoidani bir marta yozib qo'yish imkonini beradi — har oy qo'lda hisoblash shart emas." },
+          { type: 'callout', tone: 'info',
+            html: 'Sxema belgilanmagan lavozimda hech narsa o\'zgarmaydi — maosh avvalgidek qo\'lda yoziladi.' },
+        ],
+      },
+      {
+        id: 'tuzish', title: 'Sxema tuzish',
+        blocks: [
+          { type: 'steps', items: [
+            "<strong>Xodimlar → Maosh sxemasi</strong> tabini oching",
+            "<strong>Lavozimni</strong> tanlang",
+            "<strong>+ To'lov turi qo'shish</strong> bosing va turini tanlang",
+            "Tanlagan turingiz so'ragan maydonlarni to'ldiring",
+            "Kerak bo'lsa <strong>shart</strong> qo'shing, so'ng <strong>Saqlash</strong> bosing",
+          ]},
+          { type: 'code', rows: [
+            { cmd: 'Fiksa', desc: "Qat'iy summa. Shart qo'ysangiz — faqat shart bajarilsa beriladi" },
+            { cmd: 'KPI', desc: "Natijaga qarab qo'shiladi: nimaga qarab va har biri uchun qancha" },
+            { cmd: 'Jarima', desc: 'Hisoblanadi, tasdiqlasangiz ushlab qolinadi' },
+          ]},
+        ],
+      },
+      {
+        id: 'misol', title: 'Misol: 3 mln fiksa uch qismdan',
+        blocks: [
+          { type: 'p', html: "Fiksaning o'zi ham shartli bo'lishi mumkin. Masalan 3 000 000 so'mlik oylikni uch qismga bo'lasiz:" },
+          { type: 'list', items: [
+            "<strong>1 000 000</strong> — asosiy, shartsiz (har doim beriladi)",
+            "<strong>1 000 000</strong> — agar ish kunlari kamida 22 bo'lsa",
+            "<strong>1 000 000</strong> — agar kechikish 0 daqiqa bo'lsa",
+          ]},
+          { type: 'p', html: "Xodim 20 kun kelib, 35 daqiqa kechikkan bo'lsa — faqat birinchi qism, ya'ni 1 000 000 so'm beriladi. Qolganlari shart bajarilmagani uchun tushib qoladi va buni Maosh sahifasida sabab bilan ko'rasiz." },
+          { type: 'callout', tone: 'tip', title: 'Nisbatan hisoblash',
+            html: "\"Kamida\" turidagi shartda <strong>nisbatan berilsin</strong> belgisini qo'ysangiz, 22 dan 20 kun kelgan xodimga summaning 20/22 qismi beriladi — hammasi yoki hech nima o'rniga." },
+        ],
+      },
+      {
+        id: 'metrikalar', title: 'KPI nimaga bog\'lanadi',
+        blocks: [
+          { type: 'list', items: [
+            '<strong>Davomat:</strong> ish kunlari, ish soatlari, kechikish daqiqasi, qo\'shimcha ish daqiqasi',
+            '<strong>Buyurtmalar:</strong> bajarilgan buyurtmalar soni, ularning summasi, miqdori (dona)',
+            '<strong>Moliya:</strong> xodim orqali tushgan kirim',
+          ]},
+          { type: 'callout', tone: 'info', title: 'Qanday sanaladi',
+            html: "Buyurtma <strong>\"bajarildi\" ustuniga ko'chirilgan payt</strong> hisobga olinadi. Bir buyurtmada bir necha xodim ishlagan bo'lsa — har biriga to'liq yoziladi, bo'linmaydi." },
+          { type: 'callout', tone: 'warn', title: 'Jarima avtomatik ayrilmaydi',
+            html: 'Jarima hisoblanib ko\'rsatiladi, lekin o\'zi ushlab qolinmaydi. Maosh sahifasida xodim qatorini ochib <strong>Qabul qilish</strong> bosasiz yoki o\'zingiz boshqa summa yozasiz.' },
+        ],
+      },
+      {
+        id: 'tekshirish', title: 'Hisobni tekshirish',
+        blocks: [
+          { type: 'p', html: "Maosh sahifasida xodim nomi yonidagi <strong>▸</strong> belgisini bossangiz, hisob qatorma-qator ochiladi: qaysi qism berildi, qaysi biri nima sababdan tushib qoldi." },
+          { type: 'callout', tone: 'tip',
+            html: 'Avtomatik hisob faqat maydonlarni <strong>oldindan to\'ldiradi</strong>. Har qanday raqamni qo\'lda tuzatib, keyin to\'lashingiz mumkin — oxirgi qaror sizda qoladi.' },
         ],
       },
     ],
@@ -423,9 +616,88 @@ const GUIDES: Guide[] = [
       {
         id: 'ochish', title: 'Qanday ochiladi',
         blocks: [
-          { type: 'p', html: 'Sahifa pastida AI ikonkasi yoki <strong>Ctrl + /</strong> bosing. AI sizning kontekstingizdan kelib chiqib javob beradi.' },
-          { type: 'callout', tone: 'warn', title: 'Eslatma',
-            html: 'AI Copilot Super Admin tomonidan yoqilgan bo\'lishi kerak. Agar ko\'rinmasa — faol emas.' },
+          { type: 'p', html: 'AI ikonkasini bosing yoki <strong>Ctrl + /</strong> tugmalarini bosing. Chat sahifaning <strong>o\'ng tomonida</strong> ochiladi va sahifa mazmunini bosib qolmaydi — kontent qisqaradi, chat u bilan bir chiziqda turadi. Shuning uchun ishlab turib chatni ochiq qoldirsangiz ham bo\'ladi.' },
+          { type: 'callout', tone: 'warn', title: 'Ko\'rinmayaptimi?',
+            html: 'Ikki sabab bo\'lishi mumkin: (1) tarifingizda AI moduli yoqilmagan, (2) lavozimingizda <strong>AI Yordamchi</strong> ruxsati belgilanmagan. Ikkinchisini <strong>Sozlamalar → Lavozimlar & Ruxsatlar</strong> bo\'limidan yoqasiz.' },
+        ],
+      },
+      {
+        id: 'qollanmadan', title: 'Tizim savollariga javob',
+        blocks: [
+          { type: 'p', html: '"Xodimni qayerdan qo\'shaman?" kabi yo\'l-yo\'riq savollariga AI javobni <strong>shu Qo\'llanmadan</strong> oladi — tizimni tekshirib o\'tirmaydi. Shuning uchun javob bir zumda keladi va har doim bir xil bo\'ladi.' },
+          { type: 'callout', tone: 'tip', title: 'Xarajat',
+            html: 'Qo\'llanmadan berilgan javoblar va takrorlangan savollar AI so\'rov limitingizdan <strong>hisoblanmaydi</strong> — ular umuman modelga yuborilmaydi.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ai-xavf-nazorati',
+    category: 'yordamchilar',
+    icon: <Sparkles size={16} />,
+    title: 'AI xavf nazorati',
+    tags: ['xavf', 'risk', 'ogohlantirish', 'nazorat', 'avtonom', 'bartaraf'],
+    intro: "AI butun tizimni fonda kuzatadi va modullarni o'zaro solishtirib, alohida qaraganda ko'rinmaydigan muammolarni topadi.",
+    sections: [
+      {
+        id: 'nima', title: 'Qanday ishlaydi',
+        blocks: [
+          { type: 'p', html: "AI bitta modulga emas, <strong>bog'liqliklarga</strong> qaraydi — bir joydagi voqeani boshqa joydagi holat bilan solishtiradi. Topilgan muammolar Dashboard'ning yuqorisida karta bo'lib chiqadi." },
+          { type: 'list', items: [
+            "<strong>Buyurtma × Davomat</strong> — bugun topshiriladigan buyurtma bor, lekin unga biriktirilgan xodim ishga kelmagan",
+            "<strong>Buyurtma × Ombor</strong> — buyurtma uchun kerakli material qoldig'i yetishmaydi",
+            "<strong>Mijoz × Buyurtma</strong> — qarzi bor mijozga yana yangi buyurtma ochilgan",
+          ]},
+          { type: 'callout', tone: 'info', title: 'Limitga tegmaydi',
+            html: 'Bu nazorat fonda deterministik hisob-kitob bilan bajariladi — AI so\'rov limitingizdan <strong>hisoblanmaydi</strong> va pul sarflamaydi.' },
+        ],
+      },
+      {
+        id: 'bartaraf', title: 'Muammoni hal qilish',
+        blocks: [
+          { type: 'steps', items: [
+            "Kartadagi <strong>Bartaraf etish</strong> tugmasini bosing",
+            "AI suhbati oldindan to'ldirilgan so'rov bilan ochiladi",
+            "AI yechimni taklif qiladi va tasdiqlaganingizdan keyin bajaradi",
+          ]},
+          { type: 'list', items: [
+            "Muammo o'z-o'zidan hal bo'lsa (masalan xodim kelib davomat belgilasa) karta <strong>avtomatik yopiladi</strong>",
+            "Keraksiz kartani <strong>Yopish</strong> tugmasi bilan olib tashlaysiz — u qayta chiqmaydi",
+            "Kartani <em>ko'rish</em> uchun AI ruxsati shart emas, faqat <em>bartaraf etish</em> tugmasi AI ruxsatiga bog'liq",
+          ]},
+          { type: 'callout', tone: 'tip', title: 'Yoqish / o\'chirish',
+            html: 'Sozlamalardagi <strong>Agent siyosati</strong> bo\'limidan xavf nazoratini butunlay o\'chirib qo\'yish mumkin.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ai-limit',
+    category: 'yordamchilar',
+    icon: <CreditCard size={16} />,
+    title: "AI so'rov limiti va qo'shimcha paket",
+    tags: ['limit', 'kredit', 'paket', 'ai', 'sorov', 'billing', 'tolov'],
+    intro: "Har tarifda kunlik va oylik AI so'rov limiti bor. Limit tugasa qo'shimcha paket sotib olish mumkin.",
+    sections: [
+      {
+        id: 'limit', title: 'Limitni kuzatish',
+        blocks: [
+          { type: 'p', html: "Chat oynasining yuqorisidagi indikator kunlik va oylik qolgan so'rovlarni ko'rsatadi. Kunlik hisob har kuni <strong>yarim tunda</strong> (Toshkent vaqti) tiklanadi." },
+          { type: 'callout', tone: 'info', title: 'Nima hisoblanadi',
+            html: 'Faqat modelga yuboriladigan jonli savollar hisoblanadi. Qo\'llanmadan berilgan javoblar, takrorlangan savollar va AI\'ning fondagi nazorat ishlari <strong>hisoblanmaydi</strong>.' },
+        ],
+      },
+      {
+        id: 'paket', title: "Qo'shimcha paket sotib olish",
+        blocks: [
+          { type: 'steps', items: [
+            "<strong>Sozlamalar → Billing</strong> bo'limini oching",
+            "Qo'shimcha so'rov paketlaridan mosini tanlang",
+            "To'lovni amalga oshirib chekni yuklang",
+            "Admin tasdiqlagach kreditlar hisobingizga qo'shiladi",
+          ]},
+          { type: 'callout', tone: 'tip', title: 'Kreditlar qanday sarflanadi',
+            html: 'Kreditlar faqat asosiy limit tugagandan keyin ishlatiladi — kunlik yoki oylik, qaysi biri to\'lgan bo\'lsa. Ular kuyib ketmaydi, keyingi oyga o\'tadi.' },
         ],
       },
     ],

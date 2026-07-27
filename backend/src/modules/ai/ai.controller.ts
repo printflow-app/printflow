@@ -15,6 +15,8 @@ import { Response } from 'express';
 import { AiService } from './ai.service';
 import { BriefingService } from './briefing.service';
 import { RequireFeature } from '../../common/decorators/feature.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { RiskDetectionService } from './risk-detection.service';
 
 // SDK v6: UIMessage format sent by DefaultChatTransport
 interface UIMessagePart {
@@ -37,11 +39,13 @@ interface ChatRequestBody {
 }
 
 @RequireFeature('ai_chat')
+@RequirePermissions('canUseAi')
 @Controller('ai')
 export class AiController {
   constructor(
     private readonly aiService: AiService,
     private readonly briefingService: BriefingService,
+    private readonly riskDetectionService: RiskDetectionService,
   ) {}
 
   @Get('usage')
@@ -57,6 +61,31 @@ export class AiController {
     const tenantId = req.user?.tenantId;
     if (!tenantId) throw new UnauthorizedException();
     return this.briefingService.buildBriefing(tenantId);
+  }
+
+  // =============================================
+  // XAVF KARTALARI (dashboard) — LLM'siz, deterministik korrelyatsiya.
+  // Ko'rish canUseAi'ga bog'liq emas (@RequirePermissions() bo'sh massiv —
+  // klass darajasidagi 'canUseAi' talabini shu route uchun bekor qiladi):
+  // xavfni ko'rish va uni AI orqali hal qilish ikki xil huquq. Faqat
+  // "bartaraf etish" tugmasi (frontend) canUseAi'ni tekshiradi.
+  // =============================================
+
+  @RequirePermissions()
+  @Get('risks')
+  async listRisks(@Req() req: any) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) throw new UnauthorizedException();
+    return this.riskDetectionService.listOpenRisks(tenantId);
+  }
+
+  @RequirePermissions()
+  @Post('risks/:id/dismiss')
+  @HttpCode(HttpStatus.OK)
+  async dismissRisk(@Req() req: any, @Param('id') id: string) {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) throw new UnauthorizedException();
+    return this.riskDetectionService.dismissRisk(tenantId, id);
   }
 
   // =============================================

@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SalarySchemeService } from './salary-scheme.service';
 
 // =============================================
 // PAYROLL SERVICE — oylik maosh hisob-kitobi
@@ -22,7 +23,10 @@ function periodBounds(period: string): { start: Date; end: Date } | null {
 
 @Injectable()
 export class PayrollService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private schemes: SalarySchemeService,
+  ) {}
 
   /** Shu oy uchun barcha xodimlarning maosh qatorini qaytaradi (saqlangan yozuv bilan birlashtirilgan). */
   async list(period: string, branchId?: string) {
@@ -35,6 +39,20 @@ export class PayrollService {
       orderBy: { fullName: 'asc' },
     });
     const empIds = employees.map((e) => e.id);
+
+    // Maosh sxemasi bo'yicha avtomatik hisob. Sxemasi bo'lmagan xodimda
+    // natija bo'lmaydi va u avvalgidek qo'lda kiritiladi.
+    const tenantId = employees[0]?.tenantId;
+    const computed = tenantId
+      ? await this.schemes
+          .computeForEmployees(
+            tenantId,
+            employees.map((e) => ({ id: e.id, roleId: e.roleId })),
+            bounds.start,
+            bounds.end,
+          )
+          .catch(() => ({} as Record<string, any>))
+      : {};
 
     // Saqlangan maosh varaqalari
     const records = empIds.length
@@ -62,8 +80,16 @@ export class PayrollService {
     return employees.map((e) => {
       const rec = recByEmp[e.id];
       const paid = rec?.status === 'paid';
-      const fixedSalary = rec ? rec.fixedSalary : Number(e.baseSalary || 0);
-      const bonus = rec?.bonus || 0;
+      const calc = computed[e.id];
+
+      // Saqlangan yozuv bo'lsa — u ustun (buxgalter qo'lda tuzatgan bo'lishi
+      // mumkin). Bo'lmasa sxema hisobi, u ham bo'lmasa xodimning baseSalary'si.
+      const fixedSalary = rec
+        ? rec.fixedSalary
+        : calc
+          ? calc.fiksa
+          : Number(e.baseSalary || 0);
+      const bonus = rec ? rec.bonus || 0 : calc ? calc.kpi : 0;
       const penalty = rec?.penalty || 0;
       const netSalary = Math.round(fixedSalary + bonus - penalty);
       // Paid bo'lsa snapshotlar; aks holda jonli hisob
@@ -90,6 +116,13 @@ export class PayrollService {
         carriedDebt: paid ? rec.carriedDebt : Math.max(0, -(netSalary - advances - prevDebt)),
         status: rec?.status || 'draft',
         recordId: rec?.id || null,
+
+        // Sxema bo'yicha hisob — UI "nimadan qanday chiqdi" ni ko'rsatadi.
+        // To'langan yozuvda o'sha paytdagi snapshot ko'rsatiladi.
+        breakdown: paid ? rec.breakdown || null : calc?.rows || null,
+        // Taklif qilingan jarima: avtomatik AYIRILMAYDI, buxgalter tasdiqlaydi.
+        taklifJarima: calc?.jarima || 0,
+        avtomatik: !!calc && !rec,
       };
     });
   }

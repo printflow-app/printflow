@@ -24,41 +24,83 @@ enum TenantStatus {
 
 // Dynamic Plans — Super-Admin manages from panel
 model Plan {
-  id                  String   @id @default(uuid())
-  name                String   @unique // "STARTER", "STANDARD", "INDUSTRIAL"
-  displayName         String // "Starter (Kichik)"
-  price3m             Float    @default(0) // 3 oylik narx
-  price6m             Float    @default(0) // 6 oylik narx
-  price12m            Float    @default(0) // 12 oylik narx
-  maxEmployees        Int      @default(8) // Xodimlar limiti (0 = cheksiz)
-  maxBranches         Int      @default(1) // Filiallar limiti (0 = cheksiz)
-  maxDepartments      Int      @default(1) // Bo'limlar limiti (0 = cheksiz)
-  aiMessagesPerMonth  Int      @default(100) // AI xabarlar/30-kunlik davr limiti (0 = cheksiz)
-  allowedModules      String[] // ['finance','kanban','inventory','reports','ai_chat']
-  features            String   @default("{}") // JSON: { "kanban": true, "finance": false, ... }
-  description         String? // Qisqa ta'rif
-  isPopular           Boolean  @default(false) // Eng ommabop — highlight qilish
-  isActive            Boolean  @default(true)
-  sortOrder           Int      @default(0)
-  durationDays        Int      @default(30) // Obuna muddati kunlarda (30, 90, 180, 365)
-  tenants             Tenant[]
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  name               String   @unique // "STARTER", "STANDARD", "INDUSTRIAL"
+  displayName        String // "Starter (Kichik)"
+  price3m            Float    @default(0) // 3 oylik narx
+  price6m            Float    @default(0) // 6 oylik narx
+  price12m           Float    @default(0) // 12 oylik narx
+  maxEmployees       Int      @default(8) // Xodimlar limiti (0 = cheksiz)
+  maxBranches        Int      @default(1) // Filiallar limiti (0 = cheksiz)
+  maxDepartments     Int      @default(1) // Bo'limlar limiti (0 = cheksiz)
+  aiMessagesPerMonth Int      @default(100) // AI xabarlar/30-kunlik davr limiti (0 = cheksiz)
+  aiMessagesPerDay   Int      @default(0) // AI xabarlar/kalendar kun limiti (0 = cheksiz)
+  allowedModules     String[] // ['finance','kanban','inventory','reports','ai_chat']
+  features           String   @default("{}") // JSON: { "kanban": true, "finance": false, ... }
+  description        String? // Qisqa ta'rif
+  isPopular          Boolean  @default(false) // Eng ommabop — highlight qilish
+  isActive           Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  durationDays       Int      @default(30) // Obuna muddati kunlarda (30, 90, 180, 365)
+  tenants            Tenant[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 // AI foydalanish hisobi — har 30 kunlik davr uchun bitta satr.
 // periodStart = tenant obunasidagi joriy 30-kunlik davrning boshlanish sanasi.
 model AiUsage {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  periodStart  DateTime // 30-kunlik davr boshlanishi (yengil indeks uchun normalize'lashtirilgan)
-  count        Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  periodStart DateTime // 30-kunlik davr boshlanishi (yengil indeks uchun normalize'lashtirilgan)
+  count       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([tenantId, periodStart])
   @@index([tenantId])
+}
+
+// AI foydalanish hisobi — HAR KALENDAR KUN uchun bitta satr (Toshkent UTC+5).
+// AiUsage (30-kunlik) bilan parallel ishlaydi — ikkalasi ham mustaqil limit.
+// Token/pul xarajati ham shu yerda yig'iladi (streamText onFinish orqali).
+model AiUsageDaily {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  date         String // "YYYY-MM-DD", Toshkent kuni
+  count        Int      @default(0)
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  costUsd      Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, date])
+  @@index([tenantId])
+}
+
+// AI javob keshi — bir xil TIZIM savoliga qayta-qayta pul to'lamaslik uchun.
+// Faqat jonli ma'lumotga bog'liq BO'LMAGAN javoblar keshlanadi (tool
+// ishlatilmagan, "qanday qilaman" turidagi savollar). Shuning uchun eskirish
+// xavfi yo'q, lekin baribir expiresAt qo'yiladi — qo'llanma o'zgarsa yangilanadi.
+// source: "guide" (qo'llanmadan, LLM chaqirilmagan) | "llm" (model javobi keshlangan)
+model AiAnswerCache {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  questionHash String // normalizatsiya qilingan savolning sha256'si
+  question     String   @db.Text
+  answer       String   @db.Text
+  source       String   @default("llm")
+  hits         Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  expiresAt    DateTime
+
+  @@unique([tenantId, questionHash])
+  @@index([tenantId, expiresAt])
 }
 
 // =============================================
@@ -89,6 +131,44 @@ model AgentAction {
   @@index([userId, status])
 }
 
+// =============================================
+// AiInsight — proaktiv xavf-aniqlash kartalari (Faza 4, AaaS dashboard).
+// AgentAction'dan farqi: bu KUZATUV (ko'rsatish uchun), amal EMAS. LLM'siz,
+// deterministik xizmat (risk-detection.service.ts) tomonidan yoziladi/
+// yangilanadi — briefing.service.ts kabi AI xabar limitiga tegmaydi.
+//
+// UMUMIY MEXANIZM: bu bitta detektorga emas, KO'P detektor turiga xizmat
+// qiladi (risk-detection.service.ts'dagi `detectors` ro'yxati) — har biri
+// boshqa-boshqa modullarni (Kanban, Davomat, Ombor, Mijozlar...) o'zaro
+// bog'lab tekshiradi. `type` maydoni qaysi detektor ekanligini bildiradi.
+// dedupeKey orqali har qayta tekshiruvda bir xil xavf ikki marta yozilmaydi;
+// foydalanuvchi "bekor qilgan" (dismissed) xavf qayta "open"ga qaytarilmaydi;
+// shart o'zi yo'qolsa (masalan xodim keldi) — avtomatik "resolved" bo'ladi.
+// =============================================
+model AiInsight {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  type              String // masalan "task_due_no_checkin", "task_material_shortage", "debtor_new_order"
+  severity          String  @default("warning") // info | warning | critical
+  title             String
+  message           String
+  relatedTaskId     String?
+  relatedEmployeeId String?
+  relatedCustomerId String?
+  relatedMaterialId String?
+
+  dedupeKey String // masalan `${type}:${relatedTaskId}:${relatedEmployeeId}`
+  status    String @default("open") // open | dismissed | resolved
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, dedupeKey])
+  @@index([tenantId, status])
+}
+
 model Tenant {
   id                 String       @id @default(uuid())
   name               String
@@ -109,41 +189,46 @@ model Tenant {
   attendanceQrToken String? // null = hali generate qilinmagan
 
   // Relations to all tenant-scoped data
-  roles             Role[]
-  employees         Employee[]
-  workspaceAdmins   WorkspaceAdmin[]
-  customers         Customer[]
-  customerContacts  CustomerContact[]
-  vendors           Vendor[]
-  orderVendorCosts  OrderVendorCost[]
+  roles               Role[]
+  employees           Employee[]
+  workspaceAdmins     WorkspaceAdmin[]
+  customers           Customer[]
+  customerContacts    CustomerContact[]
+  vendors             Vendor[]
+  orderVendorCosts    OrderVendorCost[]
   vendorLedgerEntries VendorLedgerEntry[]
-  paymentTypes      PaymentType[]
-  transactions      Transaction[]
-  expenseTypes      ExpenseType[]
-  kanbanColumns     KanbanColumn[]
-  tasks             Task[]
-  taskHistories     TaskHistory[]
-  services          Service[]
-  serviceOptions    ServiceOption[]
-  serviceMaterials  ServiceMaterial[]
-  materials         Material[]
-  stockMovements    StockMovement[]
-  attendanceRecords AttendanceRecord[]
-  overtimeRequests  OvertimeRequest[]
-  systemSettings    SystemSetting[]
-  botSessions       BotSession[]
-  payments          Payment[]
-  branches          Branch[]
-  promoCode         PromoCode? // Tenant'ning o'z referral kodı
-  promoCodeUsages   PromoCodeUsage[] // Bu tenant boshqa kodni ishlatgan holatlari
-  taskExpenses      TaskExpense[]
-  vendorOrders      VendorOrder[]
-  taskAttachments   TaskAttachment[]
-  aiUsages          AiUsage[]
-  agentActions      AgentAction[]
-  cashBoxes         CashBox[]
-  cashTransfers     CashTransfer[]
-  salaryRecords     SalaryRecord[]
+  paymentTypes        PaymentType[]
+  transactions        Transaction[]
+  expenseTypes        ExpenseType[]
+  kanbanColumns       KanbanColumn[]
+  tasks               Task[]
+  taskHistories       TaskHistory[]
+  services            Service[]
+  serviceOptions      ServiceOption[]
+  serviceMaterials    ServiceMaterial[]
+  materials           Material[]
+  stockMovements      StockMovement[]
+  attendanceRecords   AttendanceRecord[]
+  overtimeRequests    OvertimeRequest[]
+  systemSettings      SystemSetting[]
+  botSessions         BotSession[]
+  payments            Payment[]
+  branches            Branch[]
+  promoCode           PromoCode? // Tenant'ning o'z referral kodı
+  promoCodeUsages     PromoCodeUsage[] // Bu tenant boshqa kodni ishlatgan holatlari
+  taskExpenses        TaskExpense[]
+  vendorOrders        VendorOrder[]
+  taskAttachments     TaskAttachment[]
+  aiUsages            AiUsage[]
+  aiUsageDaily        AiUsageDaily[]
+  aiAnswerCache       AiAnswerCache[]
+  aiExtraCredits      Int                 @default(0) // Sotib olingan qo'shimcha AI so'rov zaxirasi
+  agentActions        AgentAction[]
+  aiInsights          AiInsight[]
+  cashBoxes           CashBox[]
+  cashTransfers       CashTransfer[]
+  salaryRecords       SalaryRecord[]
+  salarySchemes       SalaryScheme[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -241,24 +326,26 @@ model PlatformSetting {
 }
 
 model Payment {
-  id             String    @id @default(uuid())
-  tenantId       String
-  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  planName       String // Plan nomi vaqtidagi snapshot
-  duration       Int // Duration in months (3, 6, 12)
-  amount         Float // To'langan summa (chegirmadan keyin)
-  originalAmount Float? // Chegirmadan oldingi summa
-  discountAmount Float     @default(0) // Promo kod chegirmasi
-  sender         String // Yuboruvchi ism-familiyasi
-  receiptUrl     String? // Chek/Kvitansiya rasmining URL
-  notes          String? // Qo'shimcha izoh
-  status         String    @default("PENDING") // PENDING, APPROVED, REJECTED
-  approvedBy     String? // Super-Admin ID
-  approvedAt     DateTime?
-  promoCodeUsed  String? // Ishlatilgan promo kod
-  cashbackUsed   Float     @default(0) // Sarflangan cashback
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id               String    @id @default(uuid())
+  tenantId         String
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type             String    @default("PLAN") // PLAN | AI_TOPUP — AI_TOPUP tenant.status/planId/subscriptionEndsAt'ga tegmaydi
+  planName         String // Plan nomi (yoki AI_TOPUP uchun paket nomi) vaqtidagi snapshot
+  duration         Int // Duration in months (3, 6, 12) — AI_TOPUP uchun 0, ishlatilmaydi
+  amount           Float // To'langan summa (chegirmadan keyin)
+  originalAmount   Float? // Chegirmadan oldingi summa
+  discountAmount   Float     @default(0) // Promo kod chegirmasi
+  sender           String // Yuboruvchi ism-familiyasi
+  receiptUrl       String? // Chek/Kvitansiya rasmining URL
+  notes            String? // Qo'shimcha izoh
+  status           String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy       String? // Super-Admin ID
+  approvedAt       DateTime?
+  promoCodeUsed    String? // Ishlatilgan promo kod
+  cashbackUsed     Float     @default(0) // Sarflangan cashback
+  aiCreditsGranted Int? // AI_TOPUP uchun: tasdiqlanganda Tenant.aiExtraCredits'ga qo'shiladigan miqdor
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 // Leads from Landing Page
@@ -535,19 +622,19 @@ model Branch {
   managerEmployeeId String? // Employee.id reference (soft, no FK to avoid circular)
   isActive          Boolean @default(true)
 
-  employees     Employee[]
-  tasks         Task[]         @relation("OriginBranch")
-  executorTasks Task[]         @relation("ExecutorBranch")
-  customers     Customer[]
-  transactions  Transaction[]
-  departments   Department[]
-  services      Service[]
-  vendors       Vendor[]
+  employees           Employee[]
+  tasks               Task[]              @relation("OriginBranch")
+  executorTasks       Task[]              @relation("ExecutorBranch")
+  customers           Customer[]
+  transactions        Transaction[]
+  departments         Department[]
+  services            Service[]
+  vendors             Vendor[]
   vendorLedgerEntries VendorLedgerEntry[]
-  roles         Role[]
-  kanbanColumns KanbanColumn[]
-  materials     Material[]
-  cashBoxes     CashBox[]
+  roles               Role[]
+  kanbanColumns       KanbanColumn[]
+  materials           Material[]
+  cashBoxes           CashBox[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -691,7 +778,11 @@ model Role {
   canExportVendors    Boolean @default(false) // Hamkorlar
   canExportReports    Boolean @default(false) // Hisobotlar (BI)
 
-  employees Employee[]
+  // AI Yordamchi
+  canUseAi Boolean @default(false) // AI Copilot chatini ochish huquqi
+
+  employees     Employee[]
+  salarySchemes SalaryScheme[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -730,6 +821,7 @@ model Employee {
   overtimeRequests  OvertimeRequest[]
   transactions      Transaction[]
   salaryRecords     SalaryRecord[]
+  salarySchemes     SalaryScheme[]
 
   @@unique([tenantId, login])
   @@index([tenantId])
@@ -743,6 +835,47 @@ model Employee {
 //   < 0 → paidAmount = 0, carriedDebt = |manfiy| (keyingi oy maoshdan ushlanadi)
 // Ortiqcha avans Employee.workDebt orqali oydan oyga ko'chadi.
 // =============================================
+// =============================================
+// SalaryScheme — lavozimning (yoki bitta xodimning) maosh sxemasi.
+//
+// Sxema = qatorlar ro'yxati (`components`). Har qator 3 turdan biri:
+//   fixed    — qat'iy summa
+//   per_unit — metrika × stavka  (masalan: bajarilgan buyurtma × 15 000)
+//   percent  — metrikaning foizi (masalan: shaxsiy sotuvning 3%)
+// Har qatorga ixtiyoriy SHART qo'shiladi ("ish kunlari ≥ 22 bo'lsa").
+//
+// Nega formula tili emas: ifoda parseri kuchli, lekin qurish, ishlatish va
+// xatosini topish og'ir. Qatorlar ro'yxati esa xuddi shu ishni bajaradi —
+// fiksaning o'zi ham bir necha shartli qatordan yig'ilishi mumkin
+// (1 mln asosiy + 1 mln to'liq davomatga + 1 mln vaqtida kelishga).
+//
+// employeeId to'ldirilgan sxema roleId'likidan USTUN turadi — bitta xodimga
+// alohida shart qo'yish uchun.
+// =============================================
+model SalaryScheme {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name String
+
+  roleId String?
+  role   Role?   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  employeeId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  isActive   Boolean @default(true)
+  components Json // SalaryComponent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([roleId])
+  @@index([employeeId])
+}
+
 model SalaryRecord {
   id         String   @id @default(uuid())
   tenantId   String
@@ -771,6 +904,11 @@ model SalaryRecord {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Hisob qatorlari snapshot'i (SalaryComponentResult[]). Sxema keyin
+  // o'zgarsa ham o'tgan oyning hisobi buzilmaydi va xodimga "nimadan qanday
+  // chiqdi" deb ko'rsatish mumkin.
+  breakdown Json?
 
   @@unique([tenantId, employeeId, period])
   @@index([tenantId, period])
@@ -1088,7 +1226,7 @@ model KanbanColumn {
   // true bo'lsa — bu ustundagi buyurtmalar "Bajarilgan" deb hisoblanadi (hisobotlar).
   // Har tenant o'z ustun nomlaridan birini (yoki bir nechtasini) belgilashi mumkin.
   // Arxivlashdan mustaqil.
-  isDone   Boolean @default(false)
+  isDone Boolean @default(false)
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id], onDelete: Cascade)
@@ -1126,7 +1264,7 @@ model Task {
   // Variant qatorlari (rang/o'lcham ajratmasi) — agar Service.variantAxes mavjud bo'lsa.
   // Format: [{ "atributlar": { "Rang": "Oq", "O'lcham": "M" }, "soni": 30 }, ...]
   // quantity = sum(variants.soni). Bo'sh/null bo'lsa — variantsiz buyurtma.
-  variants       Json?
+  variants Json?
 
   // Moliyaviy qism
   totalAmount     Float @default(0) // Berilishi kerak bo'lgan summa
@@ -1145,6 +1283,12 @@ model Task {
   deadlineAt        DateTime? // Topshiriq muddati (ixtiyoriy)
 
   isArchived Boolean @default(false) // true bo'lsa — o'chirilgan emas, arxivlangan
+
+  // Buyurtma "bajarildi" ustuniga (KanbanColumn.isDone) ko'chgan payt.
+  // Maosh hisobi uchun ZARUR: "qaysi oyda bajarilgan" ni updatedAt'dan
+  // aniqlab bo'lmaydi (u har tahrirda o'zgaradi), TaskHistory'dagi matnni
+  // parse qilish esa mo'rt. Shuning uchun alohida maydon.
+  completedAt DateTime?
 
   branchId String?
   branch   Branch? @relation("OriginBranch", fields: [branchId], references: [id])
@@ -1296,12 +1440,12 @@ model TaskExpense {
 // Used by PrintFlow super-admins to track their own sales / ops work.
 // =============================================
 model SuperAdminFunnel {
-  id        String              @id @default(uuid())
+  id        String               @id @default(uuid())
   name      String
-  color     String              @default("#FF6B00")
-  sortOrder Int                 @default(0)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
+  color     String               @default("#FF6B00")
+  sortOrder Int                  @default(0)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
   tasks     SuperAdminTaskItem[]
 }
 

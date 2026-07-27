@@ -3,21 +3,44 @@
 @tailwind utilities;
 
 :root {
-  /* iOS grouped-background neutrals — same family, slightly warmer/softer. */
-  --bg: #f2f2f7;
-  --bg-secondary: #e9e9ef;
+  /* ============================================================
+     SUPER-ADMIN DIZAYN TOKENLARI (2026-07 redizayn)
+     Konsol registri: zich, ma'lumotga yo'naltirilgan, sokin.
+     RANGLAR O'ZGARMAGAN — brand orange + semantik emerald/rose/amber
+     + bitta sovuq-neytral slate oilasi. Faqat sirt/tipografika/
+     ritm qayta qurildi.
+     ============================================================ */
+
+  /* Sirtlar — bitta neytral oila (slate), iOS kulrangdan voz kechildi.
+     Fon kartadan bir pog'ona to'q: karta "ko'tarilgan" ko'rinadi. */
+  --bg: #f6f7f9;
+  --bg-secondary: #eef0f4;
   --panel: #ffffff;
-  --border: #e5e5ea;
-  --text: #1c1c1e;
-  --text-muted: #8e8e93;
-  --primary: #f97316; /* Tailwind orange-500 — unchanged */
-  --primary-hover: #ea580c; /* Tailwind orange-600 — unchanged */
+  --panel-muted: #fafbfc;
+  --border: #e4e7ec;
+  --border-strong: #d4d8e0;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --primary: #f97316;
+  --primary-hover: #ea580c;
   --primary-glow: rgba(249, 115, 22, 0.15);
-  --danger: #f43f5e; /* Tailwind rose-500 */
-  --success: #10b981; /* Tailwind emerald-500 */
-  --radius: 18px;
-  /* Soft, diffuse iOS card shadow */
-  --shadow: 0 10px 28px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.03);
+  --danger: #f43f5e;
+  --success: #10b981;
+  --warning: #f59e0b;
+
+  /* Radius shkalasi — ichki elementlar tig'izroq, konteynerlar yumshoqroq */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+
+  /* Soyalar slate hue bilan bo'yalgan (sof qora emas) — bitta yorug'lik
+     manbasi: yuqoridan. */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10);
 }
 
 * {
@@ -26,32 +49,84 @@
   padding: 0;
 }
 
-/* Beautiful Scrollbar Styling */
+/* ============================================================
+   SCROLLBAR — ko'rinadigan bo'lishi SHART.
+   Ilgari 6px va shaffof trek edi: foydalanuvchi scroll borligini
+   umuman ko'rmasdi. Endi 11px, ko'rinadigan trek va kontrastli
+   thumb — sahifada yana kontent borligi darhol bilinadi.
+   ============================================================ */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 11px;
+  height: 11px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #eef0f4;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #b6bdc9;
   border-radius: 999px;
+  /* Trek ichida "suzib turgan" ko'rinish — chekkalarda bo'sh joy */
+  border: 3px solid #eef0f4;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #8d96a6;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: #eef0f4;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #b6bdc9 #eef0f4;
+}
+
+/* Scroll paydo bo'lganda layout sakramasin */
+html {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   background-color: var(--bg);
   color: var(--text);
   line-height: 1.5;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Sarlavhalar — zichroq tracking, og'irlik bilan ierarxiya */
+h1, h2, h3, h4 {
+  letter-spacing: -0.02em;
+}
+
+/* Raqamlar/ID/kod — mono, ustunlarda tekis turadi */
+.font-mono, .tabular {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Klaviatura fokusi — hamma joyda ko'rinadigan halqa (a11y talabi) */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Custom fade-in and slide-up animations */

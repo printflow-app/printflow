@@ -23,12 +23,17 @@ export interface AgentPolicies {
   dailyBriefing: { enabled: boolean };
   weeklyReport: { enabled: boolean };
   deadlineWatchdog: { enabled: boolean; graceDays: number };
+  // Bitta detektor emas — butun risk-detection.service.ts'dagi detektorlar
+  // ro'yxati (Kanban x Davomat, Kanban x Ombor, Kanban x Mijozlar, ...)
+  // shu yagona kalit bilan yoqiladi/o'chiriladi.
+  riskMonitoring: { enabled: boolean };
 }
 
 export const DEFAULT_POLICIES: AgentPolicies = {
   dailyBriefing: { enabled: true },
   weeklyReport: { enabled: true },
   deadlineWatchdog: { enabled: true, graceDays: 1 },
+  riskMonitoring: { enabled: true },
 };
 
 const fm = (n: number) => Math.round(n ?? 0).toLocaleString('en-US').replace(/,/g, ' ');
@@ -57,6 +62,7 @@ export class AutonomousService {
         dailyBriefing: { ...DEFAULT_POLICIES.dailyBriefing, ...saved.dailyBriefing },
         weeklyReport: { ...DEFAULT_POLICIES.weeklyReport, ...saved.weeklyReport },
         deadlineWatchdog: { ...DEFAULT_POLICIES.deadlineWatchdog, ...saved.deadlineWatchdog },
+        riskMonitoring: { ...DEFAULT_POLICIES.riskMonitoring, ...saved.riskMonitoring },
       };
     } catch {
       return DEFAULT_POLICIES;

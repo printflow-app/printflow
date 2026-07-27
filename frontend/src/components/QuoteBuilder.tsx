@@ -4,7 +4,7 @@ import { jsPDF } from 'jspdf';
 import { toast } from 'react-toastify';
 import {
   Plus, Minus, Trash2, ShoppingCart, Download, Loader2, FileText,
-  Package, Sparkles,
+  Package, Sparkles, Search, X,
 } from 'lucide-react';
 import { PriceListData, PriceOption, PriceService } from './PriceListView';
 import { QuoteView, QuoteLine, QuoteData } from './QuoteView';
@@ -67,6 +67,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [exporting, setExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<'png' | 'pdf'>('pdf');
+  const [search, setSearch] = useState('');
 
   // Har xizmat uchun lokal "tanlangan opsiyalar + miqdor" holati (savatga qo'shilmagan).
   // quantity — STRING, bo'sh ham bo'lishi mumkin (user yozayotgan paytda). Validatsiya
@@ -155,6 +156,24 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
     if (!confirm('Savatni tozalashga ishonchingiz komilmi?')) return;
     setCart([]);
   };
+
+  // Qidiruv — xizmat nomi, o'lchov birligi va opsiya nomlari/qiymatlari bo'yicha.
+  // Bo'sh so'rov — barcha xizmatlar (filtrlash umuman ishlamaydi).
+  const visibleServices = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return services;
+    return services.filter(svc => {
+      const haystack = [
+        svc.name,
+        svc.unit,
+        ...(svc.options || []).flatMap(o => [o.name, o.value]),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [services, search]);
 
   // Eksport uchun QuoteData
   const quoteData = useMemo<QuoteData>(() => {
@@ -256,7 +275,40 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
           </div>
         </div>
 
-        {services.map(svc => {
+        {/* Qidiruv */}
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Mahsulot yoki xizmat qidirish..."
+            className="w-full h-11 pl-9 pr-9 bg-white rounded-xl border border-slate-200 text-sm font-bold text-slate-700 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              title="Tozalash"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {search.trim() && (
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest px-1">
+            {visibleServices.length} ta natija topildi
+          </p>
+        )}
+
+        {visibleServices.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
+            <Search size={32} className="text-slate-200 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Hech narsa topilmadi</p>
+            <p className="text-xs text-slate-400 mt-1">Boshqa so'z bilan qidirib ko'ring</p>
+          </div>
+        ) : visibleServices.map(svc => {
           const draft = getDraft(svc.id);
           const groups = groupOptionsByName(svc.options);
           // Tanlangan opsiyalar yig'indisi (priceAdd)

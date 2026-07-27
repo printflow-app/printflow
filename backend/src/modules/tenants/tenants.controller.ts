@@ -29,6 +29,12 @@ export class TenantsController {
     return this.tenantsService.getStats();
   }
 
+  /** Workspace bo'yicha AI foydalanish/xarajat — super-admin nazorat sahifasi */
+  @Get('ai-usage')
+  getAiUsageByTenant() {
+    return this.tenantsService.getAiUsageByTenant();
+  }
+
   @Get('payments/pending')
   getPendingPayments() {
     return this.tenantsService.getPendingPayments();

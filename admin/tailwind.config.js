@@ -13,20 +13,22 @@ export default {
         },
       },
       fontFamily: {
-        // Inter first — webfont, renders cleanly everywhere. -apple-system fallback.
+        // Plus Jakarta Sans — Inter'dan farqli, xarakterli grotesk (2026-07 redizayn).
         sans: [
-          'Inter', '-apple-system', 'BlinkMacSystemFont',
-          'SF Pro Text', 'Segoe UI', 'system-ui', 'sans-serif',
+          'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont',
+          'Segoe UI', 'system-ui', 'sans-serif',
         ],
+        // Raqam/ID/kod — ustunlarda tekis turadi.
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       borderRadius: {
-        // iOS continuous-looking corners — remapping the named scale shifts
-        // every inline rounded-* usage toward the iPhone aesthetic.
-        md: '12px',
-        lg: '14px',
-        xl: '18px',
-        '2xl': '24px',
-        '3xl': '30px',
+        // Konsol registri — iOS'ning yumshoq burchaklaridan tig'izroq shkala.
+        // Ichki elementlar (input/badge) tig'iz, konteynerlar yumshoqroq.
+        md: '8px',
+        lg: '10px',
+        xl: '12px',
+        '2xl': '16px',
+        '3xl': '20px',
       },
       boxShadow: {
         // Soft, diffuse, low-opacity iOS shadows.

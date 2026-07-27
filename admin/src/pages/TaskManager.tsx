@@ -32,10 +32,12 @@ type TaskItem = {
   createdAt: string;
 };
 
-const FUNNEL_COLORS = ['#FF6B00', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444', '#f59e0b', '#0ea5e9', '#ec4899'];
+// Voronka yorliqlari — tizim palitrasidan (brand orange + semantik +
+// neytral tonlar). Tashqi hue (ko'k/binafsha/pushti) ishlatilmaydi.
+const FUNNEL_COLORS = ['#f97316', '#10b981', '#f59e0b', '#f43f5e', '#64748b', '#fb923c', '#34d399', '#0f172a'];
 const STATUS_OPTIONS: { value: string; label: string; icon: any; color: string; bg: string }[] = [
-  { value: 'open',        label: 'Yangi',      icon: Circle,       color: '#64748b', bg: 'bg-slate-100 text-slate-700 border-slate-200' },
-  { value: 'in_progress', label: 'Jarayonda',  icon: Clock,        color: '#3b82f6', bg: 'bg-blue-50 text-blue-700 border-blue-100' },
+  { value: 'open',        label: 'Yangi',      icon: Circle,       color: '#64748b', bg: 'bg-slate-100 text-slate-700 border-[color:var(--border)]' },
+  { value: 'in_progress', label: 'Jarayonda',  icon: Clock,        color: '#f97316', bg: 'bg-orange-50 text-orange-700 border-orange-100' },
   { value: 'done',        label: 'Bajarildi',  icon: CheckCircle2, color: '#10b981', bg: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
 ];
 
@@ -252,8 +254,8 @@ export default function TaskManager() {
 
       {/* Empty State */}
       {funnels.length === 0 ? (
-        <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-16 text-center max-w-xl mx-auto space-y-4">
-          <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-400">
+        <div className="bg-white border-2 border-dashed border-[color:var(--border)] rounded-2xl p-16 text-center max-w-xl mx-auto space-y-4">
+          <div className="w-14 h-14 bg-slate-50 border border-[color:var(--border)] rounded-2xl flex items-center justify-center mx-auto text-slate-400">
             <Layers size={26} strokeWidth={1.8} />
           </div>
           <div>
@@ -283,16 +285,16 @@ export default function TaskManager() {
                 className={`w-80 flex-shrink-0 rounded-2xl border transition-all duration-200 flex flex-col max-h-[calc(100vh-210px)] ${
                   isDragOver 
                     ? 'border-dashed border-orange-400 bg-orange-50/20' 
-                    : 'border-slate-200/80 bg-slate-50/70'
+                    : 'border-[color:var(--border)]/80 bg-slate-50/70'
                 }`}
               >
                 {/* Column Header */}
-                <div className="p-4 flex items-center gap-2.5 border-b border-slate-200/60 bg-white/50 rounded-t-2xl">
+                <div className="p-4 flex items-center gap-2.5 border-b border-[color:var(--border)]/60 bg-white/50 rounded-t-2xl">
                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: f.color }} />
                   <span className="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex-1 truncate">
                     {f.name}
                   </span>
-                  <span className="text-[10px] font-black bg-slate-200/60 text-slate-600 px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] font-extrabold bg-slate-200/60 text-slate-600 px-2 py-0.5 rounded-md">
                     {f.tasks?.length || 0}
                   </span>
                   <button
@@ -313,7 +315,7 @@ export default function TaskManager() {
                     const deadlineBadge = 
                       deadline.tone === 'danger' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
                       deadline.tone === 'warning' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                      'bg-slate-100 text-slate-500 border border-slate-200/50';
+                      'bg-slate-100 text-slate-500 border border-[color:var(--border)]/50';
 
                     return (
                       <div
@@ -324,7 +326,7 @@ export default function TaskManager() {
                         className={`bg-white border rounded-xl p-4 flex flex-col justify-between cursor-grab active:cursor-grabbing transition-all ${
                           dragging 
                             ? 'opacity-40 border-orange-500 scale-[0.98]' 
-                            : 'border-slate-200 hover:border-slate-300 shadow-sm hover:shadow'
+                            : 'border-[color:var(--border)] hover:border-slate-300 hover:shadow'
                         }`}
                       >
                         <div className="flex items-start gap-2">
@@ -336,7 +338,7 @@ export default function TaskManager() {
                                 onClick={() => toggleStatus(t)}
                                 className={`mt-0.5 h-4.5 w-4.5 rounded-md flex items-center justify-center flex-shrink-0 border transition-all ${
                                   t.status === 'done' 
-                                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-500/20' 
+                                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-emerald-500/20' 
                                     : 'border-slate-300 bg-white hover:border-slate-400'
                                 }`}
                               >
@@ -389,7 +391,7 @@ export default function TaskManager() {
                   })}
 
                   {(f.tasks || []).length === 0 && (
-                    <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl bg-white/20">
+                    <div className="p-8 text-center border border-dashed border-[color:var(--border)] rounded-xl bg-white/20">
                       <FileText size={20} className="mx-auto mb-2 text-slate-300 opacity-60" />
                       <p className="text-[10px] font-bold text-slate-400">Varonka bo'sh</p>
                     </div>
@@ -397,7 +399,7 @@ export default function TaskManager() {
                 </div>
 
                 {/* Add Task Trigger */}
-                <div className="p-3 border-t border-slate-200/60 bg-white/30 rounded-b-2xl">
+                <div className="p-3 border-t border-[color:var(--border)]/60 bg-white/30 rounded-b-2xl">
                   <button
                     onClick={() => openCreateTask(f.id)}
                     className="w-full py-2 border border-dashed border-slate-300 hover:border-orange-400 hover:bg-orange-50/10 text-slate-500 hover:text-orange-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"

@@ -46,47 +46,21 @@ async function main() {
   }
 
   // =============================================
-  // 1b. DEFAULT PLANS (Pricing Tiers)
+  // 1b. DEFAULT PLAN — Yagona tarif
+  // Oylik baza narx 500.000 so'm. 6 oyda -5%, 12 oyda -10% chegirma.
   // =============================================
+  const MONTHLY_PRICE = 500_000;
   const defaultPlans = [
     {
-      name: 'STARTER',
-      displayName: 'Starter (Kichik)',
-      price3m: 1500000,
-      price6m: 2700000,
-      price12m: 4500000,
-      maxEmployees: 8,
-      sortOrder: 1,
-      isPopular: false,
-      description: 'Kichik bosmaxonalar uchun asosiy boshqaruv tizimi',
-      features: JSON.stringify({
-        kanban: true,
-        finance: true,
-        crm: true,
-        inventory: 'view_only',
-        telegram_bot: true,
-        telegram_webapp: 'view_only',
-        services: true,
-        attendance: false,
-        finance_analytics: false,
-        task_management: 'basic',
-        kpi_analytics: false,
-        auto_debt_notify: false,
-        multi_branch: false,
-        archive: false,
-        excel_export: false,
-      }),
-    },
-    {
       name: 'STANDARD',
-      displayName: 'Standard (🔥 Eng ommabop)',
-      price3m: 3000000,
-      price6m: 5400000,
-      price12m: 9000000,
+      displayName: 'PrintFlow Tarifi',
+      price3m: MONTHLY_PRICE * 3, // endi UI'da ko'rsatilmaydi, muvofiqlik uchun saqlanadi
+      price6m: Math.round(MONTHLY_PRICE * 6 * 0.95), // 5% chegirma
+      price12m: Math.round(MONTHLY_PRICE * 12 * 0.9), // 10% chegirma
       maxEmployees: 20,
-      sortOrder: 2,
+      sortOrder: 1,
       isPopular: true,
-      description: 'O\'rta va katta bosmaxonalar uchun to\'liq boshqaruv',
+      description: 'Bosmaxonalar uchun to\'liq boshqaruv tizimi',
       features: JSON.stringify({
         kanban: true,
         finance: true,
@@ -103,34 +77,6 @@ async function main() {
         multi_branch: false,
         archive: false,
         excel_export: false,
-      }),
-    },
-    {
-      name: 'INDUSTRIAL',
-      displayName: 'Industrial (Yirik)',
-      price3m: 5000000,
-      price6m: 9000000,
-      price12m: 15000000,
-      maxEmployees: 0, // 0 = Cheksiz
-      sortOrder: 3,
-      isPopular: false,
-      description: 'Yirik bosmaxonalar uchun barcha imkoniyatlar',
-      features: JSON.stringify({
-        kanban: true,
-        finance: true,
-        crm: true,
-        inventory: true,
-        telegram_bot: true,
-        telegram_webapp: true,
-        services: true,
-        attendance: true,
-        finance_analytics: true,
-        task_management: true,
-        kpi_analytics: true,
-        auto_debt_notify: true,
-        multi_branch: true,
-        archive: true,
-        excel_export: true,
       }),
     },
   ];
