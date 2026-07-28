@@ -77,13 +77,15 @@ export const GUIDE_KB: KbEntry[] = [
   },
   {
     id: 'ai-ruxsat',
-    title: 'Xodimga AI yordamchini ochish',
-    page: 'Sozlamalar → Lavozimlar & Ruxsatlar',
+    title: 'AI yordamchi nega ko\'rinmayapti',
+    page: 'Sozlamalar → Billing',
     topics: ['ai', 'copilot', 'canuseai'],
-    actions: ['yoqish', 'yoqaman', 'yoqib', 'ruxsat', 'huquq', 'kimga', 'lavozim'],
+    actions: ['yoqish', 'yoqaman', 'yoqib', 'ruxsat', 'huquq', 'kimga', 'korinmayapti', 'ishlamayapti'],
     answer:
-      "AI yordamchi lavozim darajasida yoqiladi. Sozlamalar → Lavozimlar & Ruxsatlar bo'limida kerakli lavozimni oching va \"AI Yordamchi\" guruhidagi ruxsatni belgilang. " +
-      "Sukut bo'yicha u o'chiq turadi, ya'ni yangi lavozimlarda AI ko'rinmaydi. Adminlarda esa doim ochiq.",
+      "AI yordamchini lavozim darajasida yoqish kerak emas — u butunlay platforma ma'muriyati nazoratida. " +
+      "Chat ko'rinishi uchun ikki shart bajarilishi kerak: platformada AI global yoqilgan bo'lishi va workspace tarifida \"ai_chat\" moduli bo'lishi. " +
+      "Ikkinchisi ko'pincha sabab bo'ladi: tarif biriktirilmagan yoki tarifda AI moduli yo'q workspace'da chat umuman chiqmaydi. " +
+      "Tarifingizni Sozlamalar → Billing bo'limidan ko'rasiz; o'zgartirish uchun platforma ma'muriyatiga murojaat qiling.",
   },
   {
     id: 'buyurtma-qoshish',
@@ -468,7 +470,7 @@ function countMatches(tokens: string[], stems: string[]): number {
 const HOWTO_MARKERS = [
   'qanday', 'qanaqa', 'qayerdan', 'qayerda', 'qayer', 'qaerdan', 'qaerda',
   'qilib', 'tartib', 'qollanma', 'organ', 'korsat', 'tushuntir',
-  'mumkinmi', 'bormi', 'nima uchun', 'nimaga', 'ishlaydi', 'ishlatiladi',
+  'mumkinmi', 'bormi', 'nima uchun', 'nimaga', 'nega', 'ishlaydi', 'ishlatiladi',
 ];
 
 /**

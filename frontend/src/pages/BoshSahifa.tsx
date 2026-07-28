@@ -170,7 +170,7 @@ const SEVERITY_LABEL: Record<string, string> = {
 
 // ── Sahifa ──────────────────────────────────────────────────────────
 
-const BoshSahifa: React.FC<{ currentUser?: any }> = ({ currentUser }) => {
+const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ currentUser, aiEnabled }) => {
   const isAdmin = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.role?.name?.toLowerCase() === 'superadmin';
   const p = currentUser?.permissions || currentUser?.role || {};
   const can = (perm: string | null) => (perm === null ? true : isAdmin || !!p[perm]);
@@ -287,7 +287,9 @@ const BoshSahifa: React.FC<{ currentUser?: any }> = ({ currentUser }) => {
                     <h3 className={`text-sm font-bold tracking-tight ${tone.title}`}>{r.title}</h3>
                     <p className={`text-[11px] font-semibold ${tone.text} mt-1 leading-snug flex-1`}>{r.message}</p>
                     <div className="flex items-center gap-2 mt-3">
-                      {(isAdmin || p.canUseAi) && (
+                      {/* AI o'chiq bo'lsa tugma ko'rsatilmaydi — bosilsa
+                          hech nima bo'lmasdi (chat umuman yuklanmagan). */}
+                      {aiEnabled && (
                         <button
                           onClick={() => resolveRisk(buildRiskMessage(r.type, r.title, r.message))}
                           className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider ${tone.btn} text-white rounded-lg transition-colors`}

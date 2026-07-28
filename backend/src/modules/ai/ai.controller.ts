@@ -38,8 +38,10 @@ interface ChatRequestBody {
   messageId?: string;
 }
 
+// AI'ni faqat SUPER ADMIN boshqaradi — workspace tarifidagi `ai_chat` moduli
+// orqali. Lavozim darajasidagi `canUseAi` talabi OLIB TASHLANDI: tarif +
+// global kalit + lavozim degan uch qavatli shart chalkashlik tug'dirardi.
 @RequireFeature('ai_chat')
-@RequirePermissions('canUseAi')
 @Controller('ai')
 export class AiController {
   constructor(
@@ -65,10 +67,8 @@ export class AiController {
 
   // =============================================
   // XAVF KARTALARI (dashboard) — LLM'siz, deterministik korrelyatsiya.
-  // Ko'rish canUseAi'ga bog'liq emas (@RequirePermissions() bo'sh massiv —
-  // klass darajasidagi 'canUseAi' talabini shu route uchun bekor qiladi):
-  // xavfni ko'rish va uni AI orqali hal qilish ikki xil huquq. Faqat
-  // "bartaraf etish" tugmasi (frontend) canUseAi'ni tekshiradi.
+  // Alohida ruxsat talab qilinmaydi: bu shunchaki kuzatuv ma'lumoti,
+  // dashboard'ni ko'ra oladigan har kim ko'rishi mumkin.
   // =============================================
 
   @RequirePermissions()

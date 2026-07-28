@@ -618,7 +618,7 @@ const GUIDES: Guide[] = [
         blocks: [
           { type: 'p', html: 'AI ikonkasini bosing yoki <strong>Ctrl + /</strong> tugmalarini bosing. Chat sahifaning <strong>o\'ng tomonida</strong> ochiladi va sahifa mazmunini bosib qolmaydi — kontent qisqaradi, chat u bilan bir chiziqda turadi. Shuning uchun ishlab turib chatni ochiq qoldirsangiz ham bo\'ladi.' },
           { type: 'callout', tone: 'warn', title: 'Ko\'rinmayaptimi?',
-            html: 'Ikki sabab bo\'lishi mumkin: (1) tarifingizda AI moduli yoqilmagan, (2) lavozimingizda <strong>AI Yordamchi</strong> ruxsati belgilanmagan. Ikkinchisini <strong>Sozlamalar → Lavozimlar & Ruxsatlar</strong> bo\'limidan yoqasiz.' },
+            html: 'AI butunlay platforma ma\'muriyati nazoratida — lavozim sozlamalarida yoqiladigan ruxsat yo\'q. Chat ko\'rinishi uchun: (1) platformada AI global yoqilgan, (2) <strong>workspace tarifingizda AI moduli</strong> bo\'lishi kerak. Ko\'pincha ikkinchisi sabab bo\'ladi — tarifingizni <strong>Sozlamalar → Billing</strong> dan ko\'rasiz, o\'zgartirish uchun platforma ma\'muriyatiga murojaat qiling.' },
         ],
       },
       {

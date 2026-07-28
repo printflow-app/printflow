@@ -403,9 +403,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   //   2) tenant'ning tarifi (plan) AI Copilot'ni o'z ichiga oladi
   // Tarif aliaslari: ai_chat | telegram_bot | advancedBot (backend FeatureGuard bilan mos)
   const planHasAiCopilot = !!(tf.ai_chat || tf.telegram_bot || tf.advancedBot);
-  // Lavozim darajasidagi ruxsat — CEO Sozlamalar'dan har lavozim uchun yoqadi/o'chiradi.
-  const employeeHasAiPermission = !!p.canUseAi || isAdmin;
-  const aiCopilotEnabled = aiCopilotGlobalEnabled && planHasAiCopilot && employeeHasAiPermission;
+  // AI'ni faqat SUPER ADMIN boshqaradi: global kalit + workspace tarifidagi
+  // ai_chat moduli. Lavozim darajasidagi `canUseAi` ruxsati OLIB TASHLANDI —
+  // uch qavatli shart (global + tarif + lavozim) chalkash edi: super admin
+  // yoqib qo'ysa ham chat ko'rinmay, sababi tushunarsiz bo'lardi.
+  const aiCopilotEnabled = aiCopilotGlobalEnabled && planHasAiCopilot;
 
   // Sidebar grouped into 3 logical sections for visual hierarchy.
   // Sections render with a small caps label between them.
@@ -906,7 +908,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   />
                 </div>
               )}
-              {activeTab === 'boshsahifa' && <BoshSahifa currentUser={currentUser} />}
+              {activeTab === 'boshsahifa' && <BoshSahifa currentUser={currentUser} aiEnabled={aiCopilotEnabled} />}
               {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
               { activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} activeBranchId={activeBranchId} /> }
