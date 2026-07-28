@@ -5,6 +5,7 @@ import { FinanceService } from '../finance/finance.service';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { streamText, stepCountIs, createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { createHash, randomUUID } from 'crypto';
+import { resolveEffectivePlan } from '../../common/effective-plan';
 import { ToolContext } from './tools/types';
 import {
   buildAiSdkTools,
@@ -114,12 +115,17 @@ export class AiService {
     });
     if (!tenant) throw new Error('Tenant topilmadi');
 
-    const limit = tenant.plan?.aiMessagesPerMonth ?? 0;
+    // Tarif biriktirilmagan bo'lsa platformaning standart tarifi olinadi.
+    // Aks holda `?? 0` ishlab ketardi, 0 esa "cheksiz" degani — ya'ni
+    // tarifsiz workspace cheksiz AI ishlatib yuborardi.
+    const plan = await resolveEffectivePlan(this.prisma, tenant);
+
+    const limit = plan?.aiMessagesPerMonth ?? 0;
     const unlimited = limit === 0;
     const periodStart = this.getCurrentPeriodStart(tenant);
     const periodEnd = new Date(periodStart.getTime() + AiService.PERIOD_MS);
 
-    const dailyLimit = tenant.plan?.aiMessagesPerDay ?? 0;
+    const dailyLimit = plan?.aiMessagesPerDay ?? 0;
     const dailyUnlimited = dailyLimit === 0;
     const today = this.tashkentDateString();
 
@@ -172,11 +178,13 @@ export class AiService {
     });
     if (!tenant) return { allowed: false, used: 0, limit: 0, unlimited: false };
 
-    const monthlyLimit = tenant.plan?.aiMessagesPerMonth ?? 0;
+    const plan = await resolveEffectivePlan(this.prisma, tenant);
+
+    const monthlyLimit = plan?.aiMessagesPerMonth ?? 0;
     const monthlyUnlimited = monthlyLimit === 0;
     const periodStart = this.getCurrentPeriodStart(tenant);
 
-    const dailyLimit = tenant.plan?.aiMessagesPerDay ?? 0;
+    const dailyLimit = plan?.aiMessagesPerDay ?? 0;
     const dailyUnlimited = dailyLimit === 0;
     const today = this.tashkentDateString();
 

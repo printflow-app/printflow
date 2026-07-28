@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { resolveEffectivePlan } from '../../common/effective-plan';
 import { TenantContext } from '../../common/tenant/tenant.context';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
@@ -223,7 +224,7 @@ export class AuthService {
         baseSalary: isWorkspaceAdmin ? 0 : (userEntity as any).baseSalary,
         givenAmount: isWorkspaceAdmin ? 0 : (userEntity as any).givenAmount,
         workDebt: isWorkspaceAdmin ? 0 : (userEntity as any).workDebt,
-        tenantFeatures: buildTenantFeatures(tenant.plan),
+        tenantFeatures: buildTenantFeatures(await resolveEffectivePlan(this.prisma, tenant)),
       },
     };
   }
@@ -549,7 +550,7 @@ export class AuthService {
         baseSalary: (employee as any).baseSalary,
         givenAmount: (employee as any).givenAmount,
         workDebt: (employee as any).workDebt,
-        tenantFeatures: buildTenantFeatures(tenant.plan),
+        tenantFeatures: buildTenantFeatures(await resolveEffectivePlan(this.prisma, tenant)),
       },
     };
   }
@@ -609,7 +610,7 @@ export class AuthService {
         tenantId: tenant.id,
         tenantName: tenant.name,
         workspaceSlug: tenant.slug,
-        tenantFeatures: buildTenantFeatures(tenant.plan),
+        tenantFeatures: buildTenantFeatures(await resolveEffectivePlan(this.prisma, tenant)),
       },
     };
   }

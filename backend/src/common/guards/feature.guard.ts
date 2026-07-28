@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { REQUIRE_FEATURE_KEY } from '../decorators/feature.decorator';
 import { TenantContext } from '../tenant/tenant.context';
+import { resolveEffectivePlan } from '../effective-plan';
 
 @Injectable()
 export class FeatureGuard implements CanActivate {
@@ -31,19 +32,24 @@ export class FeatureGuard implements CanActivate {
       include: { plan: true }
     });
 
-    if (!tenant || !tenant.plan) {
-      // If no plan is assigned, allow basic access or block? We'll assume if no plan, no premium features.
+    // Tarif biriktirilmagan bo'lsa platformaning standart tarifi qo'llanadi.
+    // Ilgari bu holatda hamma narsa bloklanardi va workspace butunlay
+    // ishlamay qolardi (chat ham, xavf kartalari ham) — sabab esa
+    // foydalanuvchiga ko'rinmasdi.
+    const effectivePlan = await resolveEffectivePlan(this.prisma, tenant);
+
+    if (!tenant || !effectivePlan) {
       throw new ForbiddenException(`FEATURE_DISABLED: Sizning ta'rifingizda '${requiredFeature}' imkoniyati yo'q`);
     }
 
     // Source of truth — `allowedModules` array (admin panel saves here).
     // Legacy `features` JSON object is checked as fallback for old plans.
-    const allowedModules: string[] = Array.isArray((tenant.plan as any).allowedModules)
-      ? (tenant.plan as any).allowedModules
+    const allowedModules: string[] = Array.isArray((effectivePlan as any).allowedModules)
+      ? (effectivePlan as any).allowedModules
       : [];
 
     let features: Record<string, any> = {};
-    try { features = JSON.parse(tenant.plan.features); } catch (e) {}
+    try { features = JSON.parse((effectivePlan as any).features); } catch (e) {}
 
     // Map legacy/short keys → canonical admin-panel module keys, so a controller
     // marked @RequireFeature('attendance') matches both 'attendance' and any aliases.
