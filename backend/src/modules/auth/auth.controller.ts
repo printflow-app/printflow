@@ -10,6 +10,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
+import { resolveEffectivePlan } from '../../common/effective-plan';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators/public.decorator';
@@ -224,17 +225,25 @@ export class AuthController {
 
       // Merge legacy features JSON + allowedModules array (admin UI source
       // of truth) so frontend gates match FeatureGuard's union check.
+      //
+      // DIQQAT: bu yerda ham `resolveEffectivePlan` ishlatilishi SHART —
+      // frontend har yuklanishda /auth/me ni chaqirib tenantFeatures'ni
+      // QAYTA YOZADI. Agar bu joy tarifsiz tenant uchun bo'sh obyekt
+      // qaytarsa, login to'g'ri javob bergan bo'lsa ham u darhol o'chib
+      // ketadi va chat ko'rinmay qoladi.
+      const effectivePlan: any = await resolveEffectivePlan(prisma, tenant);
+
       let tenantFeatures: Record<string, any> = {};
-      if (tenant?.plan?.features) {
+      if (effectivePlan?.features) {
         try {
-          const parsed = typeof tenant.plan.features === 'string'
-            ? JSON.parse(tenant.plan.features)
-            : tenant.plan.features;
+          const parsed = typeof effectivePlan.features === 'string'
+            ? JSON.parse(effectivePlan.features)
+            : effectivePlan.features;
           Object.assign(tenantFeatures, parsed);
         } catch { }
       }
-      const allowedModules: string[] = Array.isArray((tenant?.plan as any)?.allowedModules)
-        ? (tenant!.plan as any).allowedModules
+      const allowedModules: string[] = Array.isArray(effectivePlan?.allowedModules)
+        ? effectivePlan.allowedModules
         : [];
       for (const m of allowedModules) {
         if (tenantFeatures[m] === undefined) tenantFeatures[m] = true;
