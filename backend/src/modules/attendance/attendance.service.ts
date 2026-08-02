@@ -90,8 +90,24 @@ export class AttendanceService {
     const lat = parseGeoRow(latRow);
     const lng = parseGeoRow(lngRow);
     if (isNaN(lat) || isNaN(lng)) return null;
+
+    // KOORDINATA CHEGARASI TEKSHIRILADI.
+    //
+    // Sinovda bitta workspace'da lat=405926.1, lng=714102.5 saqlangan edi —
+    // bu gradus-daqiqa-soniya (40°59'26.1") o'nlik songa aylantirilmasdan
+    // kiritilgani. Tizim uni qabul qilib yuborgan, natijada masofa 8000 km
+    // chiqib, xodim ofisda tursa ham davomat HAR DOIM rad etilgan. Xato
+    // xabari esa xodimni ayblagan ("siz ofis hududida emassiz").
+    //
+    // null qaytaramiz — chaqiruvchi buni "sozlanmagan" deb, tushunarli
+    // xabar beradi. Noto'g'ri koordinata bilan hisoblashdan ko'ra
+    // "sozlash kerak" degan javob foydaliroq.
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+
     const radius = Math.round(parseGeoRow(radiusRow));
-    return { lat, lng, radius: isNaN(radius) || radius < 10 ? 50 : radius };
+    // Telefon GPS aniqligi odatda 10-50 metr. Radius shundan kichik
+    // bo'lsa, xodim ofis ichida turganda ham chetda ko'rinishi mumkin.
+    return { lat, lng, radius: isNaN(radius) || radius < 30 ? 50 : radius };
   }
 
   /** GPS tekshiruv: ofis hududi sozlanmagan bo'lsa — error; masofa oshsa — 403 */
@@ -99,7 +115,11 @@ export class AttendanceService {
     const office = await this.getOfficeLocation(tenantId);
     if (!office) {
       throw new Error(
-        "Ofis joylashuvi sozlanmagan. Admin Sozlamalar > Davomat bo'limida GPS koordinatlarini kiriting.",
+        "Ofis joylashuvi sozlanmagan yoki koordinatalar noto'g'ri. Admin " +
+          "Sozlamalar > Davomat bo'limida GPS koordinatlarini kiritsin. " +
+          "Kenglik -90..90, uzunlik -180..180 oralig'ida, O'NLIK son bo'lishi " +
+          "kerak (masalan 41.011571) — gradus-daqiqa-soniya ko'rinishi (41°00'41\") " +
+          "yaramaydi.",
       );
     }
     const distance = this.calculateDistance(lat, lng, office.lat, office.lng);
@@ -193,9 +213,22 @@ export class AttendanceService {
 
     const tenantId = employee.tenantId;
 
-    if (lat !== undefined && lng !== undefined) {
-      await this.assertOfficeLocation(tenantId, lat, lng);
+    // GPS KELISHDA MAJBURIY.
+    //
+    // Ilgari bu tekshiruv shartli edi: koordinata yuborilmasa, hudud
+    // umuman tekshirilmasdi. Ya'ni xodim uydan turib davomat belgilay
+    // olardi — brauzer joylashuvni bermasa yoki so'rov koordinatasiz
+    // kelsa, tizim jimgina qabul qilardi. Geofence bor deb o'ylangan,
+    // amalda esa uni chetlab o'tish uchun hech narsa qilish shart emas edi.
+    //
+    // selfMark'da bu allaqachon to'g'ri edi — endi QR yo'li ham shunday.
+    if (lat === undefined || lng === undefined) {
+      throw new ForbiddenException(
+        "Kelishni belgilash uchun joylashuv kerak. Brauzerda joylashuvga ruxsat bering " +
+          "va qaytadan urinib ko'ring.",
+      );
     }
+    await this.assertOfficeLocation(tenantId, lat, lng);
 
     const isValid = await this.validateToken(tokenValue, tenantId);
     if (!isValid) {

@@ -90,6 +90,16 @@ export class FinanceController {
   }
 
   // Zararsizlik nuqtasi — shu oy nolga chiqish uchun qancha kerak.
+  @Get('break-even/config')
+  getBreakEvenConfig() {
+    return this.breakEven.readConfig();
+  }
+
+  @Post('break-even/config')
+  saveBreakEvenConfig(@Body() body: any) {
+    return this.breakEven.saveConfig(body);
+  }
+
   @Get('break-even')
   getBreakEven(@Req() req: Request) {
     const tenantId = (req as any)?.user?.tenantId;

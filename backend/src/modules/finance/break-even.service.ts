@@ -1,24 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 
 // =============================================
 // BREAK-EVEN (ZARARSIZLIK NUQTASI)
 //
-// Savol: "shu oy zararsiz chiqish uchun yana qancha ish qilishim kerak?"
+// Savol: "shu oy zararsiz chiqish uchun yana qancha ish kerak?"
 //
-// Javob uchun uch narsa kerak:
-//   1. Oylik DOIMIY xarajat — maosh, ijara, kommunal. Har oy takrorlanadi.
-//   2. Vaqti-vaqti bilan bo'ladigan xarajat — 3-4 oyda, 6-12 oyda bir marta
-//      (jihoz ta'miri, litsenziya). Ular oyga TAQSIMLANADI, aks holda
-//      chiqqan oyida zarar, qolgan oylarda soxta foyda ko'rinadi.
-//   3. Bir buyurtmadagi o'rtacha ustama — necha dona sotish kerakligini
-//      shundan hisoblaymiz.
+// Xarajat ikki yo'l bilan aniqlanadi — tashkilot o'zi tanlaydi:
 //
-// MUHIM: hech narsa taxmin qilinmaydi. Doimiy/tasodifiy ajratish ham,
-// o'rtacha summa ham TARIXDAN o'lchanadi — quyidagi izohlarga qarang.
+//   AVTOMATIK — kassadagi haqiqiy chiqimlardan hisoblanadi. Hech narsa
+//     kiritish shart emas, lekin xarajat tarixi kerak. Ustiga qo'lda
+//     qo'shimcha qatorlar qo'shish mumkin (masalan hali kassaga
+//     tushmagan, lekin ma'lum bo'lgan ijara).
+//
+//   QO'LDA — faqat qo'lda yozilgan jadval ishlatiladi. Yangi tashkilotda
+//     yoki kassada xarajat to'liq yuritilmaganda shu qulay.
+//
+// Har xarajat BO'LIMGA biriktiriladi — poligrafiya va tashqi reklama
+// alohida nolga chiqadi, ularning moliyasi aralashmaydi. Bo'limsizlari
+// umumiy hisobga kiradi.
 // =============================================
 
-/** Necha oylik tarixga qarab xarajat xulqi aniqlanadi. */
+/** Necha oylik tarixga qarab xarajat xulqi aniqlanadi (avtomatik rejim). */
 const HISTORY_MONTHS = 6;
 
 /**
@@ -30,41 +34,47 @@ const HISTORY_MONTHS = 6;
  */
 const REGULAR_MIN_MONTHS = 5;
 
-export interface BreakEvenResult {
-  /** Hisob qilingan davr (joriy oy, "YYYY-MM"). */
-  oy: string;
-  /** Tarix yetarlimi — yo'q bo'lsa qolgan raqamlar ishonchsiz. */
-  malumot_yetarli: boolean;
-  izoh: string;
+/** Qo'lda kiritilgan bitta xarajat qatori. */
+export interface ManualCost {
+  id: string;
+  nom: string;
+  summa: number;
+  /** 'doimiy' — har oy; 'vaqtinchalik' — vaqti-vaqti bilan, oyga taqsimlanadi. */
+  tur: 'doimiy' | 'vaqtinchalik';
+  /** Necha oyda bir marta (faqat 'vaqtinchalik' uchun). */
+  oyda_bir?: number;
+  /** null = umumiy (bo'limga tegishli emas). */
+  departmentId?: string | null;
+}
 
+export interface BreakEvenScope {
+  id: string | null;
+  nom: string;
   doimiy_xarajat: number;
-  /** Vaqti-vaqti bilan bo'ladigan xarajatning oylik ulushi. */
   vaqtinchalik_ulush: number;
-  /** Oyiga qoplanishi kerak bo'lgan jami xarajat. */
   kerakli_qoplama: number;
-
-  /** Shu oy allaqachon tushgan sof tushum (ichki o'tkazmasiz). */
-  bugungi_tushum: number;
-  /** 0 dan 100 gacha — progress bar shuni ko'rsatadi. */
+  tushum: number;
   foiz: number;
-  /** Nolga chiqishga qolgan summa (0 bo'lsa — chiqilgan). */
   qolgan_summa: number;
   nolga_chiqdi: boolean;
+}
 
-  /** Eng ko'p sotiladigan xizmatlar bo'yicha "yana nechta kerak". */
-  xizmatlar: Array<{
-    nom: string;
-    ortacha_summa: number;
-    sotilgan: number;
-    yana_kerak: number;
-  }>;
-
-  xarajat_turlari: Array<{ nom: string; oylik: number; tur: 'doimiy' | 'vaqtinchalik' }>;
+export interface BreakEvenResult {
+  oy: string;
+  rejim: 'auto' | 'manual';
+  malumot_yetarli: boolean;
+  izoh: string;
+  umumiy: BreakEvenScope;
+  bolimlar: BreakEvenScope[];
+  xarajat_turlari: Array<{ nom: string; oylik: number; tur: 'doimiy' | 'vaqtinchalik'; manba: 'kassa' | 'qolda' }>;
 }
 
 @Injectable()
 export class BreakEvenService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+  ) {}
 
   private tashkentNow(): Date {
     return new Date(Date.now() + 5 * 3600000);
@@ -72,6 +82,35 @@ export class BreakEvenService {
 
   private monthKey(d: Date): string {
     return d.toISOString().slice(0, 7);
+  }
+
+  /** Qo'lda kiritilgan xarajatlar va rejim sozlamasi. */
+  async readConfig(): Promise<{ rejim: 'auto' | 'manual'; xarajatlar: ManualCost[] }> {
+    try {
+      const raw = await this.settings.get('BREAK_EVEN');
+      const cfg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return {
+        rejim: cfg?.rejim === 'manual' ? 'manual' : 'auto',
+        xarajatlar: Array.isArray(cfg?.xarajatlar) ? cfg.xarajatlar : [],
+      };
+    } catch {
+      return { rejim: 'auto', xarajatlar: [] };
+    }
+  }
+
+  async saveConfig(cfg: { rejim: 'auto' | 'manual'; xarajatlar: ManualCost[] }) {
+    await this.settings.set('BREAK_EVEN', {
+      rejim: cfg.rejim === 'manual' ? 'manual' : 'auto',
+      xarajatlar: (cfg.xarajatlar || []).map((x) => ({
+        id: String(x.id || Math.random().toString(36).slice(2)),
+        nom: String(x.nom || '').trim(),
+        summa: Math.max(0, Number(x.summa) || 0),
+        tur: x.tur === 'vaqtinchalik' ? 'vaqtinchalik' : 'doimiy',
+        oyda_bir: x.tur === 'vaqtinchalik' ? Math.max(1, Number(x.oyda_bir) || 12) : undefined,
+        departmentId: x.departmentId || null,
+      })),
+    });
+    return this.readConfig();
   }
 
   async compute(tenantId: string): Promise<BreakEvenResult> {
@@ -82,133 +121,138 @@ export class BreakEvenService {
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - HISTORY_MONTHS, 1) - 5 * 3600000,
     );
 
-    const [expenses, monthIncome, doneTasks] = await Promise.all([
-      // Tarixiy chiqimlar — turini aniqlash uchun. Ichki o'tkazma xarajat emas.
+    const cfg = await this.readConfig();
+
+    const [departments, history, income] = await Promise.all([
+      this.prisma.department.findMany({ where: { tenantId }, select: { id: true, name: true } }),
+      // Tarixiy chiqimlar — avtomatik rejim uchun. Ichki o'tkazma xarajat emas.
+      cfg.rejim === 'auto'
+        ? this.prisma.transaction.findMany({
+            where: {
+              tenantId, type: 'chiqim', isInternalTransfer: false,
+              date: { gte: historyStart, lt: monthStart },
+            },
+            select: { amount: true, date: true, departmentId: true, expenseType: { select: { name: true } } },
+          })
+        : Promise.resolve([] as any[]),
+      // Shu oygi sof tushum — bo'lim kesimida.
       this.prisma.transaction.findMany({
-        where: {
-          tenantId,
-          type: 'chiqim',
-          isInternalTransfer: false,
-          date: { gte: historyStart, lt: monthStart },
-        },
-        select: { amount: true, date: true, expenseTypeId: true, expenseType: { select: { name: true } } },
-      }),
-      // Shu oygi sof tushum.
-      this.prisma.transaction.aggregate({
-        where: {
-          tenantId,
-          type: 'kirim',
-          isInternalTransfer: false,
-          date: { gte: monthStart },
-        },
-        _sum: { amount: true },
-      }),
-      // Shu oy bajarilgan buyurtmalar — xizmat kesimida.
-      this.prisma.task.findMany({
-        where: { tenantId, isArchived: false, completedAt: { gte: monthStart } },
-        select: { totalAmount: true, service: { select: { name: true } }, title: true },
+        where: { tenantId, type: 'kirim', isInternalTransfer: false, date: { gte: monthStart } },
+        select: { amount: true, departmentId: true },
       }),
     ]);
 
-    if (expenses.length === 0) {
-      return this.emptyResult(oy, 'Xarajat tarixi yo\'q — avval bir necha oy ishlash kerak.');
-    }
-
-    // ── Xarajatlarni turi bo'yicha ajratamiz ──────────────────────────
-    // Har xarajat turi qaysi oylarda uchraganini sanaymiz.
-    const byType = new Map<string, { name: string; months: Set<string>; total: number }>();
-    for (const e of expenses) {
-      const key = e.expenseTypeId || `nomsiz:${e.expenseType?.name || 'Boshqa'}`;
-      const name = e.expenseType?.name || 'Boshqa xarajatlar';
-      const cur = byType.get(key) || { name, months: new Set<string>(), total: 0 };
-      cur.months.add(this.monthKey(new Date(e.date.getTime() + 5 * 3600000)));
-      cur.total += e.amount || 0;
-      byType.set(key, cur);
-    }
-
-    // Tarixda nechta ALOHIDA oy bor — o'rtachani shunga bo'lamiz.
-    const observedMonths = new Set(
-      expenses.map((e) => this.monthKey(new Date(e.date.getTime() + 5 * 3600000))),
-    ).size;
-    const divisor = Math.max(1, observedMonths);
-
-    let doimiy = 0;
-    let vaqtinchalik = 0;
+    // ── Xarajatlarni bo'lim bo'yicha yig'amiz ────────────────────────
+    // Kalit: departmentId yoki null (umumiy).
+    const doimiy = new Map<string | null, number>();
+    const vaqtinchalik = new Map<string | null, number>();
     const turlar: BreakEvenResult['xarajat_turlari'] = [];
-    for (const v of byType.values()) {
-      const oylik = v.total / divisor;
-      // Deyarli har oy uchrasa — doimiy; kamdan-kam bo'lsa — vaqtinchalik,
-      // lekin baribir oyga taqsimlanadi (yiliga bir marta chiqadigan
-      // xarajat ham har oy pul talab qiladi, faqat keyinroq).
-      const tur = v.months.size >= Math.min(REGULAR_MIN_MONTHS, divisor) ? 'doimiy' : 'vaqtinchalik';
-      if (tur === 'doimiy') doimiy += oylik;
-      else vaqtinchalik += oylik;
-      turlar.push({ nom: v.name, oylik: Math.round(oylik), tur });
+
+    if (cfg.rejim === 'auto' && history.length > 0) {
+      const byType = new Map<string, { name: string; dept: string | null; months: Set<string>; total: number }>();
+      for (const e of history) {
+        const name = e.expenseType?.name || 'Boshqa xarajatlar';
+        const key = `${e.departmentId || '-'}::${name}`;
+        const cur = byType.get(key) || { name, dept: e.departmentId, months: new Set<string>(), total: 0 };
+        cur.months.add(this.monthKey(new Date(e.date.getTime() + 5 * 3600000)));
+        cur.total += e.amount || 0;
+        byType.set(key, cur);
+      }
+      const observedMonths = new Set(
+        history.map((e) => this.monthKey(new Date(e.date.getTime() + 5 * 3600000))),
+      ).size;
+      const divisor = Math.max(1, observedMonths);
+
+      for (const v of byType.values()) {
+        const oylik = v.total / divisor;
+        const tur = v.months.size >= Math.min(REGULAR_MIN_MONTHS, divisor) ? 'doimiy' : 'vaqtinchalik';
+        const bucket = tur === 'doimiy' ? doimiy : vaqtinchalik;
+        bucket.set(v.dept, (bucket.get(v.dept) || 0) + oylik);
+        turlar.push({ nom: v.name, oylik: Math.round(oylik), tur, manba: 'kassa' });
+      }
     }
-    turlar.sort((a, b) => b.oylik - a.oylik);
 
-    const kerakli = Math.round(doimiy + vaqtinchalik);
-    const tushum = Math.round(monthIncome._sum.amount || 0);
-    const qolgan = Math.max(0, kerakli - tushum);
-    const foiz = kerakli > 0 ? Math.min(100, Math.round((tushum / kerakli) * 100)) : 100;
-
-    // ── Qolgan summani xizmatlarga aylantiramiz ───────────────────────
-    // "Yana 12 ta vizitka kerak" degan javob rahbarga raqamdan foydaliroq.
-    const svc = new Map<string, { total: number; count: number }>();
-    for (const t of doneTasks) {
-      const nom = t.service?.name || t.title || 'Boshqa';
-      const cur = svc.get(nom) || { total: 0, count: 0 };
-      cur.total += t.totalAmount || 0;
-      cur.count += 1;
-      svc.set(nom, cur);
+    // Qo'lda kiritilganlar HAR IKKI rejimda qo'shiladi: avtomatik rejimda
+    // ular kassada hali ko'rinmagan xarajatni to'ldiradi.
+    for (const m of cfg.xarajatlar) {
+      // Vaqti-vaqti bilan bo'ladigan xarajat oyga taqsimlanadi — aks holda
+      // u chiqqan oyda zarar, qolganida soxta foyda ko'rinardi.
+      const oylik = m.tur === 'vaqtinchalik' ? m.summa / Math.max(1, m.oyda_bir || 12) : m.summa;
+      const bucket = m.tur === 'doimiy' ? doimiy : vaqtinchalik;
+      const dept = m.departmentId || null;
+      bucket.set(dept, (bucket.get(dept) || 0) + oylik);
+      turlar.push({ nom: m.nom || 'Nomsiz', oylik: Math.round(oylik), tur: m.tur, manba: 'qolda' });
     }
-    const xizmatlar = [...svc.entries()]
-      .map(([nom, v]) => {
-        const ortacha = v.count > 0 ? v.total / v.count : 0;
-        return {
-          nom,
-          ortacha_summa: Math.round(ortacha),
-          sotilgan: v.count,
-          yana_kerak: ortacha > 0 ? Math.ceil(qolgan / ortacha) : 0,
-        };
-      })
-      // Eng ko'p sotilgani birinchi — rahbar odatda shunga tayanadi.
-      .sort((a, b) => b.sotilgan - a.sotilgan)
-      .slice(0, 5);
 
-    const yetarli = observedMonths >= 2;
-    return {
-      oy,
-      malumot_yetarli: yetarli,
-      izoh: yetarli
-        ? `${observedMonths} oylik xarajat tarixi asosida hisoblandi.`
-        : `Faqat ${observedMonths} oylik tarix bor — raqamlar taxminiy, oylar o'tgani sari aniqlashadi.`,
-      doimiy_xarajat: Math.round(doimiy),
-      vaqtinchalik_ulush: Math.round(vaqtinchalik),
-      kerakli_qoplama: kerakli,
-      bugungi_tushum: tushum,
-      foiz,
-      qolgan_summa: qolgan,
-      nolga_chiqdi: qolgan === 0,
-      xizmatlar,
-      xarajat_turlari: turlar.slice(0, 8),
+    // ── Tushum bo'lim bo'yicha ───────────────────────────────────────
+    const tushum = new Map<string | null, number>();
+    for (const i of income) {
+      const d = i.departmentId || null;
+      tushum.set(d, (tushum.get(d) || 0) + (i.amount || 0));
+    }
+
+    const build = (id: string | null, nom: string): BreakEvenScope => {
+      const d = Math.round(doimiy.get(id) || 0);
+      const v = Math.round(vaqtinchalik.get(id) || 0);
+      const kerak = d + v;
+      const t = Math.round(tushum.get(id) || 0);
+      const qolgan = Math.max(0, kerak - t);
+      return {
+        id, nom,
+        doimiy_xarajat: d,
+        vaqtinchalik_ulush: v,
+        kerakli_qoplama: kerak,
+        tushum: t,
+        foiz: kerak > 0 ? Math.min(100, Math.round((t / kerak) * 100)) : 100,
+        qolgan_summa: qolgan,
+        nolga_chiqdi: kerak > 0 && qolgan === 0,
+      };
     };
-  }
 
-  private emptyResult(oy: string, izoh: string): BreakEvenResult {
+    // Umumiy — hamma bo'lim va bo'limsizlari birga.
+    const sum = (m: Map<string | null, number>) => [...m.values()].reduce((a, b) => a + b, 0);
+    const umumiyKerak = Math.round(sum(doimiy) + sum(vaqtinchalik));
+    const umumiyTushum = Math.round(sum(tushum));
+    const umumiy: BreakEvenScope = {
+      id: null,
+      nom: 'Umumiy',
+      doimiy_xarajat: Math.round(sum(doimiy)),
+      vaqtinchalik_ulush: Math.round(sum(vaqtinchalik)),
+      kerakli_qoplama: umumiyKerak,
+      tushum: umumiyTushum,
+      foiz: umumiyKerak > 0 ? Math.min(100, Math.round((umumiyTushum / umumiyKerak) * 100)) : 100,
+      qolgan_summa: Math.max(0, umumiyKerak - umumiyTushum),
+      nolga_chiqdi: umumiyKerak > 0 && umumiyTushum >= umumiyKerak,
+    };
+
+    const bolimlar = departments.map((d) => build(d.id, d.name));
+    // Bo'limga biriktirilmagan pul bo'lsa, uni ham alohida ko'rsatamiz —
+    // aks holda bo'limlar yig'indisi umumiyga teng kelmay, raqam "yo'qolgan"
+    // bo'lib ko'rinardi.
+    const biriktirilmagan = build(null, 'Bo\'limsiz');
+    if (biriktirilmagan.kerakli_qoplama > 0 || biriktirilmagan.tushum > 0) {
+      bolimlar.push(biriktirilmagan);
+    }
+
+    const observed = cfg.rejim === 'auto'
+      ? new Set(history.map((e) => this.monthKey(new Date(e.date.getTime() + 5 * 3600000)))).size
+      : 0;
+    const yetarli = cfg.rejim === 'manual' ? cfg.xarajatlar.length > 0 : observed >= 2;
+
     return {
       oy,
-      malumot_yetarli: false,
-      izoh,
-      doimiy_xarajat: 0,
-      vaqtinchalik_ulush: 0,
-      kerakli_qoplama: 0,
-      bugungi_tushum: 0,
-      foiz: 0,
-      qolgan_summa: 0,
-      nolga_chiqdi: false,
-      xizmatlar: [],
-      xarajat_turlari: [],
+      rejim: cfg.rejim,
+      malumot_yetarli: yetarli,
+      izoh: cfg.rejim === 'manual'
+        ? (cfg.xarajatlar.length
+            ? `Qo'lda kiritilgan ${cfg.xarajatlar.length} ta xarajat asosida.`
+            : "Qo'lda rejim tanlangan, lekin hali xarajat kiritilmagan.")
+        : (yetarli
+            ? `${observed} oylik kassa tarixi asosida${cfg.xarajatlar.length ? ` + ${cfg.xarajatlar.length} ta qo'lda qo'shilgan` : ''}.`
+            : `Faqat ${observed} oylik tarix bor — raqamlar taxminiy, oylar o'tgani sari aniqlashadi.`),
+      umumiy,
+      bolimlar,
+      xarajat_turlari: turlar.sort((a, b) => b.oylik - a.oylik).slice(0, 20),
     };
   }
 }

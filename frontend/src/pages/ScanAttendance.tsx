@@ -24,8 +24,33 @@ const ScanAttendance: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           return;
         }
 
-        // Tokenni yuborish
-        const res = await attendanceApi.checkIn({ employeeId: currentUser.id, token });
+        // JOYLASHUV MAJBURIY.
+        //
+        // Ilgari bu sahifa faqat token yuborardi, koordinatasiz. Backend esa
+        // koordinata bo'lmasa hudud tekshiruvini o'tkazib yuborardi — ya'ni
+        // QR rasmini uydan skanerlab davomat belgilash mumkin edi. Geofence
+        // bor deb o'ylangan, amalda esa uni chetlab o'tish uchun hech narsa
+        // qilish kerak emasdi.
+        let geo: { lat: number; lng: number };
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 10000,
+              maximumAge: 0,
+            }),
+          );
+          geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        } catch (geoErr: any) {
+          setStatus('error');
+          setMessage(
+            geoErr?.code === 1
+              ? "Joylashuvga ruxsat berilmadi. Davomat belgilash uchun brauzerda lokatsiyani yoqing."
+              : "Joylashuv aniqlanmadi. Ochiq joyda qayta urinib ko'ring.",
+          );
+          return;
+        }
+
+        const res = await attendanceApi.checkIn({ employeeId: currentUser.id, token, ...geo });
         
         setStatus('success');
         if (res.data && res.data.checkOut) {
