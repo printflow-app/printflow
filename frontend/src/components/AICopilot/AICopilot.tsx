@@ -567,6 +567,18 @@ type Usage = {
 };
 
 const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => {
+  // Panel yonma-yon (docked) turadimi yoki kontent ustidan ochiladimi.
+  // 1536px — Tailwind 2xl chegarasi; shundan tor ekranda yonma-yon turish
+  // kontentni siqib qo'yadi, shuning uchun overlay bo'ladi.
+  const [isDocked, setIsDocked] = useState(
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1536px)').matches : true,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1536px)');
+    const on = () => setIsDocked(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
   const [input, setInput] = useState('');
   const [usage, setUsage] = useState<Usage | null>(null);
   const [briefing, setBriefing] = useState<any>(null);
@@ -815,7 +827,18 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           chiqmaydi, balki kontentni qisqartiradi va yonma-yon turadi.
           Shu sababli chatni doim ochiq qoldirib ishlash mumkin.
           Telefonda esa avvalgidek to'liq ekranli overlay. */}
-      <aside className="fixed inset-y-0 right-0 z-[70] w-full md:static md:z-auto md:w-[360px] lg:w-[400px] md:shrink-0 md:h-screen bg-white border-l border-[color:var(--border)] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] md:shadow-none flex flex-col animate-in slide-in-from-right duration-300 ease-out">
+      {/* Kichik va o'rta ekranda panel USTIDAN ochiladi, kontentni siqmaydi.
+          Ilgari u `md:` (768px) dan boshlab static edi va 400px joyni o'zi
+          olardi: 1366px noutbukda kontentga ~716px qolib, jadvallar ikki
+          qatorga tushib ketardi. Yonma-yon turish faqat haqiqatan joy
+          bo'lganda (1536px+) mantiqiy. */}
+      {!isDocked && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 z-[65] bg-slate-900/20 backdrop-blur-[2px] 2xl:hidden"
+        />
+      )}
+      <aside className="fixed inset-y-0 right-0 z-[70] w-full max-w-[440px] 2xl:static 2xl:z-auto 2xl:max-w-none 2xl:w-[400px] 2xl:shrink-0 2xl:h-screen bg-white border-l border-[color:var(--border)] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] 2xl:shadow-none flex flex-col animate-in slide-in-from-right duration-300 ease-out">
 
         {/* Header */}
         <div className="relative flex items-center gap-3 px-4 py-4 border-b border-slate-100 bg-white/80 backdrop-blur-md flex-shrink-0">

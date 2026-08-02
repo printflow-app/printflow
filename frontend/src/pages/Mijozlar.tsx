@@ -418,7 +418,10 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       {activeView === 'all' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            {/* min-w: ustunlar siqilib ikki qatorga tushmasligi uchun. Tor
+                  ekranda jadval o'ralmaydi, gorizontal aylanadi — raqamlar
+                  butun qatorda qoladi va o'qish osonroq. */}
+            <table className="w-full min-w-[900px] text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-100">
                   <th className="py-3 px-5 text-[9px] uppercase font-bold text-slate-400 tracking-widest w-8"></th>
