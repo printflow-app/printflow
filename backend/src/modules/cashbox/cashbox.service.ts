@@ -200,6 +200,8 @@ export class CashboxService {
           amount,
           paymentTypeId: data.paymentTypeId || null,
           expenseReason: `Kassaga topshirildi: ${to.name}`,
+          // Ichki ko'chirish — hisobotlarda xarajat sifatida sanalmaydi.
+          isInternalTransfer: true,
           branchId: from.branchId,
           cashBoxId: from.id,
           createdById: u.userId,
@@ -247,6 +249,8 @@ export class CashboxService {
           amount: transfer.amount,
           paymentTypeId: transfer.paymentTypeId || null,
           serviceType: `Kassadan qabul qilindi: ${from?.name || ''}`,
+          // Ichki ko'chirish — hisobotlarda daromad sifatida sanalmaydi.
+          isInternalTransfer: true,
           branchId: to.branchId,
           cashBoxId: to.id,
           createdById: u.userId,

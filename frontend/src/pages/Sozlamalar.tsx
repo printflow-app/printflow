@@ -171,6 +171,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
     name: '',
     canViewFinance: false, canAddIncome: false, canAddExpense: false, canViewTotalBalance: false, canViewOwnCashOnly: false, canManagePaymentTypes: false,
     canManageCashBoxes: false, canViewAllCashBoxes: false, canTransferCash: false, canSetTransactionDate: false,
+    canViewTeamTasks: false, canManageTeamTasks: false,
     canViewTasks: false, canViewAllTasks: false, canViewOwnTasks: false, canCreateTask: false, canEditTask: false, canDeleteTask: false, canMoveTask: false, canManageColumns: false,
     canViewCustomers: false, canManageCustomers: false,
     canViewEmployees: false, canManageEmployees: false, canManageRoles: false, canViewSalary: false, canManageAdmins: false,
@@ -344,6 +345,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
         color: 'amber',
         icon: <LayoutGrid size={15} />,
         permissions: {
+          canViewTeamTasks: { label: "Jamoa vazifalari doskasiga kirish", detail: "Menyu'da 'Jamoa vazifalari' bo'limi ko'rinadi. Bu doska buyurtma kanbanidan farq qiladi: u yerda fokus buyurtmada, bu yerda qaysi xodim nima bilan band ekanida. Buyurtmalar ham, operatsion vazifalar ham birga ko'rinadi." },
+          canManageTeamTasks: { label: "Jamoa vazifasini yaratish va ko'chirish", detail: "'+ Vazifa' tugmasi ko'rinadi; vazifani bosqichdan bosqichga sudrab o'tkazish mumkin. Mas'ul tanlansa unga Telegram orqali xabar boradi. Buyurtmalarni bu doskada ko'chirib bo'lmaydi — ular Kanbanda boshqariladi." },
           canViewTasks: { label: "Kanban sahifasiga kirish", detail: "Menyu'da 'Xizmatlar' bo'limi ko'rinadi. Buyurtmalar kanban doskasiniga umumiy kirish imkoni." },
           canViewAllTasks: { label: "Barcha buyurtmalarni ko'rish", detail: "Barcha xodimga biriktirilgan buyurtmalar ko'rinadi. Bu ruxsat yo'q bo'lsa xodim faqat o'ziga biriktirilgan buyurtmalarni ko'ra oladi." },
           canViewOwnTasks: { label: "Faqat o'ziga biriktirilgan buyurtmalarni ko'rish", detail: "Boshqa xodimlarning buyurtmalari yashiriladi. Faqat o'z ismiga biriktirilgan kartochkalar ko'rinadi." },

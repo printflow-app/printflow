@@ -40,6 +40,8 @@ const TENANT_SCOPED_MODELS = new Set([
   'cashBox',
   'cashTransfer',
   'salaryRecord',
+  'employeeDepartment',
+  'teamTask',
 ]);
 
 // These models are NOT tenant-scoped (platform-level):

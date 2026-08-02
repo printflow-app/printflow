@@ -46,12 +46,18 @@ interface DetectorContext {
 }
 
 const DEFAULT_WORK_START = { hour: 9, minute: 0 };
+// Yakshanbadan boshqa kunlar — attendance.service.ts bilan bir xil sukut.
+const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 const SOON_DAYS = 3; // "yaqinlashib qolgan" oyna — material yetishmovchiligi uchun
 
 // Chegaralar — nima "muammo" hisoblanishini shu yerdan sozlash mumkin.
 const OVERDUE_CRITICAL_DAYS = 7;   // shundan ko'p kechikkan buyurtma — jiddiy
 const STUCK_DAYS = 10;             // ustunda qimirlamay turgan buyurtma
 const STALE_DEBT_DAYS = 45;        // shuncha kundan beri qimirlamagan qarz
+// Buyurtma summalari kasrli bo'lishi mumkin, shuning uchun qoldiq nolga
+// aniq teng chiqmaydi (0.0000001 kabi). Chegarasiz "0 so'm qarzi bor"
+// degan ma'nosiz ogohlantirish chiqardi.
+const MIN_DEBT_SOM = 1;
 const EXPENSE_SPIKE_RATIO = 2.5;   // o'rtachadan shuncha barobar oshsa
 const MIN_DAYS_FOR_AVERAGE = 7;
 
@@ -87,12 +93,137 @@ export class RiskDetectionService {
     return nowMins >= startMins;
   }
 
+  /**
+   * Bugun ish kunimi (tenant'ning `workDays` sozlamasi bo'yicha).
+   *
+   * Busiz dam olish kunlari "Bugun hech kim ishga kelmagan — KRITIK" degan
+   * ogohlantirish chiqib turardi: hech kim kelmagani rost, lekin bu muammo
+   * emas. attendance.service.ts va telegram.service.ts bu sozlamani
+   * allaqachon hisobga oladi, xavf detektorlari esa e'tiborsiz qoldirardi.
+   */
+  private async isWorkDay(): Promise<boolean> {
+    const days = (await this.settings.get('workDays')) || DEFAULT_WORK_DAYS;
+    const utc5 = new Date(Date.now() + 5 * 3600000);
+    return Array.isArray(days) ? days.includes(utc5.getUTCDay()) : true;
+  }
+
+  /**
+   * Mijozlarning HAQIQIY qoldiq qarzi: buyurtmalar summasi − to'langan pul.
+   *
+   * `Customer.totalDebt` ustunini ISHLATMAYMIZ. U ikki sababga ko'ra noto'g'ri:
+   *  1. Ma'nosi "jami buyurtmalar summasi", "qarz" emas — to'liq to'lagan
+   *     mijoz ham katta qarzdor bo'lib ko'rinadi.
+   *  2. Bu eski saqlanadigan hisoblagich bo'lib, manba yozuvlardan drift
+   *     qilgan (customers.service.ts izohiga qarang).
+   * Natijada AI qarzi yo'q, hatto ORTIQCHA to'lagan mijozlarni ham qarzdor
+   * deb ko'rsatardi. Mijozlar sahifasi qoldiqni aynan shu yerdagidek
+   * hisoblaydi — endi AI ham u bilan bir xil raqamni aytadi.
+   */
+  private async realBalances(tenantId: string): Promise<Map<string, number>> {
+    const [orders, paid] = await Promise.all([
+      this.prisma.task.groupBy({
+        by: ['customerId'],
+        where: { tenantId, customerId: { not: null } },
+        _sum: { totalAmount: true },
+      }),
+      this.prisma.transaction.groupBy({
+        by: ['customerId'],
+        where: { tenantId, customerId: { not: null }, type: 'kirim', isInternalTransfer: false },
+        _sum: { amount: true },
+      }),
+    ]);
+    const out = new Map<string, number>();
+    for (const o of orders as any[]) {
+      if (o.customerId) out.set(o.customerId, Number(o._sum.totalAmount || 0));
+    }
+    for (const p of paid as any[]) {
+      if (!p.customerId) continue;
+      out.set(p.customerId, (out.get(p.customerId) || 0) - Number(p._sum.amount || 0));
+    }
+    return out;
+  }
+
+  /**
+   * Berilgan buyurtmalarning HAQIQIY to'lanmagan qoldig'i.
+   *
+   * `Task.remainingAmount` ustuni ham ishonchsiz — u ham saqlanadigan
+   * hisoblagich va manbadan drift qilgan (sinovda 46 mijozdan 16 tasida
+   * noto'g'ri chiqdi; masalan to'liq to'langan buyurtmada 12 500 000 so'm
+   * "qoldiq" turardi).
+   *
+   * To'lovlar mijozning buyurtmalari bo'ylab eskisidan yangisiga qarab
+   * taqsimlanadi — finance.service.ts to'lov qabul qilganda aynan shunday
+   * qiladi, shuning uchun bu yerda ham xuddi shu tartib takrorlanadi.
+   */
+  private async realTaskRemaining(
+    tenantId: string,
+    taskIds: string[],
+  ): Promise<Map<string, number>> {
+    const out = new Map<string, number>();
+    if (taskIds.length === 0) return out;
+
+    const targets = await this.prisma.task.findMany({
+      where: { tenantId, id: { in: taskIds } },
+      select: { id: true, customerId: true, totalAmount: true, depositAmount: true },
+    });
+
+    // Mijozsiz buyurtmada taqsimlash yo'q — zakolat to'g'ridan-to'g'ri ayriladi.
+    const customerIds = [...new Set(targets.map((t) => t.customerId).filter(Boolean) as string[])];
+    for (const t of targets) {
+      if (!t.customerId) out.set(t.id, Math.max(0, (t.totalAmount || 0) - (t.depositAmount || 0)));
+    }
+    if (customerIds.length === 0) return out;
+
+    const [allTasks, payments] = await Promise.all([
+      // Mijozning BARCHA buyurtmalari kerak: to'lov eskisidan boshlab
+      // taqsimlanadi, shuning uchun faqat kechikkanlarini olsak taqsimot
+      // noto'g'ri chiqadi.
+      this.prisma.task.findMany({
+        where: { tenantId, customerId: { in: customerIds } },
+        select: { id: true, customerId: true, totalAmount: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.transaction.groupBy({
+        by: ['customerId'],
+        where: { tenantId, customerId: { in: customerIds }, type: 'kirim', isInternalTransfer: false },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const paidBy = new Map<string, number>();
+    for (const p of payments as any[]) {
+      if (p.customerId) paidBy.set(p.customerId, Number(p._sum.amount || 0));
+    }
+    const wanted = new Set(taskIds);
+    const byCustomer = new Map<string, typeof allTasks>();
+    for (const t of allTasks) {
+      if (!t.customerId) continue;
+      const arr = byCustomer.get(t.customerId) || [];
+      arr.push(t);
+      byCustomer.set(t.customerId, arr);
+    }
+
+    for (const [cid, tasks] of byCustomer) {
+      let left = paidBy.get(cid) || 0;
+      for (const t of tasks) {
+        const total = t.totalAmount || 0;
+        const applied = Math.min(total, left);
+        left -= applied;
+        if (wanted.has(t.id)) out.set(t.id, Math.max(0, total - applied));
+      }
+    }
+    return out;
+  }
+
   // ──────────────────────────────────────────────────────────────────
   // DETEKTOR 1 — Kanban x Davomat: bugun muddatli buyurtmaga tayinlangan
   // xodim bugun hali ishga kelmagan.
   // ──────────────────────────────────────────────────────────────────
   private async detectTaskAttendance(ctx: DetectorContext): Promise<RiskCandidate[]> {
-    if (!(await this.isPastWorkStart())) return []; // ish kuni hali boshlanmagan — erta xulosa chiqarmaymiz
+    // Dam olish kunida "kelmagan" degan xulosa noto'g'ri, ish kuni
+    // boshlanmasdan oldin esa erta.
+    if (!(await this.isWorkDay())) return [];
+    if (!(await this.isPastWorkStart())) return [];
 
     const tasks = await this.prisma.task.findMany({
       where: {
@@ -119,11 +250,19 @@ export class RiskDetectionService {
 
     const [attendanceToday, employees] = await Promise.all([
       this.prisma.attendanceRecord.findMany({
-        where: { tenantId: ctx.tenantId, date: ctx.todayStr, employeeId: { in: [...allEmployeeIds] } },
+        // `checkIn: not null` SHART: yozuv mavjudligi hali "keldi" degani
+        // emas (bo'sh yozuvlar bazada uchraydi). Tizimning qolgan qismi ham
+        // aynan shu shartni ishlatadi — bir xil bo'lishi kerak.
+        where: {
+          tenantId: ctx.tenantId,
+          date: ctx.todayStr,
+          employeeId: { in: [...allEmployeeIds] },
+          checkIn: { not: null },
+        },
         select: { employeeId: true },
       }),
       this.prisma.employee.findMany({
-        where: { id: { in: [...allEmployeeIds] } },
+        where: { tenantId: ctx.tenantId, id: { in: [...allEmployeeIds] } },
         select: { id: true, fullName: true },
       }),
     ]);
@@ -214,28 +353,37 @@ export class RiskDetectionService {
         column: { isDone: false },
         createdAt: { gte: since },
         customerId: { not: null },
-        customer: { totalDebt: { gt: 0 } },
       },
       select: {
         id: true, displayId: true, orderName: true, title: true, totalAmount: true,
-        customer: { select: { id: true, name: true, totalDebt: true } },
+        customer: { select: { id: true, name: true } },
       },
       take: 50,
     });
+    if (tasks.length === 0) return [];
+
+    const balances = await this.realBalances(ctx.tenantId);
 
     return tasks
       .filter((t) => t.customer)
-      .map((t) => {
+      .map((t): RiskCandidate | null => {
+        // YANGI buyurtmaning o'zi ham qoldiqqa kirgan. Uni ayirmasak har
+        // yangi buyurtma avtomatik "qarzdorga buyurtma berildi" bo'lib
+        // chiqardi — mijoz avval qarzsiz bo'lsa ham.
+        const oldDebt = (balances.get(t.customer!.id) || 0) - (t.totalAmount || 0);
+        if (oldDebt < MIN_DEBT_SOM) return null;
+
         const taskLabel = t.displayId ? `${t.displayId} — ${t.orderName || t.title}` : (t.orderName || t.title);
         return {
           severity: 'info' as const,
           title: 'Qarzdor mijozga yangi buyurtma',
-          message: `${t.customer!.name} mijozining ${t.customer!.totalDebt.toLocaleString('uz-UZ')} so'm qarzi bor, lekin unga yangi "${taskLabel}" buyurtmasi berilgan.`,
+          message: `${t.customer!.name} mijozining oldingi ${Math.round(oldDebt).toLocaleString('uz-UZ')} so'm to'lanmagan qarzi bor, lekin unga yangi "${taskLabel}" buyurtmasi berilgan.`,
           dedupeKey: `debtor_new_order:${t.id}:${t.customer!.id}`,
           relatedTaskId: t.id,
           relatedCustomerId: t.customer!.id,
         };
-      });
+      })
+      .filter((c): c is RiskCandidate => c !== null);
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -260,13 +408,14 @@ export class RiskDetectionService {
 
     const oldest = tasks[0];
     const daysLate = Math.floor((ctx.dayStart.getTime() - oldest.deadlineAt!.getTime()) / 86400000);
-    const frozenMoney = tasks.reduce((s, t) => s + (t.remainingAmount || 0), 0);
+    const remaining = await this.realTaskRemaining(ctx.tenantId, tasks.map((t) => t.id));
+    const frozenMoney = tasks.reduce((s, t) => s + (remaining.get(t.id) ?? 0), 0);
     const oldestLabel = oldest.displayId
       ? `${oldest.displayId} — ${oldest.orderName || oldest.title}`
       : oldest.orderName || oldest.title;
 
     const moneyPart = frozenMoney > 0
-      ? ` Ularda jami ${frozenMoney.toLocaleString('uz-UZ')} so'm to'lanmagan qoldiq turibdi.`
+      ? ` Ularda jami ${Math.round(frozenMoney).toLocaleString('uz-UZ')} so'm to'lanmagan qoldiq turibdi.`
       : '';
 
     return [{
@@ -285,6 +434,7 @@ export class RiskDetectionService {
   // kam odam) kelmagan. Aynan shu holat ilgari umuman aniqlanmasdi.
   // ──────────────────────────────────────────────────────────────────
   private async detectAttendanceGap(ctx: DetectorContext): Promise<RiskCandidate[]> {
+    if (!(await this.isWorkDay())) return [];
     if (!(await this.isPastWorkStart())) return [];
 
     const [total, present] = await Promise.all([
@@ -370,23 +520,33 @@ export class RiskDetectionService {
   // ──────────────────────────────────────────────────────────────────
   private async detectStaleDebt(ctx: DetectorContext): Promise<RiskCandidate[]> {
     const threshold = new Date(Date.now() - STALE_DEBT_DAYS * 86400000);
-    const customers = await this.prisma.customer.findMany({
-      where: { tenantId: ctx.tenantId, totalDebt: { gt: 0 }, updatedAt: { lt: threshold } },
-      select: { id: true, name: true, totalDebt: true, updatedAt: true },
-      orderBy: { totalDebt: 'desc' },
-    });
-    if (customers.length === 0) return [];
+    const [rows, balances] = await Promise.all([
+      this.prisma.customer.findMany({
+        where: { tenantId: ctx.tenantId, updatedAt: { lt: threshold } },
+        select: { id: true, name: true, updatedAt: true },
+      }),
+      this.realBalances(ctx.tenantId),
+    ]);
 
-    const total = customers.reduce((s, c) => s + c.totalDebt, 0);
-    const top = customers[0];
+    // Faqat HAQIQATDA qoldiq qarzi borlar. Ilgari bu yerda ham
+    // `totalDebt > 0` ishlatilardi — natijada to'liq hisob-kitob qilgan
+    // mijozlar ham "eskirgan qarz" ro'yxatiga tushardi.
+    const debtors = rows
+      .map((c) => ({ ...c, qarz: balances.get(c.id) || 0 }))
+      .filter((c) => c.qarz >= MIN_DEBT_SOM)
+      .sort((a, b) => b.qarz - a.qarz);
+    if (debtors.length === 0) return [];
+
+    const total = debtors.reduce((s, c) => s + c.qarz, 0);
+    const top = debtors[0];
     const days = Math.floor((Date.now() - top.updatedAt.getTime()) / 86400000);
 
     return [{
       severity: 'warning',
-      title: `${customers.length} ta mijozda eskirgan qarz`,
+      title: `${debtors.length} ta mijozda eskirgan qarz`,
       message:
-        `Jami ${total.toLocaleString('uz-UZ')} so'm qarz ${STALE_DEBT_DAYS} kundan beri qimirlamagan. ` +
-        `Eng kattasi — ${top.name}, ${top.totalDebt.toLocaleString('uz-UZ')} so'm, ${days} kundan beri o'zgarish yo'q.`,
+        `Jami ${Math.round(total).toLocaleString('uz-UZ')} so'm to'lanmagan qarz ${STALE_DEBT_DAYS} kundan beri qimirlamagan. ` +
+        `Eng kattasi — ${top.name}, ${Math.round(top.qarz).toLocaleString('uz-UZ')} so'm, ${days} kundan beri o'zgarish yo'q.`,
       dedupeKey: 'stale_debt:summary',
       relatedCustomerId: top.id,
     }];
@@ -424,30 +584,45 @@ export class RiskDetectionService {
   // ──────────────────────────────────────────────────────────────────
   private async detectExpenseSpike(ctx: DetectorContext): Promise<RiskCandidate[]> {
     const since = new Date(ctx.dayStart.getTime() - 30 * 86400000);
-    const [todayAgg, historyAgg] = await Promise.all([
+    const [todayAgg, history] = await Promise.all([
       this.prisma.transaction.aggregate({
-        where: { tenantId: ctx.tenantId, type: 'chiqim', date: { gte: ctx.dayStart, lt: ctx.dayEnd } },
+        where: { tenantId: ctx.tenantId, type: 'chiqim', isInternalTransfer: false, date: { gte: ctx.dayStart, lt: ctx.dayEnd } },
         _sum: { amount: true },
       }),
-      this.prisma.transaction.aggregate({
-        where: { tenantId: ctx.tenantId, type: 'chiqim', date: { gte: since, lt: ctx.dayStart } },
-        _sum: { amount: true },
-        _count: true,
+      // Kunlarni ajratish uchun sanalar kerak — bu 30 kunlik oyna, hajmi kichik.
+      this.prisma.transaction.findMany({
+        where: { tenantId: ctx.tenantId, type: 'chiqim', isInternalTransfer: false, date: { gte: since, lt: ctx.dayStart } },
+        select: { amount: true, date: true },
       }),
     ]);
 
     const today = todayAgg._sum.amount || 0;
-    const history = historyAgg._sum.amount || 0;
-    if (today <= 0 || historyAgg._count < MIN_DAYS_FOR_AVERAGE) return [];
+    if (today <= 0) return [];
 
-    const dailyAvg = history / 30;
+    // O'rtachani HAQIQIY chiqim bo'lgan kunlar soniga bo'lamiz.
+    //
+    // Ilgari bu yerda ikki xato bor edi:
+    //  1. `_count` tranzaksiyalar sonini qaytaradi, kunlar sonini emas —
+    //     bir kunda qilingan 7 ta chiqim "7 kunlik tarix" deb qabul qilinardi.
+    //  2. Yig'indi doim 30 ga bo'linardi. Yangi workspace'da (masalan 4 kunlik
+    //     tarix) o'rtacha 26 ta bo'sh kun hisobiga sun'iy pasayib, oddiy
+    //     chiqim ham "odatdagidan 2.5 barobar ko'p" bo'lib chiqardi.
+    const dayTotals = new Map<string, number>();
+    for (const tx of history) {
+      const key = new Date(tx.date.getTime() + 5 * 3600000).toISOString().slice(0, 10);
+      dayTotals.set(key, (dayTotals.get(key) || 0) + (tx.amount || 0));
+    }
+    if (dayTotals.size < MIN_DAYS_FOR_AVERAGE) return [];
+
+    const sum = [...dayTotals.values()].reduce((a, b) => a + b, 0);
+    const dailyAvg = sum / dayTotals.size;
     if (dailyAvg <= 0 || today < dailyAvg * EXPENSE_SPIKE_RATIO) return [];
 
     return [{
       severity: 'warning',
       title: 'Bugungi chiqim odatdagidan yuqori',
       message:
-        `Bugun ${today.toLocaleString('uz-UZ')} so'm chiqim bo'ldi — so'nggi 30 kunlik kunlik o'rtacha ` +
+        `Bugun ${Math.round(today).toLocaleString('uz-UZ')} so'm chiqim bo'ldi — so'nggi ${dayTotals.size} kunlik o'rtacha ` +
         `${Math.round(dailyAvg).toLocaleString('uz-UZ')} so'mdan ${(today / dailyAvg).toFixed(1)} barobar ko'p.`,
       dedupeKey: `expense_spike:${ctx.todayStr}`,
     }];

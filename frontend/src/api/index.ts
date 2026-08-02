@@ -318,6 +318,7 @@ export const vendorsApi = {
 // =============================================
 export const financeApi = {
   getDashboard: (config?: any) => api.get('/finance/dashboard', config),
+  getBreakEven: () => api.get('/finance/break-even'),
   getTransactions: (config?: any) => api.get('/finance/transactions', config),
   createTransaction: (data: any) => api.post('/finance/transactions', data),
   updateTransaction: (id: string, data: any) => api.patch(`/finance/transactions/${id}`, data),
@@ -672,3 +673,11 @@ export const dashboardApi = {
 };
 
 export default api;
+
+// Jamoa doskasi — operatsion vazifalar + buyurtmalar birga.
+export const teamTasksApi = {
+  board: (branchId?: string) => api.get('/team-tasks/board', { params: branchId ? { branchId } : {} }),
+  create: (data: any) => api.post('/team-tasks', data),
+  update: (id: string, data: any) => api.put(`/team-tasks/${id}`, data),
+  remove: (id: string) => api.delete(`/team-tasks/${id}`),
+};

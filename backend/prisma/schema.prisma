@@ -169,6 +169,52 @@ model AiInsight {
   @@index([tenantId, status])
 }
 
+// =============================================
+// TeamTask — JAMOA VAZIFASI (buyurtma EMAS).
+//
+// Buyurtma kanbani savolga javob beradi: "buyurtma qaysi bosqichda?".
+// Bu doska boshqa savolga: "qaysi xodim hozir nima bilan band?".
+//
+// Shuning uchun bu yerda buyurtmaga xos narsalar yo'q (mijoz, summa,
+// xizmat, material) — faqat kim, nima, qachongacha. Operatsion ishlar
+// ("qarzdorlar bilan ishlash", "printerni ta'mirlash") aynan shunday
+// bo'ladi va ularni buyurtma sifatida yozib bo'lmaydi.
+//
+// Doskada bu vazifalar buyurtmalar BILAN BIRGA ko'rsatiladi — rahbarga
+// xodimning butun yuki kerak, uning qaysi qismi buyurtma ekani emas.
+// =============================================
+model TeamTask {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId String?
+
+  title       String
+  description String?
+
+  // Mas'ul xodim. Bittadan ko'p bo'lishi kamdan-kam, shuning uchun JSON
+  // massiv emas — oddiy bog'lanish (buyurtmadagi `assignees` JSON'idan
+  // farqli: u yerda ko'p mas'ul odatiy holat).
+  assigneeId String?
+  assignee   Employee? @relation("TeamTaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  // reja | jarayon | bajarildi — doskaning uchta ustuni.
+  status String @default("reja")
+
+  deadlineAt  DateTime?
+  completedAt DateTime?
+
+  // Kim yaratgan (Employee.id yoki WorkspaceAdmin.id — FK yo'q, chunki
+  // ikki xil jadval bo'lishi mumkin).
+  createdById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([assigneeId])
+}
+
 model Tenant {
   id                 String       @id @default(uuid())
   name               String
@@ -234,6 +280,8 @@ model Tenant {
   updatedAt DateTime @updatedAt
 
   departments Department[]
+  employeeDepartments EmployeeDepartment[]
+  teamTasks           TeamTask[]
 }
 
 // Bo'limlar (Departments) — Lightweight analytical tag for Tasks & Transactions only.
@@ -250,12 +298,40 @@ model Department {
 
   tasks        Task[]
   transactions Transaction[]
+  employees    EmployeeDepartment[]
 
   // Department names are unique PER BRANCH (not per tenant) so two branches
   // can each have a "Bosma" department.
   @@unique([tenantId, branchId, name])
   @@index([tenantId])
   @@index([branchId])
+}
+
+// Xodim qaysi bo'lim(lar)da ishlaydi.
+//
+// Nega alohida jadval, Employee.departmentId emas: bitta xodim bir vaqtning
+// o'zida bir nechta bo'limda faoliyat yuritishi mumkin (masalan dizayner ham
+// poligrafiyaga, ham tashqi reklamaga ishlaydi). Maosh hisobida uning
+// ko'rsatkichlari FAQAT o'zi biriktirilgan bo'limlar moliyasidan olinadi —
+// poligrafiyachining puli tashqi reklama tushumiga aralashmaydi.
+model EmployeeDepartment {
+  id String @id @default(uuid())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([employeeId, departmentId])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([departmentId])
 }
 
 model SuperAdmin {
@@ -678,6 +754,10 @@ model Role {
 
   // Topshiriqlar (Xizmatlar) ruxsatlari
   canViewTasks     Boolean @default(false)
+  // Jamoa doskasi (operatsion vazifalar) — buyurtma kanbanidan alohida:
+  // u yerda fokus buyurtmada, bu yerda xodimning bandligida.
+  canViewTeamTasks   Boolean @default(false)
+  canManageTeamTasks Boolean @default(false)
   canCreateTask    Boolean @default(false)
   canEditTask      Boolean @default(false)
   canDeleteTask    Boolean @default(false)
@@ -822,6 +902,8 @@ model Employee {
   transactions      Transaction[]
   salaryRecords     SalaryRecord[]
   salarySchemes     SalaryScheme[]
+  departments       EmployeeDepartment[]
+  teamTasks         TeamTask[] @relation("TeamTaskAssignee")
 
   @@unique([tenantId, login])
   @@index([tenantId])
@@ -955,9 +1037,14 @@ model CustomerContact {
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  firstName String
-  lastName  String?
-  phone     String?
+  // Maydonlar Mijozlar sahifasidagi forma bilan bir xil. Ilgari bu yerda
+  // firstName/lastName turardi, UI esa name/role/email yuborardi — natijada
+  // kontakt qo'shish HAR DOIM xato berardi va bitta ham yozuv saqlanmagan.
+  name  String
+  role  String? // "Direktor", "Buxgalter" — kim ekanligi
+  email String?
+  phone String?
+
   isPrimary Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -1109,6 +1196,15 @@ model Transaction {
   // yozuvlar bootstrap orqali filialning "Asosiy kassa"siga biriktiriladi.
   cashBoxId String?
   cashBox   CashBox? @relation(fields: [cashBoxId], references: [id], onDelete: SetNull)
+
+  // true → bu yozuv KASSALAR ORASIDAGI ICHKI KO'CHIRISH, daromad/xarajat emas.
+  //
+  // O'tkazma ikkita yozuv yaratadi: yuboruvchida chiqim, qabul qiluvchida kirim.
+  // Kassa qoldig'i uchun ikkalasi ham SHART, lekin hisobotlarda ular kompaniya
+  // daromadi/xarajati sifatida sanalmasligi kerak — aks holda o'z pulini bir
+  // kassadan ikkinchisiga o'tkazish "daromad va xarajat" bo'lib ko'rinadi va
+  // barcha moliyaviy ko'rsatkichni shishiradi.
+  isInternalTransfer Boolean @default(false)
 
   // true → bu chiqim xodimга AVANS (oylik hisob-kitobida maoshdan ushlanadi).
   // false → oddiy xarajat qoplash (material/yo'lkira), maoshга tegmaydi.

@@ -18,6 +18,7 @@ const BoshSahifa   = React.lazy(() => import('./BoshSahifa'));
 const Moliya       = React.lazy(() => import('./Moliya'));
 const Hodimlar     = React.lazy(() => import('./Hodimlar'));
 const Topshiriqlar = React.lazy(() => import('./Topshiriqlar'));
+const Vazifalar = React.lazy(() => import('./Vazifalar'));
 const Mijozlar     = React.lazy(() => import('./Mijozlar'));
 const Sozlamalar   = React.lazy(() => import('./Sozlamalar'));
 const Kassa        = React.lazy(() => import('./Kassa'));
@@ -39,8 +40,8 @@ interface DashboardProps {
   onUpdateUser: (updatedFields: any) => void;
 }
 
-type TabId = 'boshsahifa' | 'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma';
-const VALID_TABS: TabId[] = ['boshsahifa','kassa','moliya','hodimlar','topshiriqlar','mijozlar','sozlamalar','ombor','davomat','admins','billing','filiallar','hamkorlar','hisobotlar','qollanma'];
+type TabId = 'boshsahifa' | 'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'vazifalar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma';
+const VALID_TABS: TabId[] = ['boshsahifa','kassa','moliya','hodimlar','topshiriqlar','vazifalar','mijozlar','sozlamalar','ombor','davomat','admins','billing','filiallar','hamkorlar','hisobotlar','qollanma'];
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
   const navigate = useNavigate();
@@ -419,6 +420,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         { id: 'boshsahifa', label: 'Dashboard', icon: Home, show: true, sub: 'Umumiy holat va AI xavflar' },
         { id: 'kassa', label: 'Kassa', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
         { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
+        { id: 'vazifalar', label: 'Jamoa vazifalari', icon: ClipboardList, show: (p.canViewTeamTasks || isAdmin), sub: 'Kim nima bilan band' },
         { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: "Qarzlar va hamkorlar" },
         { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && (tf.inventory ?? tf.warehouse), sub: 'Materiallar va qoldiqlar' },
         { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
@@ -913,6 +915,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
               { activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} activeBranchId={activeBranchId} /> }
               {activeTab === 'topshiriqlar' && (p.canViewTasks || isAdmin) && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {activeTab === 'vazifalar' && (p.canViewTeamTasks || isAdmin) && <Vazifalar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'mijozlar' && (p.canViewCustomers || isAdmin) && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'ombor' && (p.canViewInventory || isAdmin) && <Ombor currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'davomat' && (p.canViewAttendance || isAdmin) && <Davomat currentUser={currentUser} />}

@@ -27,6 +27,54 @@ export interface AgentPolicies {
   // ro'yxati (Kanban x Davomat, Kanban x Ombor, Kanban x Mijozlar, ...)
   // shu yagona kalit bilan yoqiladi/o'chiriladi.
   riskMonitoring: { enabled: boolean };
+
+  /**
+   * Avtonom hal qilish — AI xavfni ko'rib, o'zi qaror chiqaradi.
+   *
+   * areas — HAR SOHA UCHUN ALOHIDA erkinlik darajasi. Nega bitta umumiy
+   * `mode` emas: rahbar ish taqsimotini AI'ga ishonib topshirishi mumkin,
+   * lekin pul/qarz masalasida faqat taklif kutishi mumkin. Bitta rubilnik
+   * bu farqni ifodalay olmaydi.
+   *   'off'     — AI bu sohaga umuman aralashmaydi
+   *   'propose' — qaror chiqaradi, BAJARMAYDI; rahbar tasdiqlaydi
+   *   'execute' — o'zi bajaradi va keyin xabar beradi
+   *
+   * allowedActions — AI qila oladigan amallar. Bo'sh bo'lsa hech nima
+   * qilmaydi. Ro'yxatdan tashqari amalni model taklif qilsa, rad etiladi.
+   *
+   * instructions — RAHBARNING O'Z QOIDALARI, erkin matnda. AI'ning qaror
+   * promptiga qo'shiladi. Aynan shu maydon tizimni dinamik qiladi: har
+   * tashkilotning mezoni boshqacha ("dizayner ishini faqat dizaynerga ber",
+   * "Zoxidga qo'shimcha ish berma") va buni kodga yozib bo'lmaydi.
+   *
+   * maxPerDay — kunlik chegara: nazoratdan chiqib ketmasligi uchun.
+   */
+  autoResolve: {
+    enabled: boolean;
+    areas: Record<string, 'off' | 'propose' | 'execute'>;
+    allowedActions: string[];
+    instructions: string;
+    maxPerDay: number;
+  };
+}
+
+/**
+ * Xavf turlari soha bo'yicha guruhlanadi — rahbar 9 ta detektorni emas,
+ * 4 ta tushunarli sohani sozlaydi.
+ */
+export const RISK_AREAS: Record<string, string[]> = {
+  ish_taqsimoti: ['overdue_tasks', 'stuck_tasks', 'task_due_no_checkin'],
+  davomat: ['attendance_gap'],
+  ombor: ['low_stock', 'task_material_shortage'],
+  moliya: ['debtor_new_order', 'stale_debt', 'expense_spike'],
+};
+
+/** Xavf turidan uning sohasini topadi. Nomaʼlum tur → null (AI tegmaydi). */
+export function riskArea(type: string): string | null {
+  for (const [area, types] of Object.entries(RISK_AREAS)) {
+    if (types.includes(type)) return area;
+  }
+  return null;
 }
 
 export const DEFAULT_POLICIES: AgentPolicies = {
@@ -34,6 +82,15 @@ export const DEFAULT_POLICIES: AgentPolicies = {
   weeklyReport: { enabled: true },
   deadlineWatchdog: { enabled: true, graceDays: 1 },
   riskMonitoring: { enabled: true },
+  // Sukut bo'yicha O'CHIQ — AI haqiqiy buyurtmalarni o'zgartirishi mumkin,
+  // shuning uchun tenant o'zi ongli ravishda yoqishi kerak.
+  autoResolve: {
+    enabled: false,
+    areas: { ish_taqsimoti: 'propose', davomat: 'off', ombor: 'off', moliya: 'off' },
+    allowedActions: ['reassignTask'],
+    instructions: '',
+    maxPerDay: 5,
+  },
 };
 
 const fm = (n: number) => Math.round(n ?? 0).toLocaleString('en-US').replace(/,/g, ' ');
@@ -50,6 +107,30 @@ export class AutonomousService {
     private readonly telegram: TelegramService,
   ) {}
 
+  /**
+   * autoResolve'ni defaults bilan birlashtiradi.
+   *
+   * Alohida metod, chunki eski saqlangan sozlama bitta umumiy `mode`
+   * maydonida bo'lgan. Uni jimgina tashlab yuborish rahbar yoqib qo'ygan
+   * "o'zi bajarsin" rejimini sezdirmasdan o'chirib qo'yardi — shuning uchun
+   * eski qiymat barcha sohalarga ko'chiriladi.
+   */
+  private mergeAutoResolve(saved: any): AgentPolicies['autoResolve'] {
+    const base = DEFAULT_POLICIES.autoResolve;
+    if (!saved) return base;
+    let areas = { ...base.areas, ...(saved.areas || {}) };
+    if (!saved.areas && (saved.mode === 'propose' || saved.mode === 'execute')) {
+      areas = Object.fromEntries(Object.keys(base.areas).map((k) => [k, saved.mode]));
+    }
+    return {
+      enabled: saved.enabled ?? base.enabled,
+      areas,
+      allowedActions: Array.isArray(saved.allowedActions) ? saved.allowedActions : base.allowedActions,
+      instructions: typeof saved.instructions === 'string' ? saved.instructions : '',
+      maxPerDay: Number(saved.maxPerDay) > 0 ? Number(saved.maxPerDay) : base.maxPerDay,
+    };
+  }
+
   /** Tenant policy'sini defaults bilan birlashtirib qaytaradi */
   async readPolicies(tenantId: string): Promise<AgentPolicies> {
     try {
@@ -63,6 +144,7 @@ export class AutonomousService {
         weeklyReport: { ...DEFAULT_POLICIES.weeklyReport, ...saved.weeklyReport },
         deadlineWatchdog: { ...DEFAULT_POLICIES.deadlineWatchdog, ...saved.deadlineWatchdog },
         riskMonitoring: { ...DEFAULT_POLICIES.riskMonitoring, ...saved.riskMonitoring },
+        autoResolve: this.mergeAutoResolve(saved.autoResolve),
       };
     } catch {
       return DEFAULT_POLICIES;

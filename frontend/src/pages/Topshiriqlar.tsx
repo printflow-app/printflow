@@ -216,6 +216,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [executorBranchId, setExecutorBranchId] = useState('');
   // Departments — fetched via useDepartments() RQ hook below.
   const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
+  // Sotuvni kim oldi — KPI shu xodimga yoziladi (kiritgan odamdan farq qilishi mumkin).
+  const [salesEmployeeId, setSalesEmployeeId] = useState('');
   // Vendor assignment (used when executorType === 'vendor')
   const [vendorAssign, setVendorAssign] = useState({ vendorId: '', amount: '', note: '' });
   const [currentOrderService, setCurrentOrderService] = useState({
@@ -461,6 +463,19 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     });
   };
 
+  /**
+   * Xizmat qatoridagi bo'lim / mas'ul / izohni o'zgartiradi.
+   *
+   * Narxdan farqli — bu maydonlar jamiga ta'sir qilmaydi, shuning uchun
+   * `totalAmount` qayta hisoblanmaydi.
+   */
+  const updateItemField = (index: number, field: 'departmentId' | 'assigneeIds' | 'description', value: any) => {
+    setNewTaskForm(f => ({
+      ...f,
+      items: f.items.map((it: any, i: number) => (i === index ? { ...it, [field]: value } : it)),
+    }));
+  };
+
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -506,6 +521,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         branchId: activeBranchId || undefined,
         executorBranchId: executorType === 'branch' ? executorBranchId : null,
         departmentId: selectedDepartmentId || null,
+        salesEmployeeId: salesEmployeeId || null,
         // Har task O'Z xizmatining aniq narxini oladi — umumiy summa qayta taqsimlanmaydi.
         items: effectiveItems.map(it => ({
           ...it,
@@ -1308,27 +1324,62 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
             {newTaskForm.items.length > 0 && (
               <div className="space-y-2">
-                {newTaskForm.items.map((it, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-white border-2 border-slate-100 p-3 rounded-2xl animate-slide-up group">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">{it.title}</span>
-                        <span className="text-[9px] font-bold bg-orange-50 text-orange-600 px-2 py-0.5 rounded uppercase">x {it.quantity}</span>
+                {newTaskForm.items.map((it: any, idx: number) => (
+                  <div key={idx} className="bg-white border-2 border-slate-100 p-3 rounded-2xl animate-slide-up group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">{it.title}</span>
+                          <span className="text-[9px] font-bold bg-orange-50 text-orange-600 px-2 py-0.5 rounded uppercase">x {it.quantity}</span>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 mt-0.5 italic">{it.optionsSummary}</p>
                       </div>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5 italic">{it.optionsSummary}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-32 sm:w-40">
+                          <CurrencyInput
+                            value={String(it.totalAmount || '')}
+                            onChange={(uzs) => updateItemPrice(idx, uzs || 0)}
+                            colorClass="text-slate-800"
+                            className="input-minimal font-bold text-right h-9 text-sm"
+                          />
+                        </div>
+                        <button type="button" onClick={() => removeItemFromOrder(idx)} className="text-slate-300 hover:text-rose-500 transition-colors shrink-0">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-32 sm:w-40">
-                        <CurrencyInput
-                          value={String(it.totalAmount || '')}
-                          onChange={(uzs) => updateItemPrice(idx, uzs || 0)}
-                          colorClass="text-slate-800"
-                          className="input-minimal font-bold text-right h-9 text-sm"
-                        />
-                      </div>
-                      <button type="button" onClick={() => removeItemFromOrder(idx)} className="text-slate-300 hover:text-rose-500 transition-colors shrink-0">
-                        <Trash2 size={16} />
-                      </button>
+
+                    {/* HAR XIZMAT ALOHIDA ISH BO'LADI — o'z bo'limi, mas'uli va
+                        izohi bilan. Bitta buyurtmadagi vizitka poligrafiyaga,
+                        bortli harf tashqi reklamaga tushishi mumkin: ular boshqa
+                        bo'lim, boshqa odam va boshqa ko'rsatma talab qiladi.
+                        Bo'sh qoldirilsa — buyurtma darajasidagi qiymat ishlaydi. */}
+                    <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {departments.length > 0 && (
+                        <select
+                          value={it.departmentId || ''}
+                          onChange={e => updateItemField(idx, 'departmentId', e.target.value)}
+                          className="select-minimal h-9 text-xs font-bold"
+                        >
+                          <option value="">Bo'lim — buyurtmadagidek</option>
+                          {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                      )}
+                      <select
+                        value={(it.assigneeIds || [])[0] || ''}
+                        onChange={e => updateItemField(idx, 'assigneeIds', e.target.value ? [e.target.value] : [])}
+                        className="select-minimal h-9 text-xs font-bold"
+                      >
+                        <option value="">Mas'ul — buyurtmadagidek</option>
+                        {employees.map((e: any) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+                      </select>
+                      <input
+                        type="text"
+                        value={it.description || ''}
+                        onChange={e => updateItemField(idx, 'description', e.target.value)}
+                        placeholder="Shu xizmat uchun izoh (ixtiyoriy)"
+                        className="input-minimal h-9 text-xs sm:col-span-2"
+                      />
                     </div>
                   </div>
                 ))}
@@ -1672,6 +1723,31 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   )}
                 </div>
               )}
+
+              {/* BUYURTMANI KIM OLDI — KPI shu xodimga yoziladi.
+                  Kiritgan odam bilan bir xil bo'lmasligi mumkin: doimiy mijoz
+                  ko'pincha rahbarga qo'ng'iroq qiladi, rahbar kiritadi, lekin
+                  sotuvni menejer olgan bo'ladi. Ilgari bunday holatda KPI
+                  umuman yozilmasdi (rahbar Employee jadvalida yo'q). */}
+              <div className="space-y-2 mt-5 mb-7">
+                <label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                  <Users size={11} /> Buyurtmani kim oldi (KPI)
+                </label>
+                <select
+                  value={salesEmployeeId}
+                  onChange={e => setSalesEmployeeId(e.target.value)}
+                  className="select-minimal h-10 font-bold w-full"
+                >
+                  <option value="">— Belgilanmagan —</option>
+                  {employees.map((e: any) => (
+                    <option key={e.id} value={e.id}>{e.fullName}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] font-semibold text-slate-400 leading-relaxed">
+                  Sotuv KPI'si shu xodimga yoziladi. Buyurtmani o'zingiz olgan bo'lsangiz
+                  o'zingizni tanlang.
+                </p>
+              </div>
 
 
               <div className="relative" data-assignee-dropdown>

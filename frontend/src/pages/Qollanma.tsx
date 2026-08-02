@@ -3,7 +3,7 @@ import {
   Search, Book, ChevronRight, ChevronLeft, ChevronDown, Menu, X,
   PlayCircle, LayoutTemplate, Layers, Users, CreditCard,
   Building2, ShieldCheck, BarChart3, QrCode, Bot, Command, Sparkles, Send, FileText, Wallet, Calculator,
-  Info, AlertTriangle, Lightbulb,
+  Info, AlertTriangle, Lightbulb, ClipboardList, Target,
 } from 'lucide-react';
 
 // =============================================
@@ -45,6 +45,71 @@ const CATEGORIES: { id: string; label: string }[] = [
 ];
 
 const GUIDES: Guide[] = [
+  {
+    id: 'jamoa-vazifalari',
+    category: 'buyurtmalar',
+    icon: <ClipboardList size={16} />,
+    title: 'Jamoa vazifalari doskasi',
+    tags: ['vazifa', 'topshiriq', 'doska', 'jamoa', 'band', 'operatsion'],
+    intro: "Buyurtma kanbani \"buyurtma qaysi bosqichda?\" degan savolga javob beradi. Bu doska boshqa savolga: \"qaysi xodim hozir nima bilan band?\". Unda buyurtmalar ham, operatsion vazifalar ham birga ko'rinadi.",
+    sections: [
+      { id: 'jv-ustunlar', title: 'Uchta bosqich', blocks: [
+        { type: 'list', items: ['Qilinishi kerak — hali boshlanmagan ishlar', 'Jarayonda — hozir bajarilayotgani', 'Bajarilgan — tugaganlari'] },
+        { type: 'p', html: "Buyurtmalar bu bosqichlarga Kanbandagi ustuniga qarab AVTOMATIK joylashadi: birinchi ustun — reja, \"bajarildi\" belgili ustun — bajarilgan, oradagilari — jarayonda." },
+      ] },
+      { id: 'jv-yaratish', title: 'Vazifa yaratish', blocks: [
+        { type: 'p', html: "\"+ Vazifa\" tugmasi. To'rtta maydon yetarli: sarlavha, izoh, kim qilishi kerak, muddat." },
+        { type: 'p', html: "Mas'ul tanlansa unga Telegram orqali xabar boradi. Telegram ishlamasa ham vazifa saqlanadi." },
+        { type: 'p', html: "Misol: \"Qarzdorlar bilan ishlash\" — bu buyurtma emas, lekin kimdir bajarishi kerak va rahbar uni ko'rib turishi kerak." },
+      ] },
+      { id: 'jv-kochirish', title: "Bosqichni o'zgartirish", blocks: [
+        { type: 'p', html: "Vazifani sudrab boshqa ustunga tashlang. Sudrash qiyin bo'lsa, karta ustiga borganda chiqadigan \"→ Jarayonda\" tugmalaridan foydalaning." },
+        { type: 'callout', tone: 'warn', html: "Buyurtmani bu doskada ko'chirib bo'lmaydi — uni \"Xizmatlar (Kanban)\" sahifasida ko'chiring. Aks holda bitta buyurtma ikki joyda ikki xil bosqichda ko'rinib qolardi." },
+      ] },
+      { id: 'jv-ruxsat', title: 'Ruxsatlar', blocks: [
+        { type: 'list', items: ["Jamoa vazifalari doskasiga kirish — menyuda bo'lim ko'rinadi", "Jamoa vazifasini yaratish va ko'chirish — tugma va sudrash ishlaydi"] },
+        { type: 'p', html: "Ikkalasi Sozlamalar → Rollar bo'limida beriladi. Sukut bo'yicha o'chiq." },
+      ] },
+    ],
+  },
+  {
+    id: 'zararsizlik-nuqtasi',
+    category: 'moliya',
+    icon: <Target size={16} />,
+    title: 'Zararsizlik nuqtasi (break-even)',
+    tags: ['break-even', 'zararsizlik', 'nol', 'foyda', 'xarajat'],
+    intro: "Bitta savolga javob beradi: shu oy zararsiz chiqish uchun yana qancha ish kerak? Hisobotlar sahifasida.",
+    sections: [
+      { id: 'be-hisob', title: 'Qanday hisoblanadi', blocks: [
+        { type: 'p', html: "Hech narsa taxmin qilinmaydi — hammasi xarajat tarixingizdan o'lchanadi." },
+        { type: 'list', items: ["Doimiy xarajat — deyarli har oy takrorlanadigani (maosh, ijara, kommunal)", "Vaqti-vaqti bilan — 3-4 oyda yoki yiliga bir marta bo'ladigani (jihoz ta'miri)"] },
+        { type: 'p', html: "Vaqti-vaqti bilan bo'ladigan xarajat ham oyga taqsimlanadi. Aks holda u chiqqan oyda zarar, qolgan oylarda soxta foyda ko'rinardi." },
+      ] },
+      { id: 'be-progress', title: 'Progress bar', blocks: [
+        { type: 'p', html: "Bar to'lganda shu oygi xarajat qoplangan — undan keyingi har so'm sof foyda." },
+        { type: 'p', html: "Pastda qolgan summa nechta ishga tengligi ko'rsatiladi: \"yana 12 ta vizitka\" degan javob raqamdan tushunarliroq." },
+        { type: 'callout', tone: 'warn', html: "Tarix 2 oydan kam bo'lsa karta buni ochiq aytadi — raqamlar taxminiy." },
+      ] },
+    ],
+  },
+  {
+    id: 'xodim-bolimlari',
+    category: 'xodimlar',
+    icon: <Layers size={16} />,
+    title: "Xodimni bo'limga biriktirish",
+    tags: ['bolim', 'department', 'maosh', 'poligrafiya', 'reklama'],
+    intro: "Kompaniyada bir nechta bo'lim bo'lsa, har bir xodim qaysi bo'lim(lar)da ishlashini belgilash mumkin. Bu maoshga bevosita ta'sir qiladi.",
+    sections: [
+      { id: 'xb-tanlash', title: 'Qanday belgilanadi', blocks: [
+        { type: 'p', html: "Xodimlar → xodimni tahrirlash → Bo'limlar. Bir nechta tanlash mumkin: bitta odam ham poligrafiyaga, ham tashqi reklamaga ishlashi mumkin." },
+        { type: 'p', html: "Bo'lim tanlanmasa, xodim barcha bo'limlar bo'yicha hisoblanadi — avvalgidek." },
+      ] },
+      { id: 'xb-maosh', title: "Maoshga ta'siri", blocks: [
+        { type: 'p', html: "Bo'lim biriktirilgan bo'lsa, KPI ko'rsatkichlari faqat O'SHA bo'lim buyurtma va tushumidan hisoblanadi. Poligrafiyachi tashqi reklama pulidan hisob olmaydi." },
+        { type: 'p', html: "Bo'limi ko'rsatilmagan eski buyurtmalar hammaga hisoblanadi — odamning haqini olib qo'ymaslik uchun." },
+      ] },
+    ],
+  },
   {
     id: 'onboarding-tour',
     category: 'boshlanish',

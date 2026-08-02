@@ -124,7 +124,11 @@ export async function executeConfirmedAction(ctx: ToolContext, actionId: string)
     where: { id: actionId, tenantId: ctx.tenantId },
   });
   if (!action) return { success: false, error: 'Amal topilmadi' };
-  if (action.userId !== ctx.userId) {
+  // Odatda amalni faqat uni so'ragan foydalanuvchi tasdiqlaydi. ISTISNO —
+  // AI avtonom yaratgan takliflar (userId='autonomous'): ularni hech kim
+  // so'ramagan, shuning uchun ruxsati bor har qanday xodim tasdiqlay oladi.
+  // Bu tekshiruvsiz avtonom takliflar abadiy "pending" bo'lib qolardi.
+  if (action.userId !== ctx.userId && action.userId !== 'autonomous') {
     return { success: false, error: "Bu amalni faqat uni so'ragan foydalanuvchi tasdiqlay oladi" };
   }
   if (action.status !== 'pending') {

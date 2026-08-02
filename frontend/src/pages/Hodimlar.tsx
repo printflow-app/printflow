@@ -3,16 +3,66 @@ import { Trash2, UserPlus, Eye, EyeOff, RefreshCw, Download, Pencil } from 'luci
 import { toast } from 'react-toastify';
 import { employeesApi, billingApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
-import { useEmployees, useRoles, useBranches, useInvalidate } from '../hooks/queries';
+import { useEmployees, useRoles, useBranches, useDepartments, useInvalidate } from '../hooks/queries';
 import Modal from '../components/Modal';
 import { SkeletonTable } from '../components/Skeleton';
-import CurrencyInput from '../components/CurrencyInput';
 import { exportToXlsx } from '../utils/exportToXlsx';
 import { PayrollSection } from '../components/PayrollSection';
 import { SalarySchemeSection } from '../components/SalarySchemeSection';
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(amount).replace(/,/g, ' ') + " UZS";
+
+/**
+ * Xodim qaysi bo'lim(lar)da ishlashini tanlash.
+ *
+ * Bir nechta tanlanadi: bitta odam ham poligrafiyaga, ham tashqi reklamaga
+ * ishlashi mumkin. Tanlov maoshga bevosita ta'sir qiladi — xodim faqat
+ * o'zi biriktirilgan bo'limlar tushumidan hisob oladi, shuning uchun
+ * buni izohda aytib turamiz.
+ */
+const fmtDebt = (v: any) =>
+  new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 }).format(Number(v) || 0).replace(/,/g, ' ');
+
+const DepartmentPicker: React.FC<{
+  departments: any[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+}> = ({ departments, value, onChange }) => {
+  if (!departments.length) return null;
+  const selected = value || [];
+  const toggle = (id: string) =>
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+
+  return (
+    <div>
+      <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
+        Bo'limlar
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {departments.map((d: any) => {
+          const on = selected.includes(d.id);
+          return (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => toggle(d.id)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                on
+                  ? 'bg-orange-500 text-white border-transparent shadow'
+                  : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              {d.name}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[10px] font-semibold text-slate-400 mt-2 leading-relaxed">
+        {selected.length === 0
+          ? "Bo'lim tanlanmasa, xodim barcha bo'limlar bo'yicha hisoblanadi."
+          : "Maosh hisobida faqat shu bo'lim(lar)dagi buyurtma va tushum inobatga olinadi — bo'limlar moliyasi aralashmaydi."}
+      </p>
+    </div>
+  );
 };
 
 const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
@@ -33,6 +83,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const { data: rawEmployees = [], isLoading: empLoading } = useEmployees();
   const { data: rawRoles = [], isLoading: roleLoading } = useRoles(activeBranchId);
   const { data: branches = [] } = useBranches();
+  const { data: departments = [] } = useDepartments(activeBranchId);
   const { data: billingStatus } = useQuery({
     queryKey: ['billingStatus'],
     queryFn: async () => (await billingApi.getStatus()).data,
@@ -40,6 +91,9 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   });
   const invalidate = useInvalidate();
   const isLoading = empLoading || roleLoading;
+
+  // Qarzdorlik ustuni faqat kerak bo'lganda ko'rsatiladi.
+  const anyDebt = (rawEmployees as any[]).some((e: any) => Number(e.workDebt || 0) > 0);
 
   // Derived: filter out admin roles + employees
   const roles = (rawRoles as any[]).filter((r: any) => {
@@ -65,7 +119,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
 
   // Employee Form
   const [newEmployee, setNewEmployee] = useState<any>({
-    fullName: '', phone: '', roleId: '', baseSalary: '', branchId: ''
+    fullName: '', phone: '', roleId: '', baseSalary: '', branchId: '', departmentIds: [] as string[]
   });
   const [generatedCredentials, setGeneratedCredentials] = useState<{login: string, password: string} | null>(null);
   const [showGenPass, setShowGenPass] = useState(true);
@@ -85,7 +139,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     try {
       const res = await employeesApi.create({ ...newEmployee, baseSalary: Number(newEmployee.baseSalary) || 0, branchId: newEmployee.branchId || undefined });
       setGeneratedCredentials({ login: res.data.login, password: res.data.password });
-      setNewEmployee({ fullName: '', phone: '', roleId: '', baseSalary: '', branchId: '' });
+      setNewEmployee({ fullName: '', phone: '', roleId: '', baseSalary: '', branchId: '', departmentIds: [] });
       fetchData(true);
       toast.success("Xodim muvaffaqiyatli qo'shildi!");
       setIsEmployeeModalOpen(false);
@@ -111,6 +165,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       roleId: emp.roleId || '',
       branchId: emp.branchId || '',
       baseSalary: emp.baseSalary ?? '',
+      departmentIds: emp.departmentIds || [],
     });
     setIsEditModalOpen(true);
   };
@@ -127,6 +182,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         roleId: data.roleId,
         branchId: data.branchId || null,
         baseSalary: Number(data.baseSalary) || 0,
+        departmentIds: data.departmentIds || [],
       });
       fetchData(true);
       toast.success("Xodim ma'lumotlari yangilandi");
@@ -189,7 +245,6 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       return;
     }
     const branchById = new Map((branches as any[]).map((b: any) => [b.id, b.name]));
-    const showSalary = isAdmin || p.canViewSalary;
     const cols: any[] = [
       { header: 'F.I.SH', accessor: (e: any) => e.fullName || '' },
       { header: 'Telefon', accessor: (e: any) => e.phone || '' },
@@ -197,9 +252,9 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       { header: 'Lavozim', accessor: (e: any) => e.role?.name || '' },
       { header: 'Filial', accessor: (e: any) => branchById.get(e.branchId) || '' },
     ];
-    if (showSalary) {
-      cols.push({ header: 'Asosiy maosh (UZS)', accessor: (e: any) => Number(e.baseSalary || 0) });
-    }
+    // Maosh bu yerda ko'rsatilmaydi — u "Maosh sxemasi" bo'limida boshqariladi
+    // va lavozim/KPI shartlaridan hisoblanadi. Xodimlar ro'yxatida bitta
+    // "asosiy maosh" raqami chalg'ituvchi edi: haqiqiy to'lov undan farq qiladi.
     cols.push({ header: 'Yaratilgan', accessor: (e: any) => e.createdAt ? new Date(e.createdAt).toLocaleDateString('uz-UZ') : '' });
 
     const stamp = new Date().toLocaleDateString('en-CA');
@@ -282,7 +337,10 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   <th className="text-[9px] uppercase tracking-widest font-bold text-slate-400 px-5">Lavozimi</th>
                   <th className="text-[9px] uppercase tracking-widest font-bold text-slate-400 px-5">Login</th>
                   {branches.length > 0 && <th className="text-[9px] uppercase tracking-widest font-bold text-slate-400 px-5">Filial</th>}
-                  {(isAdmin || p.canViewSalary) && <th className="text-[9px] uppercase tracking-widest font-bold text-slate-400 px-5 text-emerald-600">Asosiy Maosh</th>}
+                  {departments.length > 0 && <th className="text-[9px] uppercase tracking-widest font-bold text-slate-400 px-5">Bo'limlar</th>}
+                  {/* Qarzdorlik ustuni faqat kimdadir qarz bo'lsa chiqadi —
+                      qarzsiz tashkilotda bo'sh ustun turishi shart emas. */}
+                  {anyDebt && <th className="text-[9px] uppercase tracking-widest font-bold text-rose-500 px-5">Qarzdorlik</th>}
                   <th className="text-[9px] uppercase tracking-widest font-bold text-slate-400 text-right pr-6 px-5">Harakat</th>
                 </tr>
               </thead>
@@ -336,7 +394,32 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                         )}
                       </td>
                     )}
-                    {(isAdmin || p.canViewSalary) && <td className="px-5 font-bold text-xs text-slate-700 tabular-nums">{formatCurrency(emp.baseSalary)}</td>}
+                    {departments.length > 0 && (
+                      <td className="px-5">
+                        {(emp.departmentNames || []).length ? (
+                          <div className="flex flex-wrap gap-1">
+                            {emp.departmentNames.map((n: string) => (
+                              <span key={n} className="text-[9px] font-bold bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded-lg">
+                                {n}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[9px] text-slate-300 font-bold">hammasi</span>
+                        )}
+                      </td>
+                    )}
+                    {anyDebt && (
+                      <td className="px-5">
+                        {Number(emp.workDebt || 0) > 0 ? (
+                          <span className="text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100 px-2 py-1 rounded-lg tabular-nums">
+                            {fmtDebt(emp.workDebt)}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-slate-300 font-bold">—</span>
+                        )}
+                      </td>
+                    )}
                     <td className="text-right pr-6">
                       <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         {canEdit && (
@@ -444,17 +527,13 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                     </select>
                  </div>
                )}
-               {(isAdmin || p.canViewSalary) && (
-                 <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Maoshi</label>
-                    <CurrencyInput
-                      value={newEmployee.baseSalary}
-                      onChange={(uzs) => setNewEmployee({...newEmployee, baseSalary: uzs || ''})}
-                      colorClass="text-emerald-600"
-                      className="input-minimal font-bold w-full"
-                    />
-                 </div>
-               )}
+               <DepartmentPicker
+                 departments={departments}
+                 value={newEmployee.departmentIds}
+                 onChange={(ids) => setNewEmployee({ ...newEmployee, departmentIds: ids })}
+               />
+               {/* Maosh bu yerda so'ralmaydi — "Maosh sxemasi" bo'limida
+                   lavozim bo'yicha belgilanadi va KPI/davomatdan hisoblanadi. */}
                <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
                  <button type="button" className="btn-outline h-12 px-6 flex-1 rounded-xl text-xs font-bold uppercase" onClick={handleCloseModal}>Bekor qilish</button>
                  <button type="submit" className="btn-primary h-12 px-10 font-bold flex-1 rounded-xl text-xs uppercase shadow-lg shadow-orange-500/20 bg-orange-500 text-white hover:bg-orange-600">SAQLASH</button>
@@ -496,17 +575,12 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   </select>
                </div>
              )}
-             {(isAdmin || p.canViewSalary) && (
-               <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Maoshi</label>
-                  <CurrencyInput
-                    value={editEmployee.baseSalary}
-                    onChange={(uzs) => setEditEmployee({...editEmployee, baseSalary: uzs || ''})}
-                    colorClass="text-emerald-600"
-                    className="input-minimal font-bold w-full"
-                  />
-               </div>
-             )}
+             <DepartmentPicker
+               departments={departments}
+               value={editEmployee.departmentIds}
+               onChange={(ids) => setEditEmployee({ ...editEmployee, departmentIds: ids })}
+             />
+             {/* Maosh bu yerda tahrirlanmaydi — "Maosh sxemasi" bo'limida. */}
              <p className="text-[10px] font-bold text-slate-400 leading-relaxed bg-slate-50 border border-slate-200 rounded-xl p-3">
                Login va parol bu yerda o'zgartirilmaydi. Parolni yangilash uchun qatordagi
                <RefreshCw size={10} className="inline mx-1 -mt-0.5" strokeWidth={3} />

@@ -15,6 +15,7 @@ import { useDepartments } from '../hooks/queries';
 import { SkeletonStats, SkeletonCardGrid } from '../components/Skeleton';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
 import KpiPlansPanel from '../components/KpiPlansPanel';
+import BreakEvenCard from '../components/BreakEvenCard';
 
 // =============================================
 // HISOBOTLAR — Tahliliy hisobotlar markazi
@@ -766,6 +767,15 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             </ResponsiveContainer>
           </div>
         </Section>
+      )}
+
+      {/* ── Zararsizlik nuqtasi ──
+          Moliya ko'radiganlarga ko'rsatiladi: bu xarajat va tushum
+          taqqoslamasi, ya'ni moliyaviy ma'lumot. */}
+      {canViewExpenseByType && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <BreakEvenCard />
+        </div>
       )}
 
       {/* ── Kirim / Chiqim turlari ── */}

@@ -301,4 +301,41 @@ export const WRITE_TOOLS: AgentToolDef[] = [
       };
     },
   },
+  {
+    name: 'sendEmployeeMessage',
+    description:
+      "Xodimga Telegram orqali xabar yuborish — rahbar nomidan. Masalan: \"Azizbekka ayt, ertaga 9:00 da kelsin\". Xodim ID'sini contextData.xodimlar'dan ol. Xodimning Telegram'i ulanmagan bo'lsa xabar bormaydi.",
+    // Xodimga to'g'ridan-to'g'ri xabar — bu tashqariga chiqadigan amal,
+    // shuning uchun xodimlarni boshqarish huquqi talab qilinadi.
+    permissions: ['canManageEmployees', 'canViewEmployees'],
+    // Xabar yuborilgach qaytarib bo'lmaydi va u rahbar nomidan ketadi —
+    // matnni odam ko'rib tasdiqlashi shart.
+    requiresConfirm: true,
+    audit: true,
+    inputSchema: z.object({
+      employeeId: z.string().describe("Xodim ID (contextData.xodimlar'dan)"),
+      text: z.string().min(1).max(1000).describe("Xabar matni — o'zbekcha, qisqa va aniq"),
+    }),
+    summarize: (i) => `Xodimga Telegram xabar yuborish: "${String(i.text).slice(0, 60)}"`,
+    execute: async (args, ctx) => {
+      const employee = await ctx.services.prisma.employee.findFirst({
+        where: { id: args.employeeId, tenantId: ctx.tenantId },
+        select: { id: true, fullName: true, telegramId: true },
+      });
+      if (!employee) return { success: false, error: 'Xodim topilmadi' };
+      if (!employee.telegramId) {
+        return {
+          success: false,
+          error: `${employee.fullName}ning Telegram akkaunti ulanmagan — xabar yuborib bo'lmaydi`,
+        };
+      }
+      // Xodim xabar AI'dan emas, rahbariyatdan kelganini bilishi kerak —
+      // aks holda u kimga javob berishini tushunmaydi.
+      await ctx.services.telegram.sendMessage(
+        employee.telegramId,
+        `📣 *Rahbariyatdan xabar*\n\n${args.text}`,
+      );
+      return { success: true, kimga: employee.fullName };
+    },
+  },
 ];

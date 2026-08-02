@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { FinanceService } from './finance.service';
+import { BreakEvenService } from './break-even.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RequireFeature } from '../../common/decorators/feature.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -8,9 +9,9 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 @Controller('finance')
 @RequirePermissions('canViewFinance')
 export class FinanceController {
-  constructor(
-    private readonly financeService: FinanceService,
+  constructor(private readonly financeService: FinanceService,
     private readonly prisma: PrismaService,
+    private readonly breakEven: BreakEvenService,
   ) {}
 
   // "Faqat o'zi kiritgan" ruxsati yoqilgan (va admin bo'lmagan) foydalanuvchi uchun
@@ -86,6 +87,13 @@ export class FinanceController {
   @RequirePermissions('canManageFinance')
   async deleteTransaction(@Param('id') id: string) {
     return this.financeService.deleteTransaction(id);
+  }
+
+  // Zararsizlik nuqtasi — shu oy nolga chiqish uchun qancha kerak.
+  @Get('break-even')
+  getBreakEven(@Req() req: Request) {
+    const tenantId = (req as any)?.user?.tenantId;
+    return this.breakEven.compute(tenantId);
   }
 
   @Get('dashboard')

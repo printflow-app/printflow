@@ -2,6 +2,7 @@ import { z } from 'zod/v3';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { TasksService } from '../../tasks/tasks.service';
 import { FinanceService } from '../../finance/finance.service';
+import { TelegramService } from '../../telegram/telegram.service';
 
 // =============================================
 // AGENT TOOL QATLAMI — Faza 1 (AaaS transformatsiya)
@@ -19,6 +20,7 @@ export interface ToolServices {
   prisma: PrismaService;
   tasks: TasksService;
   finance: FinanceService;
+  telegram: TelegramService;
 }
 
 export interface ToolContext {

@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { emptyMetrics, MetricValues } from './salary-scheme';
+import { SettingsService } from '../settings/settings.service';
+
+// Davomat moduli bilan bir xil sukut — yakshanbadan boshqa kunlar.
+const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 
 // =============================================
 // MAOSH METRIKALARI — sxemadagi qatorlar uchun raqamlarni bazadan o'lchaydi.
@@ -17,7 +21,10 @@ import { emptyMetrics, MetricValues } from './salary-scheme';
 
 @Injectable()
 export class SalaryMetricsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+  ) {}
 
   /**
    * Bir necha xodim uchun bir yo'la o'lchaydi (oylik ro'yxat uchun — har
@@ -44,7 +51,7 @@ export class SalaryMetricsService {
           date: { gte: startStr, lte: endStr },
         },
         select: {
-          employeeId: true, checkIn: true, checkOut: true,
+          employeeId: true, date: true, checkIn: true, checkOut: true,
           lateMinutes: true, overtimeMinutes: true,
         },
       }),
@@ -56,24 +63,48 @@ export class SalaryMetricsService {
           isArchived: false,
           completedAt: { gte: start, lte: end },
         },
-        select: { assignees: true, totalAmount: true, quantity: true },
+        select: { assignees: true, totalAmount: true, quantity: true, departmentId: true },
       }),
 
-      this.prisma.transaction.groupBy({
-        by: ['employeeId'],
+      // groupBy emas — har yozuvning bo'limi kerak (xodim faqat o'z
+      // bo'limi tushumidan hisob oladi). Hajm oylik, kichik.
+      this.prisma.transaction.findMany({
         where: {
           type: 'kirim',
+          isInternalTransfer: false,
           employeeId: { in: employeeIds },
           date: { gte: start, lte: end },
         },
-        _sum: { amount: true },
+        select: { employeeId: true, amount: true, departmentId: true },
       }),
     ]);
+
+    // ISH GRAFIGI — davomat moduli bilan BIR XIL manba (`workDays` sozlamasi).
+    //
+    // Ilgari "ish kunlari" har qanday davomat yozuvini sanardi, jumladan dam
+    // olish kunini ham. Natijada maoshdagi "ish kunlari" davomat sahifasidagi
+    // grafikka mos kelmasdi. Endi faqat grafikdagi kunlar sanaladi va grafik
+    // normasi ham metrika sifatida beriladi — shunda "to'liq davomat" sharti
+    // oy uzunligidan qat'i nazar to'g'ri ishlaydi.
+    const workDays: number[] = (await this.settings.get('workDays')) || DEFAULT_WORK_DAYS;
+    const isWorkDay = (dateStr: string) => {
+      const d = new Date(`${dateStr}T00:00:00Z`);
+      return Array.isArray(workDays) ? workDays.includes(d.getUTCDay()) : true;
+    };
+
+    // Davrdagi grafik kunlari soni — hamma xodim uchun bir xil.
+    let norma = 0;
+    for (let t = new Date(`${startStr}T00:00:00Z`); t <= new Date(`${endStr}T00:00:00Z`); t.setUTCDate(t.getUTCDate() + 1)) {
+      if (isWorkDay(t.toISOString().slice(0, 10))) norma += 1;
+    }
+    for (const id of employeeIds) out[id].norma_ish_kunlari = norma;
 
     for (const a of attendance) {
       const mv = out[a.employeeId];
       if (!mv) continue;
-      if (a.checkIn) mv.ish_kunlari += 1;
+      // Grafikdan tashqari kun (masalan yakshanba) "ish kuni" sifatida
+      // sanalmaydi — u qo'shimcha ish, uni overtime ko'rsatadi.
+      if (a.checkIn && isWorkDay(a.date)) mv.ish_kunlari += 1;
       if (a.checkIn && a.checkOut) {
         const hours = (a.checkOut.getTime() - a.checkIn.getTime()) / 3600000;
         if (hours > 0) mv.ish_soatlari += hours;
@@ -81,6 +112,39 @@ export class SalaryMetricsService {
       mv.kechikish_daqiqa += a.lateMinutes || 0;
       mv.overtime_daqiqa += a.overtimeMinutes || 0;
     }
+
+    // XODIM QAYSI BO'LIM(LAR)DA ISHLAYDI.
+    //
+    // Bo'limlar moliyasi aralashmasligi kerak: poligrafiyachi poligrafiyadan
+    // kelgan pul bo'yicha hisob oladi, tashqi reklamachi — o'zinikidan.
+    // Xodimga bo'lim biriktirilmagan bo'lsa cheklov qo'llanmaydi (eski
+    // ma'lumot va bo'limi yo'q tashkilotlar avvalgidek ishlashi uchun).
+    const links = await this.prisma.employeeDepartment.findMany({
+      where: { employeeId: { in: employeeIds } },
+      select: { employeeId: true, departmentId: true },
+    });
+    const empDepts = new Map<string, Set<string>>();
+    for (const l of links) {
+      if (!empDepts.has(l.employeeId)) empDepts.set(l.employeeId, new Set());
+      empDepts.get(l.employeeId)!.add(l.departmentId);
+    }
+    /**
+     * Shu buyurtma/tushum xodimning bo'limiga kiradimi.
+     *
+     * BO'LIMSIZ yozuv hammaga hisoblanadi. Sinovda buni teskari qilib
+     * ko'rdim — bo'limi ko'rsatilmagan buyurtma hech kimga tegmasdi va
+     * xodimning 12 500 000 so'mlik bajarilgan ishi maoshdan butunlay
+     * yo'qoldi. Bo'lim maydoni buyurtmalarga keyinroq qo'shilgani uchun
+     * eski yozuvlarda u bo'sh, ya'ni bu nazariy emas — real ma'lumot.
+     * Odamning haqini olib qo'yishdan ko'ra, biriktirilmagan ishni umumiy
+     * deb hisoblagan afzal.
+     */
+    const inScope = (empId: string, deptId: string | null) => {
+      const mine = empDepts.get(empId);
+      if (!mine || mine.size === 0) return true; // xodimga bo'lim belgilanmagan
+      if (!deptId) return true; // yozuv bo'limsiz — umumiy ish
+      return mine.has(deptId);
+    };
 
     const wanted = new Set(employeeIds);
     for (const t of tasks) {
@@ -93,6 +157,7 @@ export class SalaryMetricsService {
       }
       for (const id of ids) {
         if (!wanted.has(id)) continue;
+        if (!inScope(id, t.departmentId)) continue;
         const mv = out[id];
         mv.bajarilgan_buyurtma_soni += 1;
         mv.bajarilgan_buyurtma_summasi += t.totalAmount || 0;
@@ -101,14 +166,23 @@ export class SalaryMetricsService {
     }
 
     for (const g of income) {
-      if (g.employeeId && out[g.employeeId]) {
-        out[g.employeeId].kirim_summasi = g._sum.amount || 0;
-      }
+      if (!g.employeeId || !out[g.employeeId]) continue;
+      if (!inScope(g.employeeId, g.departmentId)) continue;
+      out[g.employeeId].kirim_summasi += g.amount || 0;
     }
 
     // Soatlarni butunlashtiramiz — payslip'da kasrli soat chalkashtiradi.
     for (const id of employeeIds) {
       out[id].ish_soatlari = Math.round(out[id].ish_soatlari);
+
+      // Hosila ko'rsatkichlar. Foiz aynan shuning uchun kerak: "to'liq
+      // davomat uchun +1 mln" shartini "ish_kunlari >= 26" deb yozib
+      // bo'lmaydi — har oyda grafik kunlari soni har xil. "davomat_foizi
+      // >= 100" esa har oyda to'g'ri ishlaydi.
+      out[id].qoldirilgan_kunlar = Math.max(0, norma - out[id].ish_kunlari);
+      out[id].davomat_foizi = norma > 0
+        ? Math.round((out[id].ish_kunlari / norma) * 100)
+        : 0;
     }
 
     return out;

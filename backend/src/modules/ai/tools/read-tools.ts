@@ -24,7 +24,7 @@ export const READ_TOOLS: AgentToolDef[] = [
         where: { tenantId: ctx.tenantId, name: { contains: i.query, mode: 'insensitive' } },
         select: {
           id: true, name: true, phone: true, totalDebt: true, totalPaid: true,
-          contacts: { where: { isPrimary: true }, select: { firstName: true, phone: true }, take: 1 },
+          contacts: { where: { isPrimary: true }, select: { name: true, phone: true }, take: 1 },
         },
         orderBy: { updatedAt: 'desc' },
         take: 10,

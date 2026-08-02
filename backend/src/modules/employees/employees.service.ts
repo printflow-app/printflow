@@ -14,18 +14,70 @@ export class EmployeesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.employee.findMany({
-      include: { role: true },
+    const rows = await this.prisma.employee.findMany({
+      include: {
+        role: true,
+        departments: { include: { department: { select: { id: true, name: true } } } },
+      },
       // passwordHash is excluded from response implicitly (not selected)
       // In future, add select: {} to explicitly exclude sensitive fields
     });
+    return rows.map(this.withDepartments);
   }
 
   async findOne(id: string) {
-    return this.prisma.employee.findUnique({
+    const row = await this.prisma.employee.findUnique({
       where: { id },
-      include: { role: true },
+      include: {
+        role: true,
+        departments: { include: { department: { select: { id: true, name: true } } } },
+      },
     });
+    return row ? this.withDepartments(row) : row;
+  }
+
+  /**
+   * Bog'lovchi jadval qatorlarini frontend kutadigan sodda ko'rinishga
+   * keltiradi: `departmentIds` (tanlash uchun) va `departmentNames` (ko'rsatish
+   * uchun). Frontend EmployeeDepartment tuzilishini bilishi shart emas.
+   */
+  private withDepartments = (e: any) => {
+    const links = e.departments || [];
+    return {
+      ...e,
+      departments: undefined,
+      departmentIds: links.map((l: any) => l.departmentId),
+      departmentNames: links.map((l: any) => l.department?.name).filter(Boolean),
+    };
+  };
+
+  /**
+   * Xodimning bo'limlarini berilgan ro'yxatga tenglashtiradi.
+   *
+   * `deleteMany` + `createMany` — eng sodda va ishonchli yo'l: farqni
+   * hisoblashga urinish (qaysi biri qo'shildi/olib tashlandi) shu hajmda
+   * foyda bermaydi, lekin xato ehtimolini oshiradi.
+   */
+  private async syncDepartments(employeeId: string, departmentIds?: string[]) {
+    if (!Array.isArray(departmentIds)) return; // maydon yuborilmagan — tegmaymiz
+    const tenantId = TenantContext.tryGetTenantId();
+    if (!tenantId) return;
+
+    // Faqat shu tenantga tegishli bo'limlar — begona ID yuborilsa e'tiborsiz.
+    const valid = departmentIds.length
+      ? await this.prisma.department.findMany({
+          where: { id: { in: departmentIds } },
+          select: { id: true },
+        })
+      : [];
+
+    await this.prisma.employeeDepartment.deleteMany({ where: { employeeId } });
+    if (valid.length) {
+      await this.prisma.employeeDepartment.createMany({
+        data: valid.map((d) => ({ tenantId, employeeId, departmentId: d.id })),
+        skipDuplicates: true,
+      });
+    }
   }
 
   async create(data: any) {
@@ -61,11 +113,14 @@ export class EmployeesService {
     const passwordHash = await bcrypt.hash(rawPassword, 12);
 
     // Remove plaintext password from data, use hash
-    const { password, ...rest } = data;
+    // departmentIds Employee ustuni emas — bog'lovchi jadvalga yoziladi.
+    const { password, departmentIds, ...rest } = data;
 
     const employee = await this.prisma.employee.create({
       data: { ...rest, passwordHash },
     });
+
+    await this.syncDepartments(employee.id, departmentIds);
 
     // Return plain-text password once so frontend can display it
     return { ...employee, password: rawPassword };
@@ -90,7 +145,8 @@ export class EmployeesService {
     }
 
     // Hash new password if provided
-    const updateData: any = { ...data };
+    const { departmentIds, ...scalarData } = data;
+    const updateData: any = { ...scalarData };
     if (data.password) {
       updateData.passwordHash = await bcrypt.hash(data.password, 12);
       delete updateData.password;
@@ -101,10 +157,12 @@ export class EmployeesService {
       updateData.passwordVersion = (employee.passwordVersion || 1) + 1;
     }
 
-    return this.prisma.employee.update({
+    const updated = await this.prisma.employee.update({
       where: { id },
       data: updateData,
     });
+    await this.syncDepartments(id, departmentIds);
+    return updated;
   }
 
   async remove(id: string) {

@@ -16,7 +16,10 @@
 
 /** Tizim haqiqatan o'lchay oladigan metrikalar (hammasi bazada mavjud). */
 export const METRICS = {
-  ish_kunlari: 'Ish kunlari (davomat belgilangan kunlar)',
+  ish_kunlari: 'Ish kunlari (grafik bo\'yicha kelgan kunlar)',
+  norma_ish_kunlari: 'Grafik bo\'yicha ish kunlari (shu oyda jami)',
+  davomat_foizi: 'Davomat foizi (kelgan / grafik × 100)',
+  qoldirilgan_kunlar: 'Qoldirilgan ish kunlari',
   ish_soatlari: 'Ish soatlari (kelish–ketish yig\'indisi)',
   kechikish_daqiqa: 'Kechikish (daqiqa)',
   overtime_daqiqa: 'Qo\'shimcha ish (daqiqa)',

@@ -3,6 +3,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
 
+// KASSALAR ORASIDAGI O'TKAZMANI HISOBOTDAN CHIQARISH.
+//
+// O'tkazma ikkita yozuv qoldiradi (yuboruvchida chiqim, qabul qiluvchida
+// kirim). Kassa QOLDIG'I uchun ikkalasi ham kerak, lekin kompaniya
+// daromadi/xarajati sifatida sanalsa — o'z pulini bir kassadan ikkinchisiga
+// ko'chirish "daromad va xarajat" bo'lib ko'rinadi. Sinovda shu sabab
+// 1 251 000 so'm soxta kirim va shuncha soxta chiqim yig'ilgan edi.
+const NOT_TRANSFER = { isInternalTransfer: false } as const;
+
 @Injectable()
 export class FinanceService implements OnApplicationBootstrap {
   constructor(
@@ -188,6 +197,9 @@ export class FinanceService implements OnApplicationBootstrap {
 
   async findAll(start?: string, end?: string, branchId?: string, page: number = 1, limit: number = 20, departmentId?: string, vendorId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
+    // Ro'yxatda kassalar orasidagi o'tkazma KO'RINADI — pul harakatini
+    // yashirmaymiz. U faqat YIG'INDILARGA kirmaydi (NOT_TRANSFER pastdagi
+    // agregat metodlarda).
     const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
     if (vendorId) where.vendorId = vendorId;
 
@@ -220,7 +232,7 @@ export class FinanceService implements OnApplicationBootstrap {
 
   async getDashboard(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
 
     const [incomes, expenses] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -259,16 +271,72 @@ export class FinanceService implements OnApplicationBootstrap {
       completedTasksCount = await this.prisma.task.count({ where: taskWhere });
     }
 
+    // BO'LIMGA BIRIKTIRILMAGAN yozuvlar.
+    //
+    // Nega kerak: bo'lim maydoni Kassa formasiga keyinroq qo'shildi, shuning
+    // uchun eski kirim/chiqimlarda u bo'sh. Ular hech qaysi bo'lim hisobotiga
+    // tushmaydi va rahbar "bo'limda chiqim yo'q" degan noto'g'ri xulosaga
+    // keladi (aslida chiqim bor, faqat biriktirilmagan). Shuning uchun bo'lim
+    // tanlanganda bu summa alohida qaytariladi — hisobot o'zi tushuntiradi.
+    let unassigned: { kirim: number; chiqim: number } | null = null;
+    if (departmentId) {
+      // Transaction'da `task` relation yo'q, faqat xom taskId ustuni bor —
+      // shuning uchun bo'limli buyurtmalar ID'sini alohida olamiz.
+      const deptTasks = await this.prisma.task.findMany({
+        where: { departmentId: { not: null } },
+        select: { id: true },
+      });
+      const base: any = {
+        ...this.getDateRange(start, end),
+        ...this.branchFilter(branchId),
+        ...this.ownerFilter(createdById),
+        ...cashBoxWhere,
+        departmentId: null,
+      };
+      // Buyurtma orqali bo'limga bog'langanlar "biriktirilgan" hisoblanadi.
+      // `notIn` ni yolg'iz ishlatib bo'lmaydi: SQL'da NULL NOT IN (...) → NULL,
+      // ya'ni buyurtmaga umuman bog'lanmagan yozuvlar (aynan bizga keraklilari)
+      // filtrdan tushib qolardi.
+      if (deptTasks.length > 0) {
+        base.OR = [{ taskId: null }, { taskId: { notIn: deptTasks.map((t) => t.id) } }];
+      }
+
+      const [uk, uc] = await Promise.all([
+        this.prisma.transaction.aggregate({ where: { ...base, type: 'kirim' }, _sum: { amount: true } }),
+        this.prisma.transaction.aggregate({ where: { ...base, type: 'chiqim' }, _sum: { amount: true } }),
+      ]);
+      unassigned = { kirim: uk._sum.amount || 0, chiqim: uc._sum.amount || 0 };
+    }
+
     return {
       totalKirim: incomes._sum.amount || 0,
       totalChiqim: expenses._sum.amount || 0,
       balance: (incomes._sum.amount || 0) - (expenses._sum.amount || 0),
       completedTasks: completedTasksCount,
+      biriktirilmagan: unassigned,
     };
   }
 
   async createTransaction(data: any) {
     const { type, amount, paymentTypeId, customerId, customerName, serviceType, expenseReason, expenseTypeId, employeeId, vendorId, departmentId, branchId, taskId } = data;
+
+    // BO'LIM — buyurtma tanlangan bo'lsa undan olinadi.
+    //
+    // Buyurtma yaratilayotganda bo'limi allaqachon belgilangan; o'sha
+    // buyurtma uchun kirim qilinganda foydalanuvchidan yana so'rash ortiqcha
+    // va xatoga yo'l ochadi. Faqat aniq berilgan qiymat ustun turadi.
+    //
+    // Mijoz bo'yicha TAXMIN QILMAYMIZ: bir mijozning buyurtmalari turli
+    // bo'limda bo'lishi mumkin va noto'g'ri taxmin pulni boshqa bo'lim
+    // hisobiga o'tkazib yuborardi.
+    let finalDepartmentId = departmentId || null;
+    if (!finalDepartmentId && taskId) {
+      const t = await this.prisma.task.findUnique({
+        where: { id: taskId },
+        select: { departmentId: true },
+      });
+      if (t?.departmentId) finalDepartmentId = t.departmentId;
+    }
 
     let finalBranchId = branchId || null;
 
@@ -318,7 +386,7 @@ export class FinanceService implements OnApplicationBootstrap {
           expenseTypeId: vendorId ? null : expenseTypeId,
           employeeId: vendorId ? null : employeeId,
           vendorId: vendorId || null,
-          departmentId: departmentId || null,
+          departmentId: finalDepartmentId,
           taskId: taskId || null,
           // Yozuvni kim kiritgani — "faqat o'zi" ruxsati uchun.
           createdById: data.createdById || null,
@@ -495,8 +563,11 @@ export class FinanceService implements OnApplicationBootstrap {
         return { success: false, message: 'Tranzaksiya topilmadi' };
       }
 
+      // Bo'sh satr — "tanlanmagan" degani, FK sifatida yaroqsiz. Frontend
+      // select'i "Bo'limsiz" tanlanganda '' yuboradi; uni null'ga aylantirmasak
+      // Postgres FK cheklovi so'rovni rad etardi.
       const pick = <T>(value: T | undefined, fallback: T): T =>
-        value === undefined ? fallback : value;
+        value === undefined ? fallback : ((value as any) === '' ? (null as any) : value);
 
       const nextType = pick(data.type, existing.type);
       const nextAmount = data.amount !== undefined ? Number(data.amount) : Number(existing.amount);
@@ -506,7 +577,16 @@ export class FinanceService implements OnApplicationBootstrap {
       const nextTaskId = pick(data.taskId, existing.taskId);
       const nextExpenseTypeId = pick(data.expenseTypeId, existing.expenseTypeId);
       const nextPaymentTypeId = pick(data.paymentTypeId, existing.paymentTypeId);
-      const nextDepartmentId = pick(data.departmentId, existing.departmentId);
+      let nextDepartmentId = pick(data.departmentId, existing.departmentId);
+      // Yaratishdagi bilan bir xil qoida: bo'lim ko'rsatilmagan bo'lsa,
+      // bog'langan buyurtmadan olinadi.
+      if (!nextDepartmentId && nextTaskId) {
+        const linked = await tx.task.findUnique({
+          where: { id: nextTaskId },
+          select: { departmentId: true },
+        });
+        if (linked?.departmentId) nextDepartmentId = linked.departmentId;
+      }
       const nextBranchId = pick(data.branchId, existing.branchId);
       const nextCashBoxId = pick(data.cashBoxId, (existing as any).cashBoxId);
       const nextIsSalaryAdvance = pick(data.isSalaryAdvance, (existing as any).isSalaryAdvance);
@@ -574,7 +654,7 @@ export class FinanceService implements OnApplicationBootstrap {
     }
 
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
+    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -617,7 +697,7 @@ export class FinanceService implements OnApplicationBootstrap {
 
   async getStatsByPaymentType(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -652,7 +732,7 @@ export class FinanceService implements OnApplicationBootstrap {
    */
   async getExpenseBreakdown(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
 
     const expenses = await this.prisma.transaction.findMany({
       where: { ...where, type: 'chiqim' },
@@ -674,7 +754,7 @@ export class FinanceService implements OnApplicationBootstrap {
 
   async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string, vendorId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere };
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
     if (vendorId) where.vendorId = vendorId;
 
     const [transactions, dashboard, allPaymentTypes] = await Promise.all([

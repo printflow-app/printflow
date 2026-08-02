@@ -55,7 +55,7 @@ export class CustomersService {
       }),
       this.prisma.transaction.groupBy({
         by: ['customerId'],
-        where: { customerId: { in: ids }, type: 'kirim' },
+        where: { customerId: { in: ids }, type: 'kirim', isInternalTransfer: false },
         _sum: { amount: true },
       }),
     ]);

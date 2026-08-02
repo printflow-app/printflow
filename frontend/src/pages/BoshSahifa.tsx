@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   TrendingUp, TrendingDown, Wallet, ClipboardList, QrCode, ShieldAlert, ShieldCheck,
-  Settings2, Check, UserSquare2, AlertTriangle,
+  Settings2, Check, UserSquare2, AlertTriangle, Bot,
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis,
@@ -181,6 +181,17 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
   const [s, setS] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [risks, setRisks] = useState<any[]>([]);
+  // AI o'zi (hech kim so'ramasdan) qilgan ishlar — userId='autonomous'.
+  // Rahbar AI nima qilganini bilib turishi kerak, aks holda avtonom rejim
+  // "qora quti" ga aylanadi.
+  const [aiActions, setAiActions] = useState<any[]>([]);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+
+  const loadAiActions = () => {
+    aiApi.listActions(20)
+      .then(r => setAiActions((r.data || []).filter((a: any) => a.userId === 'autonomous')))
+      .catch(() => setAiActions([]));
+  };
 
   useEffect(() => {
     dashboardApi.getSummary()
@@ -188,7 +199,20 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
       .catch(() => setS(null))
       .finally(() => setLoading(false));
     aiApi.getRisks().then(r => setRisks(r.data || [])).catch(() => setRisks([]));
+    loadAiActions();
   }, []);
+
+  const decideAction = async (id: string, ok: boolean) => {
+    setBusyAction(id);
+    try {
+      await (ok ? aiApi.confirmAction(id) : aiApi.rejectAction(id));
+      loadAiActions();
+      // Taklif bajarilgach xavf ham yo'qolgan bo'lishi mumkin.
+      if (ok) aiApi.getRisks().then(r => setRisks(r.data || [])).catch(() => {});
+    } finally {
+      setBusyAction(null);
+    }
+  };
 
   const dismissRisk = (id: string) => {
     setRisks(prev => prev.filter(r => r.id !== id));
@@ -204,7 +228,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
   if (loading) return <SkeletonStats />;
 
   const nothingToShow = availableWidgets.every(w => !visible[w.key]) ||
-    (!s?.finance && !s?.tasks && !s?.attendance && !s?.customers && !s?.inventory && !s?.vendors && !s?.employees && risks.length === 0);
+    (!s?.finance && !s?.tasks && !s?.attendance && !s?.customers && !s?.inventory && !s?.vendors && !s?.employees && risks.length === 0 && aiActions.length === 0);
 
   return (
     <div className="space-y-5 animate-fade-in pb-4">
@@ -303,6 +327,71 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                       >
                         Yopish
                       </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* AI O'ZI QILGAN ISHLAR.
+              `pending` — AI taklif qildi, rahbar tasdiqlashi kerak.
+              `executed` — avtonom rejim yoqilgani uchun AI o'zi bajardi;
+              bu yerda u faqat hisobot beradi, chunki rahbar nima
+              bo'layotganini ko'rib turishi shart. */}
+          {aiActions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 pt-1">
+                AI qilgan ishlar
+              </p>
+              {aiActions.map(a => {
+                const pending = a.status === 'pending';
+                const failed = a.status === 'failed';
+                return (
+                  <div
+                    key={a.id}
+                    className={`p-3.5 rounded-xl border shadow-sm flex items-start gap-3 ${
+                      pending ? 'border-amber-200 bg-amber-50/60'
+                      : failed ? 'border-rose-200 bg-rose-50/60'
+                      : 'border-slate-200 bg-white'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${
+                      pending ? 'bg-amber-100 text-amber-600 border-amber-200'
+                      : failed ? 'bg-rose-100 text-rose-600 border-rose-200'
+                      : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                    }`}>
+                      <Bot size={15} strokeWidth={2.5} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+                        {pending ? 'Tasdiq kutilmoqda'
+                          : failed ? 'Bajarilmadi'
+                          : a.status === 'rejected' ? 'Rad etilgan'
+                          : 'AI bajardi'}
+                      </p>
+                      <p className="text-[12px] font-semibold text-slate-700 leading-snug">{a.summary}</p>
+                      {failed && a.error && (
+                        <p className="text-[10px] font-semibold text-rose-500 mt-1">{a.error}</p>
+                      )}
+                      {pending && (
+                        <div className="flex items-center gap-2 mt-2.5">
+                          <button
+                            disabled={busyAction === a.id}
+                            onClick={() => decideAction(a.id, true)}
+                            className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                          >
+                            Tasdiqlash
+                          </button>
+                          <button
+                            disabled={busyAction === a.id}
+                            onClick={() => decideAction(a.id, false)}
+                            className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 disabled:opacity-50 rounded-lg transition-colors"
+                          >
+                            Rad etish
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

@@ -25,6 +25,14 @@ const formatDate = (dateStr: any) => {
   return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('uz-UZ');
 };
 
+// Qoldiq qarz. Buyurtma summalari kasrli bo'lgani uchun to'liq hisob-kitob
+// qilgan mijozda ham natija aniq 0 chiqmaydi (0.0000001 kabi). Chegarasiz
+// bunday mijoz "qarzdor" sanalib, ekranda "0" so'm qarz ko'rsatilardi —
+// holati esa "Yopilgan" bo'lishi kerak edi.
+const MIN_DEBT = 1;
+const debtOf = (c: any) => Number(c?.totalDebt || 0) - Number(c?.totalPaid || 0);
+const hasDebt = (c: any) => debtOf(c) >= MIN_DEBT;
+
 const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const p = currentUser.permissions || {};
   const isAdmin =
@@ -95,7 +103,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     .sort((a, b) => {
       if (sortBy === 'debt') {
         // Qoldiq qarz (totalDebt - totalPaid) bo'yicha kamayish tartibida.
-        return (Number(b.totalDebt) - Number(b.totalPaid)) - (Number(a.totalDebt) - Number(a.totalPaid));
+        return debtOf(b) - debtOf(a);
       }
       if (sortBy === 'paid') return Number(b.totalPaid) - Number(a.totalPaid);
       if (sortBy === 'name') return a.name.localeCompare(b.name);
@@ -119,7 +127,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         { header: 'Kompaniya / Info', accessor: (c: any) => c.companyInfo || '' },
         { header: 'Jami qarzdorlik (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) },
         { header: "Jami to'langan (UZS)", accessor: (c: any) => Number(c.totalPaid || 0) },
-        { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => Math.max(0, Number(c.totalDebt || 0) - Number(c.totalPaid || 0)) },
+        { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => (hasDebt(c) ? Math.round(debtOf(c)) : 0) },
         { header: 'Yaratilgan', accessor: (c: any) => formatDate(c.createdAt) },
       ],
     });
@@ -205,7 +213,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       setContacts(res.data || []);
       showStatus('success', "Kontakt qo'shildi!");
     } catch {
-      showStatus('error', "Xarajat qo'shishda xato!");
+      showStatus('error', "Kontakt qo'shishda xato!");
     } finally {
       setIsAddingContact(false);
     }
@@ -258,13 +266,13 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   };
 
   // Stats
-  const totalDebtors = customers.filter(c => (c.totalDebt - c.totalPaid) > 0).length;
+  const totalDebtors = customers.filter(hasDebt).length;
   const totalDebtAmount = customers.reduce((s, c) => {
-    const b = c.totalDebt - c.totalPaid;
-    return b > 0 ? s + b : s;
+    const b = debtOf(c);
+    return b >= MIN_DEBT ? s + b : s;
   }, 0);
   // Hisobi yopilgan mijozlar: qarzi qolmagan (ortiqcha to'lov "haqdorlik" sifatida ko'rsatilmaydi).
-  const totalSettled = customers.filter(c => (c.totalDebt - c.totalPaid) <= 0).length;
+  const totalSettled = customers.filter(c => !hasDebt(c)).length;
 
   if (isLoading) return <SkeletonTable rows={8} cols={6} />;
 
@@ -446,7 +454,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   </td></tr>
                 ) : (
                   filteredCustomers.map(c => {
-                    const balance = c.totalDebt - c.totalPaid;
+                    const balance = debtOf(c);
                     const isExpanded = expandedId === c.id;
                     const details = detailsCache[c.id];
                     const isLoadingDetails = details === 'loading';
@@ -483,8 +491,8 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                           <td className="px-5 font-bold text-[11px] text-slate-600">{formatCurrency(c.totalDebt)}</td>
                           <td className="px-5 font-bold text-[11px] text-emerald-600">{formatCurrency(c.totalPaid)}</td>
                           <td className="px-5">
-                            <span className={`px-2 py-1 rounded-lg text-[9px] font-bold border uppercase tracking-tight ${balance > 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                              {balance > 0 ? formatCurrency(balance) : 'Yopilgan'}
+                            <span className={`px-2 py-1 rounded-lg text-[9px] font-bold border uppercase tracking-tight ${balance >= MIN_DEBT ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                              {balance >= MIN_DEBT ? formatCurrency(balance) : 'Yopilgan'}
                             </span>
                           </td>
                           <td className="px-5 text-right pr-6" onClick={e => e.stopPropagation()}>

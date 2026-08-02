@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
 import { FinanceService } from '../finance/finance.service';
+import { TelegramService } from '../telegram/telegram.service';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { streamText, stepCountIs, createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { createHash, randomUUID } from 'crypto';
@@ -73,6 +74,7 @@ export class AiService {
     private readonly prisma: PrismaService,
     private readonly tasksService: TasksService,
     private readonly financeService: FinanceService,
+    private readonly telegramService: TelegramService,
   ) {
     const apiKey = process.env.ANTHROPIC_API_KEY || '';
     if (!apiKey) {
@@ -98,6 +100,22 @@ export class AiService {
     } else {
       anchorMs = tenant.createdAt.getTime();
     }
+
+    // LANGAR KELAJAKDA BO'LSA — uni butun davrlar bilan orqaga suramiz.
+    //
+    // Langar obuna TUGASH sanasidan hisoblanadi. Obuna qo'lda uzoqqa
+    // cho'zilgan bo'lsa (masalan 2030-yil), langar bugundan keyin tushadi:
+    // `elapsed` manfiy chiqib 0 ga qisiladi, `periods` doim 0 bo'ladi va
+    // davr HECH QACHON almashmaydi. Natijada AI hisoblagichi oylar davomida
+    // to'planib, foydalanuvchi shu oy AI ishlatmagan bo'lsa ham "limit
+    // tugadi" xabarini oladi. Orqaga surish davr chegaralarini obuna
+    // sikliga mos saqlaydi, lekin joriy davr har doim bugunni o'z ichiga
+    // oladi.
+    if (anchorMs > Date.now()) {
+      const back = Math.ceil((anchorMs - Date.now()) / AiService.PERIOD_MS);
+      anchorMs -= back * AiService.PERIOD_MS;
+    }
+
     const elapsed = Math.max(0, Date.now() - anchorMs);
     const periods = Math.floor(elapsed / AiService.PERIOD_MS);
     return new Date(anchorMs + periods * AiService.PERIOD_MS);
@@ -309,6 +327,7 @@ export class AiService {
       prisma: this.prisma,
       tasks: this.tasksService,
       finance: this.financeService,
+      telegram: this.telegramService,
     };
     const admin = await this.prisma.workspaceAdmin.findFirst({
       where: { id: userId, tenantId },

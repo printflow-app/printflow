@@ -42,6 +42,55 @@ interface Component {
 /** Pul o'lchaydigan metrikalar — faqat ular uchun "foiz" varianti mantiqiy. */
 const MONEY_METRICS = new Set(['bajarilgan_buyurtma_summasi', 'kirim_summasi']);
 
+// =============================================
+// TANLOV NIMANI ANGLATADI
+//
+// `explain()` "shu raqamlarda qancha chiqadi" ni ko'rsatadi. Bu yerdagi
+// matnlar boshqa savolga javob beradi: "bu ko'rsatkichni tanlasam,
+// xodimga aslida NIMA UCHUN pul berayotgan bo'laman?".
+//
+// Har birida tuzoq ham aytiladi — masalan bir buyurtmada ikki xodim
+// ishlasa ikkalasiga TO'LIQ yoziladi. Buni bilmasdan "har buyurtmadan
+// 50 000" qo'yilsa, xarajat kutilganidan ikki barobar chiqadi.
+// =============================================
+const METRIC_MEANING: Record<string, string> = {
+  ish_kunlari:
+    "Xodim ish grafigi bo'yicha nechta kun kelgani. Dam olish kunlari sanalmaydi — grafik Davomat sozlamalaridan olinadi.",
+  norma_ish_kunlari:
+    "Shu oyda grafik bo'yicha jami nechta ish kuni borligi. Har oyda har xil (26, 27...), shuning uchun shartda aniq son yozish o'rniga davomat foizini ishlatgan ma'qul.",
+  davomat_foizi:
+    "Kelgan kunlar grafikdagi kunlarga nisbatan foizda. 100 = hamma kun kelgan. \"To'liq davomat uchun bonus\" ni aynan shu bilan yozing — u har oyda to'g'ri ishlaydi.",
+  qoldirilgan_kunlar:
+    "Grafikda bor, lekin kelmagan kunlar soni. Jarima uchun qulay.",
+  ish_soatlari:
+    "Kelish va ketish orasidagi soatlar yig'indisi. Chiqish belgilanmagan kun hisobga kirmaydi.",
+  kechikish_daqiqa:
+    "Oy davomida jami necha daqiqa kechikkani. Ish boshlanish vaqti Davomat sozlamalarida belgilanadi.",
+  overtime_daqiqa:
+    "Ish vaqtidan tashqari ishlagan daqiqalari.",
+  bajarilgan_buyurtma_soni:
+    "\"Bajarildi\" ustuniga o'tgan buyurtmalar soni. DIQQAT: bir buyurtmada bir necha xodim bo'lsa, har biriga TO'LIQ bittadan yoziladi — bo'linmaydi.",
+  bajarilgan_buyurtma_summasi:
+    "Bajarilgan buyurtmalarning pul summasi. DIQQAT: bir buyurtmada bir necha xodim bo'lsa, har biriga TO'LIQ summa yoziladi.",
+  bajarilgan_buyurtma_miqdori:
+    "Bajarilgan buyurtmalardagi dona soni (500 ta vizitka = 500). Ishbay to'lov uchun.",
+  kirim_summasi:
+    "Shu xodim orqali kassaga tushgan pul. Sotuv menejeri uchun mos.",
+};
+
+const KIND_MEANING: Record<string, string> = {
+  fixed:
+    "Belgilangan summa. Shart qo'yilmasa har oy shunchaki qo'shiladi; shart qo'yilsa faqat shart bajarilganda beriladi.",
+  per_unit:
+    "Har bir dona uchun narx. Ko'rsatkich 10 bo'lsa va narx 5 000 bo'lsa — 50 000 so'm.",
+  percent:
+    "Summadan foiz. Faqat pul ko'rsatkichlarida ishlaydi (buyurtma summasi, kirim).",
+};
+
+/** Bo'limga biriktirilgan xodim uchun qo'shimcha eslatma. */
+const DEPT_NOTE =
+  "Xodimga Xodimlar sahifasida bo'lim biriktirilgan bo'lsa, bu ko'rsatkich faqat O'SHA bo'lim buyurtma va tushumidan hisoblanadi.";
+
 const TYPES: { key: Group; label: string; desc: string; icon: any; tone: string }[] = [
   { key: 'fiksa', label: 'Fiksa', desc: "Qat'iy summa. Shart qo'ysangiz — faqat shart bajarilsa beriladi.", icon: Wallet, tone: 'text-slate-700 border-slate-200 hover:border-slate-400' },
   { key: 'kpi', label: 'KPI', desc: "Natijaga qarab qo'shiladi (bajarilgan buyurtma, ish soati...).", icon: TrendingUp, tone: 'text-emerald-700 border-emerald-200 hover:border-emerald-400' },
@@ -441,6 +490,28 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                       <option value="">Tanlang...</option>
                       {metrics.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
                     </select>
+
+                    {/* Tanlangan ko'rsatkich nimani anglatishi — tuzoqlari
+                        bilan. Raqamli misol pastdagi "Nima bo'ladi" blokida. */}
+                    {adding.metric && METRIC_MEANING[adding.metric] && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-sky-50/70 border border-sky-100">
+                        <p className="text-[10px] font-semibold text-sky-800 leading-relaxed">
+                          {METRIC_MEANING[adding.metric]}
+                        </p>
+                        {(adding.metric === 'bajarilgan_buyurtma_soni' ||
+                          adding.metric === 'bajarilgan_buyurtma_summasi' ||
+                          adding.metric === 'kirim_summasi') && (
+                          <p className="text-[10px] font-semibold text-sky-700/80 mt-1.5 leading-relaxed">
+                            {DEPT_NOTE}
+                          </p>
+                        )}
+                        {adding.kind && KIND_MEANING[adding.kind] && (
+                          <p className="text-[10px] font-semibold text-sky-700/80 mt-1.5 leading-relaxed">
+                            <b>To'lov turi:</b> {KIND_MEANING[adding.kind]}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Foiz varianti faqat pul metrikasida so'raladi */}

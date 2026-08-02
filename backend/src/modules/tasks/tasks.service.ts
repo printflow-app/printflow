@@ -168,13 +168,31 @@ export class TasksService {
    * butun buyurtma tranzaksiyasi yiqiladi (agent orqali admin buyurtma
    * yaratganda aynan shu xato chiqardi).
    */
-  private async historyEmployeeId(employeeId?: string | null): Promise<string | null> {
-    if (!employeeId || employeeId === 'admin') return null;
-    const emp = await this.prisma.employee.findFirst({
-      where: { id: employeeId },
-      select: { id: true },
-    });
-    return emp ? employeeId : null;
+  /**
+   * KPI kimga yozilishini aniqlaydi.
+   *
+   * `salesEmployeeId` — "buyurtmani kim oldi" (formada tanlanadi), `actorId`
+   * — kim tizimga kiritdi. Odatda bu bir odam, lekin har doim emas: doimiy
+   * mijoz ko'pincha to'g'ridan-to'g'ri rahbarga qo'ng'iroq qiladi, rahbar
+   * kiritadi — lekin sotuvni menejer olgan bo'ladi.
+   *
+   * Ilgari faqat kiritgan odam yozilardi va rahbar (WorkspaceAdmin) kiritsa
+   * hech kim yozilmasdi — uning ID'si Employee jadvalida yo'q. Natijada
+   * doimiy mijozlardan kelgan buyurtmalarda KPI umuman hisoblanmasdi.
+   */
+  private async historyEmployeeId(
+    actorId?: string | null,
+    salesEmployeeId?: string | null,
+  ): Promise<string | null> {
+    for (const candidate of [salesEmployeeId, actorId]) {
+      if (!candidate || candidate === 'admin') continue;
+      const emp = await this.prisma.employee.findFirst({
+        where: { id: candidate },
+        select: { id: true },
+      });
+      if (emp) return candidate;
+    }
+    return null;
   }
 
   async create(data: any, employeeId?: string) {
@@ -185,7 +203,7 @@ export class TasksService {
     } = data;
 
     const remainingAmount = Math.max(0, Math.round(Number(totalAmount || 0) - Number(depositAmount || 0)));
-    const historyEmpId = await this.historyEmployeeId(employeeId);
+    const historyEmpId = await this.historyEmployeeId(employeeId, data.salesEmployeeId);
 
     // Variant qatorlari — agar berilgan bo'lsa, jami soni avtomatik hisoblanadi
     const normalizedVariants = this.normalizeVariants(data.variants);
@@ -357,7 +375,7 @@ export class TasksService {
       depositAllocated += share;
       return share;
     });
-    const historyEmpId = await this.historyEmployeeId(employeeId);
+    const historyEmpId = await this.historyEmployeeId(employeeId, data.salesEmployeeId);
 
     let tasks: any[] | null = null;
     let bulkRetry = 0;
@@ -454,14 +472,24 @@ export class TasksService {
             quantity: effectiveQty,
             coefficient: Number(coefficient || 1.0),
             variants: itemVariants ?? undefined,
-            assignees: JSON.stringify(assigneeIds || []),
+            // HAR XIZMAT O'Z MAS'ULINI OLADI. Bitta buyurtmada vizitka
+            // poligrafiyaga, bortli harf tashqi reklamaga tushishi mumkin —
+            // ular boshqa-boshqa odamlar bajaradi. Xizmat darajasida
+            // ko'rsatilmasa, buyurtma darajasidagi ro'yxat qo'llanadi.
+            assignees: JSON.stringify(
+              Array.isArray(item.assigneeIds) && item.assigneeIds.length
+                ? item.assigneeIds
+                : (assigneeIds || []),
+            ),
             attachments: "[]",
             deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
             branchId: branchId || undefined,
             executorBranchId: executorBranchId || null,
             vendorId: item.vendorId || undefined,
             vendorCost: Number(item.vendorCost || 0),
-            departmentId: departmentId || null,
+            // Bo'lim ham xizmatniki — shu orqali maosh va moliya to'g'ri
+            // bo'limga tushadi.
+            departmentId: item.departmentId || departmentId || null,
           } as any
         });
 
@@ -544,7 +572,7 @@ export class TasksService {
     });
     if (!oldTask) throw new Error('Task topilmadi');
 
-    const historyEmpId = await this.historyEmployeeId(employeeId);
+    const historyEmpId = await this.historyEmployeeId(employeeId, data.salesEmployeeId);
     const { historyNote, ...taskData } = data;
 
     // Variant qatorlari berilgan bo'lsa — quantity ni avtomatik yangilaymiz.

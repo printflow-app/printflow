@@ -22,6 +22,7 @@ import { EmployeesModule } from './modules/employees/employees.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { PaymentTypesModule } from './modules/payment-types/payment-types.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { TeamTasksModule } from './modules/team-tasks/team-tasks.module';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { ExpenseTypesModule } from './modules/expense-types/expense-types.module';
 import { ServicesModule } from './modules/services/services.module';
@@ -84,6 +85,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     PaymentTypesModule,
     ExpenseTypesModule,
     TasksModule,
+    TeamTasksModule,
     FinanceModule,
     CashboxModule,
     PayrollModule,

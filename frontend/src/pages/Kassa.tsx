@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, CheckCircle2, Download, Search, Pencil, Trash2, Plus, ArrowRightLeft, Inbox, Check, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, AlertTriangle, CheckCircle2, Download, Search, Pencil, Trash2, Plus, ArrowRightLeft, Inbox, Check, X } from 'lucide-react';
 import { financeApi, customersApi, cashBoxApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -234,8 +234,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   });
 
   // Forms
-  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '', date: getToday() });
-  const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '', date: getToday(), isSalaryAdvance: false });
+  const [kirimForm, setKirimForm] = useState({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '', departmentId: '', date: getToday() });
+  const [chiqimForm, setChiqimForm] = useState({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '', departmentId: '', date: getToday(), isSalaryAdvance: false });
   const [customerTasks, setCustomerTasks] = useState<any[]>([]);
 
   const handleCustomerChange = async (cid: string) => {
@@ -262,8 +262,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
     }
   }, [hasDebt]);
 
-  const resetKirimForm = () => setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '', date: getToday() });
-  const resetChiqimForm = () => setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '', date: getToday(), isSalaryAdvance: false });
+  const resetKirimForm = () => setKirimForm({ amount: '', paymentTypeId: '', customerId: '', customerName: '', serviceType: '', taskId: '', forExistingDebt: false, vendorId: '', departmentId: '', date: getToday() });
+  const resetChiqimForm = () => setChiqimForm({ amount: '', paymentTypeId: '', expenseReason: '', expenseTypeId: '', employeeId: '', isEmployeeExpense: false, isVendorExpense: false, vendorId: '', departmentId: '', date: getToday(), isSalaryAdvance: false });
 
   const closeKirimModal = () => {
     setIsKirimModalOpen(false);
@@ -287,6 +287,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         vendorId: kirimForm.vendorId && kirimForm.vendorId !== '_' ? kirimForm.vendorId : null,
         customerId: kirimForm.vendorId ? null : (kirimForm.customerId || null),
         taskId: kirimForm.taskId || null,
+        departmentId: kirimForm.departmentId || null,
         branchId: activeBranchId || null,
         cashBoxId: selectedCashBoxId || null,
         ...(canSetDate ? buildDatePayload(kirimForm.date, !!editingTx) : {}),
@@ -319,6 +320,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         vendorId: chiqimForm.isVendorExpense ? (chiqimForm.vendorId || null) : null,
         expenseTypeId: chiqimForm.isVendorExpense || chiqimForm.isEmployeeExpense ? null : (chiqimForm.expenseTypeId || null),
         isSalaryAdvance: chiqimForm.isEmployeeExpense ? chiqimForm.isSalaryAdvance : false,
+        departmentId: chiqimForm.departmentId || null,
         branchId: activeBranchId || null,
         cashBoxId: selectedCashBoxId || null,
         ...(canSetDate ? buildDatePayload(chiqimForm.date, !!editingTx) : {}),
@@ -353,6 +355,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         taskId: t.taskId || '',
         forExistingDebt: false,
         vendorId: t.vendorId || '',
+        departmentId: t.departmentId || '',
         date: t.date ? new Date(t.date).toLocaleDateString('en-CA') : getToday(),
       });
       // Preload customer's task list so the "bog'liq buyurtma" select works in edit mode.
@@ -377,6 +380,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         isEmployeeExpense: !!t.employeeId && !t.vendorId,
         isVendorExpense: !!t.vendorId,
         vendorId: t.vendorId || '',
+        departmentId: t.departmentId || '',
         date: t.date ? new Date(t.date).toLocaleDateString('en-CA') : getToday(),
         isSalaryAdvance: !!t.isSalaryAdvance,
       });
@@ -531,7 +535,11 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                       <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${active ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>asosiy</span>
                     )}
                   </div>
+                  {/* Bu — kassadagi HOZIRGI QOLDIQ (butun davr uchun), pastdagi
+                      kartalar esa tanlangan sana oralig'i uchun. Ikkalasi turli
+                      narsa; belgisiz ular bir-biriga zid ko'rinardi. */}
                   <div className={`text-[11px] font-bold tabular-nums mt-0.5 ${active ? 'text-white/90' : ((b.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600')}`}>
+                    <span className={`text-[8px] font-bold uppercase mr-1 ${active ? 'text-white/60' : 'text-slate-400'}`}>qoldiq</span>
                     {formatCurrency(b.balance || 0)}
                   </div>
                 </button>
@@ -586,6 +594,27 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* BO'LIMGA BIRIKTIRILMAGAN OGOHLANTIRISHI.
+          Bo'lim maydoni Kassa formasiga keyinroq qo'shilgani uchun eski
+          yozuvlarda u bo'sh. Ular hech qaysi bo'lim summasiga kirmaydi —
+          buni aytmasak, rahbar "bo'limda chiqim yo'q" deb noto'g'ri
+          xulosa qiladi. */}
+      {departmentId && summary?.biriktirilmagan &&
+       (summary.biriktirilmagan.kirim > 0 || summary.biriktirilmagan.chiqim > 0) && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50/60">
+          <div className="p-2 bg-amber-100 text-amber-600 rounded-lg flex-shrink-0"><AlertTriangle size={16} /></div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold text-amber-800">Bu summalar bo'lim bo'yicha to'liq emas</p>
+            <p className="text-xs font-medium text-amber-700 mt-0.5 leading-relaxed">
+              Hech qaysi bo'limga biriktirilmagan{' '}
+              <b>{formatCurrency(summary.biriktirilmagan.kirim)}</b> kirim va{' '}
+              <b>{formatCurrency(summary.biriktirilmagan.chiqim)}</b> chiqim bor — ular yuqoridagi
+              hisobga KIRMAGAN. Yozuvni tahrirlab bo'limini belgilasangiz, hisobotga qo'shiladi.
+            </p>
           </div>
         </div>
       )}
@@ -903,6 +932,10 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     ...f,
                     taskId: selectedId,
                     serviceType: selectedTask ? (selectedTask.orderName || selectedTask.title) : '',
+                    // Buyurtmaning bo'limi allaqachon ma'lum — uni o'zi
+                    // qo'yamiz, foydalanuvchidan qayta so'ramaymiz. Ko'rinib
+                    // turadi va kerak bo'lsa o'zgartirsa bo'ladi.
+                    departmentId: selectedTask?.departmentId || f.departmentId,
                   }));
                 }}
                 className="select-minimal h-11 font-bold text-orange-700"
@@ -953,6 +986,20 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
             </select>
           </div>
+
+          {/* BO'LIM — busiz yozuv hech qaysi bo'lim hisobotiga tushmaydi.
+              Ilgari bu maydon umuman yo'q edi: filtri bor edi, lekin yozadigan
+              joyi yo'q, shuning uchun bo'lim tanlanganda hisobot kam summa
+              ko'rsatardi. */}
+          {departments.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Bo'lim</label>
+              <select value={kirimForm.departmentId} onChange={(e) => setKirimForm({ ...kirimForm, departmentId: e.target.value })} className="select-minimal">
+                <option value="">Bo'limsiz</option>
+                {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+          )}
 
           {canSetDate && (
             <div>
@@ -1050,6 +1097,19 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
             </select>
           </div>
+
+          {/* BO'LIM — chiqimlarda bu ayniqsa muhim edi: birorta chiqim
+              buyurtmaga bog'lanmagani uchun bo'lim tanlanganda hisobot
+              CHIQIMNI DOIM 0 ko'rsatardi. */}
+          {departments.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Bo'lim</label>
+              <select value={chiqimForm.departmentId} onChange={(e) => setChiqimForm({ ...chiqimForm, departmentId: e.target.value })} className="select-minimal">
+                <option value="">Bo'limsiz</option>
+                {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+          )}
 
           {canSetDate && (
             <div>
