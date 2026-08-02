@@ -89,6 +89,39 @@ export class AiService {
    * subscriptionEndsAt - durationDays (obuna boshlangan kun). Aks holda createdAt.
    * Davr har 30 kunda anchor'dan boshlab takrorlanadi.
    */
+  /**
+   * Platforma bo'ylab YAGONA AI limiti (super admin sozlaydi).
+   *
+   * PlatformSetting'da `AI_LIMITS` kaliti: { perMonth, perDay }. 0 = cheksiz.
+   * Kalit yo'q bo'lsa null qaytadi va eski tarif qiymati ishlaydi — shunda
+   * sozlanmagan platformada xulq o'zgarmaydi.
+   *
+   * 60 soniya keshlanadi: qiymat har AI so'rovda o'qiladi, lekin deyarli
+   * hech qachon o'zgarmaydi.
+   */
+  private aiLimitsCache: { at: number; val: { perMonth: number | null; perDay: number | null } } | null = null;
+
+  private async platformAiLimits(): Promise<{ perMonth: number | null; perDay: number | null }> {
+    if (this.aiLimitsCache && Date.now() - this.aiLimitsCache.at < 60_000) {
+      return this.aiLimitsCache.val;
+    }
+    let val: { perMonth: number | null; perDay: number | null } = { perMonth: null, perDay: null };
+    try {
+      const row = await this.prisma.platformSetting.findUnique({ where: { key: 'AI_LIMITS' } });
+      if (row) {
+        const parsed = JSON.parse(row.value || '{}');
+        val = {
+          perMonth: Number.isFinite(Number(parsed.perMonth)) ? Number(parsed.perMonth) : null,
+          perDay: Number.isFinite(Number(parsed.perDay)) ? Number(parsed.perDay) : null,
+        };
+      }
+    } catch {
+      // Sozlama buzuq bo'lsa tarif qiymatiga qaytamiz — AI to'xtab qolmasin.
+    }
+    this.aiLimitsCache = { at: Date.now(), val };
+    return val;
+  }
+
   private getCurrentPeriodStart(tenant: {
     createdAt: Date;
     subscriptionEndsAt: Date | null;
@@ -138,12 +171,16 @@ export class AiService {
     // tarifsiz workspace cheksiz AI ishlatib yuborardi.
     const plan = await resolveEffectivePlan(this.prisma, tenant);
 
-    const limit = plan?.aiMessagesPerMonth ?? 0;
+    // Ko'rsatiladigan limit ham hisobga olinadigani BILAN BIR XIL manbadan
+    // bo'lishi kerak — aks holda chatda "0/100" ko'rinib, aslida boshqa son
+    // bo'yicha to'sib qo'yilardi.
+    const uniform = await this.platformAiLimits();
+    const limit = uniform.perMonth ?? plan?.aiMessagesPerMonth ?? 0;
     const unlimited = limit === 0;
     const periodStart = this.getCurrentPeriodStart(tenant);
     const periodEnd = new Date(periodStart.getTime() + AiService.PERIOD_MS);
 
-    const dailyLimit = plan?.aiMessagesPerDay ?? 0;
+    const dailyLimit = uniform.perDay ?? plan?.aiMessagesPerDay ?? 0;
     const dailyUnlimited = dailyLimit === 0;
     const today = this.tashkentDateString();
 
@@ -198,11 +235,19 @@ export class AiService {
 
     const plan = await resolveEffectivePlan(this.prisma, tenant);
 
-    const monthlyLimit = plan?.aiMessagesPerMonth ?? 0;
+    // AI limiti TARIFDAN OLINMAYDI.
+    //
+    // Endi yagona tarif modeli: hamma workspace bir xil limitda bo'lishi
+    // kerak, kerak bo'lsa qo'shimcha paket sotib oladi. Limit tarifga
+    // bog'langanda esa har workspace o'zi ulangan tarif qatoriga qarab
+    // boshqa-boshqa limit olardi (biriga 100, biriga cheksiz) — bu adolatsiz
+    // va tushuntirib bo'lmaydigan holat edi.
+    const uniform = await this.platformAiLimits();
+    const monthlyLimit = uniform.perMonth ?? plan?.aiMessagesPerMonth ?? 0;
     const monthlyUnlimited = monthlyLimit === 0;
     const periodStart = this.getCurrentPeriodStart(tenant);
 
-    const dailyLimit = plan?.aiMessagesPerDay ?? 0;
+    const dailyLimit = uniform.perDay ?? plan?.aiMessagesPerDay ?? 0;
     const dailyUnlimited = dailyLimit === 0;
     const today = this.tashkentDateString();
 
