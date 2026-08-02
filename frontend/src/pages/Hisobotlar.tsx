@@ -271,6 +271,9 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   const canViewDynamics      = isAdmin || p.canViewFinanceReports;
   const canViewIncomeByType  = isAdmin || p.canViewIncomeByType;
   const canViewExpenseByType = isAdmin || p.canViewExpenseByType;
+  // Zararsizlik nuqtasi u2014 alohida ruxsat: bu xarajat tarkibi va foyda
+  // chegarasi, umumiy hisobot huquqidan nozikroq.
+  const canViewBreakEven = isAdmin || p.canViewBreakEven;
   const canViewExpenseCharts = isAdmin || p.canViewExpenseCharts;
   const canViewServiceStats  = isAdmin || p.canViewServiceReports;
   const canViewKpi           = isAdmin || p.canViewKpi;
@@ -772,11 +775,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {/* ── Zararsizlik nuqtasi ──
           Moliya ko'radiganlarga ko'rsatiladi: bu xarajat va tushum
           taqqoslamasi, ya'ni moliyaviy ma'lumot. */}
-      {canViewExpenseByType && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <BreakEvenCard />
-        </div>
-      )}
+      {canViewBreakEven && <BreakEvenCard />}
 
       {/* ── Kirim / Chiqim turlari ── */}
       {(canViewIncomeByType || canViewExpenseByType) && (paymentStats.kirim.length > 0 || paymentStats.chiqim.length > 0) && (

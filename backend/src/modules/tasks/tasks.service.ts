@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
@@ -377,6 +378,10 @@ export class TasksService {
     });
     const historyEmpId = await this.historyEmployeeId(employeeId, data.salesEmployeeId);
 
+    // Shu buyurtmadagi barcha xizmatlar uchun BITTA kalit — KPI hisobida
+    // ular bitta buyurtma deb sanalishi uchun.
+    const orderGroupId = randomUUID();
+
     let tasks: any[] | null = null;
     let bulkRetry = 0;
     while (!tasks) {
@@ -490,6 +495,7 @@ export class TasksService {
             // Bo'lim ham xizmatniki — shu orqali maosh va moliya to'g'ri
             // bo'limga tushadi.
             departmentId: item.departmentId || departmentId || null,
+            orderGroupId,
           } as any
         });
 

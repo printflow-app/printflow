@@ -260,8 +260,9 @@ export class TenantsService {
     };
   }
 
-  update(id: string, data: {
+  async update(id: string, data: {
     name?: string;
+    slug?: string;
     planId?: string;
     isActive?: boolean;
     status?: string;
@@ -269,6 +270,26 @@ export class TenantsService {
     trialEndsAt?: string | null;
   }) {
     const payload: any = { ...data };
+
+    // SLUG — workspace nomi o'zgarganda uni ham yangilash kerak bo'ladi.
+    //
+    // DIQQAT: slug login uchun ishlatiladi (xodim tizimga kirishda uni
+    // kiritadi). O'zgartirilsa, ESKI slug bilan kirish to'xtaydi — barcha
+    // xodimga yangi nomni aytish kerak. Shuning uchun bu alohida, ongli
+    // amal: nomni o'zgartirish slug'ni avtomatik o'zgartirmaydi.
+    if (data.slug !== undefined) {
+      const slug = String(data.slug).trim().toLowerCase();
+      if (!/^[a-z0-9-]{3,40}$/.test(slug)) {
+        throw new BadRequestException(
+          "Slug faqat lotin harflari, raqam va tire'dan iborat bo'lishi kerak (3-40 belgi).",
+        );
+      }
+      const band = await this.prisma.tenant.findUnique({ where: { slug } });
+      if (band && band.id !== id) {
+        throw new BadRequestException('Bu slug allaqachon boshqa workspace tomonidan band.');
+      }
+      payload.slug = slug;
+    }
     if (data.subscriptionEndsAt !== undefined) {
       payload.subscriptionEndsAt = data.subscriptionEndsAt ? new Date(data.subscriptionEndsAt) : null;
     }

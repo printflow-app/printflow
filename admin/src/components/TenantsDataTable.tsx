@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown, ArrowUp, ArrowUpDown, CalendarPlus, CreditCard, Ban, CheckCircle2, Search,
+  ArrowDown, ArrowUp, ArrowUpDown, CalendarPlus, CreditCard, Ban, CheckCircle2, Search, Pencil,
 } from 'lucide-react';
 import { tenantsApi } from '../api';
 import { useTenants, usePlans, useInvalidate } from '../hooks/queries';
@@ -96,6 +96,10 @@ export function TenantsDataTable() {
   const [page, setPage] = useState(1);
 
   const [planPickerFor, setPlanPickerFor] = useState<Tenant | null>(null);
+  const [renameFor, setRenameFor] = useState<Tenant | null>(null);
+  const [renameName, setRenameName] = useState('');
+  const [renameSlug, setRenameSlug] = useState('');
+  const [renaming, setRenaming] = useState(false);
 
   // refresh() shim — invalidates RQ caches, hooks auto-refetch
   const refresh = () => { invalidate.tenants(); invalidate.plans(); };
@@ -192,6 +196,12 @@ export function TenantsDataTable() {
 
   const buildMenu = (t: Tenant): MenuItem[] => [
     { kind: 'label', text: 'Tezkor amallar' },
+    {
+      kind: 'item',
+      label: 'Nomini o\'zgartirish',
+      icon: <Pencil size={14} />,
+      onSelect: () => { setRenameFor(t); setRenameName(t.name); setRenameSlug(t.slug); },
+    },
     {
       kind: 'item',
       label: 'Tarifni o\'zgartirish',
@@ -355,6 +365,75 @@ export function TenantsDataTable() {
           >Keyingi</button>
         </div>
       </div>
+
+      {/* NOMNI O'ZGARTIRISH.
+          Slug alohida ko'rsatiladi va ogohlantirish bilan — u login uchun
+          ishlatiladi, o'zgartirilsa eski nom bilan kirish to'xtaydi. */}
+      {renameFor && (
+        <div
+          onClick={() => setRenameFor(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 10, padding: 20, width: '100%', maxWidth: 460 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 16 }}>
+              Workspace nomini o'zgartirish
+            </h3>
+
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+              Ko'rinadigan nom
+            </label>
+            <input
+              value={renameName}
+              onChange={e => setRenameName(e.target.value)}
+              style={{ width: '100%', height: 38, padding: '0 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, marginBottom: 16 }}
+            />
+
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+              Slug (login uchun)
+            </label>
+            <input
+              value={renameSlug}
+              onChange={e => setRenameSlug(e.target.value.toLowerCase())}
+              style={{ width: '100%', height: 38, padding: '0 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, fontFamily: 'monospace' }}
+            />
+            {renameSlug !== renameFor.slug && (
+              <p style={{ fontSize: 11, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: 10, marginTop: 8, lineHeight: 1.5 }}>
+                <b>Diqqat:</b> slug login uchun ishlatiladi. O'zgartirilsa, barcha xodim
+                tizimga <b>{renameFor.slug}</b> o'rniga <b>{renameSlug || '...'}</b> deb kiradi.
+                Eski nom bilan kirish to'xtaydi — xodimlarga aytishni unutmang.
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button
+                onClick={() => setRenameFor(null)}
+                style={{ flex: 1, height: 38, borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+              >
+                BEKOR
+              </button>
+              <button
+                disabled={renaming || !renameName.trim()}
+                onClick={async () => {
+                  setRenaming(true);
+                  try {
+                    const patch: any = { name: renameName.trim() };
+                    if (renameSlug && renameSlug !== renameFor.slug) patch.slug = renameSlug;
+                    await tenantsApi.update(renameFor.id, patch);
+                    ui.toast('Nom yangilandi', 'success');
+                    setRenameFor(null);
+                    refresh();
+                  } catch (e: any) {
+                    ui.toast(e?.response?.data?.message || 'Xatolik yuz berdi', 'error');
+                  } finally { setRenaming(false); }
+                }}
+                style={{ flex: 1, height: 38, borderRadius: 8, border: 'none', background: '#f97316', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: renaming ? 0.6 : 1 }}
+              >
+                {renaming ? 'SAQLANMOQDA...' : 'SAQLASH'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Plan picker — opens when "Change Tariff" is selected */}
       {planPickerFor && (

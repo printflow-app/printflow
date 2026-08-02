@@ -53,7 +53,7 @@ const OWNER_ADMIN_ROLE = {
   canManageCustomers: true, canViewInventory: true, canManageInventory: true,
   canViewAttendance: true, canManageAttendance: true, canViewServices: true,
   canManageServices: true, canViewEmployees: true, canManageEmployees: true,
-  canViewRoles: true, canManageRoles: true, canViewSalary: true, canViewTeamTasks: true, canManageTeamTasks: true, canManageAdmins: true,
+  canViewRoles: true, canManageRoles: true, canViewSalary: true, canViewTeamTasks: true, canViewBreakEven: true, canManageTeamTasks: true, canManageAdmins: true,
   canViewKpi: true, canManageBranches: true, canManageNotifications: true,
   canViewExpenseCharts: true, canViewSettings: true, canAssignToOtherBranches: true,
   canManageBilling: true, canViewVendors: true, canViewStatistics: true,
@@ -138,7 +138,7 @@ export class AuthService {
             canManageCustomers: true, canViewInventory: true, canManageInventory: true,
             canViewAttendance: true, canManageAttendance: true, canViewServices: true,
             canManageServices: true,
-            canViewEmployees: true, canManageEmployees: true, canViewRoles: true, canManageRoles: true, canViewSalary: true, canViewTeamTasks: true, canManageTeamTasks: true,
+            canViewEmployees: true, canManageEmployees: true, canViewRoles: true, canManageRoles: true, canViewSalary: true, canViewTeamTasks: true, canViewBreakEven: true, canManageTeamTasks: true,
             canManageAdmins: true, canViewKpi: true, canManageBranches: true, canManageNotifications: true,
             canViewExpenseCharts: true, canViewSettings: true, canAssignToOtherBranches: true,
             canManageBilling: true, canViewVendors: true, canViewStatistics: true,
@@ -305,7 +305,7 @@ export class AuthService {
             canViewEmployees: true,
             canManageEmployees: true,
             canManageRoles: true,
-            canViewSalary: true, canViewTeamTasks: true, canManageTeamTasks: true,
+            canViewSalary: true, canViewTeamTasks: true, canViewBreakEven: true, canManageTeamTasks: true,
           },
         });
 

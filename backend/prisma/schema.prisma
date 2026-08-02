@@ -756,6 +756,10 @@ model Role {
   canViewTasks     Boolean @default(false)
   // Jamoa doskasi (operatsion vazifalar) — buyurtma kanbanidan alohida:
   // u yerda fokus buyurtmada, bu yerda xodimning bandligida.
+  // Zararsizlik nuqtasi — xarajat tarkibi va foyda chegarasi ko'rinadi.
+  // Alohida ruxsat: bu tashkilotning eng nozik moliyaviy ma'lumoti,
+  // umumiy "hisobotlarni ko'rish" huquqi bilan birga berilmasligi kerak.
+  canViewBreakEven   Boolean @default(false)
   canViewTeamTasks   Boolean @default(false)
   canManageTeamTasks Boolean @default(false)
   canCreateTask    Boolean @default(false)
@@ -1372,6 +1376,14 @@ model Task {
 
   columnId String
   column   KanbanColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  // Bitta buyurtmadagi xizmatlarni bog'lovchi kalit.
+  //
+  // Bir buyurtma bir necha xizmatdan iborat bo'lsa, har xizmat alohida
+  // Task bo'ladi. KPI "har buyurtmadan X so'm" deb belgilanganda ular
+  // 3 marta sanalib ketardi. Shu kalit orqali ular bitta buyurtma deb
+  // hisoblanadi.
+  orderGroupId      String?
 
   assignees         String    @default("[]") // JSON: string array
   attachments       String    @default("[]") // JSON: image array

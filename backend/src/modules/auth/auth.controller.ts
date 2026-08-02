@@ -260,7 +260,7 @@ export class AuthController {
           canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
           canManageCustomers: true, canViewInventory: true, canManageInventory: true,
           canViewAttendance: true, canManageAttendance: true, canViewServices: true, canManageServices: true,
-          canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true, canViewTeamTasks: true, canManageTeamTasks: true,
+          canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true, canViewTeamTasks: true, canViewBreakEven: true, canManageTeamTasks: true,
           canUseAi: true,
         };
         return {

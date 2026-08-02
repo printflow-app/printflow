@@ -500,9 +500,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       showStatus('error', "Hamkorni tanlang!");
       return;
     }
-    // Agar tenant'da bo'limlar bo'lsa — bo'lim tanlash majburiy
-    if (departments.length > 0 && !selectedDepartmentId) {
-      showStatus('error', "Bo'limni tanlang!");
+    // Bo'lim majburiy — LEKIN har xizmatga alohida tanlangan bo'lsa,
+    // buyurtma darajasidagisi kerak emas (u holda maydon ham
+    // ko'rsatilmaydi). Aks holda foydalanuvchi ko'rinmaydigan maydonni
+    // to'ldirishi talab qilinardi.
+    const barchaXizmatdaBolim =
+      effectiveItems.length > 0 && effectiveItems.every((it: any) => !!it.departmentId);
+    if (departments.length > 0 && !selectedDepartmentId && !barchaXizmatdaBolim) {
+      showStatus('error', "Bo'limni tanlang — yoki har bir xizmatga alohida belgilang");
       return;
     }
 
@@ -1365,20 +1370,46 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                           {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                       )}
-                      <select
-                        value={(it.assigneeIds || [])[0] || ''}
-                        onChange={e => updateItemField(idx, 'assigneeIds', e.target.value ? [e.target.value] : [])}
-                        className="select-minimal h-9 text-xs font-bold"
-                      >
-                        <option value="">Mas'ul — buyurtmadagidek</option>
-                        {employees.map((e: any) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
-                      </select>
-                      <input
-                        type="text"
+                      {/* MAS'ULLAR — bittadan ko'p bo'lishi mumkin.
+                          Ilgari faqat bitta tanlanardi; amalda bitta
+                          xizmatni ikki kishi birga bajarishi odatiy. */}
+                      <div className="sm:col-span-1">
+                        <div className="flex flex-wrap gap-1.5">
+                          {employees.map((e: any) => {
+                            const on = (it.assigneeIds || []).includes(e.id);
+                            return (
+                              <button
+                                key={e.id}
+                                type="button"
+                                onClick={() => {
+                                  const cur = it.assigneeIds || [];
+                                  updateItemField(idx, 'assigneeIds',
+                                    on ? cur.filter((x: string) => x !== e.id) : [...cur, e.id]);
+                                }}
+                                className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                                  on ? 'bg-orange-500 text-white border-transparent'
+                                     : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                                }`}
+                              >
+                                {e.fullName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {(it.assigneeIds || []).length === 0 && (
+                          <p className="text-[9px] font-bold text-slate-400 mt-1">
+                            Tanlanmasa — buyurtmadagi mas'ullar
+                          </p>
+                        )}
+                      </div>
+
+                      {/* IZOH — textarea, chunki bu ko'rsatma bo'lishi mumkin */}
+                      <textarea
+                        rows={2}
                         value={it.description || ''}
                         onChange={e => updateItemField(idx, 'description', e.target.value)}
-                        placeholder="Shu xizmat uchun izoh (ixtiyoriy)"
-                        className="input-minimal h-9 text-xs sm:col-span-2"
+                        placeholder="Shu xizmat uchun izoh / ko'rsatma (ixtiyoriy)"
+                        className="input-minimal text-xs sm:col-span-2 resize-y py-2"
                       />
                     </div>
                   </div>
@@ -1702,7 +1733,16 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
               {/* Department (Bo'lim) — bo'lim bor bo'lsa MAJBURIY (buyurtmani filtrash uchun).
                   Visible only if the active branch has at least one department defined. */}
-              {departments.length > 0 && (
+              {/* BUYURTMA DARAJASIDAGI BO'LIM.
+                  Har xizmatga alohida bo'lim tanlangan bo'lsa, bu yerda
+                  qayta so'rash ortiqcha — ikki joyda bir narsani tanlab
+                  o'tirish chalkashtiradi va ziddiyat ehtimolini tug'diradi.
+                  Shuning uchun barcha xizmatda bo'lim ko'rsatilgan bo'lsa,
+                  bu blok yashiriladi. */}
+              {departments.length > 0 && !(
+                newTaskForm.items.length > 0 &&
+                newTaskForm.items.every((it: any) => !!it.departmentId)
+              ) && (
                 <div className="space-y-2 mt-5 mb-7">
                   <label className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
                     <Layers size={11} /> Bo'lim <span className="text-rose-500">*</span>

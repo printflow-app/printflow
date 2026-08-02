@@ -95,8 +95,10 @@ export function useExpenseTypes() {
 export function useDepartments(branchId: string | undefined) {
   return useQuery({
     queryKey: qk.departments(branchId || ''),
-    queryFn: async () => (await departmentsApi.findAll(branchId!)).data as any[],
-    enabled: !!branchId,
+    queryFn: async () => (await departmentsApi.findAll(branchId as any)).data as any[],
+    // branchId bo'lmasa ham so'raymiz — backend bunday holatda tenantning
+    // barcha bo'limlarini qaytaradi. Ilgari so'rov umuman yuborilmasdi va
+    // bo'lim tanlash maydonlari yashirinib qolardi.
     staleTime: 5 * 60_000,
   });
 }

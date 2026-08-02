@@ -71,7 +71,7 @@ export class SalaryMetricsService {
         },
         select: {
           assignees: true, totalAmount: true, quantity: true,
-          departmentId: true, createdAt: true,
+          departmentId: true, createdAt: true, orderGroupId: true, id: true,
         },
       }),
 
@@ -171,6 +171,18 @@ export class SalaryMetricsService {
       if (d && !isNaN(d.getTime())) kpiStart = d;
     } catch {}
 
+    // "BUYURTMA" NIMANI ANGLATADI — ikki xil sanash.
+    //
+    // Bir buyurtma bir necha xizmatdan iborat bo'lishi mumkin (vizitka +
+    // banner + futbolka) va har xizmat alohida Task bo'ladi. "Har buyurtmadan
+    // 10 000 so'm" deb belgilanganda bu 30 000 bo'lib ketardi — aslida u
+    // BITTA buyurtma.
+    //
+    // Shuning uchun ikkita alohida ko'rsatkich bor va tashkilot o'zi tanlaydi:
+    //   bajarilgan_buyurtma_soni   — har xizmat alohida (ishbay uchun)
+    //   bajarilgan_buyurtma_guruh  — xizmatlar birga (buyurtma boshiga)
+    const guruhlar = new Map<string, Set<string>>();
+
     const wanted = new Set(employeeIds);
     for (const t of tasks) {
       // Buyurtma KPI'ga o'tishdan oldin qabul qilingan bo'lsa — o'tkazamiz.
@@ -187,6 +199,10 @@ export class SalaryMetricsService {
         if (!inScope(id, t.departmentId)) continue;
         const mv = out[id];
         mv.bajarilgan_buyurtma_soni += 1;
+        // Guruh kaliti bo'lmasa (bitta xizmatli yoki eski yozuv) — task
+        // id'sining o'zi kalit bo'ladi, ya'ni u yakka buyurtma sanaladi.
+        if (!guruhlar.has(id)) guruhlar.set(id, new Set());
+        guruhlar.get(id).add(t.orderGroupId || t.id);
         mv.bajarilgan_buyurtma_summasi += t.totalAmount || 0;
         mv.bajarilgan_buyurtma_miqdori += t.quantity || 0;
       }
@@ -206,6 +222,7 @@ export class SalaryMetricsService {
       // davomat uchun +1 mln" shartini "ish_kunlari >= 26" deb yozib
       // bo'lmaydi — har oyda grafik kunlari soni har xil. "davomat_foizi
       // >= 100" esa har oyda to'g'ri ishlaydi.
+      out[id].bajarilgan_buyurtma_guruh = guruhlar.get(id)?.size || 0;
       out[id].qoldirilgan_kunlar = Math.max(0, norma - out[id].ish_kunlari);
       out[id].davomat_foizi = norma > 0
         ? Math.round((out[id].ish_kunlari / norma) * 100)

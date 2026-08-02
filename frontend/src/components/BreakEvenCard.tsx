@@ -25,11 +25,19 @@ const fmt = (n: any) =>
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-/** Bitta bo'lim (yoki umumiy) uchun progress qatori. */
+/**
+ * Bitta bo'lim (yoki umumiy) uchun progress qatori.
+ *
+ * BO'SH BO'LIMLAR HAM KO'RSATILADI. Ilgari xarajati va tushumi nol bo'lgan
+ * bo'lim yashirilardi — natijada tashkilotda bo'limlar bo'la turib kartada
+ * faqat "Umumiy" va "Bo'limsiz" ko'rinib, hamma narsa buzilgandek
+ * taassurot qoldirardi. Nol ham ma'lumot: "bu bo'lim shu oy hali hech
+ * narsa qilmadi" degani.
+ */
 const ScopeRow: React.FC<{ s: any; asosiy?: boolean }> = ({ s, asosiy }) => {
   const done = !!s.nolga_chiqdi;
   const pct = Math.max(0, Math.min(100, Number(s.foiz) || 0));
-  if (!asosiy && s.kerakli_qoplama === 0 && s.tushum === 0) return null;
+  const bosh = s.kerakli_qoplama === 0 && s.tushum === 0;
 
   return (
     <div className={asosiy ? '' : 'pt-3 mt-3 border-t border-slate-100'}>
@@ -37,8 +45,8 @@ const ScopeRow: React.FC<{ s: any; asosiy?: boolean }> = ({ s, asosiy }) => {
         <span className={`font-bold ${asosiy ? 'text-[13px] text-slate-800' : 'text-xs text-slate-600'}`}>
           {s.nom}
         </span>
-        <span className={`text-[10px] font-bold ${done ? 'text-emerald-600' : 'text-slate-400'}`}>
-          {done ? 'nolga chiqdi' : `${pct}%`}
+        <span className={`text-[10px] font-bold ${bosh ? 'text-slate-300' : done ? 'text-emerald-600' : 'text-slate-400'}`}>
+          {bosh ? "ma'lumot yo'q" : done ? 'nolga chiqdi' : `${pct}%`}
         </span>
       </div>
       <div className={`w-full bg-slate-100 rounded-full overflow-hidden ${asosiy ? 'h-3' : 'h-1.5'}`}>
@@ -50,7 +58,11 @@ const ScopeRow: React.FC<{ s: any; asosiy?: boolean }> = ({ s, asosiy }) => {
       <div className="flex justify-between mt-1 text-[10px] font-bold">
         <span className="text-slate-500">{fmt(s.tushum)} tushdi</span>
         <span className="text-slate-400">
-          {s.qolgan_summa > 0 ? `${fmt(s.qolgan_summa)} qoldi` : `${fmt(s.kerakli_qoplama)} kerak edi`}
+          {bosh
+            ? "xarajat ham, tushum ham biriktirilmagan"
+            : s.qolgan_summa > 0
+              ? `${fmt(s.qolgan_summa)} qoldi`
+              : `${fmt(s.kerakli_qoplama)} kerak edi`}
         </span>
       </div>
     </div>
@@ -132,6 +144,23 @@ const BreakEvenCard: React.FC = () => {
         </div>
       </div>
 
+      {/* "Bo'limsiz" da katta pul turgani odatda xato emas — shunchaki
+          xarajat/tushum kiritilayotganda bo'lim ko'rsatilmagan. Buni
+          aytmasak, rahbar "nega bo'limlarim bo'sh?" deb hayron qoladi. */}
+      {(() => {
+        const bs = (data.bolimlar || []).find((b: any) => b.id === null);
+        const bor = (data.bolimlar || []).some((b: any) => b.id !== null);
+        if (!bs || !bor || (bs.kerakli_qoplama === 0 && bs.tushum === 0)) return null;
+        return (
+          <p className="mt-3 text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-2.5 leading-relaxed">
+            <b className="text-slate-700">"Bo'limsiz"</b> — bo'limi ko'rsatilmagan xarajat va
+            tushum. Ular hech qaysi bo'lim hisobiga kirmaydi. Bo'limlar bo'yicha aniq
+            taqsimot uchun Kassada kirim/chiqim kiritayotganda bo'limni tanlang, yoki
+            bu yerda qo'lda xarajat qo'shib har biriga bo'lim belgilang.
+          </p>
+        );
+      })()}
+
       {!data.malumot_yetarli && (
         <p className="mt-3 text-[10px] font-semibold text-amber-600 flex items-start gap-1.5 leading-relaxed">
           <AlertCircle size={11} className="mt-0.5 shrink-0" /> {data.izoh}
@@ -141,7 +170,7 @@ const BreakEvenCard: React.FC = () => {
       {/* ── XARAJAT TAHRIRLASH ────────────────────────────────────── */}
       {editing && (
         <div className="fixed inset-0 z-[80] bg-slate-900/40 flex items-center justify-center p-4" onClick={() => setEditing(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[88vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <p className="text-sm font-bold text-slate-800">Xarajatlar</p>
               <button onClick={() => setEditing(false)} className="text-slate-300 hover:text-slate-600"><X size={18} /></button>
@@ -164,63 +193,125 @@ const BreakEvenCard: React.FC = () => {
                 ))}
               </div>
 
-              {/* Jadval */}
-              <div className="space-y-2">
-                {rows.length === 0 && (
-                  <p className="text-[11px] font-semibold text-slate-400 text-center py-6">
-                    Xarajat qo'shilmagan
-                  </p>
-                )}
-                {rows.map((r, i) => (
-                  <div key={r.id} className="grid grid-cols-12 gap-2 items-center">
-                    <input
-                      value={r.nom} placeholder="Nomi (ijara, maosh...)"
-                      onChange={e => setRows(rows.map((x, j) => j === i ? { ...x, nom: e.target.value } : x))}
-                      className="input-minimal h-9 text-xs col-span-4"
-                    />
-                    <input
-                      type="number" value={r.summa} placeholder="Summa"
-                      onChange={e => setRows(rows.map((x, j) => j === i ? { ...x, summa: Number(e.target.value) } : x))}
-                      className="input-minimal h-9 text-xs col-span-3 text-right"
-                    />
-                    <select
-                      value={r.tur}
-                      onChange={e => setRows(rows.map((x, j) => j === i ? { ...x, tur: e.target.value } : x))}
-                      className="select-minimal h-9 text-[11px] col-span-2"
-                    >
-                      <option value="doimiy">Har oy</option>
-                      <option value="vaqtinchalik">Vaqti-vaqti</option>
-                    </select>
-                    {r.tur === 'vaqtinchalik' ? (
-                      <input
-                        type="number" value={r.oyda_bir || 12} min={1} title="Necha oyda bir marta"
-                        onChange={e => setRows(rows.map((x, j) => j === i ? { ...x, oyda_bir: Number(e.target.value) } : x))}
-                        className="input-minimal h-9 text-xs col-span-1 text-center"
-                      />
-                    ) : <div className="col-span-1" />}
-                    <select
-                      value={r.departmentId || ''}
-                      onChange={e => setRows(rows.map((x, j) => j === i ? { ...x, departmentId: e.target.value || null } : x))}
-                      className="select-minimal h-9 text-[11px] col-span-1"
-                    >
-                      <option value="">Umumiy</option>
-                      {(departments as any[]).map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                    <button
-                      onClick={() => setRows(rows.filter((_, j) => j !== i))}
-                      className="col-span-1 text-slate-300 hover:text-rose-500 flex justify-center"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
+              {/* JADVAL — sarlavhali ustunlar bilan. Ilgari qatorlar
+                  sarlavhasiz turardi va qaysi maydon nima ekani faqat
+                  placeholder'dan bilinardi; to'ldirilgach u ham yo'qolardi. */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5">Xarajat nomi</th>
+                        <th className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5 text-right w-36">Summa</th>
+                        <th className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5 w-32">Qanchalik tez-tez</th>
+                        <th className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5 w-24 text-center">Necha oyda</th>
+                        <th className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5 w-40">Bo'lim</th>
+                        <th className="w-10" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {rows.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="text-[11px] font-semibold text-slate-400 text-center py-8">
+                            Xarajat qo'shilmagan
+                          </td>
+                        </tr>
+                      )}
+                      {rows.map((r, i) => {
+                        const upd = (patch: any) => setRows(rows.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+                        // Oylik ulush — kiritayotgan odam natijani darrov ko'rsin.
+                        const oylik = r.tur === 'vaqtinchalik'
+                          ? Math.round((Number(r.summa) || 0) / Math.max(1, Number(r.oyda_bir) || 12))
+                          : Number(r.summa) || 0;
+                        return (
+                          <tr key={r.id} className="hover:bg-slate-50/60">
+                            <td className="px-3 py-2">
+                              <input
+                                value={r.nom} placeholder="Ijara, maosh, kommunal..."
+                                onChange={e => upd({ nom: e.target.value })}
+                                className="input-minimal h-9 text-xs w-full"
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                type="number" value={r.summa || ''} placeholder="0"
+                                onChange={e => upd({ summa: Number(e.target.value) })}
+                                className="input-minimal h-9 text-xs w-full text-right tabular-nums"
+                              />
+                              {r.tur === 'vaqtinchalik' && oylik > 0 && (
+                                <p className="text-[9px] font-bold text-orange-500 text-right mt-0.5">
+                                  = {fmt(oylik)}/oy
+                                </p>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              <select
+                                value={r.tur}
+                                onChange={e => upd({ tur: e.target.value })}
+                                className="select-minimal h-9 text-[11px] w-full"
+                              >
+                                <option value="doimiy">Har oy</option>
+                                <option value="vaqtinchalik">Vaqti-vaqti</option>
+                              </select>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              {r.tur === 'vaqtinchalik' ? (
+                                <input
+                                  type="number" min={1} value={r.oyda_bir || 12}
+                                  onChange={e => upd({ oyda_bir: Number(e.target.value) })}
+                                  className="input-minimal h-9 text-xs w-full text-center"
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-300">—</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              <select
+                                value={r.departmentId || ''}
+                                onChange={e => upd({ departmentId: e.target.value || null })}
+                                className="select-minimal h-9 text-[11px] w-full"
+                              >
+                                <option value="">Umumiy (barcha bo'lim)</option>
+                                {(departments as any[]).map((d: any) => (
+                                  <option key={d.id} value={d.id}>{d.name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-2 py-2 text-center">
+                              <button
+                                onClick={() => setRows(rows.filter((_, j) => j !== i))}
+                                className="text-slate-300 hover:text-rose-500 transition-colors"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
                 <button
                   onClick={() => setRows([...rows, { id: uid(), nom: '', summa: 0, tur: 'doimiy', departmentId: null }])}
-                  className="w-full h-9 rounded-xl border-2 border-dashed border-slate-200 text-[11px] font-bold text-slate-500 hover:border-orange-400 hover:text-orange-600 flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full h-10 border-t border-slate-200 text-[11px] font-bold text-slate-500 hover:text-orange-600 hover:bg-orange-50/50 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Plus size={13} /> Xarajat qo'shish
                 </button>
               </div>
+
+              {/* Jami — kiritilganlarning oylik yig'indisi */}
+              {rows.length > 0 && (
+                <div className="flex justify-between items-baseline px-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Qo'lda kiritilganlar, oyiga
+                  </span>
+                  <span className="text-sm font-bold text-slate-800 tabular-nums">
+                    {fmt(rows.reduce((s, r) => s + (r.tur === 'vaqtinchalik'
+                      ? (Number(r.summa) || 0) / Math.max(1, Number(r.oyda_bir) || 12)
+                      : Number(r.summa) || 0), 0))} so'm
+                  </span>
+                </div>
+              )}
 
               <p className="text-[10px] font-semibold text-slate-400 leading-relaxed">
                 "Vaqti-vaqti" tanlansa, summa necha oyda bir marta bo'lishiga bo'linib,
@@ -228,6 +319,12 @@ const BreakEvenCard: React.FC = () => {
                 soxta foyda ko'rinardi. Bo'lim tanlansa xarajat faqat o'sha bo'limning
                 nolga chiqishiga ta'sir qiladi.
               </p>
+              {departments.length === 0 && (
+                <p className="text-[10px] font-semibold text-amber-600 leading-relaxed">
+                  Bo'limlar hali yaratilmagan — Filiallar sahifasida qo'shsangiz,
+                  xarajatlarni ular bo'yicha ajratish mumkin bo'ladi.
+                </p>
+              )}
             </div>
 
             <div className="flex gap-3 p-5 border-t border-slate-100">

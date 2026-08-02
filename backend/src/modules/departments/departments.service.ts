@@ -5,11 +5,27 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class DepartmentsService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Bo'limlar ro'yxati.
+   *
+   * `branchId` berilmasa — tenantning BARCHA bo'limlari qaytadi.
+   *
+   * Ilgari u majburiy edi va berilmasa xato qaytarardi. Natijada filial
+   * tanlanmagan holatda (yoki "Barcha filiallar" ko'rinishida) ro'yxat bo'sh
+   * kelib, bo'lim tanlash maydonlari butun tizim bo'ylab YASHIRINIB ketardi —
+   * Kassadagi chiqim formasi, zararsizlik nuqtasi jadvali va boshqalar.
+   * Foydalanuvchi "bo'lim tanlash yo'q" deb ko'rardi, aslida u shunchaki
+   * chizilmagan edi.
+   */
   async findAll(branchId?: string) {
-    if (!branchId) throw new BadRequestException('branchId majburiy');
-    const scope = branchId === '__main__' ? null : branchId;
+    const where =
+      branchId === '__main__'
+        ? { branchId: null }
+        : branchId && branchId !== '__all__'
+          ? { branchId }
+          : {}; // ko'rsatilmagan yoki "barcha filial" — hammasi
     return (this.prisma as any).department.findMany({
-      where: scope ? { branchId: scope } : { branchId: null },
+      where,
       orderBy: { name: 'asc' },
     });
   }
