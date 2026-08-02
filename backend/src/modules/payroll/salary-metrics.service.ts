@@ -58,12 +58,21 @@ export class SalaryMetricsService {
 
       // Bajarilgan buyurtmalar — completedAt bo'yicha (updatedAt EMAS: u har
       // tahrirda o'zgaradi va oyni noto'g'ri ko'rsatardi).
+      //
+      // NEGA completedAt: KPI buyurtma TOPSHIRILGANDA yoziladi, qabul
+      // qilinganda emas. Buyurtma yo'lda bekor bo'lib ketishi mumkin —
+      // bajarilmagan ish uchun pul berib bo'lmaydi. Shuning uchun oy
+      // oxirida olingan buyurtma keyingi oy tayyor bo'lsa, KPI keyingi
+      // oyga yoziladi.
       this.prisma.task.findMany({
         where: {
           isArchived: false,
           completedAt: { gte: start, lte: end },
         },
-        select: { assignees: true, totalAmount: true, quantity: true, departmentId: true },
+        select: {
+          assignees: true, totalAmount: true, quantity: true,
+          departmentId: true, createdAt: true,
+        },
       }),
 
       // groupBy emas — har yozuvning bo'limi kerak (xodim faqat o'z
@@ -146,8 +155,26 @@ export class SalaryMetricsService {
       return mine.has(deptId);
     };
 
+    // KPI BOSHLANISH SANASI — bir martalik o'tish qoidasi.
+    //
+    // Tashkilot KPI'ga o'tganda, o'tishdan OLDIN qabul qilingan buyurtmalar
+    // hisobga olinmasligi kerak: o'sha ishlar boshqa shartlarda olingan va
+    // ular uchun KPI va'da qilinmagan edi. Aks holda o'tgan oylardagi butun
+    // arxiv birinchi oyning maoshiga qo'shilib ketardi.
+    //
+    // Sana `KPI_START_DATE` sozlamasidan olinadi (Sozlamalar → Maosh).
+    // Belgilanmagan bo'lsa cheklov yo'q — eski xulq saqlanadi.
+    let kpiStart: Date | null = null;
+    try {
+      const raw = await this.settings.get('KPI_START_DATE');
+      const d = raw ? new Date(typeof raw === 'string' ? raw : raw?.value) : null;
+      if (d && !isNaN(d.getTime())) kpiStart = d;
+    } catch {}
+
     const wanted = new Set(employeeIds);
     for (const t of tasks) {
+      // Buyurtma KPI'ga o'tishdan oldin qabul qilingan bo'lsa — o'tkazamiz.
+      if (kpiStart && t.createdAt < kpiStart) continue;
       let ids: string[] = [];
       try {
         const parsed = JSON.parse(t.assignees || '[]');

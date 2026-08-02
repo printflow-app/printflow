@@ -144,6 +144,42 @@ export class AttendanceService {
     return Math.max(0, checkInMins - workStartMins);
   }
 
+  /**
+   * QO'SHIMCHA ISH VAQTI (daqiqa).
+   *
+   * Ilgari kechikish hisoblanardi, lekin ortiqcha ishlagan vaqt hech qayerda
+   * yozilmasdi — ya'ni kech kelganga jarima bor edi, kech ketganga bonus
+   * yo'q. Xodim kechikkanini qo'shimcha ishlab qoplay olmasdi.
+   *
+   * Ikki manba:
+   *  1. Ish kunida ish tugash vaqtidan keyin qolgan daqiqalar
+   *  2. Dam olish kunida ishlagan BUTUN vaqt — o'sha kun grafikda yo'q,
+   *     demak hammasi qo'shimcha
+   */
+  private async calculateOvertimeMinutes(checkIn: Date, checkOut: Date): Promise<number> {
+    const endSetting = (await this.settings.get('workEnd')) || DEFAULT_WORK_END;
+    const startSetting = (await this.settings.get('workStart')) || DEFAULT_WORK_START;
+    const workDays = (await this.settings.get('workDays')) || DEFAULT_WORK_DAYS;
+
+    const inUTC5 = new Date(checkIn.getTime() + 5 * 3600000);
+    const outUTC5 = new Date(checkOut.getTime() + 5 * 3600000);
+    const worked = Math.round((checkOut.getTime() - checkIn.getTime()) / 60000);
+    if (worked <= 0) return 0;
+
+    // Dam olish kuni — butun smena qo'shimcha hisoblanadi.
+    if (!workDays.includes(inUTC5.getUTCDay())) return worked;
+
+    const outMins = outUTC5.getUTCHours() * 60 + outUTC5.getUTCMinutes();
+    const endMins = endSetting.hour * 60 + endSetting.minute;
+    // Yarim tundan oshib ketgan smena: chiqish vaqti kirishdan kichik
+    // bo'lsa, sutka aylangan — qolgan vaqtni to'g'ri hisoblash uchun
+    // ish tugashidan keyingi barcha vaqtni olamiz.
+    const inMins = inUTC5.getUTCHours() * 60 + inUTC5.getUTCMinutes();
+    if (outMins < inMins) return Math.max(0, worked - Math.max(0, endMins - inMins));
+
+    return Math.max(0, outMins - endMins);
+  }
+
   // ============ PUBLIC: SCAN ENDPOINTS ============
 
   /**
@@ -182,7 +218,14 @@ export class AttendanceService {
           // Allaqachon kelgan — ketishni qayd qilamiz
           return this.prisma.attendanceRecord.update({
             where: { id: existing.id },
-            data: { checkOut: now },
+            // Qo'shimcha ish vaqti aynan chiqishda hisoblanadi — kirish
+            // paytida u hali ma'lum emas.
+            data: {
+              checkOut: now,
+              overtimeMinutes: existing.checkIn
+                ? await this.calculateOvertimeMinutes(existing.checkIn, now)
+                : 0,
+            },
             include: { employee: true },
           });
         }
@@ -276,7 +319,14 @@ export class AttendanceService {
           // Ketish (check-out) — GPS tekshirmasdan
           const updated = await this.prisma.attendanceRecord.update({
             where: { id: existing.id },
-            data: { checkOut: now },
+            // Qo'shimcha ish vaqti aynan chiqishda hisoblanadi — kirish
+            // paytida u hali ma'lum emas.
+            data: {
+              checkOut: now,
+              overtimeMinutes: existing.checkIn
+                ? await this.calculateOvertimeMinutes(existing.checkIn, now)
+                : 0,
+            },
             include: { employee: true },
           });
 
@@ -334,6 +384,13 @@ export class AttendanceService {
           }
         }
 
+        // Qo'lda kiritishda ham qo'shimcha vaqt hisoblanadi — aks holda
+        // rahbar davomatni qo'lda to'g'rilaganda bonus yo'qolib qolardi.
+        let overtimeMinutes = 0;
+        if (checkInDate && checkOutDate) {
+          overtimeMinutes = await this.calculateOvertimeMinutes(checkInDate, checkOutDate);
+        }
+
         const existing = await this.prisma.attendanceRecord.findFirst({
           where: { employeeId: data.employeeId, date: data.date },
         });
@@ -343,7 +400,7 @@ export class AttendanceService {
             where: { id: existing.id },
             data: {
               ...(checkInDate !== null && { checkIn: checkInDate, lateMinutes }),
-              ...(checkOutDate !== null && { checkOut: checkOutDate }),
+              ...(checkOutDate !== null && { checkOut: checkOutDate, overtimeMinutes }),
             },
             include: { employee: { include: { role: true } } },
           });
@@ -356,6 +413,7 @@ export class AttendanceService {
             checkIn: checkInDate,
             checkOut: checkOutDate,
             lateMinutes,
+            overtimeMinutes,
           } as any,
           include: { employee: { include: { role: true } } },
         });

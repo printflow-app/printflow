@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { Plus, Trash2, Pencil, Wallet, TrendingUp, AlertTriangle, X, Check, HelpCircle } from 'lucide-react';
-import { payrollApi, rolesApi } from '../api';
+import { payrollApi, rolesApi, settingsApi } from '../api';
 import CurrencyInput from './CurrencyInput';
 
 // =============================================
@@ -41,6 +41,80 @@ interface Component {
 
 /** Pul o'lchaydigan metrikalar — faqat ular uchun "foiz" varianti mantiqiy. */
 const MONEY_METRICS = new Set(['bajarilgan_buyurtma_summasi', 'kirim_summasi']);
+
+/**
+ * KPI QAYSI SANADAN BOSHLAB HISOBLANADI.
+ *
+ * Tashkilot KPI'ga o'tganda, o'tishdan oldin qabul qilingan buyurtmalar
+ * hisobga olinmasligi kerak — ular boshqa shartlarda olingan va ular uchun
+ * KPI va'da qilinmagan. Busiz butun eski arxiv birinchi oyning maoshiga
+ * qo'shilib ketadi.
+ */
+const KpiStartDate: React.FC = () => {
+  const [value, setValue] = useState('');
+  const [saved, setSaved] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    settingsApi.get('KPI_START_DATE')
+      .then((r: any) => {
+        const v = typeof r.data === 'string' ? r.data : r.data?.value || '';
+        const d = v ? String(v).slice(0, 10) : '';
+        setValue(d); setSaved(d);
+      })
+      .catch(() => {});
+  }, []);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await settingsApi.set('KPI_START_DATE', value || null);
+      setSaved(value);
+      toast.success(value ? `KPI ${value} dan boshlab hisoblanadi` : 'Cheklov olib tashlandi');
+    } catch {
+      toast.error('Saqlashda xatolik');
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
+        KPI qaysi sanadan boshlab hisoblanadi
+      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="date"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          className="input-minimal h-10 text-sm font-bold w-auto"
+        />
+        {value !== saved && (
+          <button onClick={save} disabled={busy} className="btn-primary h-10 px-4 text-xs">
+            {busy ? 'Saqlanmoqda...' : 'Saqlash'}
+          </button>
+        )}
+        {value && (
+          <button
+            onClick={() => setValue('')}
+            className="h-10 px-3 text-[11px] font-bold text-slate-400 hover:text-rose-500"
+          >
+            Tozalash
+          </button>
+        )}
+      </div>
+      <p className="text-[10px] font-semibold text-slate-400 mt-2 leading-relaxed">
+        {value
+          ? `Shu sanadan OLDIN qabul qilingan buyurtmalar KPI'ga kirmaydi — ular boshqa shartlarda olingan. Sanadan keyin qabul qilinganlari esa BAJARILGANDA hisoblanadi.`
+          : `Belgilanmasa barcha buyurtmalar hisobga olinadi, jumladan KPI joriy qilinishidan oldingilari ham.`}
+      </p>
+      <p className="text-[10px] font-semibold text-slate-400 mt-1.5 leading-relaxed">
+        KPI buyurtma <b>topshirilganda</b> yoziladi, qabul qilinganda emas — yo'lda
+        bekor bo'lgan ish uchun pul berilmaydi. Shuning uchun oy oxirida olingan
+        buyurtma keyingi oy tayyor bo'lsa, KPI keyingi oyga tushadi.
+      </p>
+    </div>
+  );
+};
 
 // =============================================
 // TANLOV NIMANI ANGLATADI
@@ -301,6 +375,8 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
   return (
     <div className="space-y-4 animate-fade-in">
+      <KpiStartDate />
+
       {/* 1-qadam: lavozim */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
         <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
