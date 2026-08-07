@@ -303,6 +303,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           )}
           {canAddItem && (
             <button
+              data-tour-id="material-add"
               onClick={() => setIsAddMaterialOpen(true)}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
             >

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { Plus, Trash2, Pencil, Wallet, TrendingUp, AlertTriangle, X, Check, HelpCircle } from 'lucide-react';
 import { payrollApi, rolesApi, settingsApi } from '../api';
 import CurrencyInput from './CurrencyInput';
+import ConfirmModal from './ConfirmModal';
 
 // =============================================
 // MAOSH SXEMASI — lavozim uchun oylik hisobni belgilash.
@@ -212,6 +213,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
   const [adding, setAdding] = useState<Component | null>(null);
   const [picking, setPicking] = useState(false);
   const [openInfo, setOpenInfo] = useState<string | null>(null);
+  const [ochirishSoraldi, setOchirishSoraldi] = useState(false);
 
   const { data: metrics = [] } = useQuery({
     queryKey: ['payroll-metrics'],
@@ -267,7 +269,12 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
       qc.invalidateQueries({ queryKey: ['payroll'] });
       setComponents([]);
       setDirty(false);
+      setOchirishSoraldi(false);
       toast.success("Sxema o'chirildi — maosh yana qo'lda yoziladi");
+    },
+    onError: (e: any) => {
+      setOchirishSoraldi(false);
+      toast.error(e?.response?.data?.message || "O'chirishda xatolik");
     },
   });
 
@@ -743,10 +750,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
               <div className="flex gap-2">
                 {scheme && canManage && (
                   <button
-                    onClick={() => {
-                      if (!confirm(`"${role?.name}" sxemasi o'chirilsinmi? Maosh yana qo'lda yoziladi.`)) return;
-                      delMut.mutate();
-                    }}
+                    onClick={() => setOchirishSoraldi(true)}
                     className="h-10 px-4 text-[12px] font-bold uppercase tracking-wider text-rose-600 hover:bg-rose-50 rounded-xl"
                   >
                     O'chirish
@@ -764,6 +768,20 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
           )}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={ochirishSoraldi}
+        title="Sxemani o'chirish"
+        message={<>
+          <span className="font-bold text-slate-800">{role?.name}</span> lavozimining maosh
+          sxemasi o'chiriladi. Bu lavozimdagi xodimlarning maoshi yana qo'lda yoziladi.
+        </>}
+        confirmText="O'chirish"
+        danger
+        busy={delMut.isPending}
+        onConfirm={() => delMut.mutate()}
+        onClose={() => setOchirishSoraldi(false)}
+      />
     </div>
   );
 };

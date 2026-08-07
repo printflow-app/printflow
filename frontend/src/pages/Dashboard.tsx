@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, FileText, Home } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, FileText, Home, HelpCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { authApi, employeesApi, branchesApi, billingApi } from '../api';
 import logo from '../assets/logo.png';
@@ -9,6 +9,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import AICopilot from '../components/AICopilot/AICopilot';
 import { OnboardingWizard, isOnboardingComplete } from '../components/OnboardingWizard';
 import { OnboardingTour, isTourComplete } from '../components/OnboardingTour';
+import { PageTour } from '../components/PageTour';
+import { hasPageTour } from '../components/pageTours';
 import { CommandPalette } from '../components/CommandPalette';
 import { ReleaseTour } from '../components/ReleaseNotes';
 import { useSidebarCounts, markTabSeen } from '../hooks/useSidebarCounts';
@@ -59,6 +61,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
   // Reliz tour'i — endi o'z-o'zidan chiqmaydi, faqat foydalanuvchi ochsa.
   const [releaseTourOpen, setReleaseTourOpen] = useState(false);
+
+  // Sahifa qo'llanmasi — faqat foydalanuvchi "Yo'l-yo'riq" ni bosganda.
+  const [pageTourOpen, setPageTourOpen] = useState(false);
 
   // Onboarding wizard — eski 3-qadamli forma (saqlangan, lekin endi default tour)
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
@@ -485,6 +490,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     setActiveTab(id);
     localStorage.setItem('pf_active_tab', id);
     setIsSidebarOpen(false);
+    // Sahifa qo'llanmasi o'sha sahifaga bog'liq — boshqasiga o'tilsa
+    // yopiladi, aks holda eski sahifaning qadamlari osilib qolardi.
+    setPageTourOpen(false);
     // Tabni ochganda uni "ko'rilgan" deb belgilaymiz va badge'larni yangilaymiz.
     markTabSeen(id);
     refreshSidebarCounts();
@@ -788,6 +796,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         />
       )}
 
+      {/* Sahifa qo'llanmasi — joriy sahifa uchun qisqa yo'l-yo'riq */}
+      {pageTourOpen && (
+        <PageTour tab={activeTab} onClose={() => setPageTourOpen(false)} />
+      )}
+
       {/* Yangilanish tour'i — "nima o'zgardi" qadamma-qadam */}
       {releaseTourOpen && currentUser?.tenantId && (
         <ReleaseTour
@@ -821,6 +834,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           </h2>
 
           <div className="flex items-center gap-2">
+
+            {/* SAHIFA QO'LLANMASI — shu sahifa nima qilishini va qaysi
+                tugma nimaga kerakligini joyida ko'rsatadi. Sozlash tour'i
+                (OnboardingTour) dan mustaqil: u bir martalik, bu esa
+                istalgan payt ochiladi. Qo'llanmasi yo'q sahifada tugma
+                ham chiqmaydi. */}
+            {hasPageTour(activeTab) && !lockedTabs.has(activeTab) && (
+              <button
+                onClick={() => setPageTourOpen(true)}
+                className="btn-outline h-sm text-slate-500"
+                title="Shu sahifa bo'yicha yo'l-yo'riq"
+              >
+                <HelpCircle size={14} />
+                <span className="hidden xl:inline">Yo'l-yo'riq</span>
+              </button>
+            )}
 
             {/* Price list — hamma uchun ochiq (ruxsat talab qilinmaydi) */}
             <button

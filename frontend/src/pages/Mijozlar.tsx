@@ -339,6 +339,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           )}
           {canAdd && (
             <button
+              data-tour-id="mijoz-add"
               onClick={openAdd}
               className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all"
             >

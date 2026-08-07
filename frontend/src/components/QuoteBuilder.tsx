@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { PriceListData, PriceOption, PriceService } from './PriceListView';
 import { QuoteView, QuoteLine, QuoteData } from './QuoteView';
+import ConfirmModal from './ConfirmModal';
 
 // =============================================
 // QuoteBuilder — mijoz mahsulot tanlab, sonini kiritib, narxni live ko'radi.
@@ -151,10 +152,13 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
     setCart(prev => prev.filter(l => l.id !== lineId));
   };
 
+  // Savatni tozalash — tasdiqlash bilan. Brauzer `confirm()` i emas:
+  // u mobil brauzerlarda bloklangan bo'lsa jimgina `false` qaytaradi va
+  // tugma ishlamayotgandek ko'rinadi.
+  const [tozalashSoraldi, setTozalashSoraldi] = useState(false);
   const clearCart = () => {
     if (!cart.length) return;
-    if (!confirm('Savatni tozalashga ishonchingiz komilmi?')) return;
-    setCart([]);
+    setTozalashSoraldi(true);
   };
 
   // Qidiruv — xizmat nomi, o'lchov birligi va opsiya nomlari/qiymatlari bo'yicha.
@@ -549,6 +553,16 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
       <div style={{ position: 'fixed', left: '-10000px', top: 0, pointerEvents: 'none' }}>
         <QuoteView ref={quoteRef} data={quoteData} />
       </div>
+
+      <ConfirmModal
+        isOpen={tozalashSoraldi}
+        title="Savatni tozalash"
+        message={`Savatdagi ${cart.length} ta qator o'chiriladi.`}
+        confirmText="Tozalash"
+        danger
+        onConfirm={() => { setCart([]); setTozalashSoraldi(false); }}
+        onClose={() => setTozalashSoraldi(false)}
+      />
     </div>
   );
 };

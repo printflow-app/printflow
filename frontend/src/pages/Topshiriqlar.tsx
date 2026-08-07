@@ -1088,7 +1088,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </button>
           )}
           {canCreateTask && (
-            <button onClick={() => openNewTaskModal()} className="btn-primary h-sm">
+            <button data-tour-id="buyurtma-add" onClick={() => openNewTaskModal()} className="btn-primary h-sm">
               <Plus size={14} strokeWidth={2.5} /> Buyurtma
             </button>
           )}

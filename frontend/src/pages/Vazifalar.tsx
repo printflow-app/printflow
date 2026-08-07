@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Clock, Package, ClipboardList, Trash2, Users } from 'lucide-react';
+import { Plus, Clock, Package, ClipboardList, Trash2, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { teamTasksApi } from '../api';
 import { useEmployees } from '../hooks/queries';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 
 // =============================================
 // JAMOA DOSKASI — "kim hozir nima bilan band?"
@@ -23,6 +24,39 @@ const USTUNLAR: { key: 'reja' | 'jarayon' | 'bajarildi'; nom: string; rang: stri
 
 const fmtDate = (d: any) =>
   d ? new Date(d).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' }) : null;
+
+const fmtSumma = (n: any) =>
+  Number(n) > 0 ? `${Math.round(Number(n) / 1000).toLocaleString('uz-UZ')} ming` : null;
+
+/**
+ * Muddatgacha necha kun qolgani — brauzer taqvimi bo'yicha (foydalanuvchi
+ * Toshkentda, shuning uchun mahalliy kun to'g'ri javob beradi).
+ * Manfiy = kechikkan.
+ */
+const kunFarqi = (d: any): number | null => {
+  if (!d) return null;
+  const t = new Date(d);
+  if (isNaN(t.getTime())) return null;
+  const b = new Date();
+  const kun = Date.UTC(t.getFullYear(), t.getMonth(), t.getDate());
+  const bugun = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((kun - bugun) / 86400000);
+};
+
+/**
+ * Muddat yorlig'i. Ilgari sana har doim bir xil kulrang edi va kechikkan
+ * ish ko'zga tashlanmasdi — doskaning butun mazmuni esa aynan shu:
+ * nimadan orqada qolyapmiz. Bajarilgan ustunda ogohlantirish ko'rsatilmaydi.
+ */
+const muddatUslubi = (muddat: any, bajarilgan: boolean) => {
+  const farq = kunFarqi(muddat);
+  if (farq === null) return null;
+  if (bajarilgan) return { klass: 'text-slate-400', matn: fmtDate(muddat)!, ogoh: false };
+  if (farq < 0) return { klass: 'text-rose-600 font-bold', matn: `${Math.abs(farq)} kun kechikdi`, ogoh: true };
+  if (farq === 0) return { klass: 'text-amber-600 font-bold', matn: 'Bugun', ogoh: true };
+  if (farq === 1) return { klass: 'text-amber-600', matn: 'Ertaga', ogoh: false };
+  return { klass: 'text-slate-400', matn: fmtDate(muddat)!, ogoh: false };
+};
 
 const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
   const perm = currentUser?.permissions || {};
@@ -121,9 +155,20 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
     if (id) await move(id, status);
   };
 
-  const remove = async (id: string) => {
-    try { await teamTasksApi.remove(id); reload(); toast.success("Vazifa o'chirildi"); }
+  // O'CHIRISH — tasdiqlashsiz emas.
+  //
+  // Ilgari savatcha tugmasi bosilishi bilanoq vazifa yo'q bo'lardi va uni
+  // qaytarib bo'lmasdi. Kartalar zich joylashgani uchun noto'g'ri bosish
+  // oson. Brauzer `confirm()` i o'rniga tizimning o'z oynasi ishlatiladi.
+  const [ochiriladigan, setOchiriladigan] = useState<{ id: string; sarlavha: string } | null>(null);
+  const [ochirilyapti, setOchirilyapti] = useState(false);
+
+  const remove = async () => {
+    if (!ochiriladigan) return;
+    setOchirilyapti(true);
+    try { await teamTasksApi.remove(ochiriladigan.id); reload(); toast.success("Vazifa o'chirildi"); }
     catch { toast.error("O'chirishda xatolik"); }
+    finally { setOchirilyapti(false); setOchiriladigan(null); }
   };
 
   const filtered = (items: any[]) =>
@@ -136,6 +181,23 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       if (it.masul?.id) yuk.set(it.masul.id, (yuk.get(it.masul.id) || 0) + 1);
     }
   }
+
+  // Yuk qatori — doskaning savoliga ("kim band?") javob ustunlarni
+  // sanamasdan turib ko'rinsin. Ilgari bu raqam faqat filtr ro'yxatining
+  // ichida yashiringan edi, ya'ni uni ko'rish uchun ro'yxatni ochish kerak
+  // edi. Chip bosilsa — o'sha xodim bo'yicha filtr.
+  const yukRoyxati = (employees as any[])
+    .map((e: any) => ({ id: e.id, ism: e.fullName as string, soni: yuk.get(e.id) || 0 }))
+    .filter((e) => e.soni > 0)
+    .sort((a, b) => b.soni - a.soni);
+
+  // Kechikkanlar — reja va jarayondagi, muddati o'tgan ishlar.
+  const kechikkan = (['reja', 'jarayon'] as const)
+    .flatMap((k) => filtered(board?.[k] || []))
+    .filter((it: any) => {
+      const f = kunFarqi(it.muddat);
+      return f !== null && f < 0;
+    }).length;
 
   return (
     <div className="space-y-5">
@@ -160,12 +222,43 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             ))}
           </select>
           {canManage && (
-            <button onClick={() => setModalOpen(true)} className="btn-primary h-sm">
+            <button data-tour-id="vazifa-add" onClick={() => setModalOpen(true)} className="btn-primary h-sm">
               <Plus size={14} strokeWidth={2.5} /> Vazifa
             </button>
           )}
         </div>
       </div>
+
+      {/* YUK QATORI — kim nechta faol ish bilan band. Bosilsa filtr. */}
+      {yukRoyxati.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {kechikkan > 0 && (
+            <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-rose-50 text-rose-600 text-[11px] font-bold">
+              <AlertTriangle size={11} /> {kechikkan} ta kechikkan
+            </span>
+          )}
+          {yukRoyxati.map((e) => {
+            const tanlangan = filterEmp === e.id;
+            return (
+              <button
+                key={e.id}
+                onClick={() => setFilterEmp(tanlangan ? '' : e.id)}
+                title={tanlangan ? 'Filtrni olib tashlash' : `Faqat ${e.ism}`}
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-bold transition-colors ${
+                  tanlangan
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-600'
+                }`}
+              >
+                {e.ism}
+                <span className={`px-1.5 rounded ${tanlangan ? 'bg-white/25' : 'bg-slate-100 text-slate-500'}`}>
+                  {e.soni}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -205,7 +298,9 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
 
                 <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto custom-scroll pr-1">
                   {items.length === 0 && (
-                    <p className="text-[11px] font-bold text-slate-300 text-center py-8">Bo'sh</p>
+                    <p className="text-[11px] font-bold text-slate-300 text-center py-8">
+                      {filterEmp ? 'Bu xodimda ish yo\'q' : 'Bo\'sh'}
+                    </p>
                   )}
                   {items.map((it: any) => (
                     <div
@@ -236,9 +331,18 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                             ) : (
                               <span className="text-[10px] font-bold text-rose-400">mas'ul yo'q</span>
                             )}
-                            {it.muddat && (
-                              <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                                <Clock size={9} /> {fmtDate(it.muddat)}
+                            {(() => {
+                              const m = muddatUslubi(it.muddat, u.key === 'bajarildi');
+                              if (!m) return null;
+                              return (
+                                <span className={`text-[10px] font-bold flex items-center gap-1 ${m.klass}`}>
+                                  {m.ogoh ? <AlertTriangle size={9} /> : <Clock size={9} />} {m.matn}
+                                </span>
+                              );
+                            })()}
+                            {it.tur === 'buyurtma' && fmtSumma(it.summa) && (
+                              <span className="text-[10px] font-bold text-slate-400">
+                                {fmtSumma(it.summa)}
                               </span>
                             )}
                           </div>
@@ -247,9 +351,14 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
 
                       {/* Buyurtmalar bu yerda ko'chirilmaydi — ular o'z
                           kanbanida boshqariladi, aks holda ikki joyda ikki
-                          xil holat paydo bo'lardi. */}
+                          xil holat paydo bo'lardi.
+
+                          Tugmalar KATTA EKRANDA hover'da chiqadi, kichigida
+                          doim ko'rinadi: telefonda hover yo'q va sudrab
+                          ko'chirish ham ishlamaydi — tugmalar yashirilsa
+                          vazifani umuman ko'chirib bo'lmasdi. */}
                       {it.tur === 'vazifa' && canManage && (
-                        <div className="flex gap-1 mt-2.5 pt-2.5 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 mt-2.5 pt-2.5 border-t border-slate-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
                           {USTUNLAR.filter((x) => x.key !== u.key).map((x) => (
                             <button
                               key={x.key}
@@ -259,7 +368,11 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                               → {x.nom}
                             </button>
                           ))}
-                          <button onClick={() => remove(it.id)} className="ml-auto text-slate-300 hover:text-rose-500 transition-colors">
+                          <button
+                            onClick={() => setOchiriladigan({ id: it.id, sarlavha: it.sarlavha })}
+                            title="Vazifani o'chirish"
+                            className="ml-auto text-slate-300 hover:text-rose-500 transition-colors"
+                          >
                             <Trash2 size={11} />
                           </button>
                         </div>
@@ -327,6 +440,20 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!ochiriladigan}
+        title="Vazifani o'chirish"
+        message={<>
+          <span className="font-bold text-slate-800">{ochiriladigan?.sarlavha}</span> butunlay
+          o'chiriladi. Buni qaytarib bo'lmaydi.
+        </>}
+        confirmText="O'chirish"
+        danger
+        busy={ochirilyapti}
+        onConfirm={remove}
+        onClose={() => setOchiriladigan(null)}
+      />
     </div>
   );
 };

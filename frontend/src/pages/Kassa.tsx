@@ -573,12 +573,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           </div>
           <div className="flex gap-2 shrink-0">
             {canTransferCash && cashBoxes.length >= 2 && (
-              <button onClick={openTransferModal} className="btn-outline h-sm">
+              <button data-tour-id="kassa-topshirish" onClick={openTransferModal} className="btn-outline h-sm">
                 <ArrowRightLeft size={14}/> Topshirish
               </button>
             )}
             {canManageCashBoxes && (
-              <button onClick={() => setIsNewBoxModalOpen(true)} className="btn-outline h-sm">
+              <button data-tour-id="kassa-yangi-kassa" onClick={() => setIsNewBoxModalOpen(true)} className="btn-outline h-sm">
                 <Plus size={14}/> Yangi kassa
               </button>
             )}
@@ -788,12 +788,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                </button>
              )}
              {p.canAddIncome && (
-               <button onClick={openKirimModal} className="btn-success h-sm flex-1 sm:flex-none">
+               <button data-tour-id="kassa-kirim" onClick={openKirimModal} className="btn-success h-sm flex-1 sm:flex-none">
                  <TrendingUp size={14}/> Kirim
                </button>
              )}
              {p.canAddExpense && (
-               <button onClick={openChiqimModal} className="btn-danger h-sm flex-1 sm:flex-none">
+               <button data-tour-id="kassa-chiqim" onClick={openChiqimModal} className="btn-danger h-sm flex-1 sm:flex-none">
                  <TrendingDown size={14}/> Chiqim
                </button>
              )}

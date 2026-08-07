@@ -4,6 +4,7 @@ import {
   Minus, RefreshCw, Calendar, ChevronDown,
   Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2, Download, X,
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { exportMultiSheetXlsx, ExportSheet } from '../utils/exportToXlsx';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -614,7 +615,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     }
 
     if (sheets.length === 0) {
-      alert("Eksport qilish uchun ma'lumot yo'q (filtrni o'zgartirib ko'ring)");
+      toast.info("Eksport qilish uchun ma'lumot yo'q (filtrni o'zgartirib ko'ring)");
       return;
     }
 
@@ -645,6 +646,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         <div className="flex gap-2 self-start sm:self-auto">
           {(isAdmin || p.canExportReports) && (
             <button
+              data-tour-id="hisobot-export"
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
               title="Tahliliy ma'lumotlarni Excel'ga eksport qilish"

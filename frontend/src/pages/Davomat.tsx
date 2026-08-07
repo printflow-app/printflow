@@ -395,6 +395,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               />
             </div>
             <button
+              data-tour-id="davomat-settings"
               onClick={() => setIsSettingsModalOpen(true)}
               className="w-11 h-11 flex items-center justify-center bg-slate-100 text-slate-500 rounded-2xl border border-slate-200 hover:bg-white hover:text-orange-600 hover:border-orange-200 transition-all"
               title="Ish vaqti sozlamalari"
