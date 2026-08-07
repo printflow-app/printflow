@@ -10,14 +10,25 @@ import { SalarySchemeService } from './salary-scheme.service';
 //   < 0 → hech narsa berilmaydi, |manfiy| keyingi oyga qarz bo'lib ko'chadi
 // =============================================
 
+// Asia/Tashkent — UTC+5, yozgi vaqt yo'q.
+const TZ = 5 * 3600000;
+
+/**
+ * "2026-08" → o'sha oyning TOSHKENT bo'yicha boshi va oxiri (UTC instant).
+ *
+ * Ilgari chegaralar sof UTC edi va bu 5 soatlik siljish berardi: 1-avgust
+ * ertalab soat 03:00 da topshirilgan buyurtma UTC'da hali 31-iyul bo'lgani
+ * uchun iyul maoshiga tushardi, 1-sentabr tunggi buyurtma esa avgustga
+ * qo'shilib ketardi. Xodim uchun bu "bajargan ishim maoshda yo'q" degani.
+ */
 function periodBounds(period: string): { start: Date; end: Date } | null {
   const m = /^(\d{4})-(\d{2})$/.exec(period || '');
   if (!m) return null;
   const y = Number(m[1]);
   const mo = Number(m[2]);
   if (mo < 1 || mo > 12) return null;
-  const start = new Date(Date.UTC(y, mo - 1, 1, 0, 0, 0, 0));
-  const end = new Date(Date.UTC(y, mo, 0, 23, 59, 59, 999)); // oyning oxirgi kuni
+  const start = new Date(Date.UTC(y, mo - 1, 1, 0, 0, 0, 0) - TZ);
+  const end = new Date(Date.UTC(y, mo, 0, 23, 59, 59, 999) - TZ); // oyning oxirgi kuni
   return { start, end };
 }
 

@@ -6,6 +6,14 @@ import { SettingsService } from '../settings/settings.service';
 // Davomat moduli bilan bir xil sukut — yakshanbadan boshqa kunlar.
 const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 
+// Asia/Tashkent — UTC+5, yozgi vaqt yo'q.
+const TZ = 5 * 3600000;
+
+/** Toshkent bo'yicha "YYYY-MM-DD" — UTC instantni mahalliy kunga aylantiradi. */
+export function tashkentKuni(d: Date): string {
+  return new Date(d.getTime() + TZ).toISOString().slice(0, 10);
+}
+
 /**
  * KPI boshlanish sanasini sozlama qiymatidan ajratib oladi.
  *
@@ -20,6 +28,11 @@ const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
  * Frontend tuzatilgan, lekin bazadagi eski buzuq yozuvlar joyida qolgan —
  * ularni har bir tashkilot uchun alohida tuzatishdan ko'ra shu yerda
  * tushunib olgan xavfsizroq.
+ *
+ * SANA TOSHKENT BO'YICHA O'QILADI. `new Date("2026-08-01")` Node'da UTC
+ * yarim tunini beradi, ya'ni Toshkentda 1-avgust soat 05:00 gacha qabul
+ * qilingan buyurtmalar "KPI'dan oldin" deb kesib tashlanardi. Endi
+ * chegara 2026-07-31T19:00Z — Toshkentdagi haqiqiy yarim tun.
  */
 export function kpiSanasiniOqi(raw: unknown): Date | null {
   const nomzodlar: unknown[] = [];
@@ -34,7 +47,14 @@ export function kpiSanasiniOqi(raw: unknown): Date | null {
   }
   for (const n of nomzodlar) {
     if (typeof n !== 'string' || !n.trim()) continue;
-    const d = new Date(n);
+    const s = n.trim();
+    // Faqat sana ko'rsatilgan bo'lsa — u Toshkent taqvimidagi kun.
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (m) {
+      return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]) - TZ);
+    }
+    // To'liq vaqt belgisi (masalan ISO) — o'zi aniq instant, tegmaymiz.
+    const d = new Date(s);
     if (!isNaN(d.getTime())) return d;
   }
   return null;
@@ -73,8 +93,12 @@ export class SalaryMetricsService {
     for (const id of employeeIds) out[id] = emptyMetrics();
     if (employeeIds.length === 0) return out;
 
-    const startStr = start.toISOString().slice(0, 10);
-    const endStr = end.toISOString().slice(0, 10);
+    // Davomat sanalari Toshkent taqvimi bo'yicha matn sifatida saqlanadi,
+    // `start`/`end` esa UTC instant. Oy chegarasi UTC+5 dan surilgani uchun
+    // (1-avgust Toshkentda = 31-iyul 19:00 UTC) matnni to'g'ridan-to'g'ri
+    // instantdan kesib bo'lmaydi — avval Toshkent kuniga o'tkazamiz.
+    const startStr = tashkentKuni(start);
+    const endStr = tashkentKuni(end);
 
     const [attendance, tasks, income] = await Promise.all([
       // Davomat — sana matn ("YYYY-MM-DD") sifatida saqlanadi, shuning uchun
