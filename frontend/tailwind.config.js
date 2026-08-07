@@ -54,12 +54,16 @@ export default {
         // iOS shadows are soft, diffuse and low-opacity — almost lighting, not
         // a drop shadow. Remapping the named scale tones down the heavier
         // shadow-lg / shadow-xl / shadow-2xl usages app-wide.
-        sm: '0 1px 2px rgba(15, 23, 42, 0.04)',
-        DEFAULT: '0 1px 3px rgba(15, 23, 42, 0.06)',
-        md: '0 4px 14px rgba(15, 23, 42, 0.06)',
-        lg: '0 10px 28px rgba(15, 23, 42, 0.08)',
-        xl: '0 16px 40px rgba(15, 23, 42, 0.10)',
-        '2xl': '0 24px 56px rgba(15, 23, 42, 0.12)',
+        // SOFT: soya "tushgan qora dog'" emas, yorug'lik. Rang ham sovuq
+        // ko'kdan iliq jigarrangga o'tkazildi — iliq oq fon ustida sovuq
+        // soya kir bo'lib ko'rinardi. Shaffoflik yana pasaytirildi:
+        // minimalizmda chuqurlikni soya emas, bo'shliq beradi.
+        sm: '0 1px 2px rgba(41, 37, 36, 0.03)',
+        DEFAULT: '0 1px 3px rgba(41, 37, 36, 0.04)',
+        md: '0 4px 16px rgba(41, 37, 36, 0.05)',
+        lg: '0 10px 30px rgba(41, 37, 36, 0.06)',
+        xl: '0 16px 44px rgba(41, 37, 36, 0.08)',
+        '2xl': '0 24px 60px rgba(41, 37, 36, 0.10)',
       },
       height: {
         // Control heights — match across all form elements.

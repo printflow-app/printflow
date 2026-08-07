@@ -118,12 +118,12 @@ export const PayrollSection: React.FC<{
           <h3 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <Wallet className="text-emerald-500" size={24} /> Maosh (oylik hisob-kitob)
           </h3>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             Fiksa + bonus − jarima − avans = berish kerak
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Oy</label>
+          <label className="text-[11px] font-bold text-slate-400 uppercase">Oy</label>
           <input
             type="month"
             value={period}
@@ -173,7 +173,7 @@ export const PayrollSection: React.FC<{
                         )}
                         <div>
                           <p className="text-xs font-bold text-slate-800">{row.fullName}</p>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[11px] text-slate-400">
                             {row.roleName}
                             {row.avtomatik && <span className="ml-1.5 text-orange-500 font-bold">· avtomatik</span>}
                           </p>
@@ -206,13 +206,13 @@ export const PayrollSection: React.FC<{
                     <td className="py-2.5 px-3 text-right text-xs font-bold tabular-nums text-rose-500">{row.prevDebt ? '−' + fmt(row.prevDebt) : '—'}</td>
                     <td className="py-2.5 px-3 text-right whitespace-nowrap">
                       <span className={`text-sm font-bold tabular-nums ${toPay < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>{fmt(toPay)}</span>
-                      {toPay < 0 && <p className="text-[9px] font-bold text-rose-400">keyingi oyga qarz</p>}
+                      {toPay < 0 && <p className="text-[10px] font-bold text-rose-400">keyingi oyga qarz</p>}
                     </td>
                     <td className="py-2.5 px-3">
                       <div className="flex items-center justify-center gap-1.5">
                         {paid ? (
                           <>
-                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md uppercase">To'langan</span>
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md uppercase">To'langan</span>
                             {canManage && (
                               <button onClick={() => handleRevert(row)} disabled={busy} title="Bekor qilish" className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors disabled:opacity-40">
                                 <RotateCcw size={14} />
@@ -221,7 +221,7 @@ export const PayrollSection: React.FC<{
                           </>
                         ) : canManage ? (
                           <>
-                            <button onClick={() => handleSave(row)} disabled={busy} title="Saqlash" className="w-8 h-8 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 flex items-center justify-center transition-colors disabled:opacity-40">
+                            <button onClick={() => handleSave(row)} disabled={busy} title="Saqlash" className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 flex items-center justify-center transition-colors disabled:opacity-40">
                               <Save size={14} />
                             </button>
                             <button onClick={() => handlePay(row)} disabled={busy} className="btn-success h-sm">
@@ -229,7 +229,7 @@ export const PayrollSection: React.FC<{
                             </button>
                           </>
                         ) : (
-                          <span className="text-[9px] font-bold text-slate-300 uppercase">qoralama</span>
+                          <span className="text-[10px] font-bold text-slate-300 uppercase">qoralama</span>
                         )}
                       </div>
                     </td>
@@ -242,7 +242,7 @@ export const PayrollSection: React.FC<{
                       <td colSpan={9} className="px-4 py-3">
                         <div className="max-w-3xl space-y-1.5">
                           {row.breakdown.map((b: any) => (
-                            <div key={b.id} className="flex items-center gap-3 text-[11px]">
+                            <div key={b.id} className="flex items-center gap-3 text-[12px]">
                               <span className={`w-4 flex-shrink-0 font-bold ${b.skipped ? 'text-slate-300' : 'text-emerald-600'}`}>
                                 {b.skipped ? '—' : '✓'}
                               </span>
@@ -260,16 +260,16 @@ export const PayrollSection: React.FC<{
 
                           {row.taklifJarima > 0 && !paid && canManage && (
                             <div className="flex items-center gap-3 pt-2 mt-2 border-t border-slate-200">
-                              <span className="text-[11px] font-bold text-rose-700">
+                              <span className="text-[12px] font-bold text-rose-700">
                                 Taklif qilingan jarima: {fmt(row.taklifJarima)} so'm
                               </span>
                               <button
                                 onClick={() => setEdit(row.employeeId, 'penalty', row.taklifJarima)}
-                                className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors"
+                                className="h-7 px-3 text-[11px] font-bold uppercase tracking-wider bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors"
                               >
                                 Qabul qilish
                               </button>
-                              <span className="text-[10px] font-medium text-slate-400">
+                              <span className="text-[11px] font-medium text-slate-400">
                                 yoki jarima ustuniga o'zingiz yozing
                               </span>
                             </div>

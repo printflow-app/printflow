@@ -91,8 +91,8 @@ const SuccessBadge: React.FC<{ text: string }> = ({ text }) => (
         <ShieldCheck size={18} strokeWidth={2.5} />
       </div>
       <div>
-         <p className="text-[11px] font-bold uppercase tracking-widest leading-none">Muvaffaqiyatli</p>
-         <p className="text-[10px] font-bold text-emerald-600/80 mt-0.5">{text}</p>
+         <p className="text-[12px] font-bold uppercase tracking-widest leading-none">Muvaffaqiyatli</p>
+         <p className="text-[11px] font-bold text-emerald-600/80 mt-0.5">{text}</p>
       </div>
     </div>
   </div>
@@ -106,7 +106,7 @@ const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; childr
           <Icon size={20} strokeWidth={2.5} />
         </div>
         <div>
-          <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">{subtitle}</p>
+          <p className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">{subtitle}</p>
           <p className="text-[14px] font-bold text-slate-900 tracking-tight">{title}</p>
         </div>
       </div>
@@ -115,7 +115,7 @@ const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; childr
       {children}
       <button
         onClick={onConfirm}
-        className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
+        className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[13px] font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
       >
         <CheckCircle2 size={16} strokeWidth={2.5} />
         Tasdiqlash
@@ -143,13 +143,13 @@ const DataCard: React.FC<{
       <div className="w-7 h-7 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
         <Icon size={14} strokeWidth={2.5} />
       </div>
-      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{title}</p>
     </div>
     <div className="px-4 py-2">{children}</div>
     {onOpen && (
       <button
         onClick={onOpen}
-        className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-100 text-[10px] font-bold text-orange-600 uppercase tracking-widest hover:bg-orange-50 transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-100 text-[11px] font-bold text-orange-600 uppercase tracking-widest hover:bg-orange-50 transition-colors"
       >
         {openLabel || "Bo'limni ochish"} <ArrowUpRight size={12} strokeWidth={2.5} />
       </button>
@@ -163,16 +163,16 @@ const DataRow: React.FC<{ primary: string; secondary?: string | null; value: str
 }) => (
   <div className="flex items-center justify-between gap-3 py-2 border-b border-slate-50 last:border-0">
     <div className="min-w-0 flex-1">
-      <p className="text-[12px] font-bold text-slate-800 truncate">{primary}</p>
-      {secondary && <p className="text-[10px] font-semibold text-slate-400 truncate mt-0.5">{secondary}</p>}
+      <p className="text-[13px] font-bold text-slate-800 truncate">{primary}</p>
+      {secondary && <p className="text-[11px] font-semibold text-slate-400 truncate mt-0.5">{secondary}</p>}
     </div>
-    <p className={`text-[12px] font-bold whitespace-nowrap ${valueClass || 'text-slate-700'}`}>{value}</p>
+    <p className={`text-[13px] font-bold whitespace-nowrap ${valueClass || 'text-slate-700'}`}>{value}</p>
   </div>
 );
 
 const MoreRows: React.FC<{ count: number }> = ({ count }) =>
   count > 0 ? (
-    <p className="py-2 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+    <p className="py-2 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">
       + yana {count} ta
     </p>
   ) : null;
@@ -182,15 +182,15 @@ const FinanceSummaryCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data
   <DataCard title={`Moliya — oxirgi ${data.davr_kun} kun`} icon={Wallet} onOpen={onOpen} openLabel="Kassani ochish">
     <div className="grid grid-cols-3 gap-2 py-2">
       <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
-        <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
+        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
         <p className="text-[13px] font-bold text-slate-900 mt-1">{fm(data.kirim)}</p>
       </div>
       <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 text-center">
-        <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
+        <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
         <p className="text-[13px] font-bold text-slate-900 mt-1">{fm(data.chiqim)}</p>
       </div>
       <div className="p-3 rounded-2xl bg-slate-900 text-center">
-        <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
+        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
         <p className="text-[13px] font-bold text-white mt-1">{fm(data.balans)}</p>
       </div>
     </div>
@@ -214,7 +214,7 @@ const CustomersCard: React.FC<{ title: string; items: any[]; total?: number; onO
     <MoreRows count={items.length - 6} />
     {typeof total === 'number' && total > 0 && (
       <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
         <p className="text-[13px] font-bold text-rose-600">{fm(total)} so'm</p>
       </div>
     )}
@@ -260,30 +260,30 @@ const DebtorsReportCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data,
       <div key={d.id} className="py-2 border-b border-slate-50 last:border-0">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[12px] font-bold text-slate-800 truncate">{d.name}</p>
+            <p className="text-[13px] font-bold text-slate-800 truncate">{d.name}</p>
             {d.eng_eski_qarz_kun !== null && (
-              <p className="text-[10px] font-semibold text-slate-400">{d.eng_eski_qarz_kun} kundan beri</p>
+              <p className="text-[11px] font-semibold text-slate-400">{d.eng_eski_qarz_kun} kundan beri</p>
             )}
           </div>
-          <p className="text-[12px] font-bold text-rose-600 whitespace-nowrap">{fm(d.totalDebt)} so'm</p>
+          <p className="text-[13px] font-bold text-rose-600 whitespace-nowrap">{fm(d.totalDebt)} so'm</p>
         </div>
         {(d.buyurtmalar || []).slice(0, 4).map((b: any, idx: number) => (
           <div key={idx} className="flex items-center justify-between gap-2 pl-3 mt-1">
-            <p className="text-[11px] text-slate-500 truncate">
+            <p className="text-[12px] text-slate-500 truncate">
               {b.displayId ? `${b.displayId} · ` : ''}{b.nom}
               <span className="text-slate-400"> · {b.necha_kun} kun</span>
             </p>
-            <p className="text-[11px] font-semibold text-rose-500 whitespace-nowrap">{fm(b.qoldiq)}</p>
+            <p className="text-[12px] font-semibold text-rose-500 whitespace-nowrap">{fm(b.qoldiq)}</p>
           </div>
         ))}
         {(d.buyurtmalar || []).length > 4 && (
-          <p className="pl-3 mt-1 text-[10px] font-semibold text-slate-400">+ yana {d.buyurtmalar.length - 4} ta buyurtma</p>
+          <p className="pl-3 mt-1 text-[11px] font-semibold text-slate-400">+ yana {d.buyurtmalar.length - 4} ta buyurtma</p>
         )}
       </div>
     ))}
     <MoreRows count={(data.qarzdorlar || []).length - 5} />
     <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
+      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
       <p className="text-[13px] font-bold text-rose-600">{fm(data.jami_qarz)} so'm</p>
     </div>
   </DataCard>
@@ -307,7 +307,7 @@ const VendorsReportCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data,
     ))}
     <MoreRows count={(data.hamkorlar || []).length - 6} />
     {(data.biz_qarzmiz_jami > 0 || data.ular_qarz_jami > 0) && (
-      <div className="flex items-center justify-between py-2.5 border-t border-slate-100 text-[11px] font-bold">
+      <div className="flex items-center justify-between py-2.5 border-t border-slate-100 text-[12px] font-bold">
         <span className="text-rose-600">Biz qarzmiz: {fm(data.biz_qarzmiz_jami)}</span>
         <span className="text-emerald-600">Ular qarz: {fm(data.ular_qarz_jami)}</span>
       </div>
@@ -366,18 +366,18 @@ const RiskInsightsPanel: React.FC<{
               <ShieldAlert size={15} strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`text-[11px] font-bold ${tone.title}`}>{r.title}</p>
-              <p className={`text-[11px] font-semibold ${tone.text} mt-0.5 leading-snug`}>{r.message}</p>
+              <p className={`text-[12px] font-bold ${tone.title}`}>{r.title}</p>
+              <p className={`text-[12px] font-semibold ${tone.text} mt-0.5 leading-snug`}>{r.message}</p>
               <div className="flex items-center gap-2 mt-2.5">
                 <button
                   onClick={() => onResolve(`Xavf: ${r.message} Buni qanday hal qilishni maslahat bera olasizmi, kerak bo'lsa o'zing bajar.`)}
-                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider ${tone.btn} ${tone.btnHover} text-white rounded-lg transition-colors`}
+                  className={`h-7 px-3 text-[11px] font-bold uppercase tracking-wider ${tone.btn} ${tone.btnHover} text-white rounded-lg transition-colors`}
                 >
                   Bartaraf etish
                 </button>
                 <button
                   onClick={() => onDismiss(r.id)}
-                  className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wider ${tone.dismiss} ${tone.dismissHover} rounded-lg transition-colors`}
+                  className={`h-7 px-3 text-[11px] font-bold uppercase tracking-wider ${tone.dismiss} ${tone.dismissHover} rounded-lg transition-colors`}
                 >
                   E'tiborsiz qoldirish
                 </button>
@@ -408,8 +408,8 @@ const BriefingPanel: React.FC<{ briefing: any; onAsk: (text: string) => void }> 
       }`}>
         <Icon size={13} strokeWidth={2.5} />
       </div>
-      <p className="flex-1 text-[12px] font-bold text-slate-700 min-w-0 truncate">{text}</p>
-      <p className={`text-[12px] font-bold whitespace-nowrap ${tone === 'rose' ? 'text-rose-600' : 'text-slate-700'}`}>{value}</p>
+      <p className="flex-1 text-[13px] font-bold text-slate-700 min-w-0 truncate">{text}</p>
+      <p className={`text-[13px] font-bold whitespace-nowrap ${tone === 'rose' ? 'text-rose-600' : 'text-slate-700'}`}>{value}</p>
     </button>
   );
 
@@ -420,30 +420,30 @@ const BriefingPanel: React.FC<{ briefing: any; onAsk: (text: string) => void }> 
           <Sparkles size={14} strokeWidth={2.5} />
         </div>
         <div>
-          <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Bugungi brifing</p>
-          <p className="text-[10px] font-semibold text-slate-400">{new Date(b.sana).toLocaleDateString('uz-UZ')}</p>
+          <p className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Bugungi brifing</p>
+          <p className="text-[11px] font-semibold text-slate-400">{new Date(b.sana).toLocaleDateString('uz-UZ')}</p>
         </div>
       </div>
 
       {/* Bugungi kassa — stat tile qatori */}
       <div className="grid grid-cols-3 gap-2 px-4 pt-3">
         <div className="p-2.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
-          <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
-          <p className="text-[12px] font-bold text-slate-900 mt-0.5">{fm(b.moliya.kirim)}</p>
+          <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
+          <p className="text-[13px] font-bold text-slate-900 mt-0.5">{fm(b.moliya.kirim)}</p>
         </div>
         <div className="p-2.5 rounded-2xl bg-rose-50 border border-rose-100 text-center">
-          <p className="text-[8px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
-          <p className="text-[12px] font-bold text-slate-900 mt-0.5">{fm(b.moliya.chiqim)}</p>
+          <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
+          <p className="text-[13px] font-bold text-slate-900 mt-0.5">{fm(b.moliya.chiqim)}</p>
         </div>
         <div className="p-2.5 rounded-2xl bg-slate-900 text-center">
-          <p className="text-[8px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
-          <p className="text-[12px] font-bold text-white mt-0.5">{fm(b.moliya.balans)}</p>
+          <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
+          <p className="text-[13px] font-bold text-white mt-0.5">{fm(b.moliya.balans)}</p>
         </div>
       </div>
 
       <div className="px-2 py-2">
         {allClear ? (
-          <p className="py-4 text-center text-[11px] font-bold text-emerald-600 uppercase tracking-widest">
+          <p className="py-4 text-center text-[12px] font-bold text-emerald-600 uppercase tracking-widest">
             ✅ Hammasi joyida
           </p>
         ) : (
@@ -509,7 +509,7 @@ const PendingActionCard: React.FC<{
 
   if (state === 'rejected') {
     return (
-      <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-500 text-[11px] font-bold uppercase tracking-widest">
+      <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-500 text-[12px] font-bold uppercase tracking-widest">
         Bekor qilindi — {summary}
       </div>
     );
@@ -522,19 +522,19 @@ const PendingActionCard: React.FC<{
           <ShieldCheck size={18} strokeWidth={2.5} />
         </div>
         <div>
-          <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">Tasdiqlash kerak</p>
+          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Tasdiqlash kerak</p>
           <p className="text-[13px] font-bold text-slate-900 tracking-tight">{summary}</p>
         </div>
       </div>
       <div className="p-4">
         {state === 'failed' && (
-          <p className="mb-3 text-[11px] font-bold text-rose-600">{error}</p>
+          <p className="mb-3 text-[12px] font-bold text-rose-600">{error}</p>
         )}
         <div className="flex gap-2">
           <button
             onClick={() => run('confirm')}
             disabled={state === 'busy'}
-            className="flex-1 h-11 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-[11px] font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
+            className="flex-1 h-11 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-[12px] font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
           >
             {state === 'busy' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} strokeWidth={2.5} />}
             Tasdiqlash
@@ -542,7 +542,7 @@ const PendingActionCard: React.FC<{
           <button
             onClick={() => run('reject')}
             disabled={state === 'busy'}
-            className="h-11 px-4 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 text-[11px] font-bold uppercase tracking-widest rounded-2xl transition-all active:scale-[0.98]"
+            className="h-11 px-4 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 text-[12px] font-bold uppercase tracking-widest rounded-2xl transition-all active:scale-[0.98]"
           >
             Bekor
           </button>
@@ -851,11 +851,11 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2 uppercase">
               Girgitton
               {isListening && (
-                <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[9px] rounded-md shadow-sm animate-pulse">Eshityapman</span>
+                <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[10px] rounded-md shadow-sm animate-pulse">Eshityapman</span>
               )}
             </h2>
             {usage && (
-              <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${
+              <p className={`text-[11px] font-bold uppercase tracking-widest mt-1 ${
                 quotaExhausted ? 'text-rose-500' : quotaLow ? 'text-amber-500' : 'text-emerald-500'
               }`}>
                 {daily && !daily.unlimited && daily.limit > 0
@@ -904,9 +904,9 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           <div className="mx-4 mt-3 p-3 rounded-2xl border border-rose-200 bg-rose-50 flex items-start gap-2 flex-shrink-0">
             <AlertTriangle size={16} className="text-rose-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-bold text-rose-700">AI limit tugadi</p>
-              <p className="text-[10px] font-bold text-rose-600 mt-0.5 leading-snug">{limitError}</p>
-              <a href="/dashboard/billing" className="text-[10px] font-bold text-orange-600 underline mt-1 inline-block">Qo'shimcha so'rov paketi sotib olish →</a>
+              <p className="text-[12px] font-bold text-rose-700">AI limit tugadi</p>
+              <p className="text-[11px] font-bold text-rose-600 mt-0.5 leading-snug">{limitError}</p>
+              <a href="/dashboard/billing" className="text-[11px] font-bold text-orange-600 underline mt-1 inline-block">Qo'shimcha so'rov paketi sotib olish →</a>
             </div>
             <button onClick={() => setLimitError(null)} className="text-rose-400 hover:text-rose-600">
               <X size={14} />
@@ -957,10 +957,10 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       <ShieldAlert size={14} strokeWidth={2.5} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-amber-700/70 mb-0.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700/70 mb-0.5">
                         Dashboard'dan xavf
                       </p>
-                      <p className="text-[12px] font-semibold text-amber-900 leading-snug">
+                      <p className="text-[13px] font-semibold text-amber-900 leading-snug">
                         {stripRiskPrefix(rawText)}
                       </p>
                     </div>
@@ -1009,7 +1009,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       }
                       if (out?.success === false) {
                         return (
-                          <div key={toolCallId} className="mt-3 rounded-2xl border border-rose-100 bg-rose-50/60 p-3.5 text-[11px] font-bold text-rose-600">
+                          <div key={toolCallId} className="mt-3 rounded-2xl border border-rose-100 bg-rose-50/60 p-3.5 text-[12px] font-bold text-rose-600">
                             {out.error || 'Amal bajarilmadi'}
                           </div>
                         );
@@ -1064,17 +1064,17 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Buyurtmani Tasdiqlash" subtitle="Yangi Buyurtma" icon={Package} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Nomi</p>
-                                 <p className="text-[12px] font-bold text-slate-800">{args?.orderName}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nomi</p>
+                                 <p className="text-[13px] font-bold text-slate-800">{args?.orderName}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Miqdor</p>
-                                    <p className="text-[12px] font-bold text-slate-800">{args?.quantity}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Miqdor</p>
+                                    <p className="text-[13px] font-bold text-slate-800">{args?.quantity}</p>
                                  </div>
                                  <div className="p-3 rounded-2xl bg-slate-900 text-white text-center">
-                                    <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Jami</p>
-                                    <p className="text-[12px] font-bold">{args?.totalAmount?.toLocaleString()} UZS</p>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Jami</p>
+                                    <p className="text-[13px] font-bold">{args?.totalAmount?.toLocaleString()} UZS</p>
                                  </div>
                               </div>
                            </div>
@@ -1087,12 +1087,12 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Xizmatni Tasdiqlash" subtitle="Yangi Xizmat" icon={Plus} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Xizmat nomi</p>
-                                 <p className="text-[12px] font-bold text-slate-800">{args?.name}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Xizmat nomi</p>
+                                 <p className="text-[13px] font-bold text-slate-800">{args?.name}</p>
                               </div>
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Narxi / Birlik</p>
-                                 <p className="text-[12px] font-bold text-slate-800">{args?.basePrice?.toLocaleString()} UZS / {args?.unit}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Narxi / Birlik</p>
+                                 <p className="text-[13px] font-bold text-slate-800">{args?.basePrice?.toLocaleString()} UZS / {args?.unit}</p>
                               </div>
                            </div>
                         </CardWrapper>
@@ -1104,17 +1104,17 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Optsiya Tasdiqlash" subtitle="Yangi Optsiya" icon={Settings} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Xizmat va Optsiya</p>
-                                 <p className="text-[12px] font-bold text-slate-800">{args?.targetServiceName} - {args?.optionName}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Xizmat va Optsiya</p>
+                                 <p className="text-[13px] font-bold text-slate-800">{args?.targetServiceName} - {args?.optionName}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Eski narx</p>
-                                    <p className="text-[12px] font-bold text-slate-400 line-through">{args?.oldPrice?.toLocaleString()}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Eski narx</p>
+                                    <p className="text-[13px] font-bold text-slate-400 line-through">{args?.oldPrice?.toLocaleString()}</p>
                                  </div>
                                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
-                                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Yangi narx</p>
-                                    <p className="text-[12px] font-bold text-emerald-700">{args?.newPrice?.toLocaleString()}</p>
+                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Yangi narx</p>
+                                    <p className="text-[13px] font-bold text-emerald-700">{args?.newPrice?.toLocaleString()}</p>
                                   </div>
                               </div>
                            </div>
@@ -1125,7 +1125,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                     return null;
                   })}
 
-                  <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest px-2">{msg.role === 'user' ? 'Siz' : 'Assistant'}</span>
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-2">{msg.role === 'user' ? 'Siz' : 'Assistant'}</span>
                 </div>
               </div>
             );
@@ -1136,7 +1136,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
               <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg"><Bot size={16} className="text-white" strokeWidth={2.5} /></div>
               <div className="px-6 py-4 rounded-3xl rounded-tl-sm bg-orange-400 text-white flex items-center gap-2">
                 <Loader2 size={16} className="animate-spin" />
-                <span className="text-[11px] font-bold uppercase tracking-widest">O'ylayapman...</span>
+                <span className="text-[12px] font-bold uppercase tracking-widest">O'ylayapman...</span>
               </div>
             </div>
           )}
@@ -1148,7 +1148,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           {messages.length === 0 && (
             <div className="flex flex-wrap gap-2 mb-6">
               {STARTER_SUGGESTIONS.map((suggestion, i) => (
-                <button key={i} onClick={() => setInput(suggestion)} className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl hover:border-orange-500 hover:text-orange-600 transition-all uppercase tracking-tight group">
+                <button key={i} onClick={() => setInput(suggestion)} className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl hover:border-orange-500 hover:text-orange-600 transition-all uppercase tracking-tight group">
                   <Zap size={10} className="text-orange-400" /> {suggestion}
                 </button>
               ))}
@@ -1191,11 +1191,11 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           </form>
 
           <div className="flex items-center justify-between mt-4 px-2">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <div className={`w-1.5 h-1.5 rounded-full ${isListening ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
               {isListening ? 'Ovoz yozilmoqda' : micPermissionDenied ? "Mikrofon ruxsati yo'q" : 'Tayyor'}
             </div>
-            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Girgitton AI</p>
+            <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">Girgitton AI</p>
           </div>
         </div>
       </aside>

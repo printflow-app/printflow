@@ -9,6 +9,9 @@ const DEFAULT_WORK_START = { hour: 9, minute: 0 };
 const DEFAULT_WORK_END = { hour: 17, minute: 0 };
 const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 
+/** Adashib bosilgan "kettim"ni bekor qilish uchun berilgan vaqt (daqiqa). */
+const UNDO_OYNA_DAQIQA = 10;
+
 // =============================================
 // ATTENDANCE SERVICE — Tenant-scoped
 // QR kod statik (admin generate qiladi va print qiladi).
@@ -370,6 +373,51 @@ export class AttendanceService {
         }
 
         return { ...existing, action: 'done' };
+      },
+    );
+  }
+
+  /**
+   * Xato bosilgan "kettim"ni bekor qiladi.
+   *
+   * Vaqt cheklovi ATAYLAB qo'yilgan: cheklovsiz bo'lsa xodim kechqurun uyiga
+   * ketib, keyin ketishni bekor qilib, ertasiga "hali ham ishdaman" deb
+   * ko'rsatishi mumkin edi. Qisqa oyna esa haqiqiy xatoni — tugmani
+   * adashib bosishni — tuzatish uchun yetarli.
+   */
+  async selfUndoCheckOut(employeeId: string) {
+    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee) throw new ForbiddenException('Xodim topilmadi');
+
+    const tenantId = employee.tenantId;
+    const today = this.getTodayString();
+
+    return TenantContext.run(
+      { tenantId, userId: employeeId, userRole: '' },
+      async () => {
+        const existing = await this.prisma.attendanceRecord.findFirst({
+          where: { employeeId, date: today },
+        });
+        if (!existing || !existing.checkOut) {
+          throw new ForbiddenException("Bugun ketish belgilanmagan — bekor qiladigan narsa yo'q.");
+        }
+
+        const otganDaqiqa = (Date.now() - existing.checkOut.getTime()) / 60000;
+        if (otganDaqiqa > UNDO_OYNA_DAQIQA) {
+          throw new ForbiddenException(
+            `Ketishni faqat ${UNDO_OYNA_DAQIQA} daqiqa ichida bekor qilish mumkin. ` +
+              'Endi rahbaringiz davomat sahifasidan tuzatishi kerak.',
+          );
+        }
+
+        const updated = await this.prisma.attendanceRecord.update({
+          where: { id: existing.id },
+          // Ortiqcha ish vaqti ham tozalanadi — u chiqish vaqtidan
+          // hisoblangan edi, chiqish esa endi yo'q.
+          data: { checkOut: null, overtimeMinutes: 0 },
+          include: { employee: true },
+        });
+        return { ...updated, action: 'undo_checkout' };
       },
     );
   }

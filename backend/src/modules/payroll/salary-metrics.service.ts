@@ -6,6 +6,40 @@ import { SettingsService } from '../settings/settings.service';
 // Davomat moduli bilan bir xil sukut — yakshanbadan boshqa kunlar.
 const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5, 6];
 
+/**
+ * KPI boshlanish sanasini sozlama qiymatidan ajratib oladi.
+ *
+ * Uch xil ko'rinish qabul qilinadi, chunki prodda uchalasi ham uchraydi:
+ *   "2026-08-01"             — sof satr
+ *   {"value":"2026-08-01"}   — to'g'ri ko'rinish
+ *   {"2026-08-01":""}        — BUZUQ: sana kalit bo'lib saqlanib qolgan
+ *
+ * Uchinchisi frontend xatosi edi va u jimgina zarar keltirardi: sana
+ * o'qilmay `null` bo'lib qolardi, kesish umuman ishlamasdi va KPI'ga
+ * o'tishdan oldingi butun arxiv birinchi oyning maoshiga qo'shilib ketardi.
+ * Frontend tuzatilgan, lekin bazadagi eski buzuq yozuvlar joyida qolgan —
+ * ularni har bir tashkilot uchun alohida tuzatishdan ko'ra shu yerda
+ * tushunib olgan xavfsizroq.
+ */
+export function kpiSanasiniOqi(raw: unknown): Date | null {
+  const nomzodlar: unknown[] = [];
+  if (typeof raw === 'string') {
+    nomzodlar.push(raw);
+  } else if (raw && typeof raw === 'object') {
+    const o = raw as Record<string, unknown>;
+    nomzodlar.push(o.value);
+    // Buzuq ko'rinish: yagona kalitning o'zi sana bo'lib qolgan.
+    const kalitlar = Object.keys(o);
+    if (kalitlar.length === 1) nomzodlar.push(kalitlar[0]);
+  }
+  for (const n of nomzodlar) {
+    if (typeof n !== 'string' || !n.trim()) continue;
+    const d = new Date(n);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
 // =============================================
 // MAOSH METRIKALARI — sxemadagi qatorlar uchun raqamlarni bazadan o'lchaydi.
 //
@@ -166,9 +200,7 @@ export class SalaryMetricsService {
     // Belgilanmagan bo'lsa cheklov yo'q — eski xulq saqlanadi.
     let kpiStart: Date | null = null;
     try {
-      const raw = await this.settings.get('KPI_START_DATE');
-      const d = raw ? new Date(typeof raw === 'string' ? raw : raw?.value) : null;
-      if (d && !isNaN(d.getTime())) kpiStart = d;
+      kpiStart = kpiSanasiniOqi(await this.settings.get('KPI_START_DATE'));
     } catch {}
 
     // "BUYURTMA" NIMANI ANGLATADI — ikki xil sanash.
@@ -182,6 +214,29 @@ export class SalaryMetricsService {
     //   bajarilgan_buyurtma_soni   — har xizmat alohida (ishbay uchun)
     //   bajarilgan_buyurtma_guruh  — xizmatlar birga (buyurtma boshiga)
     const guruhlar = new Map<string, Set<string>>();
+
+    // BUYURTMA SUMMASI — xizmat qatoriniki emas, BUTUN buyurtmaniki.
+    //
+    // Har xizmat alohida Task bo'lgani uchun har qatorning o'z summasi bor.
+    // Agar KPI shu qator summasidan hisoblansa, bitta buyurtmada ishlagan
+    // odamlar har xil bazadan hisob olardi: hamma xizmatga mas'ul qilingan
+    // odam butun buyurtmadan, bitta xizmatga mas'ul odam esa o'sha qatordan.
+    //
+    // Real misol (NEXUS, 2026-08, jami 8 771 000): Muhammadali yettala
+    // xizmatga ham mas'ul edi va butun summadan hisob oldi; Osiyo ikkitasiga
+    // mas'ul edi va bazasi 1 080 000 + 1 638 000 = 2 718 000 bo'lib qoldi.
+    // Bu xato — ikkalasi ham bitta buyurtma ustida ishlagan.
+    //
+    // Qoida: buyurtmaga mas'ul bo'lgan HAR KIM bir xil summadan — butun
+    // buyurtma summasidan — o'z sxemasi bo'yicha hisob oladi. Summa
+    // mas'ullar soniga BO'LINMAYDI (dizayner dona bo'yicha, sotuv menejeri
+    // o'sha summaning foizidan oladi — har biri o'z qoidasi bilan).
+    const guruhJami = new Map<string, number>();
+    for (const t of tasks) {
+      if (kpiStart && t.createdAt < kpiStart) continue;
+      const kalit = t.orderGroupId || t.id;
+      guruhJami.set(kalit, (guruhJami.get(kalit) || 0) + (t.totalAmount || 0));
+    }
 
     const wanted = new Set(employeeIds);
     for (const t of tasks) {
@@ -203,9 +258,19 @@ export class SalaryMetricsService {
         // id'sining o'zi kalit bo'ladi, ya'ni u yakka buyurtma sanaladi.
         if (!guruhlar.has(id)) guruhlar.set(id, new Set());
         guruhlar.get(id).add(t.orderGroupId || t.id);
-        mv.bajarilgan_buyurtma_summasi += t.totalAmount || 0;
+        // Miqdor guruhga yig'ilmaydi: 1000 dona vizitka + 500 dona banner =
+        // 1500 degani ma'nosiz raqam. Dona bo'yicha to'lov xodim aynan
+        // bajargan xizmatning donasidan hisoblanadi.
         mv.bajarilgan_buyurtma_miqdori += t.quantity || 0;
       }
+    }
+
+    // Summa guruh bo'yicha: bir buyurtma bir marta, xodim uning nechta
+    // xizmatida qatnashganidan qat'i nazar.
+    for (const [id, kalitlar] of guruhlar) {
+      let jami = 0;
+      for (const k of kalitlar) jami += guruhJami.get(k) || 0;
+      out[id].bajarilgan_buyurtma_summasi = jami;
     }
 
     for (const g of income) {

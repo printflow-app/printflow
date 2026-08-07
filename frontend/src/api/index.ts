@@ -472,6 +472,8 @@ export const attendanceApi = {
   getMyToday: () => api.get('/attendance/my-today'),
   getMyRecords: () => api.get('/attendance/my-records'),
   selfMark: (data: { lat?: number; lng?: number }) => api.post('/attendance/self-mark', data),
+  // Adashib bosilgan "kettim"ni bekor qilish (faqat qisqa vaqt ichida)
+  selfUndoCheckOut: () => api.post('/attendance/self-undo-checkout'),
 
   // Admin: qo'lda davomat kiritish (qurilmasiz xodimlar uchun)
   manualMark: (data: { employeeId: string; date: string; checkIn?: string; checkOut?: string }) =>

@@ -331,7 +331,7 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[#fafbfc] flex flex-col items-center justify-center p-6 overflow-hidden relative font-sans text-slate-900">
         {/* Soft background glows for aesthetics */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#FF6B00]/5 rounded-full blur-[80px] pointer-events-none animate-pulse" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-slate-500/5 rounded-full blur-[60px] pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center">
           {/* Logo container - modern, rounded-2xl square box instead of circle */}
@@ -357,7 +357,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Muted loading text */}
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">
             Tizimga kirilmoqda...
           </p>
         </div>
@@ -398,23 +398,23 @@ const App: React.FC = () => {
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
             <div className="bg-black p-6 text-white">
               <h2 className="text-xl font-bold uppercase tracking-tight">Ma'lumotlarni <span className="text-[#FF6B00]">Tahrirlang</span></h2>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mt-1">Xavfsizlik va sozlash uchun barcha maydonlarni to'ldiring</p>
+              <p className="text-[11px] uppercase font-bold text-slate-400 tracking-widest mt-1">Xavfsizlik va sozlash uchun barcha maydonlarni to'ldiring</p>
             </div>
             <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-slate-500">Tashkilot / Workspace Nomi</label>
+                <label className="text-[11px] font-bold uppercase text-slate-500">Tashkilot / Workspace Nomi</label>
                 <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                   value={onboardingForm.tenantName} onChange={e => setOnboardingForm({...onboardingForm, tenantName: e.target.value})} placeholder="Ideal Print MCHJ" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-slate-500">Ism Familiyangiz</label>
+                  <label className="text-[11px] font-bold uppercase text-slate-500">Ism Familiyangiz</label>
                   <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                     value={onboardingForm.fullName} onChange={e => setOnboardingForm({...onboardingForm, fullName: e.target.value})} placeholder="Sardor Karimov" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-slate-500">Telefon Raqamingiz</label>
+                  <label className="text-[11px] font-bold uppercase text-slate-500">Telefon Raqamingiz</label>
                   <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                     value={onboardingForm.phone} onChange={e => setOnboardingForm({...onboardingForm, phone: e.target.value})} placeholder="+998 90 123 45 67" />
                 </div>
@@ -422,19 +422,19 @@ const App: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-slate-500">Yangi Login</label>
+                  <label className="text-[11px] font-bold uppercase text-slate-500">Yangi Login</label>
                   <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                     value={onboardingForm.login} onChange={e => setOnboardingForm({...onboardingForm, login: e.target.value})} placeholder="admin_new" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-slate-500">Yangi Parol (ixtiyoriy)</label>
+                  <label className="text-[11px] font-bold uppercase text-slate-500">Yangi Parol (ixtiyoriy)</label>
                   <input className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
                     type="password" value={onboardingForm.password} onChange={e => setOnboardingForm({...onboardingForm, password: e.target.value})} placeholder="********" />
                 </div>
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase">
+                <p className="text-[11px] font-bold text-slate-500 leading-relaxed uppercase">
                   <span className="text-[#FF6B00]">Diqqat:</span> Ushbu ma'lumotlar tizimga kirish va xavfsizlik uchun ishlatiladi. Saqlagandan so'ng siz dashboardga yo'naltirilasiz.
                 </p>
               </div>

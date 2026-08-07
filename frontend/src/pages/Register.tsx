@@ -114,7 +114,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
           <h1 className="text-3xl font-bold tracking-tight text-slate-800 mb-1 uppercase">
             Print<span className="text-[#FF6B00]">Flow</span>
           </h1>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em]">
             Yangi Workspace ochish
           </p>
         </div>
@@ -124,7 +124,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
 
           <form onSubmit={handleSubmit} className="space-y-4 relative" autoComplete="off">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                 Tashkilot nomi
               </label>
               <div className="relative">
@@ -143,7 +143,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                 Workspace slug (URL identifikator)
               </label>
               <div className="relative">
@@ -162,14 +162,14 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none"
                 />
               </div>
-              <p className="text-[10px] font-bold text-slate-400 mt-1">
+              <p className="text-[11px] font-bold text-slate-400 mt-1">
                 Faqat kichik harf, raqam va tire. Login sahifada shu nomni kiritasiz.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                   Ism Familiya
                 </label>
                 <div className="relative">
@@ -187,7 +187,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                   Telefon (ixtiyoriy)
                 </label>
                 <div className="relative">
@@ -206,7 +206,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                 Admin Login
               </label>
               <div className="relative">
@@ -225,7 +225,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                 Parol
               </label>
               <div className="relative">

@@ -73,7 +73,7 @@ const ScanAttendance: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         
         {status === 'loading' && (
           <div className="flex flex-col items-center py-4">
-            <Loader2 className="w-16 h-16 text-indigo-500 animate-spin mb-6" />
+            <Loader2 className="w-16 h-16 text-slate-500 animate-spin mb-6" />
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">Skaner tekshirilmoqda...</h2>
           </div>
         )}
@@ -106,7 +106,7 @@ const ScanAttendance: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             
             <button 
               onClick={() => window.location.href = '/'}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2 mb-3"
+              className="w-full py-4 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2 mb-3"
             >
               Tizimga kirish
               <LogIn className="w-5 h-5" />

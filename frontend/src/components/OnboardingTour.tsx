@@ -479,12 +479,12 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
 
         <div className="px-5 pt-4 pb-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">
+            <span className="text-[11px] font-bold text-orange-500 uppercase tracking-widest">
               Qadam {currentActionIndex} / {totalActionSteps}
             </span>
             <button
               onClick={() => setConfirmClose(true)}
-              className="text-[10px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-widest transition"
+              className="text-[11px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-widest transition"
             >
               Yopish
             </button>
@@ -515,7 +515,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
             </button>
           )}
           {current.kind === 'nav' && (
-            <span className="text-[11px] font-bold text-orange-500 italic">
+            <span className="text-[12px] font-bold text-orange-500 italic">
               Orange chiziq ichidagi tugmani bosing
             </span>
           )}

@@ -54,7 +54,7 @@ export function ImageUpload({ value, onChange, size = 'md', label }: Props) {
   return (
     <div>
       {label && (
-        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">
+        <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">
           {label}
         </label>
       )}
@@ -82,13 +82,13 @@ export function ImageUpload({ value, onChange, size = 'md', label }: Props) {
           ) : (
             <div className="flex flex-col items-center gap-1 text-slate-400">
               <ImagePlus size={20} />
-              <span className="text-[9px] font-bold uppercase tracking-widest">Rasm</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Rasm</span>
             </div>
           )}
         </button>
 
         {!value && !busy && (
-          <p className="text-[10px] text-slate-400 font-medium flex-1 leading-tight">
+          <p className="text-[11px] text-slate-400 font-medium flex-1 leading-tight">
             JPG / PNG, ~600px gacha avtomat<br />
             ixchamlanadi
           </p>

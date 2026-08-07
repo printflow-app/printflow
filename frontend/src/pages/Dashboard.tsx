@@ -10,8 +10,7 @@ import AICopilot from '../components/AICopilot/AICopilot';
 import { OnboardingWizard, isOnboardingComplete } from '../components/OnboardingWizard';
 import { OnboardingTour, isTourComplete } from '../components/OnboardingTour';
 import { CommandPalette } from '../components/CommandPalette';
-import { ReleaseBanner, ReleaseTour } from '../components/ReleaseNotes';
-import { hasUnseenRelease } from '../data/releases';
+import { ReleaseTour } from '../components/ReleaseNotes';
 import { useSidebarCounts, markTabSeen } from '../hooks/useSidebarCounts';
 
 const BoshSahifa   = React.lazy(() => import('./BoshSahifa'));
@@ -58,10 +57,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
   const [activeTab, setActiveTab] = useState<TabId>(tabFromUrl);
 
-  // Yangi platforma relizi ko'rilmagan bo'lsa banner chiqadi, undan tour ochiladi.
-  const [showReleaseBanner, setShowReleaseBanner] = useState(() =>
-    hasUnseenRelease(currentUser?.tenantId),
-  );
+  // Reliz tour'i — endi o'z-o'zidan chiqmaydi, faqat foydalanuvchi ochsa.
   const [releaseTourOpen, setReleaseTourOpen] = useState(false);
 
   // Onboarding wizard — eski 3-qadamli forma (saqlangan, lekin endi default tour)
@@ -594,7 +590,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
             <div>
               <h1 className="text-[15px] font-semibold text-slate-900 tracking-tight leading-none">Print<span className="text-[color:var(--primary)]">Flow</span></h1>
-              <p className="text-[11px] font-medium text-slate-400 mt-0.5">{currentUser.role?.name || 'Xodim'}</p>
+              <p className="text-[12px] font-medium text-slate-400 mt-0.5">{currentUser.role?.name || 'Xodim'}</p>
             </div>
           </div>
           <div className="flex items-center gap-0.5">
@@ -642,7 +638,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   data-tour-group={group.label.toLowerCase()}
                   data-tour-open={isOpen ? '1' : '0'}
                   onClick={() => toggleGroup(group.label)}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-[11px] font-medium uppercase tracking-wider transition-colors duration-150 ${
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-[12px] font-medium uppercase tracking-wider transition-colors duration-150 ${
                     containsActive
                       ? 'text-slate-800'
                       : 'text-slate-400 hover:text-slate-600'
@@ -653,7 +649,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     <span>{group.label}</span>
                     {/* Group-level notification badge — collapsed bo'lganda ham ko'rinadi */}
                     {!isOpen && groupNotifications > 0 && (
-                      <span className="text-[11px] font-semibold px-1.5 py-px rounded-md bg-orange-500 text-white normal-case tracking-normal min-w-[18px] text-center">
+                      <span className="text-[12px] font-semibold px-1.5 py-px rounded-md bg-orange-500 text-white normal-case tracking-normal min-w-[18px] text-center">
                         {groupNotifications > 99 ? '99+' : groupNotifications}
                       </span>
                     )}
@@ -684,7 +680,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     {/* Per-item notification badge — yangilik soni */}
                     {showBadge && (
                       <span
-                        className="text-[11px] font-semibold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-orange-500 text-white"
+                        className="text-[12px] font-semibold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-orange-500 text-white"
                         title={`${itemCount} ta yangi`}
                       >
                         {itemCount > 99 ? '99+' : itemCount}
@@ -719,12 +715,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             }}
             className="flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-900/[0.04] transition-colors group"
           >
-            <div className="w-7 h-7 rounded-full bg-orange-100 text-orange-700 font-semibold flex items-center justify-center text-[11px]">
+            <div className="w-7 h-7 rounded-full bg-orange-100 text-orange-700 font-semibold flex items-center justify-center text-[12px]">
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="overflow-hidden min-w-0 flex-1">
               <p className="text-[13px] font-medium text-slate-800 truncate leading-tight">{currentUser.fullName}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5 truncate">Profil sozlamalari</p>
+              <p className="text-[12px] text-slate-400 mt-0.5 truncate">Profil sozlamalari</p>
             </div>
             <Settings size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
           </button>
@@ -796,7 +792,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       {releaseTourOpen && currentUser?.tenantId && (
         <ReleaseTour
           tenantId={currentUser.tenantId}
-          onClose={() => { setReleaseTourOpen(false); setShowReleaseBanner(false); }}
+          onClose={() => setReleaseTourOpen(false)}
           onNavigate={(tab) => handleTabChange(tab as TabId)}
         />
       )}
@@ -846,7 +842,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               title="Tezkor qidiruv"
             >
               <span>Qidiruv</span>
-              <kbd className="text-[11px] font-medium bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+              <kbd className="text-[12px] font-medium bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
 
             {/* Filial filtri faqat: bir nechta filial bor + foydalanuvchining filiallar ruxsati bor bo'lsa */}
@@ -901,15 +897,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
           ) : (
             <React.Suspense fallback={<LoadingSpinner fullPage />}>
-              {/* Yangi reliz e'loni — ko'rilmagan bo'lsa har sahifada tepada turadi */}
-              {showReleaseBanner && (
-                <div className="mb-4">
-                  <ReleaseBanner
-                    onOpen={() => setReleaseTourOpen(true)}
-                    onDismiss={() => setShowReleaseBanner(false)}
-                  />
-                </div>
-              )}
+              {/* Reliz banneri OLIB TASHLANDI. U "falon sanadagi yangilanishni
+                  ko'rmadingiz" deb HAR SAHIFADA tepada turardi va yopilmaguncha
+                  ketmasdi — bir martalik e'lon uchun bu juda tajovuzkor edi.
+                  Reliz tour'ining o'zi qoldi: uni foydalanuvchi xohlaganda
+                  o'zi ochadi (`releaseTourOpen`). */}
               {activeTab === 'boshsahifa' && <BoshSahifa currentUser={currentUser} aiEnabled={aiCopilotEnabled} />}
               {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
@@ -1019,7 +1011,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 onChange={(e) => setLockTimeout(Number(e.target.value))}
                 className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-orange-600"
               />
-              <div className="flex justify-between mt-1 text-[11px] text-slate-400">
+              <div className="flex justify-between mt-1 text-[12px] text-slate-400">
                 <span>1 min</span>
                 <span>30 min</span>
                 <span>60 min</span>

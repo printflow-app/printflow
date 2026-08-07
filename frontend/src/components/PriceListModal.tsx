@@ -189,7 +189,7 @@ export const PriceListModal: React.FC<Props> = ({
               <h2 className="text-base font-bold text-slate-900 uppercase tracking-tight truncate">
                 Price list — mijoz uchun
               </h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                 {activeTab === 'overview'
                   ? 'Umumiy narxlar — xizmatlarni tanlang, eksport qiling'
                   : "Buyurtma taklifi — mijoz so'roviga ko'ra narx hisoblang"}
@@ -224,7 +224,7 @@ export const PriceListModal: React.FC<Props> = ({
             <div className="inline-flex bg-slate-100 rounded-xl p-1">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-all ${
                   activeTab === 'overview'
                     ? 'bg-white text-slate-800 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
@@ -234,7 +234,7 @@ export const PriceListModal: React.FC<Props> = ({
               </button>
               <button
                 onClick={() => setActiveTab('quote')}
-                className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-bold uppercase tracking-wider transition-all ${
                   activeTab === 'quote'
                     ? 'bg-orange-500 text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
@@ -274,12 +274,12 @@ export const PriceListModal: React.FC<Props> = ({
           {/* Xizmat tanlash paneli */}
           <aside className="w-full lg:w-72 flex-shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col max-h-60 lg:max-h-none">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                 Xizmatlar ({selectedIds.size}/{allServices.length})
               </p>
               <button
                 onClick={toggleAll}
-                className="text-[10px] font-bold text-orange-600 hover:text-orange-700 uppercase tracking-wider"
+                className="text-[11px] font-bold text-orange-600 hover:text-orange-700 uppercase tracking-wider"
               >
                 {allChecked ? 'Bekor' : 'Hammasi'}
               </button>
@@ -329,10 +329,10 @@ export const PriceListModal: React.FC<Props> = ({
                         ? <CheckSquare size={16} className="text-orange-500 mt-0.5 flex-shrink-0" />
                         : <Square size={16} className="text-slate-300 mt-0.5 flex-shrink-0" />}
                       <div className="min-w-0 flex-1">
-                        <p className={`text-[12px] font-bold truncate ${checked ? 'text-slate-900' : 'text-slate-600'}`}>
+                        <p className={`text-[13px] font-bold truncate ${checked ? 'text-slate-900' : 'text-slate-600'}`}>
                           {svc.name}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-medium truncate">
+                        <p className="text-[11px] text-slate-400 font-medium truncate">
                           {Number(svc.basePrice).toLocaleString('uz-UZ')} so'm / {svc.unit}
                         </p>
                       </div>

@@ -40,12 +40,12 @@ const fmt = (n: number) => {
 };
 
 const ScoreDelta = ({ current, previous }: { current: number; previous: number | null }) => {
-  if (previous === null || previous === undefined) return <span className="text-[9px] font-bold text-slate-300">—</span>;
+  if (previous === null || previous === undefined) return <span className="text-[10px] font-bold text-slate-300">—</span>;
   const diff = current - previous;
-  if (Math.abs(diff) < 2) return <span className="flex items-center gap-0.5 text-[9px] font-bold text-slate-400"><Minus size={9} />0</span>;
+  if (Math.abs(diff) < 2) return <span className="flex items-center gap-0.5 text-[10px] font-bold text-slate-400"><Minus size={9} />0</span>;
   return diff > 0
-    ? <span className="flex items-center gap-0.5 text-[9px] font-bold text-emerald-600"><TrendingUp size={9} />+{diff}</span>
-    : <span className="flex items-center gap-0.5 text-[9px] font-bold text-rose-500"><TrendingDown size={9} />{diff}</span>;
+    ? <span className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-600"><TrendingUp size={9} />+{diff}</span>
+    : <span className="flex items-center gap-0.5 text-[10px] font-bold text-rose-500"><TrendingDown size={9} />{diff}</span>;
 };
 
 const EmployeePerformanceTable: React.FC<Props> = ({ rows, velocity, prevRows, title, showTrend, showBar }) => {
@@ -59,7 +59,7 @@ const EmployeePerformanceTable: React.FC<Props> = ({ rows, velocity, prevRows, t
           <h3 className="text-base font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <Award size={18} className="text-orange-500" /> {title}
           </h3>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             Bajarilgan buyurtmalar, muddatga rioya va daromad ulushi
           </p>
         </div>
@@ -68,15 +68,15 @@ const EmployeePerformanceTable: React.FC<Props> = ({ rows, velocity, prevRows, t
         <table className="w-full text-sm">
           <thead className="bg-slate-50">
             <tr>
-              <th className="text-left p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">#</th>
-              <th className="text-left p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Xodim</th>
-              <th className="text-right p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Bajarilgan</th>
-              <th className="text-right p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Jarayonda</th>
-              <th className="text-right p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Muddatga rioya</th>
-              <th className="text-right p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Avg vaqt</th>
-              <th className="text-right p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Daromad</th>
-              <th className="text-right p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Score</th>
-              {showTrend && <th className="text-right p-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Trend</th>}
+              <th className="text-left p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">#</th>
+              <th className="text-left p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Xodim</th>
+              <th className="text-right p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bajarilgan</th>
+              <th className="text-right p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Jarayonda</th>
+              <th className="text-right p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Muddatga rioya</th>
+              <th className="text-right p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Avg vaqt</th>
+              <th className="text-right p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Daromad</th>
+              <th className="text-right p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Score</th>
+              {showTrend && <th className="text-right p-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Trend</th>}
             </tr>
           </thead>
           <tbody>
@@ -91,10 +91,10 @@ const EmployeePerformanceTable: React.FC<Props> = ({ rows, velocity, prevRows, t
 
               return (
                 <tr key={r.employeeId} className={`border-t border-slate-100 hover:bg-orange-50/20 transition-colors ${i < 3 ? 'bg-orange-50/10' : ''}`}>
-                  <td className="p-3 font-bold text-slate-500 text-[11px]">{i + 1}</td>
+                  <td className="p-3 font-bold text-slate-500 text-[12px]">{i + 1}</td>
                   <td className="p-3">
                     <div className="font-bold text-slate-800">{r.fullName}</div>
-                    <div className="text-[10px] text-slate-400 font-bold">{r.roleName || '—'}</div>
+                    <div className="text-[11px] text-slate-400 font-bold">{r.roleName || '—'}</div>
                   </td>
                   <td className="p-3 text-right font-bold text-emerald-600">{r.completedTasks}</td>
                   <td className="p-3 text-right font-bold text-amber-500">{r.pendingTasks}</td>

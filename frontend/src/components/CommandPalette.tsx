@@ -138,7 +138,7 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
             placeholder={agentEnabled ? "Sahifa qidirish yoki Girgitton'dan so'rash..." : 'Sahifa qidirish...'}
             className="flex-1 bg-transparent outline-none text-base font-semibold text-slate-800 placeholder:text-slate-400"
           />
-          <kbd className="hidden sm:inline-block text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">ESC</kbd>
+          <kbd className="hidden sm:inline-block text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">ESC</kbd>
         </div>
 
         {/* Results */}
@@ -203,7 +203,7 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
         </div>
 
         {/* Footer hint */}
-        <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-[10px] font-semibold text-slate-400">
+        <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-[11px] font-semibold text-slate-400">
           <span className="flex gap-3">
             <span>↑↓ navigatsiya</span>
             <span>Enter — tanlash</span>

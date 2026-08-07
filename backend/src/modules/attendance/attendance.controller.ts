@@ -157,4 +157,18 @@ export class AttendanceController {
       throw new HttpException(err.message || 'Xatolik', HttpStatus.BAD_REQUEST);
     }
   }
+
+  // Adashib bosilgan "kettim"ni bekor qilish. GPS talab qilinmaydi —
+  // xodim allaqachon shu joyda ekani kelishda tekshirilgan.
+  @Post('self-undo-checkout')
+  async selfUndoCheckOut(@Req() req: Request) {
+    const employeeId = (req as any)?.user?.sub;
+    if (!employeeId) throw new HttpException('Auth talab qilinadi', HttpStatus.UNAUTHORIZED);
+    try {
+      return await this.attendanceService.selfUndoCheckOut(employeeId);
+    } catch (err: any) {
+      if (err?.status) throw err;
+      throw new HttpException(err.message || 'Xatolik', HttpStatus.BAD_REQUEST);
+    }
+  }
 }

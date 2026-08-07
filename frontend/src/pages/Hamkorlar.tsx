@@ -238,7 +238,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
           <h2 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2 px-1">
             <Handshake size={20} className="text-orange-500"/> Hamkorlar (Outsourcing)
           </h2>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1 font-sans">
             Tashqi xizmatlar va subpudratni boshqarish
           </p>
         </div>
@@ -256,7 +256,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
           {(isAdmin || currentUser.permissions?.canExportVendors) && (
             <button
               onClick={handleExport}
-              className="flex items-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+              className="flex items-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
               title="Joriy ro'yxatni Excel'ga eksport qilish"
             >
               <Download size={13} strokeWidth={2.5}/> EKSPORT
@@ -265,7 +265,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
           {canManageVendors && (
             <button
               onClick={openAdd}
-              className="flex items-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all hover:-translate-y-0.5"
+              className="flex items-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all hover:-translate-y-0.5"
             >
               <Plus size={14} strokeWidth={3}/> HAMKOR QO'SHISH
             </button>
@@ -276,23 +276,23 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mx-1 sm:mx-0">
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jami hamkorlar</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jami hamkorlar</p>
           <p className="text-2xl font-bold text-slate-800">{vendors.length}</p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Biz qarzdormiz</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Biz qarzdormiz</p>
           <p className="text-lg font-bold text-rose-500">
             {formatCurrency(vendors.reduce((s, v) => s + (v.balance > 0 ? v.balance : 0), 0))}
           </p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hamkor bizga qarzdor</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hamkor bizga qarzdor</p>
           <p className="text-lg font-bold text-emerald-600">
             {formatCurrency(vendors.reduce((s, v) => s + (v.balance < 0 ? -v.balance : 0), 0))}
           </p>
         </div>
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jami to'langan</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jami to'langan</p>
           <p className="text-lg font-bold text-slate-700">
             {formatCurrency(vendors.reduce((s, v) => s + (v.totalPaid || 0), 0))}
           </p>
@@ -305,12 +305,12 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hamkor Nomi</th>
-                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Telefon</th>
-                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jami Xizmat</th>
-                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">To'langan</th>
-                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Balans (UZS)</th>
-                <th className="px-5 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Amallar</th>
+                <th className="px-5 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Hamkor Nomi</th>
+                <th className="px-5 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Telefon</th>
+                <th className="px-5 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Jami Xizmat</th>
+                <th className="px-5 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">To'langan</th>
+                <th className="px-5 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Balans (UZS)</th>
+                <th className="px-5 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Amallar</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -350,7 +350,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                           {Array.isArray(v.roles) && v.roles.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {v.roles.map((r: string) => (
-                                <span key={r} className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
+                                <span key={r} className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
                                   {roleLabel(r)}
                                 </span>
                               ))}
@@ -372,7 +372,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       <span className={`text-xs font-bold ${balanceMeta(v.balance).cls}`}>
                         {v.balance === 0 ? '0 UZS' : formatCurrency(v.balance)}
                       </span>
-                      <p className={`text-[8px] font-bold uppercase tracking-wider mt-0.5 ${balanceMeta(v.balance).cls}`}>
+                      <p className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${balanceMeta(v.balance).cls}`}>
                         {balanceMeta(v.balance).text}
                       </p>
                     </td>
@@ -380,7 +380,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={e => { e.stopPropagation(); openEdit(v); }}
-                          className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-sky-500 hover:border-sky-200 transition-all"
+                          className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-slate-500 hover:border-slate-200 transition-all"
                         >
                           <Edit3 size={14}/>
                         </button>
@@ -404,15 +404,15 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={isEditing ? 'Hamkorni tahrirlash' : "Yangi hamkor qo'shish"}>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkor nomi *</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Hamkor nomi *</label>
             <input type="text" required autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input-minimal font-bold text-slate-800 h-12 border-2" placeholder="Masalan: Tashkent Print LLC"/>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Telefon (ixtiyoriy)</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Telefon (ixtiyoriy)</label>
             <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="input-minimal h-11 border-2" placeholder="+998 90 123 45 67"/>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Rol-teglar (ixtiyoriy)</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Rol-teglar (ixtiyoriy)</label>
             <div className="flex flex-wrap gap-2">
               {ROLE_OPTIONS.map(r => {
                 const active = form.roles.includes(r.key);
@@ -421,18 +421,18 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                     key={r.key}
                     type="button"
                     onClick={() => toggleRole(r.key)}
-                    className={`h-10 px-4 rounded-xl text-[11px] font-bold uppercase tracking-wider border-2 transition-all ${active ? 'bg-orange-50 border-orange-300 text-orange-600' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                    className={`h-10 px-4 rounded-xl text-[12px] font-bold uppercase tracking-wider border-2 transition-all ${active ? 'bg-orange-50 border-orange-300 text-orange-600' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
                   >
                     {r.label}
                   </button>
                 );
               })}
             </div>
-            <p className="text-[9px] text-slate-400 mt-1.5 px-1">Bir nechta tanlash mumkin. Faqat yorliq — pul yo'nalishini cheklamaydi.</p>
+            <p className="text-[10px] text-slate-400 mt-1.5 px-1">Bir nechta tanlash mumkin. Faqat yorliq — pul yo'nalishini cheklamaydi.</p>
           </div>
           <div className="flex gap-3 pt-2 border-t border-slate-100">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-bold text-[10px] tracking-widest" onClick={() => setIsFormOpen(false)}>BEKOR</button>
-            <button type="submit" className="h-12 flex-[2] bg-orange-600 text-white rounded-2xl uppercase font-bold text-[10px] tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-bold text-[11px] tracking-widest" onClick={() => setIsFormOpen(false)}>BEKOR</button>
+            <button type="submit" className="h-12 flex-[2] bg-orange-600 text-white rounded-2xl uppercase font-bold text-[11px] tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
               {isEditing ? 'YANGILASH' : "QO'SHISH"}
             </button>
           </div>
@@ -444,7 +444,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
         {isDetailLoading ? (
           <div className="py-16 flex flex-col items-center justify-center opacity-30">
             <div className="animate-spin w-8 h-8 border-2 border-orange-500 rounded-full border-t-transparent mb-3"/>
-            <p className="text-[10px] font-bold uppercase">Yuklanmoqda...</p>
+            <p className="text-[11px] font-bold uppercase">Yuklanmoqda...</p>
           </div>
         ) : detailData ? (
           <div className="space-y-6">
@@ -452,7 +452,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             <div className={`p-5 rounded-2xl border ${balanceMeta(detailData.balance).bg}`}>
               <div className="flex items-end justify-between">
                 <div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{balanceMeta(detailData.balance).text}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{balanceMeta(detailData.balance).text}</p>
                   <p className={`text-2xl font-bold ${balanceMeta(detailData.balance).cls}`}>
                     {detailData.balance === 0 ? '0 UZS' : formatCurrency(detailData.balance)}
                   </p>
@@ -467,8 +467,8 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                   { label: 'Hamkor to\'ladi', val: detailData.totalReceived },
                 ].map(c => (
                   <div key={c.label} className="bg-white/70 px-2.5 py-1.5 rounded-lg">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter leading-none mb-0.5">{c.label}</p>
-                    <p className="text-[10px] font-bold text-slate-700 leading-none">{formatCurrency(c.val || 0)}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mb-0.5">{c.label}</p>
+                    <p className="text-[11px] font-bold text-slate-700 leading-none">{formatCurrency(c.val || 0)}</p>
                   </div>
                 ))}
               </div>
@@ -482,14 +482,14 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                     <button
                       type="button"
                       onClick={() => setLedgerForm({ open: true, direction: 'we_owe', amount: '', description: '', paidNow: false })}
-                      className="flex-1 h-11 rounded-xl border-2 border-rose-200 text-rose-600 bg-rose-50/40 hover:bg-rose-50 text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all"
+                      className="flex-1 h-11 rounded-xl border-2 border-rose-200 text-rose-600 bg-rose-50/40 hover:bg-rose-50 text-[12px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all"
                     >
                       <ArrowDownLeft size={14}/> Xarid (biz oldik)
                     </button>
                     <button
                       type="button"
                       onClick={() => setLedgerForm({ open: true, direction: 'they_owe', amount: '', description: '', paidNow: false })}
-                      className="flex-1 h-11 rounded-xl border-2 border-emerald-200 text-emerald-600 bg-emerald-50/40 hover:bg-emerald-50 text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all"
+                      className="flex-1 h-11 rounded-xl border-2 border-emerald-200 text-emerald-600 bg-emerald-50/40 hover:bg-emerald-50 text-[12px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all"
                     >
                       <ArrowUpRight size={14}/> Sotuv (u oldi)
                     </button>
@@ -497,13 +497,13 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 ) : (
                   <form onSubmit={submitLedger} className={`p-4 rounded-2xl border-2 space-y-3 ${ledgerForm.direction === 'we_owe' ? 'border-rose-100 bg-rose-50/30' : 'border-emerald-100 bg-emerald-50/30'}`}>
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                      <p className="text-[12px] font-bold uppercase tracking-wider text-slate-600">
                         {ledgerForm.direction === 'we_owe' ? 'Xarid — biz hamkordan oldik' : 'Sotuv — hamkor bizdan oldi'}
                       </p>
                       <button type="button" onClick={() => setLedgerForm(f => ({ ...f, open: false }))} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Summa (UZS) *</label>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Summa (UZS) *</label>
                       <input
                         type="number" min="0" required autoFocus
                         value={ledgerForm.amount}
@@ -512,7 +512,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Izoh (ixtiyoriy)</label>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Izoh (ixtiyoriy)</label>
                       <input
                         type="text"
                         value={ledgerForm.description}
@@ -523,12 +523,12 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                     {ledgerForm.direction === 'they_owe' && (
                       <label className="flex items-center gap-2 cursor-pointer select-none px-1">
                         <input type="checkbox" checked={ledgerForm.paidNow} onChange={e => setLedgerForm(f => ({ ...f, paidNow: e.target.checked }))} className="w-4 h-4 accent-emerald-600"/>
-                        <span className="text-[11px] font-bold text-slate-600">Darhol to'landi (naqd) — Kassaga kirim yoziladi</span>
+                        <span className="text-[12px] font-bold text-slate-600">Darhol to'landi (naqd) — Kassaga kirim yoziladi</span>
                       </label>
                     )}
                     <div className="flex gap-2 pt-1">
-                      <button type="button" onClick={() => setLedgerForm(f => ({ ...f, open: false }))} className="btn-outline h-11 flex-1 rounded-xl uppercase font-bold text-[10px] tracking-widest">BEKOR</button>
-                      <button type="submit" disabled={isLedgerSubmitting} className={`h-11 flex-[2] text-white rounded-xl uppercase font-bold text-[10px] tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-50 ${ledgerForm.direction === 'we_owe' ? 'bg-rose-600 shadow-rose-500/20' : 'bg-emerald-600 shadow-emerald-500/20'}`}>
+                      <button type="button" onClick={() => setLedgerForm(f => ({ ...f, open: false }))} className="btn-outline h-11 flex-1 rounded-xl uppercase font-bold text-[11px] tracking-widest">BEKOR</button>
+                      <button type="submit" disabled={isLedgerSubmitting} className={`h-11 flex-[2] text-white rounded-xl uppercase font-bold text-[11px] tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-50 ${ledgerForm.direction === 'we_owe' ? 'bg-rose-600 shadow-rose-500/20' : 'bg-emerald-600 shadow-emerald-500/20'}`}>
                         {isLedgerSubmitting ? '...' : 'SAQLASH'}
                       </button>
                     </div>
@@ -540,21 +540,21 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Topshiriqlar + Ledger (biz qarzdor / hamkor qarzdor manbalari) */}
               <div className="space-y-3">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
+                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
                   <ClipboardList size={14}/> Topshiriq & Xarid/Sotuv
                 </h4>
                 <div className="space-y-2 max-h-[40vh] overflow-y-auto custom-scroll pr-1">
                   {(detailData.tasks?.length === 0 && detailData.ledgerEntries?.length === 0) && (
-                    <p className="text-[10px] text-slate-300 italic py-4">Hali yozuv yo'q</p>
+                    <p className="text-[11px] text-slate-300 italic py-4">Hali yozuv yo'q</p>
                   )}
                   {detailData.tasks?.map((t: any) => (
                     <div key={t.id} className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex justify-between items-center">
                       <div className="min-w-0 flex-1 pr-2">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-[11px] font-bold text-slate-700 uppercase truncate">{t.title}</p>
-                          <span className="shrink-0 text-[8px] font-bold bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded text-rose-500 uppercase">Subpudrat</span>
+                          <p className="text-[12px] font-bold text-slate-700 uppercase truncate">{t.title}</p>
+                          <span className="shrink-0 text-[9px] font-bold bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded text-rose-500 uppercase">Subpudrat</span>
                         </div>
-                        <p className="text-[9px] text-slate-400">{new Date(t.createdAt).toLocaleDateString('uz-UZ')}</p>
+                        <p className="text-[10px] text-slate-400">{new Date(t.createdAt).toLocaleDateString('uz-UZ')}</p>
                       </div>
                       <span className="shrink-0 text-xs font-bold text-rose-500">+{formatCurrency(t.vendorCost)}</span>
                     </div>
@@ -565,10 +565,10 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       <div key={l.id} className={`p-3 rounded-xl border flex justify-between items-center group ${isBuy ? 'bg-rose-50/30 border-rose-100' : 'bg-emerald-50/30 border-emerald-100'}`}>
                         <div className="min-w-0 flex-1 pr-2">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-[11px] font-bold text-slate-700 uppercase truncate">{l.description || (isBuy ? 'Xarid' : 'Sotuv')}</p>
-                            <span className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${isBuy ? 'bg-rose-50 border border-rose-100 text-rose-500' : 'bg-emerald-50 border border-emerald-100 text-emerald-600'}`}>{isBuy ? 'Xarid' : 'Sotuv'}</span>
+                            <p className="text-[12px] font-bold text-slate-700 uppercase truncate">{l.description || (isBuy ? 'Xarid' : 'Sotuv')}</p>
+                            <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${isBuy ? 'bg-rose-50 border border-rose-100 text-rose-500' : 'bg-emerald-50 border border-emerald-100 text-emerald-600'}`}>{isBuy ? 'Xarid' : 'Sotuv'}</span>
                           </div>
-                          <p className="text-[9px] text-slate-400">{new Date(l.date).toLocaleDateString('uz-UZ')}</p>
+                          <p className="text-[10px] text-slate-400">{new Date(l.date).toLocaleDateString('uz-UZ')}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className={`text-xs font-bold ${isBuy ? 'text-rose-500' : 'text-emerald-600'}`}>{isBuy ? '+' : '−'}{formatCurrency(l.amount)}</span>
@@ -584,21 +584,21 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
 
               {/* Kassa harakatlari (kirim + chiqim) */}
               <div className="space-y-3">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
+                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 pb-2">
                   <DollarSign size={14}/> Kassa harakatlari
                 </h4>
                 <div className="space-y-2 max-h-[40vh] overflow-y-auto custom-scroll pr-1">
                   {detailData.transactions?.length === 0 ? (
-                    <p className="text-[10px] text-slate-300 italic py-4">Hali kassa harakati yo'q</p>
+                    <p className="text-[11px] text-slate-300 italic py-4">Hali kassa harakati yo'q</p>
                   ) : detailData.transactions.map((tr: any) => {
                     const isIn = tr.type === 'kirim';
                     return (
                       <div key={tr.id} className={`p-3 rounded-xl border flex justify-between items-center ${isIn ? 'bg-emerald-50/30 border-emerald-100/50' : 'bg-slate-50/50 border-slate-100'}`}>
                         <div className="min-w-0 flex-1 pr-2">
-                          <p className="text-[11px] font-bold uppercase truncate text-slate-700">
+                          <p className="text-[12px] font-bold uppercase truncate text-slate-700">
                             {isIn ? (tr.serviceType || 'Hamkordan kirim') : (tr.expenseReason || 'Hamkorga to\'lov')}
                           </p>
-                          <p className="text-[9px] text-slate-400">{new Date(tr.date).toLocaleDateString('uz-UZ')} · {isIn ? 'Kirim' : 'Chiqim'}</p>
+                          <p className="text-[10px] text-slate-400">{new Date(tr.date).toLocaleDateString('uz-UZ')} · {isIn ? 'Kirim' : 'Chiqim'}</p>
                         </div>
                         <span className={`shrink-0 text-xs font-bold ${isIn ? 'text-emerald-600' : 'text-slate-500'}`}>{isIn ? '+' : '−'}{formatCurrency(tr.amount)}</span>
                       </div>
@@ -623,8 +623,8 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[10px] tracking-widest" onClick={() => setConfirmId(null)}>BEKOR</button>
-            <button className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
+            <button className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[11px] tracking-widest" onClick={() => setConfirmId(null)}>BEKOR</button>
+            <button className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
               HA, O'CHIRILSIN
             </button>
           </div>

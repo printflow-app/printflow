@@ -58,7 +58,7 @@ const KpiStartDate: React.FC = () => {
   useEffect(() => {
     settingsApi.get('KPI_START_DATE')
       .then((r: any) => {
-        const v = typeof r.data === 'string' ? r.data : r.data?.value || '';
+        const v = typeof r.data === 'string' ? r.data : (r.data?.value || '');
         const d = v ? String(v).slice(0, 10) : '';
         setValue(d); setSaved(d);
       })
@@ -68,7 +68,13 @@ const KpiStartDate: React.FC = () => {
   const save = async () => {
     setBusy(true);
     try {
-      await settingsApi.set('KPI_START_DATE', value || null);
+      // OBYEKT sifatida yuboriladi, oddiy satr emas.
+      //
+      // Bare string bilan axios JSON content-type qo'ymaydi va backend
+      // @Body() bo'sh obyekt oladi — sozlama "{}" bo'lib saqlanardi.
+      // Natijada toast "saqlandi" deb chiqsa ham, sahifa yangilanganda
+      // maydon bo'sh qaytardi.
+      await settingsApi.set('KPI_START_DATE', { value: value || null });
       setSaved(value);
       toast.success(value ? `KPI ${value} dan boshlab hisoblanadi` : 'Cheklov olib tashlandi');
     } catch {
@@ -78,7 +84,7 @@ const KpiStartDate: React.FC = () => {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-      <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
+      <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
         KPI qaysi sanadan boshlab hisoblanadi
       </label>
       <div className="flex flex-wrap items-center gap-2">
@@ -96,18 +102,18 @@ const KpiStartDate: React.FC = () => {
         {value && (
           <button
             onClick={() => setValue('')}
-            className="h-10 px-3 text-[11px] font-bold text-slate-400 hover:text-rose-500"
+            className="h-10 px-3 text-[12px] font-bold text-slate-400 hover:text-rose-500"
           >
             Tozalash
           </button>
         )}
       </div>
-      <p className="text-[10px] font-semibold text-slate-400 mt-2 leading-relaxed">
+      <p className="text-[11px] font-semibold text-slate-400 mt-2 leading-relaxed">
         {value
           ? `Shu sanadan OLDIN qabul qilingan buyurtmalar KPI'ga kirmaydi — ular boshqa shartlarda olingan. Sanadan keyin qabul qilinganlari esa BAJARILGANDA hisoblanadi.`
           : `Belgilanmasa barcha buyurtmalar hisobga olinadi, jumladan KPI joriy qilinishidan oldingilari ham.`}
       </p>
-      <p className="text-[10px] font-semibold text-slate-400 mt-1.5 leading-relaxed">
+      <p className="text-[11px] font-semibold text-slate-400 mt-1.5 leading-relaxed">
         KPI buyurtma <b>topshirilganda</b> yoziladi, qabul qilinganda emas — yo'lda
         bekor bo'lgan ish uchun pul berilmaydi. Shuning uchun oy oxirida olingan
         buyurtma keyingi oy tayyor bo'lsa, KPI keyingi oyga tushadi.
@@ -379,7 +385,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
       {/* 1-qadam: lavozim */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
+        <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
           1. Lavozimni tanlang
         </label>
         <select
@@ -394,7 +400,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
           })}
         </select>
         {!roleId && (
-          <p className="text-[11px] font-semibold text-slate-400 mt-2">
+          <p className="text-[12px] font-semibold text-slate-400 mt-2">
             Sxema belgilanmagan lavozimda maosh avvalgidek qo'lda yoziladi.
           </p>
         )}
@@ -402,12 +408,12 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
       {roleId && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
             2. {role?.name} uchun to'lov turlari
           </p>
 
           {components.length === 0 && !adding && !picking && (
-            <p className="text-[12px] font-semibold text-slate-400 py-3">
+            <p className="text-[13px] font-semibold text-slate-400 py-3">
               Hali hech narsa qo'shilmagan.
             </p>
           )}
@@ -429,11 +435,11 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     <Icon size={15} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-bold text-slate-800">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mr-2">{type.label}</span>
+                    <p className="text-[13px] font-bold text-slate-800">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mr-2">{type.label}</span>
                       {c.label}
                     </p>
-                    <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                    <p className="text-[12px] font-semibold text-slate-500 mt-0.5">
                       {summary(c)}
                       {(c.conditions || []).map((cd, i) => (
                         <span key={i} className="text-orange-600">
@@ -471,19 +477,19 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     {ex.ok.map((line, i) => (
                       <div key={`o${i}`} className="flex items-start gap-2">
                         <Check size={12} className="text-emerald-600 mt-0.5 flex-shrink-0" strokeWidth={3} />
-                        <p className="text-[11px] font-semibold text-slate-700 leading-snug">{line}</p>
+                        <p className="text-[12px] font-semibold text-slate-700 leading-snug">{line}</p>
                       </div>
                     ))}
                     {ex.no.map((line, i) => (
                       <div key={`n${i}`} className="flex items-start gap-2">
                         <X size={12} className="text-slate-400 mt-0.5 flex-shrink-0" strokeWidth={3} />
-                        <p className="text-[11px] font-semibold text-slate-500 leading-snug">{line}</p>
+                        <p className="text-[12px] font-semibold text-slate-500 leading-snug">{line}</p>
                       </div>
                     ))}
                     {ex.warn && (
                       <div className="flex items-start gap-2">
                         <AlertTriangle size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-[11px] font-semibold text-amber-800 leading-snug">{ex.warn}</p>
+                        <p className="text-[12px] font-semibold text-amber-800 leading-snug">{ex.warn}</p>
                       </div>
                     )}
                   </div>
@@ -496,7 +502,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
           {/* Tur tanlash */}
           {picking && (
             <div className="border border-orange-200 bg-orange-50/40 rounded-xl p-4 space-y-2">
-              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-2">Qanday to'lov turi?</p>
+              <p className="text-[11px] font-bold text-slate-600 uppercase tracking-widest mb-2">Qanday to'lov turi?</p>
               {TYPES.map(t => {
                 const Icon = t.icon;
                 return (
@@ -504,14 +510,14 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     className={`w-full flex items-start gap-3 bg-white border-2 rounded-xl px-4 py-3 text-left transition-all ${t.tone}`}>
                     <Icon size={16} className="mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-[12px] font-bold">{t.label}</p>
-                      <p className="text-[11px] font-medium text-slate-500 mt-0.5">{t.desc}</p>
+                      <p className="text-[13px] font-bold">{t.label}</p>
+                      <p className="text-[12px] font-medium text-slate-500 mt-0.5">{t.desc}</p>
                     </div>
                   </button>
                 );
               })}
               <button onClick={() => setPicking(false)}
-                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider pt-1">
+                className="text-[11px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider pt-1">
                 Bekor qilish
               </button>
             </div>
@@ -520,12 +526,12 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
           {/* Tanlangan turga qarab savollar */}
           {adding && (
             <div className="border border-orange-200 bg-orange-50/40 rounded-xl p-4 space-y-3">
-              <p className="text-[10px] font-bold text-orange-700 uppercase tracking-widest">
+              <p className="text-[11px] font-bold text-orange-700 uppercase tracking-widest">
                 {TYPES.find(t => t.key === adding.group)?.label}
               </p>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Nomi</label>
+                <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Nomi</label>
                 <input
                   value={adding.label}
                   onChange={e => setAdding({ ...adding, label: e.target.value })}
@@ -541,7 +547,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
               {adding.group === 'fiksa' ? (
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Summa</label>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Summa</label>
                   <CurrencyInput
                     value={adding.amount || ''}
                     onChange={(uzs) => setAdding({ ...adding, amount: Number(uzs) || 0 })}
@@ -552,7 +558,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
               ) : (
                 <>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
                       Nimaga qarab?
                     </label>
                     <select
@@ -570,19 +576,19 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     {/* Tanlangan ko'rsatkich nimani anglatishi — tuzoqlari
                         bilan. Raqamli misol pastdagi "Nima bo'ladi" blokida. */}
                     {adding.metric && METRIC_MEANING[adding.metric] && (
-                      <div className="mt-2 p-2.5 rounded-xl bg-sky-50/70 border border-sky-100">
-                        <p className="text-[10px] font-semibold text-sky-800 leading-relaxed">
+                      <div className="mt-2 p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
+                        <p className="text-[11px] font-semibold text-slate-800 leading-relaxed">
                           {METRIC_MEANING[adding.metric]}
                         </p>
                         {(adding.metric === 'bajarilgan_buyurtma_soni' ||
                           adding.metric === 'bajarilgan_buyurtma_summasi' ||
                           adding.metric === 'kirim_summasi') && (
-                          <p className="text-[10px] font-semibold text-sky-700/80 mt-1.5 leading-relaxed">
+                          <p className="text-[11px] font-semibold text-slate-700/80 mt-1.5 leading-relaxed">
                             {DEPT_NOTE}
                           </p>
                         )}
                         {adding.kind && KIND_MEANING[adding.kind] && (
-                          <p className="text-[10px] font-semibold text-sky-700/80 mt-1.5 leading-relaxed">
+                          <p className="text-[11px] font-semibold text-slate-700/80 mt-1.5 leading-relaxed">
                             <b>To'lov turi:</b> {KIND_MEANING[adding.kind]}
                           </p>
                         )}
@@ -595,7 +601,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     <div className="flex gap-2">
                       {(['per_unit', 'percent'] as Kind[]).map(k => (
                         <button key={k} onClick={() => setAdding({ ...adding, kind: k })}
-                          className={`px-3 h-8 text-[10px] font-bold uppercase tracking-wider rounded-lg border-2 transition-all ${
+                          className={`px-3 h-8 text-[11px] font-bold uppercase tracking-wider rounded-lg border-2 transition-all ${
                             adding.kind === k ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200'
                           }`}>
                           {k === 'percent' ? 'Foiz' : 'Har birlik uchun'}
@@ -606,7 +612,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
                   {adding.metric && (
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
+                      <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
                         {adding.kind === 'percent'
                           ? 'Necha foiz?'
                           : `Har bir "${metricLabel(adding.metric).toLowerCase()}" uchun qancha?`}
@@ -632,7 +638,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
               <div className="pt-1">
                 {(adding.conditions || []).map((cd, ci) => (
                   <div key={ci} className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Faqat agar</span>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Faqat agar</span>
                     <select value={cd.metric}
                       onChange={e => setAdding({ ...adding, conditions: adding.conditions!.map((x, i) => i === ci ? { ...x, metric: e.target.value } : x) })}
                       className="select-minimal text-xs font-bold flex-1 min-w-[170px]">
@@ -658,7 +664,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     ...adding,
                     conditions: [...(adding.conditions || []), { metric: metrics[0]?.key || '', op: 'gte', value: 0 }],
                   })}
-                  className="text-[10px] font-bold text-orange-600 hover:text-orange-700 uppercase tracking-wider"
+                  className="text-[11px] font-bold text-orange-600 hover:text-orange-700 uppercase tracking-wider"
                 >
                   + Shart qo'shish
                 </button>
@@ -668,7 +674,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     <input type="checkbox" checked={!!adding.proportional}
                       onChange={e => setAdding({ ...adding, proportional: e.target.checked })}
                       className="w-3.5 h-3.5 accent-orange-500" />
-                    <span className="text-[10px] font-semibold text-slate-600">
+                    <span className="text-[11px] font-semibold text-slate-600">
                       Shart to'liq bajarilmasa nisbatan berilsin (22 dan 20 kun → 20/22 qismi)
                     </span>
                   </label>
@@ -681,26 +687,26 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                 if (ex.ok.length === 0 && ex.no.length === 0) return null;
                 return (
                   <div className="bg-white border border-slate-200 rounded-xl p-3.5">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
                       Nima bo'ladi
                     </p>
                     <div className="space-y-1.5">
                       {ex.ok.map((line, i) => (
                         <div key={`ok${i}`} className="flex items-start gap-2">
                           <Check size={12} className="text-emerald-600 mt-0.5 flex-shrink-0" strokeWidth={3} />
-                          <p className="text-[11px] font-semibold text-slate-700 leading-snug">{line}</p>
+                          <p className="text-[12px] font-semibold text-slate-700 leading-snug">{line}</p>
                         </div>
                       ))}
                       {ex.no.map((line, i) => (
                         <div key={`no${i}`} className="flex items-start gap-2">
                           <X size={12} className="text-slate-400 mt-0.5 flex-shrink-0" strokeWidth={3} />
-                          <p className="text-[11px] font-semibold text-slate-500 leading-snug">{line}</p>
+                          <p className="text-[12px] font-semibold text-slate-500 leading-snug">{line}</p>
                         </div>
                       ))}
                       {ex.warn && (
                         <div className="flex items-start gap-2 pt-1.5 mt-1.5 border-t border-slate-100">
                           <AlertTriangle size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] font-semibold text-amber-800 leading-snug">{ex.warn}</p>
+                          <p className="text-[12px] font-semibold text-amber-800 leading-snug">{ex.warn}</p>
                         </div>
                       )}
                     </div>
@@ -710,11 +716,11 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
               <div className="flex justify-end gap-2 pt-2 border-t border-orange-200">
                 <button onClick={() => setAdding(null)}
-                  className="h-9 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-white rounded-lg">
+                  className="h-9 px-4 text-[12px] font-bold uppercase tracking-wider text-slate-500 hover:bg-white rounded-lg">
                   Bekor qilish
                 </button>
                 <button onClick={commitAdd}
-                  className="h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5">
+                  className="h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white text-[12px] font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5">
                   <Check size={13} /> Qo'shish
                 </button>
               </div>
@@ -723,14 +729,14 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
           {!adding && !picking && canManage && (
             <button onClick={() => setPicking(true)}
-              className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider rounded-xl border-2 border-dashed border-slate-300 text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-colors flex items-center gap-1.5">
+              className="h-10 px-4 text-[12px] font-bold uppercase tracking-wider rounded-xl border-2 border-dashed border-slate-300 text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-colors flex items-center gap-1.5">
               <Plus size={14} /> To'lov turi qo'shish
             </button>
           )}
 
           {components.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
-              <p className="text-[11px] font-semibold text-slate-600">
+              <p className="text-[12px] font-semibold text-slate-600">
                 Barcha shartlar bajarilganda fiksa:{' '}
                 <span className="text-emerald-600 font-bold">{fm(totalFiksa)} so'm</span>
               </p>
@@ -741,7 +747,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                       if (!confirm(`"${role?.name}" sxemasi o'chirilsinmi? Maosh yana qo'lda yoziladi.`)) return;
                       delMut.mutate();
                     }}
-                    className="h-10 px-4 text-[11px] font-bold uppercase tracking-wider text-rose-600 hover:bg-rose-50 rounded-xl"
+                    className="h-10 px-4 text-[12px] font-bold uppercase tracking-wider text-rose-600 hover:bg-rose-50 rounded-xl"
                   >
                     O'chirish
                   </button>
@@ -749,7 +755,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                 <button
                   disabled={!canManage || !dirty || saveMut.isPending}
                   onClick={() => saveMut.mutate()}
-                  className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-40"
+                  className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white text-[12px] font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-40"
                 >
                   {saveMut.isPending ? 'Saqlanmoqda...' : dirty ? 'Saqlash' : 'Saqlangan'}
                 </button>

@@ -94,7 +94,7 @@ export default function PublicPriceList() {
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10 print:hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0 flex-shrink-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Narxlar</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Narxlar</p>
             <p className="text-sm font-bold text-slate-800 truncate">{data.tenant.name}</p>
           </div>
 

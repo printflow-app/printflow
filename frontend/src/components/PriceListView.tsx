@@ -207,7 +207,7 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
                 >
                   {br.companyName || tenant.name}
                 </h1>
-                <p className="text-[11px] font-bold uppercase tracking-[0.3em] mt-1"
+                <p className="text-[12px] font-bold uppercase tracking-[0.3em] mt-1"
                    style={{ color: br.headerText, opacity: 0.8 }}>
                   {br.headerTitle}
                 </p>
@@ -226,7 +226,7 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
             </div>
 
             <div className="text-right flex-shrink-0">
-              <p className="text-[10px] font-bold uppercase tracking-widest"
+              <p className="text-[11px] font-bold uppercase tracking-widest"
                  style={{ color: br.headerText, opacity: 0.7 }}>Sana</p>
               <p className="text-base font-bold mt-0.5">{formatDate()}</p>
               {phone && (
@@ -283,7 +283,7 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
                             {formatPrice(svc.basePrice)}
                           </span>
                           <span className="text-xs font-bold text-slate-400 ml-1">so'm</span>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                             / {svc.unit}
                           </p>
                         </div>
@@ -293,7 +293,7 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
 
                   {svc.options && svc.options.length > 0 && (
                     <div className="pt-4 border-t border-slate-100 overflow-hidden w-full">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">
                         Opsiyalar va yakuniy narxlar:
                       </p>
                       <div className="rounded-xl overflow-hidden shadow-sm bg-white w-full"
@@ -301,7 +301,7 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr
-                              className="text-[11px] font-bold uppercase tracking-wider"
+                              className="text-[12px] font-bold uppercase tracking-wider"
                               style={{ backgroundColor: br.tableHeaderBg, color: br.tableHeaderText }}
                             >
                               <th className="px-4 py-3 text-left font-bold">Opsiya</th>
@@ -323,18 +323,18 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
                                   key={opt.id}
                                   className="odd:bg-white even:bg-slate-50 transition-colors"
                                 >
-                                  <td className="px-4 py-3.5 font-bold text-slate-800 uppercase tracking-wider text-[11px]">
+                                  <td className="px-4 py-3.5 font-bold text-slate-800 uppercase tracking-wider text-[12px]">
                                     {opt.name}
                                   </td>
                                   <td className="px-4 py-3.5 text-center font-bold text-slate-900 text-xs">
                                     {opt.value}
                                   </td>
                                   <td className="px-4 py-3.5 text-right font-bold text-slate-900 text-xs whitespace-nowrap">
-                                    {formatPrice(finalPrice)} <span className="text-[10px] font-normal text-slate-400">so'm</span>
+                                    {formatPrice(finalPrice)} <span className="text-[11px] font-normal text-slate-400">so'm</span>
                                   </td>
                                   <td className="px-4 py-3.5 text-right font-bold text-xs whitespace-nowrap"
                                       style={{ color: br.totalSum }}>
-                                    {formatPrice(totalSum)} <span className="text-[10px] font-normal" style={{ color: br.totalSum, opacity: 0.7 }}>so'm</span>
+                                    {formatPrice(totalSum)} <span className="text-[11px] font-normal" style={{ color: br.totalSum, opacity: 0.7 }}>so'm</span>
                                   </td>
                                 </tr>
                               );
@@ -351,7 +351,7 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
         </div>
 
         {/* Footer */}
-        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white">
+        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">
           <span>{br.companyName || tenant.name} &copy; {new Date().getFullYear()}</span>
           <span>{br.footerNote}</span>
         </div>

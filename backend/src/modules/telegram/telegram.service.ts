@@ -639,7 +639,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
       const tasks = await this.prisma.task.findMany({
         where: { tenantId: t.id, columnId: { not: lastColId }, deadlineAt: { not: null } },
-        include: { column: true },
+        // Mijoz ham qo'shiladi — eslatmada "qaysi mijozning qaysi buyurtmasi"
+        // ko'rinishi kerak, faqat xizmat nomi yetarli emas edi.
+        include: { column: true, customer: true },
       });
 
       for (const task of tasks) {
@@ -658,11 +660,22 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           if (!await this.acquireCronLock(t.id, `cron_lock:task_reminder:${hourStr}:${task.id}:${empId}`)) continue;
           const emp = await this.prisma.employee.findUnique({ where: { id: empId } });
           if (emp?.telegramId) {
+            // Buyurtma nomi bilan xizmat nomi boshqa-boshqa: bitta buyurtmada
+            // bir necha xizmat bo'lishi mumkin. Ikkalasi ham ko'rsatiladi,
+            // aks holda "qaysi buyurtma edi?" degan savol qolardi.
+            const anyTask = task as any;
+            const mijoz = anyTask.customer?.name || anyTask.customerName || null;
+            const buyurtma = anyTask.orderName || task.title;
+            const xizmat = anyTask.orderName && task.title !== anyTask.orderName ? task.title : null;
+            const raqam = task.displayId ? ` (${task.displayId})` : '';
+
             await this.sendMessage(
               emp.telegramId,
               `⏳ *Muddat Eslatmasi: ${label}*\n\n` +
-              `📌 Buyurtma: *${task.title}*\n` +
-              `🏢 Bosqich: ${(task as any).column?.title}\n` +
+              (mijoz ? `👤 Mijoz: *${mijoz}*\n` : '') +
+              `📌 Buyurtma: *${buyurtma}*${raqam}\n` +
+              (xizmat ? `🧾 Xizmat: ${xizmat}\n` : '') +
+              `🏢 Bosqich: ${anyTask.column?.title}\n` +
               `📅 Muddat: ${task.deadlineAt.toLocaleString('uz-UZ')}`,
             );
           }

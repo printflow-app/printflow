@@ -47,19 +47,19 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   return (
     <div className="relative w-full" ref={containerRef}>
-      {label && <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 px-1">{label}</label>}
+      {label && <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">{label}</label>}
       
       <div 
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`w-full bg-slate-50 border rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
-          isOpen ? 'border-violet-500 ring-4 ring-violet-500/10 bg-white' : 'border-slate-200 hover:border-slate-300'
+          isOpen ? 'border-slate-500 ring-4 ring-slate-500/10 bg-white' : 'border-slate-200 hover:border-slate-300'
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}`}
       >
         <div className="flex-1 truncate">
           {selectedOption ? (
             <div className="flex flex-col">
               <span className="text-sm font-bold text-slate-800">{selectedOption.label}</span>
-              {selectedOption.subLabel && <span className="text-[10px] font-bold text-violet-600 uppercase">{selectedOption.subLabel}</span>}
+              {selectedOption.subLabel && <span className="text-[11px] font-bold text-slate-600 uppercase">{selectedOption.subLabel}</span>}
             </div>
           ) : (
             <span className="text-sm font-bold text-slate-400">{placeholder}</span>
@@ -79,7 +79,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 value={search} 
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Qidirish..." 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-xs font-bold outline-none focus:border-violet-400 focus:bg-white transition-all"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-xs font-bold outline-none focus:border-slate-400 focus:bg-white transition-all"
               />
             </div>
           </div>
@@ -94,17 +94,17 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className={`px-4 py-3 hover:bg-violet-50 cursor-pointer flex items-center justify-between transition-colors ${
-                    value === opt.id ? 'bg-violet-50/50' : ''
+                  className={`px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors ${
+                    value === opt.id ? 'bg-slate-50/50' : ''
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className={`text-sm ${value === opt.id ? 'font-bold text-violet-700' : 'font-bold text-slate-700'}`}>
+                    <span className={`text-sm ${value === opt.id ? 'font-bold text-slate-700' : 'font-bold text-slate-700'}`}>
                       {opt.label}
                     </span>
-                    {opt.subLabel && <span className="text-[10px] font-bold text-slate-400 uppercase">{opt.subLabel}</span>}
+                    {opt.subLabel && <span className="text-[11px] font-bold text-slate-400 uppercase">{opt.subLabel}</span>}
                   </div>
-                  {value === opt.id && <Check size={16} className="text-violet-600" />}
+                  {value === opt.id && <Check size={16} className="text-slate-600" />}
                 </div>
               ))
             ) : (

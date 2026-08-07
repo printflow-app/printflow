@@ -25,7 +25,7 @@ interface IdentityProps {
 export function TaskIdentityBadges({ task, vendor, isMyTask }: IdentityProps) {
   return (
     <div className="flex items-center gap-1 mb-1.5 -mt-0.5 flex-wrap">
-      <span className="text-[11px] font-medium font-mono text-slate-400">
+      <span className="text-[12px] font-medium font-mono text-slate-400">
         {task.displayId || `#${task.id.slice(-6).toUpperCase()}`}
       </span>
       {vendor && (
@@ -34,7 +34,7 @@ export function TaskIdentityBadges({ task, vendor, isMyTask }: IdentityProps) {
         </span>
       )}
       {isMyTask && (
-        <span className="badge-neutral gap-1 text-sky-700 bg-sky-50">
+        <span className="badge-neutral gap-1 text-slate-700 bg-slate-50">
           <Users size={10} /> Menda
         </span>
       )}

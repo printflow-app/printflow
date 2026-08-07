@@ -4,33 +4,49 @@
 
 :root {
   /* ============================================================
-     LINEAR-PROFESSIONAL TOKENLAR (2026-07 redizayn)
-     Zich, tartibli, ishbilarmon dashboard: kichik radiuslar, sovuq
-     neytrallar, past shovqin. Orange faqat amal/tanlov uchun.
-     PRODUCT.md: "Zichlik — hurmat", "Bitta lug'at — hamma joyda".
+     SOFT / MINIMAL TOKENLAR (2026-08 redizayn)
+
+     Avvalgi "Linear" yo'nalishi zichlik va sovuq neytrallarga qurilgan
+     edi: kichik radiuslar, ko'rinadigan chegaralar, ko'p ajratuvchi
+     chiziq. Yangi yo'nalish — yumshoq va sokin: kattaroq burchaklar,
+     iliq oq fon, chegara deyarli sezilmaydi, ajratish rang bilan emas
+     BO'SHLIQ bilan qilinadi.
+
+     Palitra uchta: oq / to'q sariq / qoraga yaqin. Qizil, yashil va
+     sariq faqat holat bildirish uchun qoladi (xato, muvaffaqiyat,
+     ogohlantirish) — bezak sifatida ishlatilmaydi.
+
+     MUHIM: bu qiymatlar tailwind.config.js orqali `rounded-*` va
+     `shadow-*` klasslariga ulangan, ya'ni shu yerdagi o'zgarish butun
+     ilovaga bir vaqtda tarqaladi. Har sahifani alohida tahrirlash
+     shart emas va shart ham emas edi.
      ============================================================ */
-  --background: #f7f8f9;      /* kontent foni — sovuq, deyarli oq   */
-  --foreground: #18181b;
-  --primary: #f2610d;         /* orange — biroz chuqurlashtirilgan  */
+  --background: #faf9f7;      /* iliq oq — sovuq kulrang o'rniga    */
+  --foreground: #1c1917;      /* qoraga yaqin, biroz iliq            */
+  --primary: #f2610d;         /* to'q sariq — yagona urg'u rangi     */
   --primary-hover: #dd570b;
   --primary-foreground: #ffffff;
   --card: #ffffff;
-  --card-foreground: #18181b;
-  /* Ikkinchi neytral qatlam — sidebar/panel kontentdan tonda ajraladi */
-  --surface-2: #fcfcfd;
-  --border: #e5e7ea;
-  --border-strong: #d3d6db;
-  --muted: #71717a;
-  --muted-foreground: #18181b;
+  --card-foreground: #1c1917;
+  /* Ikkinchi qatlam kontentdan deyarli farq qilmaydi — minimalizm
+     qatlamni chegara bilan emas, ozgina ton bilan ko'rsatadi. */
+  --surface-2: #fdfcfb;
+  --border: #e7e2db;          /* yumshoq, lekin ko'rinadi            */
+  --border-strong: #d6cfc5;
+  /* Ikkilamchi matn. Avval #78716c edi — juda ochib ketgan, iliq oq
+     fon ustida o'qish qiyin bo'lgan. Endi to'qroq: yumshoqlik
+     kontrastni yo'qotish hisobiga bo'lmasligi kerak. */
+  --muted: #57534e;
+  --muted-foreground: #1c1917;
 
-  /* Radius shkalasi — Linear zichligi. Har inline rounded-{...}
-     shu yerdan keladi (tailwind.config.js remap). */
-  --radius-sm: 5px;
-  --radius-md: 7px;
-  --radius-lg: 9px;
-  --radius-xl: 10px;
-  --radius-2xl: 12px;
-  --radius-3xl: 16px;
+  /* Radius shkalasi — yumshoq. Har inline rounded-{...} shu yerdan
+     keladi (tailwind.config.js remap). */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-3xl: 24px;
   /* Control balandliklari — desktop zich (36px), telefonda tap target
      media-query bilan 40px ga ko'tariladi (pastda). */
   --control-h-sm: 30px;

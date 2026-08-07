@@ -185,14 +185,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
 
             {/* Session expired warning */}
             {sessionExpired && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-600 rounded-xl text-[12px] font-medium tracking-tight p-3 text-center flex items-center justify-center gap-2">
+              <div className="bg-amber-50 border border-amber-200 text-amber-600 rounded-xl text-[13px] font-medium tracking-tight p-3 text-center flex items-center justify-center gap-2">
                 <AlertTriangle size={14} strokeWidth={2.5}/> Xavfsizlik yuzasidan tizimdan chiqarildingiz. Qayta kiring.
               </div>
             )}
 
             {/* Error */}
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-[12px] font-medium tracking-tight p-3 text-center">
+              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-[13px] font-medium tracking-tight p-3 text-center">
                 {error}
               </div>
             )}
@@ -228,7 +228,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
           )}
         </div>
 
-        <p className="mt-8 text-center text-[11px] font-medium text-slate-400 tracking-tight">
+        <p className="mt-8 text-center text-[12px] font-medium text-slate-400 tracking-tight">
           PrintFlow © {new Date().getFullYear()} — Barcha huquqlar himoyalangan
         </p>
       </div>

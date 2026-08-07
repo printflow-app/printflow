@@ -28,9 +28,9 @@ interface Props { currentUser: any; activeBranchId?: string; readOnly?: boolean;
 const fmt = (n: number) => new Intl.NumberFormat('uz-UZ').format(Math.round(Number(n) || 0)).replace(/,/g, ' ');
 
 const barColor = (pct: number) =>
-  pct >= 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-sky-500' : 'bg-rose-400';
+  pct >= 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-slate-500' : 'bg-rose-400';
 const barTextColor = (pct: number) =>
-  pct >= 100 ? 'text-emerald-600' : pct >= 50 ? 'text-sky-600' : 'text-rose-500';
+  pct >= 100 ? 'text-emerald-600' : pct >= 50 ? 'text-slate-600' : 'text-rose-500';
 
 const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly }) => {
   const isAdmin = currentUser?.role?.name?.toLowerCase() === 'admin' || currentUser?.login === 'admin';
@@ -139,14 +139,14 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
             <Target size={15} className="text-orange-500" /> KPI Rejalari
           </h3>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             Oylik maqsadlar va bajarilishi{periodKey ? ` · ${periodKey}` : ''}
           </p>
         </div>
         {canManage && (
           <button
             onClick={openCreate}
-            className="flex items-center gap-1.5 h-9 px-3 bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+            className="flex items-center gap-1.5 h-9 px-3 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
           >
             <Plus size={13} strokeWidth={3} /> Reja qo'shish
           </button>
@@ -164,11 +164,11 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
             return (
               <span
                 key={p.id}
-                className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg pl-2.5 pr-1.5 py-1 text-[10px] font-bold text-slate-600"
+                className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg pl-2.5 pr-1.5 py-1 text-[11px] font-bold text-slate-600"
               >
                 {p.scope === 'role'
                   ? <Users size={11} className="text-orange-500" />
-                  : <User size={11} className="text-sky-500" />}
+                  : <User size={11} className="text-slate-500" />}
                 <span className="text-slate-800">{who}</span>
                 <span className="text-slate-400">·</span>
                 <span>{m?.label || p.metricKey}</span>
@@ -185,11 +185,11 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
       {/* Progress — xodimlar bo'yicha */}
       <div className="p-4">
         {progressQ.isLoading ? (
-          <div className="py-10 text-center text-slate-300 text-[10px] font-bold uppercase tracking-widest">Yuklanmoqda...</div>
+          <div className="py-10 text-center text-slate-300 text-[11px] font-bold uppercase tracking-widest">Yuklanmoqda...</div>
         ) : visibleProgress.length === 0 ? (
           <div className="py-12 text-center">
             <TrendingUp size={28} className="mx-auto text-slate-200 mb-2" />
-            <p className="text-slate-300 font-bold uppercase tracking-widest text-[10px]">
+            <p className="text-slate-300 font-bold uppercase tracking-widest text-[11px]">
               {canManage ? "Hali reja yo'q — \"Reja qo'shish\" bilan boshlang" : "Sizga hali reja qo'yilmagan"}
             </p>
           </div>
@@ -207,10 +207,10 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
                       {emp.fullName?.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[12px] font-bold text-slate-800 uppercase tracking-tight truncate">
-                        {emp.fullName}{isMe && <span className="ml-1.5 text-[8px] text-orange-500">(siz)</span>}
+                      <p className="text-[13px] font-bold text-slate-800 uppercase tracking-tight truncate">
+                        {emp.fullName}{isMe && <span className="ml-1.5 text-[9px] text-orange-500">(siz)</span>}
                       </p>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase truncate">{emp.roleName || 'Xodim'}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase truncate">{emp.roleName || 'Xodim'}</p>
                     </div>
                   </div>
                   <div className="space-y-2.5">
@@ -218,7 +218,7 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
                       const pct = Math.min(100, g.percent);
                       return (
                         <div key={g.planId}>
-                          <div className="flex items-center justify-between text-[10px] mb-1">
+                          <div className="flex items-center justify-between text-[11px] mb-1">
                             <span className="font-bold text-slate-600">{g.label}</span>
                             <span className="font-bold tabular-nums">
                               <span className="text-slate-800">{fmt(g.current)}</span>
@@ -255,20 +255,20 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
             <form onSubmit={handleCreate} className="p-5 space-y-4">
               {/* Scope */}
               <div>
-                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 px-1">Kimga</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Kimga</label>
                 <div className="inline-flex bg-slate-100 rounded-xl p-1 w-full">
                   {(['role', 'employee'] as const).map((s) => (
                     <button
                       key={s} type="button"
                       onClick={() => setForm((f) => ({ ...f, scope: s }))}
-                      className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${form.scope === s ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+                      className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${form.scope === s ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
                     >
                       {s === 'role' ? <Users size={12} /> : <User size={12} />}
                       {s === 'role' ? 'Lavozim' : 'Xodim'}
                     </button>
                   ))}
                 </div>
-                <p className="text-[8px] font-bold text-slate-400 mt-1 px-1">
+                <p className="text-[9px] font-bold text-slate-400 mt-1 px-1">
                   {form.scope === 'role' ? "Lavozimdagi hamma xodimga tushadi" : "Bitta xodimga (lavozim shablonini override qiladi)"}
                 </p>
               </div>
@@ -276,7 +276,7 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
               {/* Target subyekt */}
               {form.scope === 'role' ? (
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 px-1">Lavozim</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Lavozim</label>
                   <select required value={form.roleId} onChange={(e) => setForm((f) => ({ ...f, roleId: e.target.value }))} className="select-minimal text-sm font-bold">
                     <option value="">— Lavozimni tanlang —</option>
                     {(roles as any[]).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -284,7 +284,7 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
                 </div>
               ) : (
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 px-1">Xodim</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Xodim</label>
                   <select required value={form.employeeId} onChange={(e) => setForm((f) => ({ ...f, employeeId: e.target.value }))} className="select-minimal text-sm font-bold">
                     <option value="">— Xodimni tanlang —</option>
                     {(employees as any[]).map((emp) => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
@@ -294,17 +294,17 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
 
               {/* Metric */}
               <div>
-                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 px-1">Metrika</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">Metrika</label>
                 <select required value={form.metricKey} onChange={(e) => setForm((f) => ({ ...f, metricKey: e.target.value }))} className="select-minimal text-sm font-bold">
                   <option value="">— Metrikani tanlang —</option>
                   {metrics.map((m) => <option key={m.key} value={m.key}>{m.label} ({m.unit})</option>)}
                 </select>
-                {form.metricKey && <p className="text-[8px] font-bold text-slate-400 mt-1 px-1">{metricById[form.metricKey]?.hint}</p>}
+                {form.metricKey && <p className="text-[9px] font-bold text-slate-400 mt-1 px-1">{metricById[form.metricKey]?.hint}</p>}
               </div>
 
               {/* Target */}
               <div>
-                <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1.5 px-1">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 px-1">
                   Oylik maqsad (target){form.metricKey ? ` — ${metricById[form.metricKey]?.unit}` : ''}
                 </label>
                 <input type="number" min="1" step="any" required value={form.targetValue}
@@ -313,8 +313,8 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
               </div>
 
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setShowModal(false)} className="btn-outline h-11 flex-1 rounded-xl font-bold uppercase text-[9px] tracking-widest">Bekor</button>
-                <button type="submit" disabled={saving} className="h-11 flex-1 rounded-xl font-bold uppercase text-[9px] tracking-widest bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white shadow-md transition-all">
+                <button type="button" onClick={() => setShowModal(false)} className="btn-outline h-11 flex-1 rounded-xl font-bold uppercase text-[10px] tracking-widest">Bekor</button>
+                <button type="submit" disabled={saving} className="h-11 flex-1 rounded-xl font-bold uppercase text-[10px] tracking-widest bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white shadow-md transition-all">
                   {saving ? 'Saqlanmoqda...' : 'Saqlash'}
                 </button>
               </div>
