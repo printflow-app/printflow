@@ -59,12 +59,20 @@ export const ALLOWED_MODULES: { key: string; label: string; icon: LucideIcon; de
 ];
 
 // Yagona tarif tizimi: admin faqat oylik baza narxni kiritadi,
-// 6 va 12 oylik umumiy narxlar shu bazadan avtomatik hisoblanadi.
-export const PLAN_DURATION_DISCOUNTS = { 6: 0.05, 12: 0.10 } as const;
+// umumiy narx shu bazadan avtomatik hisoblanadi.
+//
+// 6 OYLIK VARIANT OLIB TASHLANDI — endi faqat 12 oylik taklif qilinadi.
+export const PLAN_DURATION_DISCOUNTS = { 12: 0.10 } as const;
+
+/** 6 oylik narx eski yozuvlardan qayta hisoblash uchun ishlatilgan chegirma. */
+export const ESKI_6OY_CHEGIRMA = 0.05;
 
 export const computePlanPrices = (monthlyPrice: number) => ({
   price3m: Math.round(monthlyPrice * 3),
-  price6m: Math.round(monthlyPrice * 6 * (1 - PLAN_DURATION_DISCOUNTS[6])),
+  // 6 oylik endi sotilmaydi. Bazadagi ustun qoldirildi (tarixiy to'lovlar
+  // unga tayanadi), lekin qiymat 0 ga tushiriladi: eskirgan narx keyinchalik
+  // "bor ekan" deb ko'rinib qolmasin.
+  price6m: 0,
   price12m: Math.round(monthlyPrice * 12 * (1 - PLAN_DURATION_DISCOUNTS[12])),
 });
 

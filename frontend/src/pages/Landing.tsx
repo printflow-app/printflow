@@ -215,7 +215,8 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
-  const [duration, setDuration] = useState(6);
+  // Narxnoma faqat 12 oylik — 6 oylik variant sotuvdan olib tashlangan.
+  const duration = 12;
   const [formData, setFormData] = useState({ firstName: '', lastName: '', companyName: '', role: '', phone: '', telegramUser: '' });
   const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [clientLogos, setClientLogos] = useState<string[]>([]);
@@ -264,7 +265,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
   };
 
   const getPrice = (plan: any) => {
-    const v = duration === 6 ? plan?.price6m : plan?.price12m;
+    const v = plan?.price12m;
     return typeof v === 'number' ? v : 0;
   };
 
@@ -685,24 +686,10 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                 Biznesingiz hajmiga mos tarifni tanlang
               </motion.p>
 
-              {/* Duration Toggle */}
-              <motion.div variants={fadeUp} className="inline-flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl gap-1">
-                {[
-                  { m: 6, label: '6 Oy (-5%)' },
-                  { m: 12, label: '12 Oy (-10%)' },
-                ].map(({ m, label }) => (
-                  <button
-                    key={m}
-                    onClick={() => setDuration(m)}
-                    className={`px-4 md:px-6 py-2 text-sm font-bold rounded-lg transition-all duration-200 ${
-                      duration === m
-                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+              {/* Muddat — tanlov emas, ma'lumot: obuna faqat 12 oylik. */}
+              <motion.div variants={fadeUp} className="inline-flex items-center bg-slate-900 border border-slate-800 px-5 py-2.5 rounded-xl gap-2.5">
+                <span className="text-sm font-bold text-white">12 Oylik obuna</span>
+                <span className="text-xs font-bold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-md">-10%</span>
               </motion.div>
             </motion.div>
 

@@ -47,7 +47,9 @@ export default function Billing() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [selectedAiPackage, setSelectedAiPackage] = useState<any>(null);
-  const [duration, setDuration] = useState(6);
+  // Obuna muddati — faqat 12 oylik. 6 oylik variant sotuvdan olib
+  // tashlangan, shuning uchun tanlov ham yo'q: qiymat o'zgarmas.
+  const duration = 12;
   const [sender, setSender] = useState('');
   const [step, setStep] = useState<'plans' | 'form' | 'ai-topup'>('plans');
   const [receipt, setReceipt] = useState<File | null>(null);
@@ -80,10 +82,7 @@ export default function Billing() {
     } finally { setPromoValidating(false); }
   };
 
-  const getPrice = (plan: any) => {
-    if (duration === 6) return plan.price6m;
-    return plan.price12m;
-  };
+  const getPrice = (plan: any) => plan.price12m;
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text.replace(/\s/g, ''));
@@ -240,19 +239,14 @@ export default function Billing() {
               </div>
             </div>
           )}
-          {/* Duration Switcher */}
-          <div className="flex flex-col items-center gap-4 w-full">
-            <h3 className="text-[12px] font-bold text-slate-500 uppercase tracking-[0.2em] text-center">To'lov muddatini tanlang</h3>
-            <div className="flex flex-wrap justify-center bg-slate-100 p-1 rounded-2xl shadow-inner w-full sm:w-auto">
-               {[6, 12].map(m => (
-                 <button
-                    key={m}
-                    onClick={() => setDuration(m)}
-                    className={`flex-1 sm:flex-none px-2 sm:px-8 py-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap ${duration === m ? 'bg-white shadow-md text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
-                 >
-                   {m} OY {m === 6 ? '(-5%)' : '(-10%)'}
-                 </button>
-               ))}
+          {/* To'lov muddati — tanlov yo'q, obuna faqat 12 oylik.
+              Bitta tugmali "tanlov" panelini qoldirmadik: u tanlash mumkindek
+              ko'rinib, aslida hech narsani o'zgartirmasdi. */}
+          <div className="flex flex-col items-center gap-2 w-full">
+            <h3 className="text-[12px] font-bold text-slate-500 uppercase tracking-[0.2em] text-center">To'lov muddati</h3>
+            <div className="inline-flex items-center gap-2 bg-white border border-slate-200 shadow-sm px-5 py-2.5 rounded-2xl">
+              <span className="text-sm font-bold text-slate-900">12 OY</span>
+              <span className="text-[11px] font-bold text-[#FF6B00] bg-orange-50 px-2 py-0.5 rounded-lg">-10%</span>
             </div>
           </div>
 

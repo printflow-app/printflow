@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Trash2, AlertCircle, Eye } from 'lucide-react';
 import { plansApi } from '../api';
 import { usePlans, useInvalidate } from '../hooks/queries';
-import { ALLOWED_MODULES, defaultPlanForm as defaultForm, computePlanPrices, PLAN_DURATION_DISCOUNTS } from '../shared/constants';
+import { ALLOWED_MODULES, defaultPlanForm as defaultForm, computePlanPrices, PLAN_DURATION_DISCOUNTS, ESKI_6OY_CHEGIRMA } from '../shared/constants';
 
 export default function Plans() {
   const { data: plans = [] } = usePlans();
@@ -21,8 +21,15 @@ export default function Plans() {
   };
 
   const openEdit = (p: any) => {
-    // 6 oylik narxdan (-5% chegirma bilan) oylik baza narxni teskari hisoblaymiz
-    const monthlyPrice = p.price6m ? Math.round(p.price6m / 6 / (1 - PLAN_DURATION_DISCOUNTS[6])) : 0;
+    // Oylik baza narx 12 oylik narxdan (-10% chegirma bilan) teskari
+    // hisoblanadi. Eski tariflarda 12 oylik narx bo'lmasligi mumkin —
+    // u holda 6 oylikdan olamiz, aks holda tahrirlash oynasi narxni 0
+    // ko'rsatib, saqlashda tarifni bepul qilib qo'yardi.
+    const monthlyPrice = p.price12m
+      ? Math.round(p.price12m / 12 / (1 - PLAN_DURATION_DISCOUNTS[12]))
+      : p.price6m
+        ? Math.round(p.price6m / 6 / (1 - ESKI_6OY_CHEGIRMA))
+        : 0;
     setForm({
       name: p.name, displayName: p.displayName,
       monthlyPrice,
@@ -116,10 +123,6 @@ export default function Plans() {
               <div className="py-3 border-t border-b border-[color:var(--border)] mb-4">
                 <div className="flex items-baseline gap-3">
                   <div>
-                    <span className="text-lg font-extrabold text-slate-900">{(p.price6m || 0).toLocaleString()}</span>
-                    <span className="text-[9px] text-slate-500 font-bold uppercase"> / 6 oy</span>
-                  </div>
-                  <div>
                     <span className="text-lg font-extrabold text-slate-900">{(p.price12m || 0).toLocaleString()}</span>
                     <span className="text-[9px] text-slate-500 font-bold uppercase"> / 12 oy</span>
                   </div>
@@ -205,13 +208,9 @@ export default function Plans() {
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">OYLIK NARX — BAZA (UZS)</label>
                 <input type="number" required min={0} value={form.monthlyPrice} onChange={e => setForm({ ...form, monthlyPrice: +e.target.value })} className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500" />
-                <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="mt-2">
                   <div className="bg-slate-50 border border-[color:var(--border)] rounded-lg px-2.5 py-2">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">6 oy (-5%)</p>
-                    <p className="text-xs font-bold text-slate-800">{computePlanPrices(form.monthlyPrice).price6m.toLocaleString()} UZS</p>
-                  </div>
-                  <div className="bg-slate-50 border border-[color:var(--border)] rounded-lg px-2.5 py-2">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">12 oy (-10%)</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">12 oy (-10%) — mijozga shu narx ko'rinadi</p>
                     <p className="text-xs font-bold text-slate-800">{computePlanPrices(form.monthlyPrice).price12m.toLocaleString()} UZS</p>
                   </div>
                 </div>

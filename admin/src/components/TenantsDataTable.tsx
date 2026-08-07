@@ -33,7 +33,9 @@ interface Tenant {
   trialEndsAt: string | null;
   subscriptionEndsAt: string | null;
   subscriptionDurationMonths?: number | null;
-  plan?: { id: string; name: string; displayName: string; price3m: number; price6m: number; price12m: number } | null;
+  // price6m qoldirilgan: 6 oylik variant sotuvdan olib tashlangan, lekin
+  // eski tariflarda ustun bazada turibdi.
+  plan?: { id: string; name: string; displayName: string; price3m: number; price6m?: number; price12m: number } | null;
   createdAt: string;
   _count?: { employees: number; tasks: number; customers: number };
 }
@@ -43,7 +45,8 @@ interface Plan {
   name: string;
   displayName: string;
   price3m: number;
-  price6m: number;
+  /** 6 oylik sotuvdan olib tashlangan — eski yozuvlarda qolgan. */
+  price6m?: number;
   price12m: number;
 }
 
@@ -337,7 +340,17 @@ export function TenantsDataTable() {
                   <td style={{ padding: '10px 12px', color: '#475569', fontSize: 13 }}>{t._count?.employees ?? 0}</td>
                   <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 12 }}>{fmtDate(t.createdAt)}</td>
                   <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 12 }}>
-                    {t.status === 'ACTIVE' ? fmtDate(t.subscriptionEndsAt) : fmtDate(t.trialEndsAt)}
+                    {/* Muddat ixtiyoriy: sana yo'q = cheksiz obuna, "sana
+                        kiritilmagan" emas. Bloklangan/tugagan workspace'da
+                        buni yozish chalg'itadi — u yerda tire qoladi. */}
+                    {(() => {
+                      const sana = t.status === 'ACTIVE' ? t.subscriptionEndsAt : t.trialEndsAt;
+                      if (sana) return fmtDate(sana);
+                      if (t.status === 'ACTIVE' || t.status === 'TRIAL') {
+                        return <span style={{ color: '#059669', fontWeight: 600 }}>Muddatsiz</span>;
+                      }
+                      return '—';
+                    })()}
                   </td>
                   <td style={{ padding: '6px 8px', textAlign: 'right' }}>
                     <DropdownMenu items={buildMenu(t)} />
@@ -461,7 +474,7 @@ export function TenantsDataTable() {
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{p.displayName}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8' }}>{p.name}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>{p.price6m?.toLocaleString() ?? '—'} / 6oy</div>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>{p.price12m?.toLocaleString() ?? '—'} / 12oy</div>
                 </button>
               ))}
             </div>

@@ -49,7 +49,9 @@ export class PlansService {
     name: string;
     displayName: string;
     price3m: number;
-    price6m: number;
+    // 6 oylik obuna sotuvdan olib tashlangan — panel uni 0 qilib yuboradi.
+    // Ustun bazada qoldirilgan: eski to'lovlar unga tayanadi.
+    price6m?: number;
     price12m: number;
     maxEmployees: number;
     maxBranches?: number;

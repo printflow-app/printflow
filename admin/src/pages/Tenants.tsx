@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Building2, Plus, X, AlertTriangle, Calendar, Trash2, Search } from 'lucide-react';
+// Infinity ikonkasi nomi global `Infinity` ni to'sib qo'yadi — nom o'zgartirildi.
+import { Building2, Plus, X, AlertTriangle, Calendar, Trash2, Search, Infinity as InfinityIcon } from 'lucide-react';
 import { tenantsApi } from '../api';
 import { useUI } from '../ui';
 import { useTenants, usePlans, useInvalidate } from '../hooks/queries';
@@ -200,6 +201,14 @@ export default function Tenants() {
                   <span className={`text-[10px] font-semibold flex items-center gap-1 ${isExpiringSoon ? 'text-amber-600' : 'text-slate-400'}`}>
                     {isExpiringSoon ? <AlertTriangle size={11} className="shrink-0" /> : <Calendar size={11} className="shrink-0" />}
                     <span className="font-mono">{t.status === 'TRIAL' ? 'Trial: ' : ''}{new Date(expDate).toLocaleDateString('uz-UZ')}</span>
+                  </span>
+                ) : t.status === 'ACTIVE' || t.status === 'TRIAL' ? (
+                  // Muddat ixtiyoriy — sana yo'q bo'lsa obuna cheksiz.
+                  // Ilgari bu yerda yaratilgan sana chiqardi va u tugash
+                  // sanasiga o'xshab chalg'itardi.
+                  <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                    <InfinityIcon size={11} className="shrink-0" />
+                    <span>Muddatsiz</span>
                   </span>
                 ) : (
                   <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">

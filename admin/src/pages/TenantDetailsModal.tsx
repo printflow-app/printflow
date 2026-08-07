@@ -26,6 +26,14 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
     : (tenant.subscriptionEndsAt ? new Date(tenant.subscriptionEndsAt).toISOString().slice(0, 10) : '');
 
   const [newEndDate, setNewEndDate] = useState(curExpDate);
+  // MUDDATSIZ OBUNA — sana ixtiyoriy.
+  //
+  // Backend bo'sh muddatni allaqachon "cheksiz" deb qabul qiladi (tekshiruv
+  // `status === 'ACTIVE' && subscriptionEndsAt && now > ...` ko'rinishida —
+  // sana yo'q bo'lsa muddat tugamaydi). Lekin panelda buni bilish mumkin
+  // emasdi: sana katagi shunchaki bo'sh turardi va admin uni "to'ldirish
+  // shart" deb tushunardi. Endi bu ochiq tanlov.
+  const [noExpiry, setNoExpiry] = useState(!curExpDate);
   const [newStatus, setNewStatus] = useState<string>(() => {
     if (tenant.status === 'EXPIRED' && curExpDate && new Date(curExpDate) > new Date()) {
       return 'ACTIVE';
@@ -40,21 +48,23 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
     if (base < new Date()) base.setTime(Date.now());
     base.setMonth(base.getMonth() + months);
     setNewEndDate(base.toISOString().slice(0, 10));
+    setNoExpiry(false); // aniq muddat qo'yildi
     if (newStatus !== 'ACTIVE') setNewStatus('ACTIVE');
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const sana = noExpiry ? '' : newEndDate;
       const effectiveStatus =
-        newStatus === 'EXPIRED' && newEndDate && new Date(newEndDate) > new Date()
+        newStatus === 'EXPIRED' && sana && new Date(sana) > new Date()
           ? 'ACTIVE'
           : newStatus;
       const updateData: any = { status: effectiveStatus, planId: newPlanId || null };
       if (effectiveStatus === 'TRIAL') {
-        updateData.trialEndsAt = newEndDate ? new Date(newEndDate).toISOString() : null;
+        updateData.trialEndsAt = sana ? new Date(sana).toISOString() : null;
       } else {
-        updateData.subscriptionEndsAt = newEndDate ? new Date(newEndDate).toISOString() : null;
+        updateData.subscriptionEndsAt = sana ? new Date(sana).toISOString() : null;
       }
       await tenantsApi.update(tenant.id, updateData);
       toast('Workspace yangilandi!', 'success');
@@ -260,20 +270,42 @@ export default function TenantDetailsModal({ tenant, plans, onClose, onSaved, to
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
-              {newStatus === 'TRIAL' ? 'Trial tugash sanasi' : 'Obuna tugash sanasi'}
-            </label>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                {newStatus === 'TRIAL' ? 'Trial tugash sanasi' : 'Obuna tugash sanasi'}
+                <span className="ml-1 normal-case tracking-normal font-semibold text-slate-400">(ixtiyoriy)</span>
+              </label>
+              <label className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={noExpiry}
+                  onChange={e => {
+                    setNoExpiry(e.target.checked);
+                    if (e.target.checked) setNewEndDate('');
+                  }}
+                  className="w-3.5 h-3.5 accent-orange-500 cursor-pointer"
+                />
+                Muddatsiz
+              </label>
+            </div>
             <input
               type="date"
               value={newEndDate}
+              disabled={noExpiry}
               onChange={e => {
                 setNewEndDate(e.target.value);
+                if (e.target.value) setNoExpiry(false);
                 if (e.target.value && new Date(e.target.value) > new Date() && newStatus !== 'ACTIVE') {
                   setNewStatus('ACTIVE');
                 }
               }}
-              className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 transition-colors"
+              className="w-full h-9 text-xs border border-[color:var(--border)] bg-white text-slate-900 rounded-lg px-2.5 outline-none focus:border-orange-500 transition-colors disabled:bg-slate-100 disabled:text-slate-400"
             />
+            <p className="text-[10px] text-slate-500 mt-1">
+              {noExpiry
+                ? 'Muddat tekshirilmaydi — workspace o\'zi to\'xtamaydi.'
+                : 'Bo\'sh qoldirilsa yoki "Muddatsiz" belgilansa, obuna muddatsiz bo\'ladi.'}
+            </p>
           </div>
 
           <div className="space-y-1.5">
