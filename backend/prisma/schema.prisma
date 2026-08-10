@@ -1013,6 +1013,23 @@ model Customer {
   name        String // Company / Organization name
   phone       String? // Primary company phone (kept for backwards compat)
   companyInfo String? // Extra info: INN, address, etc. (JSON or plain text)
+
+  // MIJOZ MANZILI — xaritada ko'rsatish uchun.
+  //
+  // `address` — odam o'qiydigan matn ("Namangan, Uychi ko'chasi 12" yoki
+  // "Qo'qonsoy choyxonasi yonida"). Koordinatasiz ham ma'noga ega.
+  // `latitude`/`longitude` — xaritadagi nuqta. Ular manzil matnidan
+  // AVTOMATIK chiqmaydi: O'zbekiston manzillari ochiq geokoderlarda
+  // yaxshi topilmaydi, shuning uchun nuqta xaritadan qo'lda belgilanadi
+  // (manzildan qidirish faqat yordamchi). Ikkalasi ham null bo'lishi
+  // normal — eski mijozlarda ular yo'q.
+  //
+  // `companyInfo` ga qo'shilmadi: u erkin matn axlat qutisi (INN, izoh,
+  // manzil aralash), undan xaritaga yaroqli manzilni ajratib bo'lmaydi.
+  address   String?
+  latitude  Float?
+  longitude Float?
+
   totalDebt   Float   @default(0)
   totalPaid   Float   @default(0)
 

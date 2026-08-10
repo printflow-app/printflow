@@ -20,6 +20,7 @@
     "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.378.0",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
@@ -33,6 +34,7 @@
     "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.22",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.13.1",

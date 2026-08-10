@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
   Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
-  FileText, AlertCircle, Trophy, Package, ClipboardList, Plus, Edit3,
+  FileText, AlertCircle, ClipboardList, Plus, Edit3,
   Building2, UserPlus, Mail, Briefcase, CheckCircle2, AlertTriangle, Download,
-  Crown, Medal, Award
+  MapPin
 } from 'lucide-react';
 import { customersApi } from '../api';
-import { useCustomers, useTopCustomers, useInvalidate } from '../hooks/queries';
+import { useCustomers, useInvalidate } from '../hooks/queries';
 import Modal from '../components/Modal';
+import MijozXarita from '../components/MijozXarita';
+import JoyTanlagich from '../components/JoyTanlagich';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { SkeletonTable } from '../components/Skeleton';
 import { toast } from 'react-toastify';
@@ -47,7 +49,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   // includeDetails=false: list payload faqat asosiy ma'lumotlar (totalDebt/Paid + contacts).
   // Tasks va transactions har bir mijoz yoyilganda /customers/:id/details orqali yuklanadi.
   const { data: customers = [], isLoading } = useCustomers(activeBranchId, false);
-  const { data: topCustomers = [] } = useTopCustomers(10);
   const invalidate = useInvalidate();
   const [searchTerm, setSearchTerm] = useState('');
   // Saralash: 'recent' (updatedAt bo'yicha, default) | 'debt' (eng ko'p qarz) |
@@ -56,13 +57,18 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const [expandedId, setExpandedId] = useState<string | null>(null);
   // Lazy-loaded per-customer details (tasks + transactions) keyed by customer.id
   const [detailsCache, setDetailsCache] = useState<Record<string, { tasks: any[]; transactions: any[] } | 'loading'>>({});
-  const [activeView, setActiveView] = useState<'all' | 'top'>('all');
+  const [activeView, setActiveView] = useState<'all' | 'map'>('all');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Add / Edit customer modal
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [custForm, setCustForm] = useState({ id: '', name: '', phone: '', companyInfo: '' });
+  // `joy` — xaritadagi nuqta. Manzil matni bo'lib, nuqtasi yo'q holat
+  // normal: manzil har doim ham xaritada topilavermaydi.
+  const [custForm, setCustForm] = useState<{
+    id: string; name: string; phone: string; companyInfo: string;
+    address: string; joy: { lat: number; lng: number } | null;
+  }>({ id: '', name: '', phone: '', companyInfo: '', address: '', joy: null });
 
   // Contacts management
   const [contactsCustomer, setContactsCustomer] = useState<any | null>(null);
@@ -111,14 +117,14 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     });
 
   const handleExport = () => {
-    const rows = activeView === 'top' ? (topCustomers as any[]) : filteredCustomers;
+    const rows = filteredCustomers;
     if (rows.length === 0) {
       toast.info("Eksport qilish uchun ma'lumot yo'q");
       return;
     }
     const stamp = new Date().toLocaleDateString('en-CA');
     exportToXlsx({
-      filename: activeView === 'top' ? `mijozlar_top10_${stamp}` : `mijozlar_${stamp}`,
+      filename: `mijozlar_${stamp}`,
       sheetName: 'Mijozlar',
       rows,
       columns: [
@@ -138,14 +144,20 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   // Customer CRUD
   // =============================================
   const openAdd = () => {
-    setCustForm({ id: '', name: '', phone: '', companyInfo: '' });
+    setCustForm({ id: '', name: '', phone: '', companyInfo: '', address: '', joy: null });
     setIsEditing(false);
     setIsFormOpen(true);
   };
 
   const openEdit = (c: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    setCustForm({ id: c.id, name: c.name, phone: c.phone || '', companyInfo: c.companyInfo || '' });
+    setCustForm({
+      id: c.id, name: c.name, phone: c.phone || '', companyInfo: c.companyInfo || '',
+      address: c.address || '',
+      joy: typeof c.latitude === 'number' && typeof c.longitude === 'number'
+        ? { lat: c.latitude, lng: c.longitude }
+        : null,
+    });
     setIsEditing(true);
     setIsFormOpen(true);
   };
@@ -154,11 +166,21 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     e.preventDefault();
     if (!custForm.name.trim()) return;
     try {
+      const payload = {
+        name: custForm.name,
+        phone: custForm.phone,
+        companyInfo: custForm.companyInfo,
+        address: custForm.address.trim() || null,
+        // Nuqta olib tashlansa null yuboriladi — undefined bo'lsa
+        // backend maydonni umuman yangilamas va eski nuqta qolib ketardi.
+        latitude: custForm.joy ? custForm.joy.lat : null,
+        longitude: custForm.joy ? custForm.joy.lng : null,
+      };
       if (isEditing) {
-        await customersApi.update(custForm.id, { name: custForm.name, phone: custForm.phone, companyInfo: custForm.companyInfo });
+        await customersApi.update(custForm.id, payload);
         showStatus('success', "Mijoz yangilandi!");
       } else {
-        await customersApi.create({ name: custForm.name, phone: custForm.phone, companyInfo: custForm.companyInfo });
+        await customersApi.create(payload);
         showStatus('success', "Yangi mijoz qo'shildi!");
       }
       setIsFormOpen(false);
@@ -276,17 +298,33 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
 
   if (isLoading) return <SkeletonTable rows={8} cols={6} />;
 
-  const MEDAL_ICONS = [Crown, Medal, Award];
-  const MEDAL_COLORS = ['#f59e0b', '#94a3b8', '#cd7c2f'];
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {statusMsg && (
         <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMsg.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
           {statusMsg.type === 'success' ? <CheckCircle2 size={20}/> : <AlertTriangle size={20}/>}
           <span className="font-bold text-sm">{statusMsg.text}</span>
         </div>
       )}
+
+      {/* KO'RINISH TABLARI — Xodimlar sahifasidagi bilan bir xil uslub.
+          Sarlavha kartasining ichida emas, ustida turadi: u yerda ular
+          qidiruv bilan bir qatorga siqilib, ko'rinish almashganda joyi
+          sakrab turardi. */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setActiveView('all')}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeView === 'all' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Jadval
+        </button>
+        <button
+          onClick={() => setActiveView('map')}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeView === 'map' ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Xarita
+        </button>
+      </div>
 
       {/* Header */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
@@ -295,14 +333,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
-          <div className="flex bg-slate-100 p-0.5 rounded-lg shadow-inner">
-            <button onClick={() => setActiveView('all')} className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${activeView === 'all' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500'}`}>
-              Barchasi
-            </button>
-            <button onClick={() => setActiveView('top')} className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${activeView === 'top' ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500'}`}>
-              <Trophy size={11}/> Top 10
-            </button>
-          </div>
           {activeView === 'all' && (
             <>
               <div className="relative flex-1 min-w-0">
@@ -369,51 +399,58 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         </div>
       </div>
 
-      {/* TOP CUSTOMERS */}
-      {activeView === 'top' && (
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm">
-          <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-1">
-            <Trophy className="text-amber-500" size={18}/> Top Mijozlar (Buyurtmalar bo'yicha)
-          </h3>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Eng ko'p buyurtma bergan va eng ko'p to'lagan mijozlar</p>
+      {/* XARITA — manzili belgilangan mijozlar nuqta bo'lib chiqadi.
+          Nuqtasi yo'q mijozlar xaritada ko'rinmaydi, shuning uchun
+          nechtasi tushib qolgani ochiq yoziladi — aks holda "mijozlarim
+          yo'qolib qoldi" degan taassurot paydo bo'lardi. */}
+      {activeView === 'map' && (() => {
+        const nuqtalar = (customers as any[])
+          .filter((c) => typeof c.latitude === 'number' && typeof c.longitude === 'number')
+          .map((c) => ({
+            id: c.id,
+            nom: c.name,
+            telefon: c.phone,
+            manzil: c.address,
+            lat: c.latitude,
+            lng: c.longitude,
+            qarz: debtOf(c),
+          }));
+        const belgilanmagan = customers.length - nuqtalar.length;
+
+        return (
           <div className="space-y-3">
-            {topCustomers.map((c, i) => (
-              <div key={c.id} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all group">
-                <div className="flex-shrink-0 w-10 text-center flex items-center justify-center">
-                  {(() => {
-                    const Ic = MEDAL_ICONS[i];
-                    return Ic
-                      ? <Ic size={22} strokeWidth={2.2} color={MEDAL_COLORS[i]} fill={MEDAL_COLORS[i] + '33'} />
-                      : <span className="text-base font-bold text-slate-400">{i + 1}</span>;
-                  })()}
-                </div>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-lg" style={{ background: MEDAL_COLORS[i] || '#6366f1' }}>
-                  {c.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">{c.name}</p>
-                  <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-0.5">
-                    <Package size={10}/> {c.orderCount} ta buyurtma
-                  </p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-emerald-600">{formatCurrency(c.totalPaid)}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Jami to'lagan</p>
-                </div>
-                <button
-                  onClick={() => openOrderHistory(c)}
-                  className="flex-shrink-0 w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all shadow-sm"
-                >
-                  <ClipboardList size={14}/>
-                </button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                Xaritada {nuqtalar.length} ta mijoz
+              </p>
+              {belgilanmagan > 0 && (
+                <p className="text-[11px] font-semibold text-amber-600">
+                  {belgilanmagan} ta mijozning joyi belgilanmagan — kartasini tahrirlab xaritadan belgilang
+                </p>
+              )}
+            </div>
+            {nuqtalar.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                <MapPin size={32} className="mx-auto mb-3 text-slate-300" />
+                <p className="text-sm font-bold text-slate-600">Hali birorta mijozning joyi belgilanmagan</p>
+                <p className="text-xs text-slate-400 mt-1.5 max-w-sm mx-auto">
+                  Mijozni tahrirlash oynasida manzilni yozing va xaritadan uning joyini bosing.
+                </p>
               </div>
-            ))}
-            {topCustomers.length === 0 && (
-              <div className="py-16 text-center text-slate-300 font-bold text-xs uppercase tracking-widest">Ma'lumot yo'q</div>
+            ) : (
+              <MijozXarita
+                nuqtalar={nuqtalar}
+                // Nuqta bosilsa ro'yxatga qaytib, o'sha mijozni ochamiz —
+                // xaritada faqat qisqa ma'lumot bor, tafsilot ro'yxatda.
+                onTanlash={(id) => {
+                  setActiveView('all');
+                  if (expandedId !== id) toggleExpand(id);
+                }}
+              />
             )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ALL CUSTOMERS TABLE */}
       {activeView === 'all' && (
@@ -449,7 +486,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                           <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">Mijozlaringizni qo'shing — qarzlar, to'lovlar va buyurtmalar avtomatik kuzatiladi.</p>
                         </div>
                         {canAdd && (
-                          <button onClick={() => { setIsEditing(false); setCustForm({ id: '', name: '', phone: '', companyInfo: '' }); setIsFormOpen(true); }} className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-2">
+                          <button onClick={openAdd} className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-2">
                             <Plus size={16} /> Birinchi mijozni qo'shish
                           </button>
                         )}
@@ -517,7 +554,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                               {(canManageContacts || canEdit || canDelete) && (
                                 <>
                                   {canManageContacts && (
-                                    <button onClick={e => openContacts(c, e)} className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-500 hover:text-white transition-all shadow-sm relative" title="Kontaktlar">
+                                    <button onClick={e => openContacts(c, e)} className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-500 hover:text-white transition-all shadow-sm relative" title="Vakillar">
                                       <UserPlus size={13}/>
                                       {contactCount > 0 && (
                                         <span className="absolute -top-1 -right-1 w-4 h-4 bg-slate-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{contactCount}</span>
@@ -666,15 +703,27 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         type={isEditing ? undefined : 'warning'}
       >
         <form onSubmit={handleSubmitCustomer} className="space-y-4">
+          {/* MIJOZ = TASHKILOT.
+              Jadvalda tashkilot nomi turadi, odamlar esa uning ichida
+              vakil (kontakt) bo'lib chiqadi. Ilgari bu yer "Ism" edi va
+              tashkilot ikkinchi darajali maydonga tushib qolgandi —
+              natijada ro'yxat odamlar ro'yxatiga o'xshab qolgandi. */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Ism *</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
+              <Building2 size={10} className="inline mr-1"/> Tashkilot nomi *
+            </label>
             <input
               type="text" required autoFocus
               value={custForm.name}
               onChange={e => setCustForm(f => ({ ...f, name: e.target.value }))}
               className="input-minimal font-bold text-slate-800 h-12 border-2"
-              placeholder="Mijoz ismi yoki kompaniya nomi..."
+              placeholder="Masalan: Boburshox klinikasi"
             />
+            <p className="text-[11px] font-semibold text-slate-400 mt-1.5 px-1">
+              Yakka tartibdagi mijoz bo'lsa — ismini yozing. Aloqador
+              odamlarni saqlash uchun mijozni saqlab, "Vakillar" tugmasidan
+              qo'shasiz.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -689,17 +738,39 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-                <Building2 size={10} className="inline mr-1"/> Kompaniya (B2B)
+                Qo'shimcha ma'lumot
               </label>
               <input
                 type="text"
                 value={custForm.companyInfo}
                 onChange={e => setCustForm(f => ({ ...f, companyInfo: e.target.value }))}
                 className="input-minimal h-11 border-2"
-                placeholder="Masalan: Ideal Print MCHJ"
+                placeholder="INN, izoh..."
               />
             </div>
           </div>
+
+          {/* MANZIL VA XARITADAGI NUQTA.
+              Manzil matni mustaqil qiymatga ega — nuqtasiz ham foydali.
+              Nuqta esa xaritada ko'rinadi va ixtiyoriy. */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
+              <MapPin size={10} className="inline mr-1"/> Manzil
+            </label>
+            <input
+              type="text"
+              value={custForm.address}
+              onChange={e => setCustForm(f => ({ ...f, address: e.target.value }))}
+              className="input-minimal h-11 border-2"
+              placeholder="Masalan: Namangan, Uychi ko'chasi 12"
+            />
+          </div>
+          <JoyTanlagich
+            qiymat={custForm.joy}
+            manzil={custForm.address}
+            onChange={(joy) => setCustForm(f => ({ ...f, joy }))}
+          />
+
           <div className="flex gap-3 pt-2 border-t border-slate-100">
             <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-bold text-[11px] tracking-widest" onClick={() => setIsFormOpen(false)}>BEKOR</button>
             <button type="submit" className="h-12 flex-[2] bg-orange-600 text-white rounded-2xl uppercase font-bold text-[11px] tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
@@ -713,7 +784,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       <Modal
         isOpen={isContactsOpen}
         onClose={() => { setIsContactsOpen(false); setContactsCustomer(null); setContacts([]); }}
-        title={`Kontaktlar — ${contactsCustomer?.name || ''}`}
+        title={`Vakillar — ${contactsCustomer?.name || ''}`}
         maxWidth="max-w-xl"
       >
         <div className="space-y-5">
@@ -770,7 +841,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           ) : contacts.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center opacity-20">
               <UserPlus size={32} className="mb-3"/>
-              <p className="text-[11px] font-bold uppercase">Kontaktlar yo'q</p>
+              <p className="text-[11px] font-bold uppercase">Vakillar yo'q</p>
             </div>
           ) : (
             <div className="space-y-2">
