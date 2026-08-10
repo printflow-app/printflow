@@ -69,11 +69,13 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     id: string; name: string; phone: string; companyInfo: string;
     address: string; joy: { lat: number; lng: number } | null;
   }>({ id: '', name: '', phone: '', companyInfo: '', address: '', joy: null });
+  // Oyna ikki bosqichli: 1 — mijoz ma'lumoti, 2 — vakillar. Bitta uzun
+  // formaga sig'dirilsa xarita bilan birga skroll paydo bo'lardi.
+  const [formStep, setFormStep] = useState<1 | 2>(1);
 
   // Contacts management
   const [contactsCustomer, setContactsCustomer] = useState<any | null>(null);
   const [contacts, setContacts] = useState<any[]>([]);
-  const [isContactsOpen, setIsContactsOpen] = useState(false);
   const [isContactsLoading, setIsContactsLoading] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', phone: '', role: '', email: '' });
   const [isAddingContact, setIsAddingContact] = useState(false);
@@ -97,7 +99,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
 
   useAutoRefresh(() => fetchData(true), {
     intervalMs: 20000,
-    paused: isFormOpen || isContactsOpen || orderHistoryModal.isOpen || confirmModal.isOpen,
+    paused: isFormOpen || orderHistoryModal.isOpen || confirmModal.isOpen,
   });
 
   const filteredCustomers = customers
@@ -146,6 +148,9 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const openAdd = () => {
     setCustForm({ id: '', name: '', phone: '', companyInfo: '', address: '', joy: null });
     setIsEditing(false);
+    setFormStep(1);
+    setContacts([]);
+    setContactsCustomer(null);
     setIsFormOpen(true);
   };
 
@@ -159,7 +164,25 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         : null,
     });
     setIsEditing(true);
+    setFormStep(1);
+    setContacts([]);
+    setContactsCustomer(c);
     setIsFormOpen(true);
+  };
+
+  /** Ikkinchi bosqichga o'tish — saqlamasdan (tahrirlashda mumkin). */
+  const openVakillar = async () => {
+    if (!custForm.id) return;
+    setFormStep(2);
+    setIsContactsLoading(true);
+    try {
+      const res = await customersApi.getContacts(custForm.id);
+      setContacts(res.data || []);
+    } catch {
+      setContacts([]);
+    } finally {
+      setIsContactsLoading(false);
+    }
   };
 
   const handleSubmitCustomer = async (e: React.FormEvent) => {
@@ -176,18 +199,54 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         latitude: custForm.joy ? custForm.joy.lat : null,
         longitude: custForm.joy ? custForm.joy.lng : null,
       };
+
+      // BIRINCHI BOSQICH SAQLANADI, LEKIN OYNA YOPILMAYDI.
+      //
+      // Vakil qo'shish uchun mijozning id'si kerak (kontakt shu id'ga
+      // biriktiriladi), ya'ni yangi mijozda ikkinchi bosqich mijoz
+      // yaratilgunicha ishlay olmaydi. Shuning uchun "davom" bosilganda
+      // avval saqlaymiz va id'ni olamiz.
+      let saqlangan: any = null;
       if (isEditing) {
-        await customersApi.update(custForm.id, payload);
+        const res = await customersApi.update(custForm.id, payload);
+        saqlangan = res?.data || { id: custForm.id, ...payload };
         showStatus('success', "Mijoz yangilandi!");
       } else {
-        await customersApi.create(payload);
+        const res = await customersApi.create(payload);
+        saqlangan = res?.data;
         showStatus('success', "Yangi mijoz qo'shildi!");
       }
-      setIsFormOpen(false);
       fetchData(true);
+
+      const id = saqlangan?.id || custForm.id;
+      if (!id) { setIsFormOpen(false); return; }
+
+      // Ikkinchi bosqichga o'tamiz va vakillarni yuklaymiz.
+      setCustForm(f => ({ ...f, id }));
+      setIsEditing(true);
+      setContactsCustomer({ id, name: custForm.name });
+      setFormStep(2);
+      setIsContactsLoading(true);
+      try {
+        const res = await customersApi.getContacts(id);
+        setContacts(res.data || []);
+      } catch {
+        setContacts([]);
+      } finally {
+        setIsContactsLoading(false);
+      }
     } catch {
       showStatus('error', "Saqlashda xatolik!");
     }
+  };
+
+  /** Oynani yopib, holatni tozalaydi — ikkala bosqich uchun ham. */
+  const closeCustomerModal = () => {
+    setIsFormOpen(false);
+    setFormStep(1);
+    setContactsCustomer(null);
+    setContacts([]);
+    setContactForm({ name: '', phone: '', role: '', email: '' });
   };
 
   const handleDelete = async () => {
@@ -205,10 +264,24 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   // =============================================
   // Contacts
   // =============================================
+  /**
+   * Jadvaldagi "Vakillar" tugmasi — mijoz oynasini DARHOL 2-bosqichda
+   * ochadi. Alohida kontakt oynasi yo'q: u va tahrirlash oynasi bitta
+   * oynaning ikki bosqichiga birlashtirilgan.
+   */
   const openContacts = async (c: any, e: React.MouseEvent) => {
     e.stopPropagation();
+    setCustForm({
+      id: c.id, name: c.name, phone: c.phone || '', companyInfo: c.companyInfo || '',
+      address: c.address || '',
+      joy: typeof c.latitude === 'number' && typeof c.longitude === 'number'
+        ? { lat: c.latitude, lng: c.longitude }
+        : null,
+    });
+    setIsEditing(true);
     setContactsCustomer(c);
-    setIsContactsOpen(true);
+    setFormStep(2);
+    setIsFormOpen(true);
     setIsContactsLoading(true);
     try {
       const res = await customersApi.getContacts(c.id);
@@ -335,20 +408,26 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
           {activeView === 'all' && (
             <>
+              {/* Qidiruv va saralash — tizimning umumiy input uslubi
+                  (`input-minimal`/`select-minimal`): oq fon, bir xil
+                  balandlik va apelsin fokus halqasi. Ilgari bular kulrang
+                  fon va ichki soya bilan edi — o'chirilgan maydonga
+                  o'xshab turardi va sahifadagi boshqa hech bir maydonga
+                  mos kelmasdi. */}
               <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15}/>
                 <input
                   type="text"
                   placeholder="Qidirish (ism, tel, kompaniya)..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 h-10 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all placeholder:text-slate-300 shadow-inner"
+                  className="input-minimal pl-9"
                 />
               </div>
               <select
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value as typeof sortBy)}
-                className="h-10 px-3 text-[11px] font-bold uppercase tracking-widest bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 transition-all text-slate-600 cursor-pointer shadow-inner"
+                className="select-minimal w-auto min-w-[170px] cursor-pointer"
                 title="Saralash"
               >
                 <option value="recent">Oxirgi faollik</option>
@@ -358,22 +437,27 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               </select>
             </>
           )}
+          {/* Tugmalar tizimning `btn-outline`/`btn-primary` uslubida —
+              qidiruv va saralash bilan bir xil balandlik va radius.
+              Ilgari ular qo'lda yozilgan h-10 + UPPERCASE edi; PRODUCT.md
+              esa katta harfli tugmani taqiqlaydi va balandlik ham
+              maydonlarnikiga mos kelmasdi. */}
           {(isAdmin || p.canExportCustomers) && (
             <button
               onClick={handleExport}
-              className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+              className="btn-outline"
               title="Joriy ro'yxatni Excel'ga eksport qilish"
             >
-              <Download size={13} strokeWidth={2.5}/> EKSPORT
+              <Download size={14}/> Eksport
             </button>
           )}
           {canAdd && (
             <button
               data-tour-id="mijoz-add"
               onClick={openAdd}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-5 bg-[#FF6B00] text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E65A00] transition-all"
+              className="btn-primary w-full sm:w-auto"
             >
-              <Plus size={13} strokeWidth={3}/> MIJOZ QO'SHISH
+              <Plus size={15} strokeWidth={2.5}/> Mijoz qo'shish
             </button>
           )}
         </div>
@@ -695,111 +779,121 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         </div>
       )}
 
-      {/* MODAL: ADD / EDIT CUSTOMER */}
+      {/* MODAL: MIJOZ — IKKI BOSQICH
+          1-bosqich: tashkilot ma'lumoti va xaritadagi joyi
+          2-bosqich: vakillar (kontaktlar)
+
+          Nega bo'lindi: hammasi bitta formada bo'lsa, xarita bilan
+          birga balandlik ekranga sig'may skroll paydo bo'lardi. Vakil
+          qo'shish esa mijozning id'sini talab qiladi — shuning uchun
+          yangi mijozda 2-bosqich faqat saqlangandan keyin ochiladi. */}
       <Modal
         isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        title={isEditing ? 'Mijozni tahrirlash' : "Yangi mijoz qo'shish"}
-        type={isEditing ? undefined : 'warning'}
+        onClose={closeCustomerModal}
+        title={formStep === 1
+          ? (isEditing ? 'Mijozni tahrirlash' : "Yangi mijoz qo'shish")
+          : `Vakillar — ${custForm.name}`}
+        maxWidth="max-w-xl"
       >
-        <form onSubmit={handleSubmitCustomer} className="space-y-4">
-          {/* MIJOZ = TASHKILOT.
-              Jadvalda tashkilot nomi turadi, odamlar esa uning ichida
-              vakil (kontakt) bo'lib chiqadi. Ilgari bu yer "Ism" edi va
-              tashkilot ikkinchi darajali maydonga tushib qolgandi —
-              natijada ro'yxat odamlar ro'yxatiga o'xshab qolgandi. */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-              <Building2 size={10} className="inline mr-1"/> Tashkilot nomi *
-            </label>
-            <input
-              type="text" required autoFocus
-              value={custForm.name}
-              onChange={e => setCustForm(f => ({ ...f, name: e.target.value }))}
-              className="input-minimal font-bold text-slate-800 h-12 border-2"
-              placeholder="Masalan: Boburshox klinikasi"
-            />
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5 px-1">
-              Yakka tartibdagi mijoz bo'lsa — ismini yozing. Aloqador
-              odamlarni saqlash uchun mijozni saqlab, "Vakillar" tugmasidan
-              qo'shasiz.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+        {/* Bosqich ko'rsatkichi — qayerdaligi va nechta qadam borligi */}
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl mb-4">
+          <button
+            type="button"
+            onClick={() => setFormStep(1)}
+            className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${formStep === 1 ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            1. Ma'lumot
+          </button>
+          <button
+            type="button"
+            onClick={openVakillar}
+            disabled={!custForm.id}
+            title={custForm.id ? undefined : "Avval mijozni saqlang"}
+            className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${formStep === 2 ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            2. Vakillar{contacts.length > 0 ? ` (${contacts.length})` : ''}
+          </button>
+        </div>
+
+        {formStep === 1 ? (
+          <form onSubmit={handleSubmitCustomer} className="space-y-3">
+            {/* MIJOZ = TASHKILOT. Jadvalda tashkilot nomi turadi, odamlar
+                esa 2-bosqichda vakil bo'lib qo'shiladi. */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Telefon</label>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">
+                <Building2 size={10} className="inline mr-1"/> Tashkilot nomi *
+              </label>
               <input
-                type="text"
-                value={custForm.phone}
-                onChange={e => setCustForm(f => ({ ...f, phone: e.target.value }))}
-                className="input-minimal h-11 border-2"
-                placeholder="+998 90 ..."
+                type="text" required autoFocus
+                value={custForm.name}
+                onChange={e => setCustForm(f => ({ ...f, name: e.target.value }))}
+                className="input-minimal font-semibold text-slate-800"
+                placeholder="Masalan: Boburshox klinikasi"
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Telefon</label>
+                <input
+                  type="text"
+                  value={custForm.phone}
+                  onChange={e => setCustForm(f => ({ ...f, phone: e.target.value }))}
+                  className="input-minimal"
+                  placeholder="+998 90 ..."
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qo'shimcha</label>
+                <input
+                  type="text"
+                  value={custForm.companyInfo}
+                  onChange={e => setCustForm(f => ({ ...f, companyInfo: e.target.value }))}
+                  className="input-minimal"
+                  placeholder="INN, izoh..."
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-                Qo'shimcha ma'lumot
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">
+                <MapPin size={10} className="inline mr-1"/> Manzil
               </label>
               <input
                 type="text"
-                value={custForm.companyInfo}
-                onChange={e => setCustForm(f => ({ ...f, companyInfo: e.target.value }))}
-                className="input-minimal h-11 border-2"
-                placeholder="INN, izoh..."
+                value={custForm.address}
+                onChange={e => setCustForm(f => ({ ...f, address: e.target.value }))}
+                className="input-minimal"
+                placeholder="Masalan: Namangan, Uychi ko'chasi 12"
               />
             </div>
-          </div>
 
-          {/* MANZIL VA XARITADAGI NUQTA.
-              Manzil matni mustaqil qiymatga ega — nuqtasiz ham foydali.
-              Nuqta esa xaritada ko'rinadi va ixtiyoriy. */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-              <MapPin size={10} className="inline mr-1"/> Manzil
-            </label>
-            <input
-              type="text"
-              value={custForm.address}
-              onChange={e => setCustForm(f => ({ ...f, address: e.target.value }))}
-              className="input-minimal h-11 border-2"
-              placeholder="Masalan: Namangan, Uychi ko'chasi 12"
+            <JoyTanlagich
+              qiymat={custForm.joy}
+              manzil={custForm.address}
+              onChange={(joy) => setCustForm(f => ({ ...f, joy }))}
+              balandlik={190}
             />
-          </div>
-          <JoyTanlagich
-            qiymat={custForm.joy}
-            manzil={custForm.address}
-            onChange={(joy) => setCustForm(f => ({ ...f, joy }))}
-          />
 
-          <div className="flex gap-3 pt-2 border-t border-slate-100">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-bold text-[11px] tracking-widest" onClick={() => setIsFormOpen(false)}>BEKOR</button>
-            <button type="submit" className="h-12 flex-[2] bg-orange-600 text-white rounded-2xl uppercase font-bold text-[11px] tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
-              {isEditing ? 'YANGILASH' : "QO'SHISH"}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* MODAL: CONTACTS */}
-      <Modal
-        isOpen={isContactsOpen}
-        onClose={() => { setIsContactsOpen(false); setContactsCustomer(null); setContacts([]); }}
-        title={`Vakillar — ${contactsCustomer?.name || ''}`}
-        maxWidth="max-w-xl"
-      >
-        <div className="space-y-5">
-          {/* Add contact form */}
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <UserPlus size={12}/> Yangi kontakt qo'shish
-            </p>
+            <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <button type="button" className="btn-outline flex-1" onClick={closeCustomerModal}>
+                Bekor
+              </button>
+              <button type="submit" className="btn-primary flex-[2]">
+                Saqlash va vakillar →
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-3">
+            {/* Yangi vakil */}
             <div className="grid grid-cols-2 gap-3">
               <input
                 type="text"
                 placeholder="Ism *"
                 value={contactForm.name}
                 onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))}
-                className="input-minimal font-bold"
+                className="input-minimal font-semibold"
               />
               <input
                 type="text"
@@ -810,7 +904,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               />
               <input
                 type="text"
-                placeholder="Lavozim (masalan: Direktor)"
+                placeholder="Lavozim (Direktor)"
                 value={contactForm.role}
                 onChange={e => setContactForm(f => ({ ...f, role: e.target.value }))}
                 className="input-minimal"
@@ -827,56 +921,70 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               type="button"
               onClick={handleAddContact}
               disabled={isAddingContact || !contactForm.name.trim()}
-              className="w-full h-10 bg-orange-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
+              className="btn-outline w-full"
             >
-              {isAddingContact ? 'QOSHILMOQDA...' : "QO'SHISH"}
+              <UserPlus size={14}/> {isAddingContact ? "Qo'shilmoqda..." : "Vakil qo'shish"}
             </button>
-          </div>
 
-          {/* Contacts list */}
-          {isContactsLoading ? (
-            <div className="py-10 flex justify-center opacity-30">
-              <div className="animate-spin w-6 h-6 border-2 border-orange-500 rounded-full border-t-transparent"/>
-            </div>
-          ) : contacts.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center opacity-20">
-              <UserPlus size={32} className="mb-3"/>
-              <p className="text-[11px] font-bold uppercase">Vakillar yo'q</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {contacts.map((ct: any) => (
-                <div key={ct.id} className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-50 text-slate-500 flex items-center justify-center border border-slate-100 font-bold text-sm">
-                      {ct.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{ct.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {ct.role && (
-                          <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Briefcase size={8}/> {ct.role}</span>
-                        )}
-                        {ct.phone && (
-                          <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Phone size={8}/> {ct.phone}</span>
-                        )}
-                        {ct.email && (
-                          <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Mail size={8}/> {ct.email}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteContact(ct.id)}
-                    className="text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 size={14}/>
-                  </button>
+            {/* Ro'yxat — bu yerda skroll bor, chunki vakillar soni
+                oldindan noma'lum. Oynaning o'zi esa skrollanmaydi. */}
+            <div className="border-t border-slate-100 pt-3">
+              {isContactsLoading ? (
+                <div className="py-10 flex justify-center opacity-30">
+                  <div className="animate-spin w-6 h-6 border-2 border-orange-500 rounded-full border-t-transparent"/>
                 </div>
-              ))}
+              ) : contacts.length === 0 ? (
+                <div className="py-10 flex flex-col items-center justify-center text-slate-300">
+                  <UserPlus size={28} className="mb-2"/>
+                  <p className="text-[11px] font-bold uppercase tracking-widest">Vakillar yo'q</p>
+                  <p className="text-[11px] font-medium text-slate-400 mt-1">Bu tashkilot bilan kim gaplashadi?</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scroll pr-1">
+                  {contacts.map((ct: any) => (
+                    <div key={ct.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm group">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-slate-50 text-slate-500 flex items-center justify-center border border-slate-100 font-bold text-sm shrink-0">
+                          {ct.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate">{ct.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {ct.role && (
+                              <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Briefcase size={8}/> {ct.role}</span>
+                            )}
+                            {ct.phone && (
+                              <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Phone size={8}/> {ct.phone}</span>
+                            )}
+                            {ct.email && (
+                              <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 truncate"><Mail size={8}/> {ct.email}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteContact(ct.id)}
+                        className="text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                        title="Vakilni o'chirish"
+                      >
+                        <Trash2 size={14}/>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+
+            <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <button type="button" className="btn-outline flex-1" onClick={() => setFormStep(1)}>
+                ← Orqaga
+              </button>
+              <button type="button" className="btn-primary flex-[2]" onClick={closeCustomerModal}>
+                Tayyor
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* MODAL: ORDER HISTORY */}

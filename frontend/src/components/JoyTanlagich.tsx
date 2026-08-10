@@ -42,7 +42,9 @@ const JoyTanlagich: React.FC<{
   onChange: (joy: Joy) => void;
   /** Qidiruv maydoniga uzatiladigan manzil matni (mijoz formasidan). */
   manzil?: string;
-}> = ({ qiymat, onChange, manzil }) => {
+  /** Xarita balandligi (px) — oynaga sig'dirish uchun sozlanadi. */
+  balandlik?: number;
+}> = ({ qiymat, onChange, manzil, balandlik = 260 }) => {
   const idishRef = useRef<HTMLDivElement>(null);
   const xaritaRef = useRef<L.Map | null>(null);
   const belgiRef = useRef<L.Marker | null>(null);
@@ -158,7 +160,7 @@ const JoyTanlagich: React.FC<{
 
       <div
         ref={idishRef}
-        style={{ height: 260 }}
+        style={{ height: balandlik }}
         className="w-full rounded-xl border border-slate-200 overflow-hidden z-0"
       />
 
