@@ -123,8 +123,19 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('pf_token', { path: '/' });
-    res.clearCookie('pf_sa_token', { path: '/' });
+    // DIQQAT: cookie'ni o'chirish uchun clearCookie atributlari o'rnatilgandagi
+    // bilan MOS bo'lishi kerak. pf_token prodda `secure; sameSite=none` bilan
+    // qo'yilgan — cross-site (boshqa origin). Agar o'chirishda bu atributlar
+    // ko'rsatilmasa, Chrome uni BOSHQA cookie deb biladi va eskisini o'chirmaydi.
+    // Aynan shu impersonate'ni buzardi: eski sessiya cookie'si qolib, ilova
+    // impersonate token o'rniga o'sha tenantga (masalan puffprint) kirgizardi.
+    const opts = {
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
+    };
+    res.clearCookie('pf_token', opts);
+    res.clearCookie('pf_sa_token', opts);
     return { message: 'Tizimdan chiqdingiz' };
   }
 
