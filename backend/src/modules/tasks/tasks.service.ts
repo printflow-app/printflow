@@ -294,15 +294,15 @@ export class TasksService {
         await this.reserveStock(tx, createdTask.id, data.serviceId, effectiveQuantity);
       }
 
-      if (finalCustomerId) {
-        await tx.customer.update({
-          where: { id: finalCustomerId },
-          data: {
-            totalDebt: { increment: Number(totalAmount || 0) },
-            totalPaid: { increment: Number(depositAmount || 0) }
-          }
-        });
-      }
+      // MIJOZ QARZI BU YERDA YANGILANMAYDI.
+      //
+      // Ilgari `totalDebt`/`totalPaid` ustunlari shu yerda increment
+      // qilinardi. Ular manba emas, NUSXA edi va nusxa yolg'on gapira
+      // boshladi: buyurtma tahrirlanganda yoki o'chirilganda kamaymasdi,
+      // Kassadan kelgan to'lov ularga tegmasdi. Natijada bir tushuncha
+      // uch xil raqam berardi — Bosh sahifa 394 mln, Mijozlar sahifasi
+      // 37 mln. Endi qarz faqat `common/customer-debt.ts` da, manba
+      // yozuvlardan (buyurtmalar − to'lovlar) hisoblanadi.
 
       if (Number(depositAmount || 0) > 0) {
         await tx.transaction.create({
@@ -517,15 +517,8 @@ export class TasksService {
         createdTasks.push(task);
       }
 
-      if (finalCustomerId) {
-        await tx.customer.update({
-          where: { id: finalCustomerId },
-          data: {
-            totalDebt: { increment: totalOrderAmount },
-            totalPaid: { increment: Number(totalDeposit || 0) }
-          }
-        });
-      }
+      // Qarz ustunlari yangilanmaydi — yuqoridagi izohga qarang.
+      // Qarz `common/customer-debt.ts` da manbadan hisoblanadi.
 
       if (Number(totalDeposit || 0) > 0) {
         await tx.transaction.create({

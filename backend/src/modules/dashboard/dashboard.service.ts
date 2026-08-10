@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { qarzdorlarRoyxati } from '../../common/customer-debt';
 
 // =============================================
 // BOSH SAHIFA — Faza 5 (rol asosidagi, sozlanadigan dashboard).
@@ -191,26 +192,21 @@ export class DashboardService {
   }
 
   // ── MIJOZLAR — jami + qarzdorlar (eng katta 5 ta) ──────────────────
+  //
+  // Qarz `common/customer-debt.ts` dan olinadi — Mijozlar sahifasi bilan
+  // BIR XIL manba. Ilgari bu yerda `Customer.totalDebt` ustuni yig'ilardi
+  // va u to'lovlarni ayirmasdi: Bosh sahifa "33 ta qarzdor, 394 mln" desa,
+  // Mijozlar sahifasi "9 ta qarzdor, 37 mln" derdi.
   private async getCustomersSection(tenantId: string) {
-    const [total, debtAgg, topDebtors] = await Promise.all([
+    const [total, qarz] = await Promise.all([
       this.prisma.customer.count({ where: { tenantId } }),
-      this.prisma.customer.aggregate({
-        where: { tenantId, totalDebt: { gt: 0 } },
-        _sum: { totalDebt: true },
-        _count: true,
-      }),
-      this.prisma.customer.findMany({
-        where: { tenantId, totalDebt: { gt: 0 } },
-        select: { id: true, name: true, totalDebt: true },
-        orderBy: { totalDebt: 'desc' },
-        take: 5,
-      }),
+      qarzdorlarRoyxati(this.prisma, tenantId, 5),
     ]);
     return {
       total,
-      qarzdorSoni: debtAgg._count,
-      qarzJami: debtAgg._sum.totalDebt || 0,
-      topQarzdorlar: topDebtors.map((c) => ({ nom: c.name, qarz: c.totalDebt })),
+      qarzdorSoni: qarz.soni,
+      qarzJami: qarz.jami,
+      topQarzdorlar: qarz.royxat.map((c) => ({ nom: c.nom, qarz: c.qarz })),
     };
   }
 

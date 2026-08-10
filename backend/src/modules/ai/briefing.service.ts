@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { AutonomousService } from './autonomous.service';
+import { qarzdorlarRoyxati } from '../../common/customer-debt';
 
 // =============================================
 // KUNLIK BRIFING — Faza 3 (proaktivlik).
@@ -62,7 +63,7 @@ export class BriefingService {
     } as const;
     const activeTask = { tenantId, isArchived: false, column: { isDone: false } } as const;
 
-    const [kirim, chiqim, otganlar, otganSoni, yaqinlar, yaqinSoni, debtors, debtAgg, materials] =
+    const [kirim, chiqim, otganlar, otganSoni, yaqinlar, yaqinSoni, qarz, materials] =
       await Promise.all([
         this.prisma.transaction.aggregate({
           where: { tenantId, type: 'kirim', date: { gte: dayStart } },
@@ -86,17 +87,11 @@ export class BriefingService {
           take: 5,
         }),
         this.prisma.task.count({ where: { ...activeTask, deadlineAt: { gte: now, lte: soonUntil } } }),
-        this.prisma.customer.findMany({
-          where: { tenantId, totalDebt: { gt: 0 } },
-          select: { name: true, totalDebt: true },
-          orderBy: { totalDebt: 'desc' },
-          take: 5,
-        }),
-        this.prisma.customer.aggregate({
-          where: { tenantId, totalDebt: { gt: 0 } },
-          _sum: { totalDebt: true },
-          _count: true,
-        }),
+        // Qarz — Bosh sahifa va Mijozlar sahifasi bilan bir xil manba.
+        // Ilgari `Customer.totalDebt` yig'ilardi va u to'lovlarni
+        // ayirmasdi: brifing to'liq hisob-kitob qilgan mijozni ham
+        // "eng katta qarzdor" deb Telegramga yozib yuborardi.
+        qarzdorlarRoyxati(this.prisma, tenantId, 5),
         this.prisma.material.findMany({
           where: { tenantId },
           select: { name: true, unit: true, currentStock: true, minStock: true },
@@ -123,9 +118,9 @@ export class BriefingService {
         yaqinlar: yaqinlar.map(mapTask),
       },
       qarzdorlar: {
-        soni: debtAgg._count,
-        jami: debtAgg._sum.totalDebt || 0,
-        royxat: debtors,
+        soni: qarz.soni,
+        jami: qarz.jami,
+        royxat: qarz.royxat.map((c) => ({ name: c.nom, totalDebt: c.qarz })),
       },
       ombor: {
         soni: low.length,

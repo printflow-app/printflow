@@ -1,5 +1,6 @@
 import { z } from 'zod/v3';
 import { AgentToolDef } from './types';
+import { qarzdorlarRoyxati, mijozQoldiqlari } from '../../../common/customer-debt';
 
 // =============================================
 // O'QISH TOOL'LARI — hech narsa o'zgartirmaydi, confirm/audit shart emas.
@@ -20,16 +21,27 @@ export const READ_TOOLS: AgentToolDef[] = [
     }),
     summarize: (i) => `Mijoz qidiruvi: "${i.query}"`,
     execute: async (i, ctx) => {
-      const customers = await ctx.services.prisma.customer.findMany({
-        where: { tenantId: ctx.tenantId, name: { contains: i.query, mode: 'insensitive' } },
-        select: {
-          id: true, name: true, phone: true, totalDebt: true, totalPaid: true,
-          contacts: { where: { isPrimary: true }, select: { name: true, phone: true }, take: 1 },
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: 10,
-      });
-      return { topildi: customers.length, mijozlar: customers };
+      const [customers, qoldiq] = await Promise.all([
+        ctx.services.prisma.customer.findMany({
+          where: { tenantId: ctx.tenantId, name: { contains: i.query, mode: 'insensitive' } },
+          select: {
+            id: true, name: true, phone: true,
+            contacts: { where: { isPrimary: true }, select: { name: true, phone: true }, take: 1 },
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 10,
+        }),
+        mijozQoldiqlari(ctx.services.prisma, ctx.tenantId),
+      ]);
+      // `totalDebt`/`totalPaid` ustunlari qaytarilmaydi — ular eskirgan
+      // hisoblagich va "qarz" degani emas. Qoldiq manbadan hisoblanadi.
+      return {
+        topildi: customers.length,
+        mijozlar: customers.map((c) => ({
+          ...c,
+          qoldiq_qarz: Math.round(qoldiq.get(c.id) || 0),
+        })),
+      };
     },
   },
   {
@@ -46,35 +58,45 @@ export const READ_TOOLS: AgentToolDef[] = [
     }),
     summarize: (i) => i.customerName ? `Qarz hisoboti: ${i.customerName}` : 'Qarzdorlar tafsilotli hisoboti',
     execute: async (i, ctx) => {
-      const debtors = await ctx.services.prisma.customer.findMany({
-        where: {
-          tenantId: ctx.tenantId,
-          totalDebt: { gt: 0 },
-          ...(i.customerName ? { name: { contains: i.customerName, mode: 'insensitive' } } : {}),
-        },
-        select: {
-          id: true, name: true, phone: true, totalDebt: true,
-          tasks: {
-            where: { isArchived: false, remainingAmount: { gt: 0 } },
+      // Kim qarzdor — `common/customer-debt.ts` bo'yicha (buyurtmalar
+      // summasi − to'langan pul). `Customer.totalDebt` ustuni bo'yicha
+      // filtrlash hamma mijozni qarzdor qilib ko'rsatardi.
+      const qarz = await qarzdorlarRoyxati(ctx.services.prisma, ctx.tenantId);
+      const kerakli = (i.customerName
+        ? qarz.royxat.filter((c) => c.nom.toLowerCase().includes(i.customerName!.toLowerCase()))
+        : qarz.royxat
+      ).slice(0, i.limit ?? 10);
+
+      const debtors = kerakli.length
+        ? await ctx.services.prisma.customer.findMany({
+            where: { id: { in: kerakli.map((c) => c.id) } },
             select: {
-              displayId: true, orderName: true, title: true,
-              totalAmount: true, remainingAmount: true,
-              createdAt: true, deadlineAt: true,
-              column: { select: { title: true } },
+              id: true, name: true, phone: true,
+              tasks: {
+                where: { isArchived: false, remainingAmount: { gt: 0 } },
+                select: {
+                  displayId: true, orderName: true, title: true,
+                  totalAmount: true, remainingAmount: true,
+                  createdAt: true, deadlineAt: true,
+                  column: { select: { title: true } },
+                },
+                orderBy: { createdAt: 'asc' },
+                take: 10,
+              },
             },
-            orderBy: { createdAt: 'asc' },
-            take: 10,
-          },
-        },
-        orderBy: { totalDebt: 'desc' },
-        take: i.limit ?? 10,
-      });
+          })
+        : [];
+      // Tartib qarz bo'yicha bo'lishi kerak — findMany uni saqlamaydi.
+      const byId = new Map(debtors.map((d) => [d.id, d]));
+      const tartibli = kerakli
+        .map((c) => ({ ...byId.get(c.id)!, totalDebt: c.qarz }))
+        .filter((d) => d.id);
+
       const now = Date.now();
-      const jami = debtors.reduce((s, d) => s + (d.totalDebt || 0), 0);
       return {
-        soni: debtors.length,
-        jami_qarz: jami,
-        qarzdorlar: debtors.map((d) => {
+        soni: kerakli.length,
+        jami_qarz: kerakli.reduce((s, c) => s + c.qarz, 0),
+        qarzdorlar: tartibli.map((d) => {
           const eng_eski = d.tasks[0]?.createdAt
             ? Math.floor((now - d.tasks[0].createdAt.getTime()) / 86400000)
             : null;
@@ -162,14 +184,23 @@ export const READ_TOOLS: AgentToolDef[] = [
     }),
     summarize: () => "Qarzdorlar ro'yxati",
     execute: async (i, ctx) => {
-      const debtors = await ctx.services.prisma.customer.findMany({
-        where: { tenantId: ctx.tenantId, totalDebt: { gt: 0 } },
-        select: { id: true, name: true, phone: true, totalDebt: true },
-        orderBy: { totalDebt: 'desc' },
-        take: i.limit ?? 10,
+      // Qarz `common/customer-debt.ts` dan — Mijozlar sahifasi va Bosh
+      // sahifa bilan bir xil. `Customer.totalDebt` ustuni to'lovlarni
+      // ayirmagani uchun AI to'liq hisob-kitob qilgan mijozni ham
+      // qarzdor deb aytardi.
+      const qarz = await qarzdorlarRoyxati(ctx.services.prisma, ctx.tenantId, i.limit ?? 10);
+      const telefonlar = await ctx.services.prisma.customer.findMany({
+        where: { id: { in: qarz.royxat.map((c) => c.id) } },
+        select: { id: true, phone: true },
       });
-      const jami = debtors.reduce((s, d) => s + (d.totalDebt || 0), 0);
-      return { soni: debtors.length, jami_qarz: jami, qarzdorlar: debtors };
+      const telById = new Map(telefonlar.map((c) => [c.id, c.phone]));
+      return {
+        soni: qarz.soni,
+        jami_qarz: qarz.jami,
+        qarzdorlar: qarz.royxat.map((c) => ({
+          id: c.id, name: c.nom, phone: telById.get(c.id) || null, totalDebt: c.qarz,
+        })),
+      };
     },
   },
   {

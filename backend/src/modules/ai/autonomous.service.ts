@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
+import { qarzdorlarRoyxati } from '../../common/customer-debt';
 
 // =============================================
 // AVTONOM FON AGENTLAR — Faza 4 (AaaS transformatsiya).
@@ -254,7 +255,7 @@ export class AutonomousService {
     const weekAgo = new Date(Date.now() - 7 * 86400000);
     const now = new Date();
 
-    const [kirim, chiqim, newOrders, newOrdersSum, doneOrders, debtAgg, overdue] = await Promise.all([
+    const [kirim, chiqim, newOrders, newOrdersSum, doneOrders, qarz, overdue] = await Promise.all([
       this.prisma.transaction.aggregate({
         where: { tenantId, type: 'kirim', date: { gte: weekAgo } },
         _sum: { amount: true },
@@ -272,11 +273,10 @@ export class AutonomousService {
       this.prisma.task.count({
         where: { tenantId, isArchived: false, column: { isDone: true }, updatedAt: { gte: weekAgo } },
       }),
-      this.prisma.customer.aggregate({
-        where: { tenantId, totalDebt: { gt: 0 } },
-        _sum: { totalDebt: true },
-        _count: true,
-      }),
+      // Qarz — `common/customer-debt.ts` dan. Ilgari `Customer.totalDebt`
+      // yig'ilardi va u to'lovlarni ayirmasdi: haftalik hisobot qarzni
+      // bir necha barobar oshirib ko'rsatardi.
+      qarzdorlarRoyxati(this.prisma, tenantId),
       this.prisma.task.count({
         where: {
           tenantId,
@@ -298,8 +298,8 @@ export class AutonomousService {
       `✅ Bajarilgan: ~${doneOrders} ta`,
     ];
     if (overdue > 0) lines.push(`🔴 Muddati o'tgan (hozir): ${overdue} ta`);
-    if (debtAgg._count > 0)
-      lines.push(`💳 Qarzdorlar: ${debtAgg._count} ta, jami ${fm(debtAgg._sum.totalDebt || 0)} so'm`);
+    if (qarz.soni > 0)
+      lines.push(`💳 Qarzdorlar: ${qarz.soni} ta, jami ${fm(qarz.jami)} so'm`);
     lines.push('', "_Girgitton avtonom hisoboti. Sozlamalar → Girgitton Agent bo'limidan boshqariladi._");
     return lines.join('\n');
   }
