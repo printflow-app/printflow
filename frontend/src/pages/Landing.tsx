@@ -677,13 +677,17 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               viewport={{ once: true }}
             >
               <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 text-orange-500 text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
-                <Zap size={12} /> Tariflar
+                <Zap size={12} /> Narxlar
               </motion.div>
               <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-black text-white tracking-tight mb-4">
-                Tariflar va Narxlar
+                Narx
               </motion.h2>
+              {/* Yagona tarif: tanlanadigan variant yo'q, shuning uchun
+                  "hajmingizga mos tarifni tanlang" o'rniga nima berilishi
+                  yoziladi. Sahifa bazadagi faol tariflarni chizadi — ular
+                  bittaga tushgani uchun matn ham shunga moslashtirildi. */}
               <motion.p variants={fadeUp} className="text-slate-400 text-lg max-w-xl mx-auto mb-8">
-                Biznesingiz hajmiga mos tarifni tanlang
+                Bitta tarif — barcha modullar ochiq. Tanlash shart emas.
               </motion.p>
 
               {/* Muddat — tanlov emas, ma'lumot: obuna faqat 12 oylik. */}

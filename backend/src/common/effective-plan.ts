@@ -21,7 +21,19 @@ import { PrismaService } from '../prisma/prisma.service';
 const CACHE_TTL_MS = 60_000;
 let cached: { plan: any | null; at: number } | null = null;
 
-/** Platformaning standart tarifi — tenant'da o'ziniki bo'lmaganda ishlatiladi. */
+/**
+ * Platformaning standart tarifi — tenant'da o'ziniki bo'lmaganda ishlatiladi.
+ *
+ * 2026-08-10 dan boshlab platformada FAOL tarif bitta (yagona tarifga
+ * o'tildi, `scripts/yagona-tarifga-otish.js`), shuning uchun bu yerdagi
+ * "birinchi faol tarif" aynan o'sha yagona tarifni qaytaradi.
+ *
+ * Ilgari uchta faol tarif bor edi va bu funksiya `sortOrder` bo'yicha
+ * ENG KICHIGINI (STARTER) tanlardi — ya'ni tarifsiz tenant eng kam
+ * modulli tarifni olardi, holbuki maqsad teskari edi. Yagona tarifda bu
+ * savol o'z-o'zidan yo'qoldi; agar kelajakda yana bir necha tarif
+ * qo'shilsa, bu joyni qaytadan ko'rib chiqish kerak.
+ */
 export async function getDefaultPlan(prisma: PrismaService): Promise<any | null> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.plan;
   const plan = await prisma.plan.findFirst({
