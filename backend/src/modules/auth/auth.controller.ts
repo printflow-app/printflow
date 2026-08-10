@@ -8,12 +8,14 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { resolveEffectivePlan } from '../../common/effective-plan';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators/public.decorator';
+import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
 import { RegisterDto } from './dto/register.dto';
 
 // =============================================
@@ -184,6 +186,33 @@ export class AuthController {
     });
 
     return { message: 'Super Admin tizimga kirdi', token };
+  }
+
+  /**
+   * IMPERSONATE — super-admin bir tenantga o'sha tenant admini sifatida kiradi.
+   *
+   * "Hamma tenantga kiradigan universal parol" o'rniga xavfsiz yo'l: faqat
+   * super-admin (pf_sa_token / x-super-admin-key) chaqira oladi, mijoz
+   * parollari zaiflashmaydi va kirish token ichida hamda logda yoziladi.
+   *
+   * Tenant JWT'ni JSON'da qaytaramiz (cookie EMAS): admin paneli boshqa
+   * origin'da, shuning uchun asosiy ilova tokenni URL hash orqali qabul qiladi
+   * va Bearer sifatida saqlaydi.
+   */
+  @Public() // global JwtAuthGuard'ni chetlab o'tamiz; SuperAdminGuard himoya qiladi
+  @UseGuards(SuperAdminGuard)
+  @Post('super-admin/impersonate')
+  @HttpCode(HttpStatus.OK)
+  async impersonate(
+    @Req() req: Request,
+    @Body() body: { tenantId?: string; slug?: string; userId?: string },
+  ) {
+    const saLogin = (req as any).superAdmin?.login || 'superadmin';
+    return this.authService.impersonate(saLogin, {
+      tenantId: body.tenantId,
+      slug: body.slug,
+      userId: body.userId,
+    });
   }
 
   /**

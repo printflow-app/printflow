@@ -38,9 +38,16 @@ export const authApi = {
   me: () => api.get('/auth/super-admin/me'),
 };
 
+// Asosiy ilova (workspace) URL'i — impersonate handoff shu manzilga token
+// bilan yo'naltiradi. Env orqali override qilinadi (masalan preview deploy).
+export const APP_URL = import.meta.env.VITE_APP_URL || 'https://printflow-gilt.vercel.app';
+
 export const tenantsApi = {
   findAll: () => api.get('/super-admin/tenants'),
   findOne: (id: string) => api.get(`/super-admin/tenants/${id}`),
+  /** Super-admin bir tenantga o'sha tenant admini sifatida kiradi (parolsiz). */
+  impersonate: (tenantId: string, userId?: string) =>
+    api.post('/auth/super-admin/impersonate', { tenantId, userId }),
   create: (data: any) => api.post('/super-admin/tenants', data),
   createFromLead: (data: { leadId: string; slug: string; planId?: string }) =>
     api.post('/super-admin/tenants/from-lead', data),

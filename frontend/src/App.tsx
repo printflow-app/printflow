@@ -110,6 +110,32 @@ function clearSession() {
   try { localStorage.removeItem('pf_token'); } catch {}
 }
 
+// IMPERSONATE handoff — super-admin panelidan "Admin sifatida kirish" bosilganda
+// asosiy ilova `#impersonate=<jwt>` hash bilan ochiladi. Tokenni Bearer sifatida
+// saqlaymiz va URL'dan darhol tozalaymiz (loglarga/tarixga tushmasin). Hash
+// query emas — Referer sarlavhasiga ham chiqmaydi. Token topilsa true qaytadi;
+// shunda `/auth/me` uni ishlatib impersonatsiya sessiyasini ochadi.
+function consumeImpersonationToken(): boolean {
+  try {
+    const hash = window.location.hash || '';
+    const m = hash.match(/[#&]impersonate=([^&]+)/);
+    if (!m) return false;
+    const token = decodeURIComponent(m[1]);
+    if (!token) return false;
+    // Avvalgi sessiya (agar bu brauzerda boshqa akkaunt ochilgan bo'lsa) o'rnini
+    // impersonatsiya egallaydi — token va user cache'ni tozalab, yangisini qo'yamiz.
+    try { localStorage.removeItem(SESSION_KEY); } catch {}
+    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+    localStorage.setItem('pf_token', token);
+    // Hash'ni URL'dan olib tashlaymiz (token ko'rinib turmasin).
+    const clean = window.location.pathname + window.location.search;
+    window.history.replaceState(null, '', clean);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Eski sessionStorage qiymatini localStorage'ga ko'chiramiz — bir martalik.
 // Foydalanuvchi deploy'dan oldin login qilgan bo'lsa, qaytadan kirmasligi uchun.
 (function migrateSessionToLocal() {
@@ -162,6 +188,16 @@ const App: React.FC = () => {
       if (tg) {
         tg.ready?.();
         tg.expand?.();
+      }
+
+      // IMPERSONATE — super-admin panelidan kelgan bo'lsa, hash'dagi tokenni
+      // Bearer sifatida saqlaymiz. `/auth/me` cookie'ni Bearer'dan ustun
+      // qo'ygani uchun, bu brauzerda eski tenant cookie'si qolgan bo'lsa u
+      // impersonatsiyani "yeb" qo'yardi — shuning uchun avval logout bilan
+      // eski cookie'ni tozalab, so'ng Bearer bilan kiramiz.
+      const impersonating = consumeImpersonationToken();
+      if (impersonating) {
+        try { await authApi.logout(); } catch { /* cookie yo'q bo'lsa ham mayli */ }
       }
 
       try {

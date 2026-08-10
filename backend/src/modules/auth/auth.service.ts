@@ -665,6 +665,145 @@ export class AuthService {
   }
 
   /**
+   * IMPERSONATE — super-admin bir tenantga o'sha tenantning admini sifatida
+   * kiradi (parolsiz). Universal parol o'rniga xavfsiz yo'l:
+   *   - kalit BITTA joyda (super-admin), har bir mijoz akkountida emas;
+   *   - kim/qachon/qaysi tenantga kirgani token ichida yoziladi
+   *     (`impersonatedBy`) va serverda log qilinadi;
+   *   - mijozlarning haqiqiy parollari zaiflashmaydi;
+   *   - super-admin parolini almashtirsangiz — hamma kirish darrov bekor.
+   *
+   * Qaysi foydalanuvchi sifatida kiramiz:
+   *   1) `userId` aniq berilsa — o'sha (tenantga tegishli bo'lishi shart);
+   *   2) aks holda WorkspaceAdmin (bo'lsa) — to'liq admin huquqi;
+   *   3) aks holda xodimlardan eng "admin"i (xodimlarni boshqara oladigan,
+   *      eng eski akkount — odatda egasi);
+   *   4) aks holda birinchi xodim.
+   *
+   * Chiqadigan token — oddiy tenant JWT (login bilan bir xil shakl), shuning
+   * uchun asosiy ilova hech qanday o'zgarishsiz uni Bearer sifatida ishlatadi.
+   * Muddati qisqa (4 soat) — support sessiyasi uzoq turmasligi kerak.
+   */
+  async impersonate(
+    superAdminLogin: string,
+    target: { tenantId?: string; slug?: string; userId?: string },
+  ) {
+    const tenant = target.tenantId
+      ? await this.prisma.tenant.findUnique({ where: { id: target.tenantId } })
+      : target.slug
+        ? await this.prisma.tenant.findUnique({ where: { slug: target.slug } })
+        : null;
+
+    if (!tenant) {
+      throw new UnauthorizedException('Workspace topilmadi');
+    }
+    if (!tenant.isActive) {
+      throw new UnauthorizedException('Workspace faol emas');
+    }
+
+    // Foydalanuvchini tenant kontekstida qidiramiz. Bu yerda ATAYIN
+    // status (TRIAL/EXPIRED) tekshirilmaydi: super-admin support uchun
+    // muddati tugagan tenantga ham kira olishi kerak.
+    const { userId, fullName, login, phone, role, isAdmin, passwordVersion } =
+      await TenantContext.run(
+        { tenantId: tenant.id, userId: '', userRole: '' },
+        async () => {
+          // 1) Aniq userId berilgan bo'lsa
+          if (target.userId) {
+            // DIQQAT: WorkspaceAdmin Prisma middleware'da tenant bilan
+            // AVTOMATIK cheklanmaydi (Employee'dan farqli). Shuning uchun
+            // tenantId'ni QO'LDA beramiz — aks holda boshqa tenant admini
+            // tanlanib, cross-tenant kirish yuzaga kelardi.
+            const admin = await this.prisma.workspaceAdmin.findFirst({
+              where: { id: target.userId, tenantId: tenant.id },
+            });
+            if (admin) {
+              return {
+                userId: admin.id, fullName: admin.fullName, login: admin.login,
+                phone: admin.phone, role: OWNER_ADMIN_ROLE, isAdmin: true,
+                passwordVersion: admin.passwordVersion,
+              };
+            }
+            const emp = await this.prisma.employee.findFirst({
+              where: { id: target.userId }, include: { role: true },
+            });
+            if (emp) {
+              return {
+                userId: emp.id, fullName: emp.fullName, login: emp.login,
+                phone: emp.phone, role: emp.role, isAdmin: false,
+                passwordVersion: emp.passwordVersion,
+              };
+            }
+            throw new UnauthorizedException('Ko\'rsatilgan foydalanuvchi bu workspace\'da topilmadi');
+          }
+
+          // 2) WorkspaceAdmin (bo'lsa) — to'liq admin huquqi.
+          //    tenantId QO'LDA — yuqoridagi sabab bilan (avtomatik scoping yo'q).
+          const wsAdmin = await this.prisma.workspaceAdmin.findFirst({
+            where: { tenantId: tenant.id, isActive: true },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (wsAdmin) {
+            return {
+              userId: wsAdmin.id, fullName: wsAdmin.fullName, login: wsAdmin.login,
+              phone: wsAdmin.phone, role: OWNER_ADMIN_ROLE, isAdmin: true,
+              passwordVersion: wsAdmin.passwordVersion,
+            };
+          }
+
+          // 3) Xodimlardan eng "admin"i — xodimlarni boshqara oladigani,
+          //    eng eski akkount (odatda egasi).
+          const emps = await this.prisma.employee.findMany({
+            include: { role: true },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (emps.length === 0) {
+            throw new UnauthorizedException('Bu workspace\'da foydalanuvchi yo\'q');
+          }
+          const adminEmp =
+            emps.find((e) => e.role?.canManageEmployees) ||
+            emps.find((e) => (e.role?.name || '').toLowerCase().includes('admin')) ||
+            emps[0];
+          return {
+            userId: adminEmp.id, fullName: adminEmp.fullName, login: adminEmp.login,
+            phone: adminEmp.phone, role: adminEmp.role, isAdmin: false,
+            passwordVersion: adminEmp.passwordVersion,
+          };
+        },
+      );
+
+    // Audit — kim, qaysi tenantga, kim sifatida kirdi.
+    console.warn(
+      `[IMPERSONATE] super-admin "${superAdminLogin}" → tenant "${tenant.slug}" ` +
+        `(${tenant.name}) as user "${login}" (${userId})`,
+    );
+
+    const token = this.jwt.sign(
+      {
+        sub: userId,
+        tenantId: tenant.id,
+        workspaceSlug: tenant.slug,
+        role: (role as any)?.name || 'Admin',
+        isAdmin,
+        permissions: role,
+        passwordVersion,
+        impersonatedBy: superAdminLogin, // audit izi — tokenning o'zida
+      },
+      {
+        secret: process.env.JWT_SECRET || 'printflow_super_secret_key_2024',
+        expiresIn: '4h',
+      },
+    );
+
+    return {
+      token,
+      workspaceSlug: tenant.slug,
+      tenantName: tenant.name,
+      user: { id: userId, fullName, login, phone, role, permissions: role },
+    };
+  }
+
+  /**
    * Session validation — checks if passwordVersion still matches.
    * Called periodically by frontend to force logout on credential change.
    */

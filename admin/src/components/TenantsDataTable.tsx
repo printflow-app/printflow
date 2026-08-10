@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown, ArrowUp, ArrowUpDown, CalendarPlus, CreditCard, Ban, CheckCircle2, Search, Pencil,
+  ArrowDown, ArrowUp, ArrowUpDown, CalendarPlus, CreditCard, Ban, CheckCircle2, Search, Pencil, LogIn,
 } from 'lucide-react';
-import { tenantsApi } from '../api';
+import { tenantsApi, APP_URL } from '../api';
 import { useTenants, usePlans, useInvalidate } from '../hooks/queries';
 import { useUI } from '../ui';
 import { DropdownMenu, type MenuItem } from './DropdownMenu';
@@ -17,9 +17,10 @@ import { DropdownMenu, type MenuItem } from './DropdownMenu';
 //       Change Tariff → opens a small plan picker
 //       Extend Trial +7d → patches trialEndsAt
 //       Suspend/Activate → flips isActive
-//   - Refused: "Login as Tenant" (impersonation) — needs backend endpoint
-//     with audit log and time-limited token. Surface this in the UI as a
-//     disabled item with a tooltip explaining why, so the team knows.
+//       Admin sifatida kirish (impersonate) → super-admin tenantga o'sha
+//         tenant admini sifatida parolsiz kiradi. Backend qisqa muddatli
+//         (4 soat) tenant JWT beradi, kirish logda yoziladi; token asosiy
+//         ilovaga URL hash orqali uzatiladi.
 // =============================================
 
 type Status = 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'PENDING_PAYMENT';
@@ -197,6 +198,34 @@ export function TenantsDataTable() {
     }
   };
 
+  // IMPERSONATE — tenantga o'sha tenant admini sifatida kirish (parolsiz).
+  // Backend qisqa muddatli tenant JWT qaytaradi; uni asosiy ilovaga URL hash
+  // orqali uzatamiz (Referer/loglarga tushmasligi uchun hash, query emas),
+  // ilova esa uni Bearer sifatida saqlab, sessiyani ochadi.
+  const handleImpersonate = async (t: Tenant) => {
+    const ok = await ui.confirm({
+      title: `"${t.name}" ga kirish`,
+      message:
+        'Siz bu workspace\'ga uning admini sifatida kirasiz. Kirish super-admin ' +
+        'nomidan logda yoziladi. Yangi oynada ochiladi.',
+      confirmText: 'Kirish',
+    });
+    if (!ok) return;
+    try {
+      const res = await tenantsApi.impersonate(t.id);
+      const { token } = res.data || {};
+      if (!token) throw new Error('Token kelmadi');
+      // Ildiz yo'liga ochamiz: token tenantId'ni o'zida saqlaydi, slug URL'da
+      // shart emas. Ilova ildizda autentifikatsiyadan so'ng dashboard'ga
+      // o'zi yo'naltiradi (`/t/slug` yo'lida bu redirect ishlamaydi).
+      const url = `${APP_URL}/#impersonate=${encodeURIComponent(token)}`;
+      window.open(url, '_blank', 'noopener');
+      ui.toast(`"${t.name}" yangi oynada ochilmoqda`, 'success');
+    } catch (e: any) {
+      ui.toast(e?.response?.data?.message || 'Kira olmadik', 'error');
+    }
+  };
+
   const buildMenu = (t: Tenant): MenuItem[] => [
     { kind: 'label', text: 'Tezkor amallar' },
     {
@@ -220,9 +249,9 @@ export function TenantsDataTable() {
     { kind: 'separator' },
     {
       kind: 'item',
-      label: 'Foydalanuvchi sifatida kirish',
-      disabled: true, // Impersonation: backend endpoint + audit log not implemented
-      onSelect: () => {},
+      label: 'Admin sifatida kirish',
+      icon: <LogIn size={14} />,
+      onSelect: () => handleImpersonate(t),
     },
     { kind: 'separator' },
     t.isActive
