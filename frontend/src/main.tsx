@@ -4,6 +4,11 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.tsx'
 import './index.css'
+import { matnOlchaminiTikla } from './components/MatnOlchami'
+
+// Saqlangan matn o'lchami React yuklanishidan OLDIN qo'llanadi — aks holda
+// sahifa avval 100% da chizilib, keyin sakrab kattalashardi.
+matnOlchaminiTikla()
 
 // After a deploy, a client still running the previous build requests chunk hashes
 // that no longer exist on the CDN, so the lazy import fails ("Failed to fetch

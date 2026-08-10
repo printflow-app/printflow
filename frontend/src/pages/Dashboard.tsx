@@ -12,14 +12,15 @@ import { OnboardingTour, isTourComplete } from '../components/OnboardingTour';
 import { PageTour } from '../components/PageTour';
 import { hasPageTour } from '../components/pageTours';
 import { CommandPalette } from '../components/CommandPalette';
+import MatnOlchami from '../components/MatnOlchami';
 import { ReleaseTour } from '../components/ReleaseNotes';
 import { useSidebarCounts, markTabSeen } from '../hooks/useSidebarCounts';
 
 const BoshSahifa   = React.lazy(() => import('./BoshSahifa'));
 const Moliya       = React.lazy(() => import('./Moliya'));
 const Hodimlar     = React.lazy(() => import('./Hodimlar'));
-const Topshiriqlar = React.lazy(() => import('./Topshiriqlar'));
-const Vazifalar = React.lazy(() => import('./Vazifalar'));
+// Kanban va Jamoa vazifalari bitta sahifa (ikki tab) — IshlarSahifasi.
+const IshlarSahifasi = React.lazy(() => import('./IshlarSahifasi'));
 const Mijozlar     = React.lazy(() => import('./Mijozlar'));
 const Sozlamalar   = React.lazy(() => import('./Sozlamalar'));
 const Kassa        = React.lazy(() => import('./Kassa'));
@@ -420,8 +421,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       items: [
         { id: 'boshsahifa', label: 'Dashboard', icon: Home, show: true, sub: 'Umumiy holat va AI xavflar' },
         { id: 'kassa', label: 'Kassa', icon: Wallet, show: (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && tf.finance, sub: 'Kirim va Chiqim' },
-        { id: 'topshiriqlar', label: 'Xizmatlar (Kanban)', icon: ClipboardList, show: (p.canViewTasks || isAdmin) && tf.kanban, sub: 'Buyurtmalar nazorati' },
-        { id: 'vazifalar', label: 'Jamoa vazifalari', icon: ClipboardList, show: (p.canViewTeamTasks || isAdmin), sub: 'Kim nima bilan band' },
+        // Kanban va Jamoa vazifalari bitta bandda: ular sahifa ichida
+        // tab bilan almashadi. Menyuda ikkita alohida band turgani ularni
+        // bog'liq emasdek ko'rsatardi — aslida Jamoa doskasidagi
+        // buyurtmalarning bosqichi aynan Kanbanda boshqariladi.
+        //
+        // Kanbanga ruxsati yo'q, lekin vazifalarga bor xodim ham shu
+        // banddan kiradi — sahifa o'zi mos bo'limni ochadi.
+        {
+          id: 'topshiriqlar',
+          label: 'Xizmatlar (Kanban)',
+          icon: ClipboardList,
+          show: ((p.canViewTasks || isAdmin) && tf.kanban) || p.canViewTeamTasks || isAdmin,
+          sub: 'Buyurtmalar va jamoa vazifalari',
+        },
         { id: 'mijozlar', label: 'Mijozlar Bazasi', icon: UserSquare2, show: (p.canViewCustomers || isAdmin) && tf.customers, sub: "Qarzlar va hamkorlar" },
         { id: 'ombor', label: 'Ombor', icon: PackageOpen, show: (p.canViewInventory || isAdmin) && (tf.inventory ?? tf.warehouse), sub: 'Materiallar va qoldiqlar' },
         { id: 'davomat', label: 'Davomat', icon: QrCode, show: (p.canViewAttendance || isAdmin) && tf.attendance, sub: 'QR kirim/chiqim' },
@@ -732,6 +745,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
             <Settings size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
           </button>
+          {/* Matn o'lchami — qurilma sozlamasi, brauzerda saqlanadi.
+              Sarlavhaga emas, shu yerga qo'yildi: u bir marta sozlanadi
+              va kundalik ishlatilmaydi, sarlavha esa allaqachon to'la. */}
+          <div className="flex justify-center pb-1">
+            <MatnOlchami />
+          </div>
           <div className="flex gap-1">
             <button
               onClick={() => handleTabChange('qollanma')}
@@ -935,8 +954,19 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {activeTab === 'kassa' && (p.canViewFinance || p.canAddIncome || p.canAddExpense || isAdmin) && <Kassa currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'moliya' && (p.canViewFinance || p.canViewKpi || p.canViewStatistics || isAdmin) && <Moliya currentUser={currentUser} activeBranchId={activeBranchId} />}
               { activeTab === 'hodimlar' && (p.canViewEmployees || isAdmin) && <Hodimlar currentUser={currentUser} activeBranchId={activeBranchId} /> }
-              {activeTab === 'topshiriqlar' && (p.canViewTasks || isAdmin) && <Topshiriqlar currentUser={currentUser} activeBranchId={activeBranchId} />}
-              {activeTab === 'vazifalar' && (p.canViewTeamTasks || isAdmin) && <Vazifalar currentUser={currentUser} activeBranchId={activeBranchId} />}
+              {/* Kanban va Jamoa vazifalari — bitta sahifa, ikki tab.
+                  Ikkala URL ham saqlanib qoldi: qaysi biri ochilgan bo'lsa,
+                  o'sha tab tanlangan holda chiqadi (eski havolalar,
+                  qo'llanma qadamlari va Ctrl+K buzilmasin). */}
+              {(activeTab === 'topshiriqlar' || activeTab === 'vazifalar')
+                && (p.canViewTasks || p.canViewTeamTasks || isAdmin) && (
+                <IshlarSahifasi
+                  currentUser={currentUser}
+                  activeBranchId={activeBranchId}
+                  bolim={activeTab === 'vazifalar' ? 'vazifalar' : 'kanban'}
+                  onBolim={(b) => handleTabChange(b === 'vazifalar' ? 'vazifalar' : 'topshiriqlar')}
+                />
+              )}
               {activeTab === 'mijozlar' && (p.canViewCustomers || isAdmin) && <Mijozlar currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'ombor' && (p.canViewInventory || isAdmin) && <Ombor currentUser={currentUser} activeBranchId={activeBranchId} />}
               {activeTab === 'davomat' && (p.canViewAttendance || isAdmin) && <Davomat currentUser={currentUser} />}
