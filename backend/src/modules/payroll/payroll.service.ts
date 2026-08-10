@@ -93,14 +93,30 @@ export class PayrollService {
       const paid = rec?.status === 'paid';
       const calc = computed[e.id];
 
-      // Saqlangan yozuv bo'lsa — u ustun (buxgalter qo'lda tuzatgan bo'lishi
-      // mumkin). Bo'lmasa sxema hisobi, u ham bo'lmasa xodimning baseSalary'si.
-      const fixedSalary = rec
+      // FIKSA VA BONUS — SXEMA BO'LSA DOIM JONLI HISOBLANADI.
+      //
+      // Ilgari saqlangan yozuv ustun turardi va bu jimgina pul xatosiga
+      // olib kelardi: "Saqlash" bosilgan on fiksa/bonus o'sha kundagi
+      // qiymatda muzlab qolardi. Oyning 2-kunida jarimani qabul qilib
+      // saqlagan buxgalter, oy oxirida xodimga 2 kunlik maosh to'lardi
+      // (5 000 000 × 2/26 = 384 615, aslida 8/26 = 1 538 462).
+      //
+      // Endi sxemasi bor xodimda ular har ochilganda qayta hisoblanadi —
+      // davomat, buyurtma va tushum o'zgarsa, maosh ham darhol ergashadi.
+      // Saqlangan qiymat faqat SXEMASI YO'Q xodimda ishlatiladi: u yerda
+      // hisoblovchi qoida yo'q va summa qo'lda kiritiladi.
+      //
+      // To'langan oy tegilmaydi — u snapshot, tarix o'zgarmasligi kerak.
+      const fixedSalary = paid
         ? rec.fixedSalary
         : calc
           ? calc.fiksa
-          : Number(e.baseSalary || 0);
-      const bonus = rec ? rec.bonus || 0 : calc ? calc.kpi : 0;
+          : rec
+            ? rec.fixedSalary
+            : Number(e.baseSalary || 0);
+      const bonus = paid ? rec.bonus || 0 : calc ? calc.kpi : rec ? rec.bonus || 0 : 0;
+      // Jarima BUNDAN MUSTASNO: u avtomatik qo'llanmaydi, buxgalter
+      // taklifni qabul qiladi yoki o'zi yozadi — ya'ni ongli qaror.
       const penalty = rec?.penalty || 0;
       const netSalary = Math.round(fixedSalary + bonus - penalty);
       // Paid bo'lsa snapshotlar; aks holda jonli hisob
@@ -133,7 +149,11 @@ export class PayrollService {
         breakdown: paid ? rec.breakdown || null : calc?.rows || null,
         // Taklif qilingan jarima: avtomatik AYIRILMAYDI, buxgalter tasdiqlaydi.
         taklifJarima: calc?.jarima || 0,
-        avtomatik: !!calc && !rec,
+        // Sxema bo'yicha jonli hisoblanyaptimi — UI shuni bildiradi va
+        // fiksa/bonus kataklarini tahrirlashga yopadi (yozilgan qiymat
+        // baribir keyingi ochilishda qayta hisoblanardi — buni taklif
+        // qilish yolg'on bo'lardi).
+        jonli: !!calc && !paid,
       };
     });
   }
@@ -142,7 +162,8 @@ export class PayrollService {
   async save(
     data: { employeeId: string; period: string; fixedSalary?: number; bonus?: number; bonusNote?: string; penalty?: number; penaltyNote?: string },
   ) {
-    if (!periodBounds(data.period)) throw new BadRequestException("Davr formati noto'g'ri (YYYY-MM)");
+    const bounds = periodBounds(data.period);
+    if (!bounds) throw new BadRequestException("Davr formati noto'g'ri (YYYY-MM)");
     const emp = await this.prisma.employee.findUnique({ where: { id: data.employeeId } });
     if (!emp) throw new NotFoundException('Xodim topilmadi');
 
@@ -153,8 +174,30 @@ export class PayrollService {
       throw new BadRequestException("Bu oy to'langan — avval 'Bekor qilish' bosing, keyin tahrirlang");
     }
 
-    const fixedSalary = data.fixedSalary !== undefined ? Number(data.fixedSalary) : Number(emp.baseSalary || 0);
-    const bonus = Number(data.bonus || 0);
+    // Sxemasi bor xodimda fiksa/bonus KELGAN QIYMATDAN OLINMAYDI — ular
+    // jonli hisoblanadi va yozuvga faqat nusxa sifatida tushadi.
+    //
+    // Nega nusxa kerak: sxema keyinchalik o'chirilsa, `list()` yozuvga
+    // qaytadi. Kelgan qiymat yozilsa, o'sha yerda oylar oldingi eskirgan
+    // raqam qolib ketardi. Jonli qiymatni yozib qo'yish yozuvni har doim
+    // haqiqatga mos ushlab turadi.
+    const calc = await this.schemes
+      .computeForEmployees(
+        emp.tenantId,
+        [{ id: emp.id, roleId: emp.roleId }],
+        bounds.start,
+        bounds.end,
+      )
+      .then((r) => r[emp.id])
+      .catch(() => undefined);
+
+    const fixedSalary = calc
+      ? calc.fiksa
+      : data.fixedSalary !== undefined
+        ? Number(data.fixedSalary)
+        : Number(emp.baseSalary || 0);
+    const bonus = calc ? calc.kpi : Number(data.bonus || 0);
+    // Jarima har doim foydalanuvchidan — u ongli qaror, hisoblanmaydi.
     const penalty = Number(data.penalty || 0);
     const netSalary = Math.round(fixedSalary + bonus - penalty);
 
@@ -189,8 +232,25 @@ export class PayrollService {
     });
     if (rec?.status === 'paid') throw new BadRequestException("Bu oy allaqachon to'langan");
 
-    const fixedSalary = rec ? rec.fixedSalary : Number(emp.baseSalary || 0);
-    const bonus = rec?.bonus || 0;
+    // TO'LOV SUMMASI HAM JONLI HISOBLANADI.
+    //
+    // Ilgari bu yer saqlangan yozuvni o'qirdi va shu sabab xodimga
+    // "Saqlash" bosilgan kundagi summa to'lanardi — oy boshida saqlangan
+    // bo'lsa, oylikning bir qismi. `list()` bilan bir xil qoida: sxemasi
+    // bor xodimda sxema, yo'q xodimda saqlangan/asosiy qiymat.
+    const calc = await this.schemes
+      .computeForEmployees(
+        emp.tenantId,
+        [{ id: emp.id, roleId: emp.roleId }],
+        bounds.start,
+        bounds.end,
+      )
+      .then((r) => r[emp.id])
+      .catch(() => undefined);
+
+    const fixedSalary = calc ? calc.fiksa : rec ? rec.fixedSalary : Number(emp.baseSalary || 0);
+    const bonus = calc ? calc.kpi : rec?.bonus || 0;
+    // Jarima har doim yozuvdan — u buxgalter tasdiqlagan qiymat.
     const penalty = rec?.penalty || 0;
     const netSalary = Math.round(fixedSalary + bonus - penalty);
 

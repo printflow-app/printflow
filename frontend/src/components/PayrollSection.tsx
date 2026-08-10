@@ -175,21 +175,37 @@ export const PayrollSection: React.FC<{
                           <p className="text-xs font-bold text-slate-800">{row.fullName}</p>
                           <p className="text-[11px] text-slate-400">
                             {row.roleName}
-                            {row.avtomatik && <span className="ml-1.5 text-orange-500 font-bold">· avtomatik</span>}
+                            {row.jonli && <span className="ml-1.5 text-orange-500 font-bold">· jonli hisob</span>}
                           </p>
                         </div>
                       </div>
                     </td>
+                    {/* FIKSA VA BONUS — sxema bo'lsa tahrirlanmaydi.
+                        Ular har ochilganda davomat/buyurtmalardan qayta
+                        hisoblanadi, ya'ni qo'lda yozilgan raqam baribir
+                        keyingi ochilishda yo'qolardi. Tahrirlashga ruxsat
+                        berish — ishlamaydigan tugmani ko'rsatish demak.
+                        Tuzatish kerak bo'lsa sxemaning o'zi o'zgartiriladi. */}
                     <td className="py-2.5 px-3 w-32">
-                      {paid ? (
-                        <span className="block text-right text-xs font-bold tabular-nums text-slate-600">{fmt(row.fixedSalary)}</span>
+                      {paid || row.jonli ? (
+                        <span
+                          className="block text-right text-xs font-bold tabular-nums text-slate-600"
+                          title={row.jonli ? 'Sxema bo\'yicha jonli hisoblanadi' : undefined}
+                        >
+                          {fmt(row.fixedSalary)}
+                        </span>
                       ) : (
                         <CurrencyInput value={String(val(row, 'fixedSalary') || '')} onChange={(u) => setEdit(row.employeeId, 'fixedSalary', u || 0)} colorClass="text-slate-800" className="input-minimal h-9 text-xs text-right" />
                       )}
                     </td>
                     <td className="py-2.5 px-3 w-32">
-                      {paid ? (
-                        <span className="block text-right text-xs font-bold tabular-nums text-emerald-600">{row.bonus ? '+' + fmt(row.bonus) : '—'}</span>
+                      {paid || row.jonli ? (
+                        <span
+                          className="block text-right text-xs font-bold tabular-nums text-emerald-600"
+                          title={row.jonli ? 'Sxema bo\'yicha jonli hisoblanadi' : undefined}
+                        >
+                          {row.bonus ? '+' + fmt(row.bonus) : '—'}
+                        </span>
                       ) : (
                         <CurrencyInput value={String(val(row, 'bonus') || '')} onChange={(u) => setEdit(row.employeeId, 'bonus', u || 0)} colorClass="text-emerald-600" className="input-minimal h-9 text-xs text-right" />
                       )}
