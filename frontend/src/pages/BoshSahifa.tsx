@@ -102,9 +102,9 @@ const Stat: React.FC<{
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 border ${tones[tone]}`}>
         <Icon size={17} />
       </div>
-      <p className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 ${isDark ? 'text-white/50' : 'text-slate-400'}`}>{label}</p>
+      <p className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${isDark ? 'text-white/50' : 'text-slate-400'}`}>{label}</p>
       <h3 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
-      {sub && <p className={`text-[11px] font-semibold mt-0.5 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{sub}</p>}
+      {sub && <p className={`text-xs font-semibold mt-0.5 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{sub}</p>}
     </div>
   );
 };
@@ -114,8 +114,8 @@ const Panel: React.FC<{ title: string; sub?: string; children: React.ReactNode; 
 }) => (
   <div className={`bg-white rounded-xl border border-slate-200 shadow-sm p-4 ${className}`}>
     <div className="mb-3">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{title}</p>
-      {sub && <p className="text-[11px] font-medium text-slate-400 mt-0.5">{sub}</p>}
+      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{title}</p>
+      {sub && <p className="text-xs font-medium text-slate-400 mt-0.5">{sub}</p>}
     </div>
     {children}
   </div>
@@ -124,7 +124,7 @@ const Panel: React.FC<{ title: string; sub?: string; children: React.ReactNode; 
 const SectionTitle: React.FC<{ icon: any; children: React.ReactNode }> = ({ icon: Icon, children }) => (
   <div className="flex items-center gap-2 pt-2">
     <Icon size={13} className="text-slate-400" />
-    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-500">{children}</p>
+    <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">{children}</p>
     <div className="flex-1 h-px bg-slate-200" />
   </div>
 );
@@ -133,9 +133,9 @@ const ChartTip: React.FC<any> = ({ active, payload, label, suffix = '' }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-slate-200 rounded-lg shadow-lg px-3 py-2">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} className="text-[12px] font-bold text-slate-800 flex items-center gap-1.5">
+        <p key={p.dataKey} className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
           {p.name}: {fm(p.value)}{suffix}
         </p>
@@ -145,14 +145,14 @@ const ChartTip: React.FC<any> = ({ active, payload, label, suffix = '' }) => {
 };
 
 const EmptyNote: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-[12px] font-medium text-slate-400 py-6 text-center">{children}</p>
+  <p className="text-xs font-medium text-slate-400 py-6 text-center">{children}</p>
 );
 
 // Ro'yxat qatori — nom + qiymat (jadval uslubida, tabular raqamlar)
 const Row: React.FC<{ nom: string; qiymat: string; tone?: string }> = ({ nom, qiymat, tone = 'text-slate-700' }) => (
   <div className="flex items-center justify-between gap-3 py-2 border-b border-slate-50 last:border-0">
-    <span className="text-[12px] font-semibold text-slate-600 truncate">{nom}</span>
-    <span className={`text-[12px] font-bold tabular-nums whitespace-nowrap ${tone}`}>{qiymat}</span>
+    <span className="text-xs font-semibold text-slate-600 truncate">{nom}</span>
+    <span className={`text-xs font-bold tabular-nums whitespace-nowrap ${tone}`}>{qiymat}</span>
   </div>
 );
 
@@ -234,11 +234,11 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
     <div className="space-y-5 animate-fade-in pb-4">
       {/* Sarlavha qatori */}
       <div className="flex items-center justify-between">
-        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">{todayLabel()}</p>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{todayLabel()}</p>
         <div className="relative">
           <button
             onClick={() => setPickerOpen(v => !v)}
-            className="h-9 px-3 flex items-center gap-1.5 text-[12px] font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="h-9 px-3 flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
           >
             <Settings2 size={14} /> Widget'lar
           </button>
@@ -246,14 +246,14 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
             <>
               <div className="fixed inset-0 z-10" onClick={() => setPickerOpen(false)} />
               <div className="absolute right-0 mt-1 z-20 w-60 bg-white border border-slate-200 rounded-xl shadow-lg p-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2.5 pt-1 pb-2">Ko'rsatiladigan bo'limlar</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 px-2.5 pt-1 pb-2">Ko'rsatiladigan bo'limlar</p>
                 {availableWidgets.map(w => (
                   <button
                     key={w.key}
                     onClick={() => toggle(w.key)}
                     className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-slate-50 text-left transition-colors"
                   >
-                    <span className="text-[13px] font-semibold text-slate-700">{w.label}</span>
+                    <span className="text-sm font-semibold text-slate-700">{w.label}</span>
                     <span className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${visible[w.key] ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-300'}`}>
                       {visible[w.key] && <Check size={11} strokeWidth={3} />}
                     </span>
@@ -274,7 +274,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
           <div className="flex items-center justify-between">
             <SectionTitle icon={ShieldAlert}>AI nazorati</SectionTitle>
             {risks.length > 0 && (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 {risks.length} ta ogohlantirish
               </span>
             )}
@@ -286,9 +286,9 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                 <ShieldCheck size={17} />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Holat</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Holat</p>
                 <h3 className="text-sm font-bold tracking-tight text-slate-800">Xavf aniqlanmadi</h3>
-                <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                <p className="text-xs font-semibold text-slate-400 mt-0.5">
                   AI modullarni o'zaro solishtirib fonda kuzatib turibdi
                 </p>
               </div>
@@ -305,25 +305,25 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${tone.icon}`}>
                       <ShieldAlert size={17} strokeWidth={2.5} />
                     </div>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 ${tone.text}`}>
+                    <p className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${tone.text}`}>
                       {SEVERITY_LABEL[r.severity] || 'Ogohlantirish'}
                     </p>
                     <h3 className={`text-sm font-bold tracking-tight ${tone.title}`}>{r.title}</h3>
-                    <p className={`text-[12px] font-semibold ${tone.text} mt-1 leading-snug flex-1`}>{r.message}</p>
+                    <p className={`text-xs font-semibold ${tone.text} mt-1 leading-snug flex-1`}>{r.message}</p>
                     <div className="flex items-center gap-2 mt-3">
                       {/* AI o'chiq bo'lsa tugma ko'rsatilmaydi — bosilsa
                           hech nima bo'lmasdi (chat umuman yuklanmagan). */}
                       {aiEnabled && (
                         <button
                           onClick={() => resolveRisk(buildRiskMessage(r.type, r.title, r.message))}
-                          className={`h-7 px-3 text-[11px] font-bold uppercase tracking-wider ${tone.btn} text-white rounded-lg transition-colors`}
+                          className={`h-7 px-3 text-xs font-bold uppercase tracking-wider ${tone.btn} text-white rounded-lg transition-colors`}
                         >
                           Bartaraf etish
                         </button>
                       )}
                       <button
                         onClick={() => dismissRisk(r.id)}
-                        className={`h-7 px-3 text-[11px] font-bold uppercase tracking-wider ${tone.dismiss} rounded-lg transition-colors`}
+                        className={`h-7 px-3 text-xs font-bold uppercase tracking-wider ${tone.dismiss} rounded-lg transition-colors`}
                       >
                         Yopish
                       </button>
@@ -341,7 +341,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               bo'layotganini ko'rib turishi shart. */}
           {aiActions.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 pt-1">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pt-1">
                 AI qilgan ishlar
               </p>
               {aiActions.map(a => {
@@ -364,29 +364,29 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                       <Bot size={15} strokeWidth={2.5} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
                         {pending ? 'Tasdiq kutilmoqda'
                           : failed ? 'Bajarilmadi'
                           : a.status === 'rejected' ? 'Rad etilgan'
                           : 'AI bajardi'}
                       </p>
-                      <p className="text-[13px] font-semibold text-slate-700 leading-snug">{a.summary}</p>
+                      <p className="text-sm font-semibold text-slate-700 leading-snug">{a.summary}</p>
                       {failed && a.error && (
-                        <p className="text-[11px] font-semibold text-rose-500 mt-1">{a.error}</p>
+                        <p className="text-xs font-semibold text-rose-500 mt-1">{a.error}</p>
                       )}
                       {pending && (
                         <div className="flex items-center gap-2 mt-2.5">
                           <button
                             disabled={busyAction === a.id}
                             onClick={() => decideAction(a.id, true)}
-                            className="h-7 px-3 text-[11px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                            className="h-7 px-3 text-xs font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg transition-colors"
                           >
                             Tasdiqlash
                           </button>
                           <button
                             disabled={busyAction === a.id}
                             onClick={() => decideAction(a.id, false)}
-                            className="h-7 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 disabled:opacity-50 rounded-lg transition-colors"
+                            className="h-7 px-3 text-xs font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 disabled:opacity-50 rounded-lg transition-colors"
                           >
                             Rad etish
                           </button>
@@ -529,7 +529,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               <Panel title="Mijozlar va qarzdorlar" sub={`${s.customers.total} ta mijoz · ${s.customers.qarzdorSoni} ta qarzdor`}>
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-xl font-bold text-rose-600 tracking-tight">{fm(s.customers.qarzJami)}</span>
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">so'm qarz</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">so'm qarz</span>
                 </div>
                 {s.customers.topQarzdorlar.length === 0 ? (
                   <EmptyNote>Qarzdorlar yo'q</EmptyNote>
@@ -549,7 +549,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                   <span className={`text-xl font-bold tracking-tight ${s.inventory.kamQoldiqSoni > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
                     {s.inventory.kamQoldiqSoni}
                   </span>
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">ta kam qoldiq</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">ta kam qoldiq</span>
                 </div>
                 {s.inventory.kamQoldiq.length === 0 ? (
                   <EmptyNote>Barcha materiallar yetarli</EmptyNote>
@@ -567,11 +567,11 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               <Panel title="Hamkorlar" sub={`${s.vendors.total} ta hamkor`}>
                 <div className="grid grid-cols-2 gap-3 mb-2">
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Biz qarzdormiz</p>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Biz qarzdormiz</p>
                     <p className="text-base font-bold text-rose-600 tracking-tight">{fm(s.vendors.bizQarzdorJami)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bizga qarzdor</p>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Bizga qarzdor</p>
                     <p className="text-base font-bold text-emerald-600 tracking-tight">{fm(s.vendors.ularQarzdorJami)}</p>
                   </div>
                 </div>
@@ -616,7 +616,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
           </div>
           <div className="text-center">
             <p className="text-sm font-bold text-slate-700">Ko'rsatiladigan bo'lim yo'q</p>
-            <p className="text-[13px] font-medium text-slate-400 mt-0.5 max-w-xs">
+            <p className="text-sm font-medium text-slate-400 mt-0.5 max-w-xs">
               Yuqoridagi "Widget'lar" tugmasidan kerakli bo'limlarni yoqing yoki Sozlamalardan ruxsatlaringizni tekshiring.
             </p>
           </div>

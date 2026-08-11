@@ -140,7 +140,7 @@ const JoyTanlagich: React.FC<{
           type="button"
           onClick={qidir}
           disabled={qidirilmoqda}
-          className="btn-outline h-9 px-3 text-[11px] font-bold uppercase tracking-wider disabled:opacity-50"
+          className="btn-outline h-9 px-3 text-xs font-bold uppercase tracking-wider disabled:opacity-50"
         >
           {qidirilmoqda ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
           Manzildan topish
@@ -149,14 +149,14 @@ const JoyTanlagich: React.FC<{
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="btn-outline h-9 px-3 text-[11px] font-bold uppercase tracking-wider text-rose-600"
+            className="btn-outline h-9 px-3 text-xs font-bold uppercase tracking-wider text-rose-600"
           >
             <X size={13} /> Nuqtani olib tashlash
           </button>
         )}
       </div>
 
-      {xato && <p className="text-[11px] font-bold text-amber-600">{xato}</p>}
+      {xato && <p className="text-xs font-bold text-amber-600">{xato}</p>}
 
       <div
         ref={idishRef}
@@ -164,7 +164,7 @@ const JoyTanlagich: React.FC<{
         className="w-full rounded-xl border border-slate-200 overflow-hidden z-0"
       />
 
-      <p className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+      <p className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
         <MapPin size={11} className="shrink-0" />
         {qiymat
           ? `Belgilangan: ${qiymat.lat}, ${qiymat.lng} — nuqtani sudrab to'g'rilash mumkin`

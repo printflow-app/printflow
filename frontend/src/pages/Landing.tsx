@@ -97,14 +97,14 @@ function KanbanMockup() {
         <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
         <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
         <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-        <span className="ml-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Buyurtmalar Kanbani</span>
+        <span className="ml-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Buyurtmalar Kanbani</span>
       </div>
       <div className="p-4 flex gap-3">
         {columns.map((col) => (
           <div key={col.title} className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: col.color }}>{col.title}</span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: col.color }}>{col.tasks.length}</span>
+              <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: col.color }}>{col.title}</span>
+              <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: col.color }}>{col.tasks.length}</span>
             </div>
             <div className="space-y-1.5">
               {col.tasks.map((task, i) => (
@@ -113,7 +113,7 @@ function KanbanMockup() {
                   className="bg-white rounded-lg px-2.5 py-2 shadow-sm border-l-2"
                   style={{ borderColor: col.color }}
                 >
-                  <div className="text-[9px] font-bold text-slate-700 leading-snug">{task}</div>
+                  <div className="text-[11px] font-bold text-slate-700 leading-snug">{task}</div>
                   <div className="h-1 rounded-full bg-slate-100 mt-1.5">
                     <div className="h-full rounded-full" style={{ width: `${40 + i * 20}%`, background: col.color + '80' }} />
                   </div>
@@ -135,10 +135,10 @@ function FinanceMockup() {
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="p-4 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Yillik Daromad</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Yillik Daromad</p>
           <p className="text-lg font-black text-slate-900 tracking-tight">142.5M UZS</p>
         </div>
-        <div className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex items-center gap-1">
+        <div className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex items-center gap-1">
           <TrendingUp size={10} /> +24%
         </div>
       </div>
@@ -158,7 +158,7 @@ function FinanceMockup() {
         </div>
         <div className="flex gap-1.5 mt-1.5">
           {months.map((m, i) => (
-            <div key={i} className="flex-1 text-center text-[7px] font-bold text-slate-300">{m}</div>
+            <div key={i} className="flex-1 text-center text-[11px] font-bold text-slate-300">{m}</div>
           ))}
         </div>
       </div>
@@ -177,19 +177,19 @@ function AttendanceMockup() {
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="p-4 border-b border-slate-100 flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Bugungi Davomat</span>
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Bugungi Davomat</span>
       </div>
       <div className="p-3 space-y-2">
         {employees.map((emp, i) => (
           <div key={i} className="flex items-center gap-2">
             <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black flex-shrink-0"
               style={{ background: `hsl(${i * 80 + 200}, 60%, 92%)`, color: `hsl(${i * 80 + 200}, 60%, 40%)` }}
             >
               {emp.name[0]}
             </div>
             <div className="flex-1">
-              <div className="text-[9px] font-bold text-slate-700 mb-1">{emp.name}</div>
+              <div className="text-[11px] font-bold text-slate-700 mb-1">{emp.name}</div>
               <div className="flex gap-0.5">
                 {emp.days.map((d, di) => (
                   <div
@@ -200,7 +200,7 @@ function AttendanceMockup() {
                 ))}
               </div>
             </div>
-            <span className="text-[9px] font-black text-emerald-600 flex-shrink-0">
+            <span className="text-[11px] font-black text-emerald-600 flex-shrink-0">
               {emp.days.filter(Boolean).length}/10
             </span>
           </div>
@@ -552,7 +552,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               whileInView="show"
               viewport={{ once: true, margin: '-80px' }}
             >
-              <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-600 text-[11px] font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
                 <CreditCard size={10} /> Moliya Moduli
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
@@ -601,7 +601,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               viewport={{ once: true, margin: '-80px' }}
               className="order-1 lg:order-2"
             >
-              <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
                 <Layers size={10} /> Kanban Moduli
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
@@ -632,7 +632,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               whileInView="show"
               viewport={{ once: true, margin: '-80px' }}
             >
-              <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
                 <Users size={10} /> Xodimlar Moduli
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
@@ -734,7 +734,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                     }`}
                   >
                     {plan.isPopular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-orange-500 text-[11px] font-black px-4 py-1.5 rounded-full uppercase tracking-wider shadow-md">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-orange-500 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shadow-md">
                         ⭐ Eng Ommabop
                       </div>
                     )}
@@ -809,7 +809,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
       {clientLogos.length > 0 && (
         <section className="py-16 bg-white border-y border-slate-100 overflow-hidden">
           <div className="max-w-7xl mx-auto px-5 md:px-8 text-center mb-10">
-            <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">Bizga ishongan bosmaxonalar</p>
+            <p className="text-xs font-black text-slate-300 uppercase tracking-[0.3em]">Bizga ishongan bosmaxonalar</p>
           </div>
           <div className="relative overflow-hidden">
             <div className="logo-track flex w-max">
@@ -908,7 +908,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                           { label: 'Familiya', key: 'lastName', placeholder: 'Karimov' },
                         ].map(field => (
                           <div key={field.key}>
-                            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{field.label}</label>
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">{field.label}</label>
                             <input
                               required
                               value={(formData as any)[field.key]}
@@ -921,7 +921,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Kompaniya Nomi</label>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Kompaniya Nomi</label>
                         <input
                           required
                           value={formData.companyName}
@@ -932,7 +932,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Rolingiz</label>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Rolingiz</label>
                         <select
                           required
                           value={formData.role}
@@ -949,7 +949,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Telefon</label>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Telefon</label>
                           <input
                             required
                             type="tel"
@@ -960,7 +960,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Telegram</label>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Telegram</label>
                           <input
                             value={formData.telegramUser}
                             onChange={e => setFormData({ ...formData, telegramUser: e.target.value })}
@@ -1052,7 +1052,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
             className="flex-1 flex flex-col items-center py-3 gap-1 text-slate-400 hover:text-orange-500 transition-colors"
           >
             {item.icon}
-            <span className="text-[10px] font-bold uppercase tracking-wide">{item.label}</span>
+            <span className="text-[11px] font-bold uppercase tracking-wide">{item.label}</span>
           </button>
         ))}
       </div>

@@ -129,7 +129,7 @@
 
 @layer base {
   html {
-    @apply text-[14px];
+    @apply text-sm;
   }
 
   body {
@@ -161,24 +161,24 @@
      UPPERCASE tugma taqiqlangan (PRODUCT.md).
      ========================================================= */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-[color:var(--primary)] text-white text-[13px] font-semibold rounded-lg shadow-sm hover:bg-[color:var(--primary-hover)] active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed whitespace-nowrap;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-[color:var(--primary)] text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-[color:var(--primary-hover)] active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed whitespace-nowrap;
   }
 
   .btn-success {
-    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-emerald-600 text-white text-[13px] font-semibold rounded-lg shadow-sm hover:bg-emerald-700 active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:cursor-not-allowed whitespace-nowrap;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-emerald-700 active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:cursor-not-allowed whitespace-nowrap;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-rose-600 text-white text-[13px] font-semibold rounded-lg shadow-sm hover:bg-rose-700 active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:cursor-not-allowed whitespace-nowrap;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 bg-rose-600 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-rose-700 active:scale-[0.98] transition-all duration-150 disabled:bg-slate-300 disabled:cursor-not-allowed whitespace-nowrap;
   }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 border border-[color:var(--border)] bg-white text-slate-700 text-[13px] font-medium rounded-lg hover:bg-slate-50 hover:border-[color:var(--border-strong)] active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-4 border border-[color:var(--border)] bg-white text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 hover:border-[color:var(--border-strong)] active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
   }
 
   /* Matn tugmasi — fon yo'q, hover'da yumshoq fon */
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 h-control px-3 text-slate-600 text-[13px] font-medium rounded-lg hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
+    @apply inline-flex items-center justify-center gap-1.5 h-control px-3 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap;
   }
 
   /* Kvadrat ikon tugmasi — toolbar/karta amallari uchun yagona shakl */
@@ -196,11 +196,11 @@
 
   /* Inputs share the EXACT height + radius + focus ring as buttons */
   .input-minimal {
-    @apply w-full h-control bg-white border border-[color:var(--border)] rounded-lg px-3 text-slate-900 text-[13px] font-normal focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 placeholder-slate-400;
+    @apply w-full h-control bg-white border border-[color:var(--border)] rounded-lg px-3 text-slate-900 text-sm font-normal focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 placeholder-slate-400;
   }
 
   .select-minimal {
-    @apply w-full h-control bg-white border border-[color:var(--border)] rounded-lg px-3 pr-9 text-slate-900 text-[13px] font-normal focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 appearance-none;
+    @apply w-full h-control bg-white border border-[color:var(--border)] rounded-lg px-3 pr-9 text-slate-900 text-sm font-normal focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 appearance-none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.75rem center;
     background-repeat: no-repeat;
@@ -209,7 +209,7 @@
 
   /* Textarea — same family, multi-line. Padded instead of fixed-height. */
   .textarea-minimal {
-    @apply w-full bg-white border border-[color:var(--border)] rounded-lg px-3 py-2 text-slate-900 text-[13px] font-normal leading-relaxed focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 placeholder-slate-400 resize-y min-h-[80px];
+    @apply w-full bg-white border border-[color:var(--border)] rounded-lg px-3 py-2 text-slate-900 text-sm font-normal leading-relaxed focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 transition-all duration-150 placeholder-slate-400 resize-y min-h-[80px];
   }
 
   /* Sahifa sarlavhasi va bo'lim sarlavhasi — bitta ierarxiya, hamma sahifada.
@@ -218,7 +218,7 @@
     @apply text-lg font-semibold text-slate-900 tracking-tight;
   }
   .card-title {
-    @apply text-[15px] font-semibold text-slate-900 tracking-tight;
+    @apply text-base font-semibold text-slate-900 tracking-tight;
   }
   /* Yordamchi/izoh matni — 12px dan kichik matn taqiqlangan (PRODUCT.md) */
   .text-hint {
@@ -227,7 +227,7 @@
   /* Jadval/ro'yxat ustun yorlig'i — uppercase'ga ruxsat berilgan YAGONA joy
      (badge'lardan tashqari). 11px, keng emas — tracking-wider maksimum. */
   .label-caps {
-    @apply text-[11px] font-medium uppercase tracking-wider text-slate-500;
+    @apply text-xs font-medium uppercase tracking-wider text-slate-500;
   }
   /* Forma yorlig'i — normal registr, 12px. Eski uppercase-tracking-widest
      mikro-yorliqlarning o'rnini bosadi. */
@@ -241,11 +241,11 @@
   }
 
   .table-minimal th {
-    @apply border-b border-slate-200 py-2.5 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-500 bg-slate-50/70 truncate;
+    @apply border-b border-slate-200 py-2.5 px-3 text-xs font-medium uppercase tracking-wider text-slate-500 bg-slate-50/70 truncate;
   }
 
   .table-minimal td {
-    @apply border-b border-slate-100 py-2.5 px-3 text-[13px] font-normal text-slate-700 align-middle;
+    @apply border-b border-slate-100 py-2.5 px-3 text-sm font-normal text-slate-700 align-middle;
   }
 
   .table-minimal tr {

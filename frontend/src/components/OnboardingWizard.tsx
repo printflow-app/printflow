@@ -155,7 +155,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
           >
             <X size={18} />
           </button>
-          <div className="text-[11px] font-bold uppercase tracking-widest text-orange-400 mb-1">
+          <div className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-1">
             Qadam {step} / 3
           </div>
           <h2 className="text-xl font-bold tracking-tight">
@@ -180,14 +180,14 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
                 </div>
               </div>
               <div>
-                <label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Filial nomi</label>
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Filial nomi</label>
                 <input
                   value={branchName}
                   onChange={(e) => setBranchName(e.target.value)}
                   className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
                   placeholder="Ideal Print — Toshkent"
                 />
-                <p className="text-[12px] text-slate-400 mt-2">Keyinroq Filiallar bo'limidan qo'shimcha filiallarni qo'shishingiz mumkin.</p>
+                <p className="text-xs text-slate-400 mt-2">Keyinroq Filiallar bo'limidan qo'shimcha filiallarni qo'shishingiz mumkin.</p>
               </div>
             </div>
           )}
@@ -204,7 +204,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
                 </div>
               </div>
               <div>
-                <label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Xizmat nomi</label>
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Xizmat nomi</label>
                 <input
                   value={serviceName}
                   onChange={(e) => setServiceName(e.target.value)}
@@ -214,7 +214,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Asosiy narx (UZS)</label>
+                  <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Asosiy narx (UZS)</label>
                   <input
                     type="number"
                     value={servicePrice}
@@ -224,7 +224,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Birlik</label>
+                  <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Birlik</label>
                   <select
                     value={serviceUnit}
                     onChange={(e) => setServiceUnit(e.target.value)}
@@ -252,7 +252,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
                 </div>
               </div>
               <div>
-                <label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Ism Familiya</label>
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Ism Familiya</label>
                 <input
                   value={empName}
                   onChange={(e) => setEmpName(e.target.value)}
@@ -261,7 +261,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
                 />
               </div>
               <div>
-                <label className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Telefon (ixtiyoriy)</label>
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Telefon (ixtiyoriy)</label>
                 <input
                   value={empPhone}
                   onChange={(e) => setEmpPhone(e.target.value)}

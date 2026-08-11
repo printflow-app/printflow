@@ -537,7 +537,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           <button
             key={tab.id}
             onClick={() => setActiveSettingsTab(tab.id as any)}
-            className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[12px] font-bold uppercase tracking-widest transition-all whitespace-nowrap border-2 ${activeSettingsTab === tab.id
+            className={`flex items-center gap-3 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap border-2 ${activeSettingsTab === tab.id
                 ? `${tab.activeClass} border-transparent shadow-lg`
                 : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100 hover:text-slate-800'
               }`}
@@ -575,7 +575,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                   <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
                     <Shield className="text-orange-600" size={22} /> Lavozimlar & Ruxsatlar
                   </h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Sahifalar va funksiyalarga dostupni sozlash</p>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Sahifalar va funksiyalarga dostupni sozlash</p>
                 </div>
                 {(isAdmin || p.canManageRoles) && (
                   <button data-tour-id="lavozim-add" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-6 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all" onClick={() => setIsRoleModalOpen(true)}>
@@ -602,20 +602,20 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                           <div>
                             <h4 className="font-bold text-base text-slate-800 uppercase tracking-tight">{role.name}</h4>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md border ${allPermissionKeys.filter(k => role[k]).length > 0 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+                              <span className={`text-[11px] font-bold uppercase px-1.5 py-0.5 rounded-md border ${allPermissionKeys.filter(k => role[k]).length > 0 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
                                 {allPermissionKeys.filter(k => role[k]).length} Ruxsat
                               </span>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Aktiv</span>
+                              <span className="text-[11px] font-bold text-slate-400 uppercase">Aktiv</span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           {isEditing ? (
                             <>
-                              <button onClick={saveEditRole} className="h-9 px-5 bg-emerald-500 text-white text-[11px] font-bold rounded-lg flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 active:scale-95">
+                              <button onClick={saveEditRole} className="h-9 px-5 bg-emerald-500 text-white text-xs font-bold rounded-lg flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 active:scale-95">
                                 <Save size={14} /> SAQLASH
                               </button>
-                              <button onClick={cancelEditRole} className="h-9 px-5 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-lg hover:bg-slate-200 transition-all">
+                              <button onClick={cancelEditRole} className="h-9 px-5 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg hover:bg-slate-200 transition-all">
                                 BEKOR
                               </button>
                             </>
@@ -647,11 +647,11 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                               <div key={group.title}>
                                 <div className="flex items-center gap-2.5 mb-4">
                                   <span className={`text-${group.color}-600 flex-shrink-0`}>{group.icon}</span>
-                                  <h5 className={`text-[12px] font-bold uppercase tracking-[0.25em] text-${group.color}-700`}>
+                                  <h5 className={`text-xs font-bold uppercase tracking-[0.25em] text-${group.color}-700`}>
                                     {group.title}
                                   </h5>
                                   <div className="flex-1 h-px bg-slate-100" />
-                                  <span className="text-[10px] font-bold text-slate-300 uppercase">
+                                  <span className="text-[11px] font-bold text-slate-300 uppercase">
                                     {Object.keys(group.permissions).filter(k => dataSource[k]).length}/{Object.keys(group.permissions).length}
                                   </span>
                                 </div>
@@ -685,10 +685,10 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                                         </div>
                                         {/* Label + detail */}
                                         <div className="min-w-0 flex-1">
-                                          <p className={`text-[12px] font-bold uppercase tracking-tight leading-tight ${isOn ? 'text-slate-800' : 'text-slate-500'}`}>
+                                          <p className={`text-xs font-bold uppercase tracking-tight leading-tight ${isOn ? 'text-slate-800' : 'text-slate-500'}`}>
                                             {perm.label}
                                           </p>
-                                          <p className="text-[11px] font-medium text-slate-400 mt-1 leading-snug normal-case tracking-normal">
+                                          <p className="text-xs font-medium text-slate-400 mt-1 leading-snug normal-case tracking-normal">
                                             {perm.detail}
                                           </p>
                                         </div>
@@ -705,7 +705,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                               <AlertCircle className="text-orange-500 mt-1" size={20} />
                               <div className="space-y-1">
                                 <p className="text-xs font-bold text-orange-900 uppercase">Ruxsatlarni tahrirlash</p>
-                                <p className="text-[12px] font-bold text-orange-700">Tugmalarni bosish orqali ruxsatlarni yoqishingiz yoki o'chirishingiz mumkin. Saqlash tugmasini bosishni unutmang.</p>
+                                <p className="text-xs font-bold text-orange-700">Tugmalarni bosish orqali ruxsatlarni yoqishingiz yoki o'chirishingiz mumkin. Saqlash tugmasini bosishni unutmang.</p>
                               </div>
                             </div>
                           )}
@@ -755,8 +755,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                               className="w-full h-10 text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 outline-none focus:border-slate-500"
                             />
                             <div className="flex gap-2">
-                              <button onClick={() => handleUpdatePT(pt.id)} className="flex-1 h-8 bg-slate-500 text-white text-[11px] font-bold rounded-md hover:bg-slate-600 transition-colors">SAQLASH</button>
-                              <button onClick={() => setEditingPTId(null)} className="flex-1 h-8 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-md hover:bg-slate-200">BEKOR</button>
+                              <button onClick={() => handleUpdatePT(pt.id)} className="flex-1 h-8 bg-slate-500 text-white text-xs font-bold rounded-md hover:bg-slate-600 transition-colors">SAQLASH</button>
+                              <button onClick={() => setEditingPTId(null)} className="flex-1 h-8 bg-slate-100 text-slate-500 text-xs font-bold rounded-md hover:bg-slate-200">BEKOR</button>
                             </div>
                           </div>
                         ) : (
@@ -808,7 +808,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                   <h3 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
                     <ReceiptText className="text-rose-500" size={24} /> Xarajat Turlari
                   </h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Chiqimlar uchun maxsus kategoriyalar</p>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Chiqimlar uchun maxsus kategoriyalar</p>
                 </div>
               </div>
 
@@ -844,8 +844,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                               className="w-full h-10 text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 outline-none focus:border-rose-500"
                             />
                             <div className="flex gap-2">
-                              <button onClick={() => handleUpdateET(et.id)} className="flex-1 h-8 bg-rose-500 text-white text-[11px] font-bold rounded-md hover:bg-rose-600 transition-colors">SAQLASH</button>
-                              <button onClick={() => setEditingETId(null)} className="flex-1 h-8 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-md hover:bg-slate-200">BEKOR</button>
+                              <button onClick={() => handleUpdateET(et.id)} className="flex-1 h-8 bg-rose-500 text-white text-xs font-bold rounded-md hover:bg-rose-600 transition-colors">SAQLASH</button>
+                              <button onClick={() => setEditingETId(null)} className="flex-1 h-8 bg-slate-100 text-slate-500 text-xs font-bold rounded-md hover:bg-slate-200">BEKOR</button>
                             </div>
                           </div>
                         ) : (
@@ -877,14 +877,14 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                   <h3 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
                     <Save className="text-orange-500" size={28} /> Umumiy Sozlamalar
                   </h3>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Tizim darajasidagi qoidalar va chegaralar</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Tizim darajasidagi qoidalar va chegaralar</p>
                 </div>
                 <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-end gap-4">
                   <div className="flex-1">
-                    <label className="block text-[11px] font-bold text-amber-700 uppercase tracking-widest mb-1">
+                    <label className="block text-xs font-bold text-amber-700 uppercase tracking-widest mb-1">
                       Minimal zakolat foizi (%)
                     </label>
-                    <p className="text-[11px] font-bold text-amber-600 mb-3">
+                    <p className="text-xs font-bold text-amber-600 mb-3">
                       Yangi buyurtma qo'shishda zakolat shu foizdan kam bo'lsa ogohlantirish chiqadi
                     </p>
                     <div className="flex items-center gap-3">
@@ -900,7 +900,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                   <button
                     onClick={savePrepaymentPct}
                     disabled={savingPrepayment}
-                    className="h-11 px-6 bg-orange-600 text-white rounded-2xl text-[11px] font-bold uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50"
+                    className="h-11 px-6 bg-orange-600 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50"
                   >
                     {savingPrepayment ? 'SAQLANMOQDA...' : 'SAQLASH'}
                   </button>
@@ -917,7 +917,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                   <h3 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
                     <MapPin className="text-emerald-500" size={28} /> Davomat va Geofencing
                   </h3>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
                     Xodimlar faqat ofis hududi (radius)da davomat belgilashi mumkin
                   </p>
                 </div>
@@ -926,14 +926,14 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                 {geoEditMode && <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
                   <Navigation className="text-emerald-600 mt-0.5 flex-shrink-0" size={18} />
                   <div className="flex-1 space-y-2">
-                    <p className="text-[12px] font-bold text-emerald-700">
+                    <p className="text-xs font-bold text-emerald-700">
                       Ofisda turganda "Hozirgi joylashuvimni aniqlash" tugmasini bosing — koordinatalar avtomatik to'ldiriladi.
                     </p>
                     <button
                       type="button"
                       onClick={handleDetectLocation}
                       disabled={detectingGps}
-                      className="h-9 px-4 bg-white border border-emerald-200 hover:border-emerald-400 text-emerald-700 text-[11px] font-bold uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5 disabled:opacity-60"
+                      className="h-9 px-4 bg-white border border-emerald-200 hover:border-emerald-400 text-emerald-700 text-xs font-bold uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5 disabled:opacity-60"
                     >
                       <Navigation size={12} className={detectingGps ? 'animate-pulse' : ''} />
                       {detectingGps ? 'Aniqlanmoqda...' : 'Hozirgi joylashuvimni aniqlash'}
@@ -952,7 +952,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                         { label: 'Radius (metr)', value: officeRadius },
                       ].map(f => (
                         <div key={f.label} className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{f.label}</p>
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{f.label}</p>
                           <p className="font-mono font-bold text-slate-800 text-sm">{f.value || '—'}</p>
                         </div>
                       ))}
@@ -961,7 +961,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                       <button
                         type="button"
                         onClick={() => setGeoEditMode(true)}
-                        className="h-10 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
+                        className="h-10 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-widest rounded-2xl transition-all flex items-center gap-2"
                       >
                         <MapPin size={13} /> Tahrirlash
                       </button>
@@ -972,7 +972,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                           Kenglik (Latitude)
                         </label>
                         <input
@@ -985,7 +985,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                           Uzunlik (Longitude)
                         </label>
                         <input
@@ -998,7 +998,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                           Radius (metr)
                         </label>
                         <input
@@ -1015,10 +1015,10 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
 
                     {(!officeLat || !officeLng) && (
                       <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
-                        <p className="text-[12px] font-bold text-rose-700 mb-1 flex items-center gap-1.5">
+                        <p className="text-xs font-bold text-rose-700 mb-1 flex items-center gap-1.5">
                           <AlertCircle size={13} /> GPS sozlanmagan
                         </p>
-                        <p className="text-[11px] font-bold text-rose-600">
+                        <p className="text-xs font-bold text-rose-600">
                           Koordinatalar kiritilmasa xodimlar davomat belgilolmaydi.
                         </p>
                       </div>
@@ -1029,7 +1029,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                         <button
                           type="button"
                           onClick={() => setGeoEditMode(false)}
-                          className="h-11 px-5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold uppercase tracking-widest rounded-2xl transition-all"
+                          className="h-11 px-5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest rounded-2xl transition-all"
                         >
                           Bekor qilish
                         </button>
@@ -1038,7 +1038,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                         type="button"
                         onClick={saveGeoSettings}
                         disabled={savingGeo}
-                        className="h-11 px-6 bg-orange-600 hover:bg-orange-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-2xl shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-60"
+                        className="h-11 px-6 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold uppercase tracking-widest rounded-2xl shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2 disabled:opacity-60"
                       >
                         <Save size={14} /> {savingGeo ? 'Saqlanmoqda...' : 'Saqlash'}
                       </button>
@@ -1071,14 +1071,14 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           >
             <form onSubmit={handleAddRole} className="space-y-10">
               <div className="space-y-3">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Lavozim Nomi (Masalan: Admin, Katta Hodim, Manager...)</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Lavozim Nomi (Masalan: Admin, Katta Hodim, Manager...)</label>
                 <input type="text" required value={newRole.name} onChange={(e) => setNewRole({ ...newRole, name: e.target.value })} className="w-full h-16 text-2xl font-bold bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 outline-none focus:bg-white focus:border-orange-500 transition-all shadow-inner placeholder:text-slate-200" placeholder="Manager..." />
               </div>
 
               <div className="space-y-8">
                 {permissionGroups.map(group => (
                   <div key={group.title} className="space-y-3">
-                    <h4 className={`text-[12px] font-bold uppercase tracking-[0.3em] flex items-center gap-2 border-b pb-3 text-${group.color}-700 border-${group.color}-100`}>
+                    <h4 className={`text-xs font-bold uppercase tracking-[0.3em] flex items-center gap-2 border-b pb-3 text-${group.color}-700 border-${group.color}-100`}>
                       <span>{group.icon}</span>{group.title}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1091,8 +1091,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 shrink-0"
                           />
                           <div>
-                            <span className="text-[12px] font-bold uppercase tracking-tight text-slate-800 block">{perm.label}</span>
-                            <span className="text-[11px] font-medium text-slate-400 leading-snug normal-case">{perm.detail}</span>
+                            <span className="text-xs font-bold uppercase tracking-tight text-slate-800 block">{perm.label}</span>
+                            <span className="text-xs font-medium text-slate-400 leading-snug normal-case">{perm.detail}</span>
                           </div>
                         </label>
                       ))}
@@ -1380,7 +1380,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <Layers className="text-orange-600" size={20} /> Xizmatlar Katalogi
           </h3>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Pricing Engine — xizmat va opsiyalar narxlari</p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Pricing Engine — xizmat va opsiyalar narxlari</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           {canShowPriceList && services.length > 0 && (
@@ -1413,7 +1413,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             <div className="bg-white rounded-3xl border border-dashed border-orange-200 py-20 flex flex-col items-center gap-3 text-orange-300">
               <Layers size={40} />
               <p className="font-bold uppercase tracking-widest text-xs text-orange-400">Avval yuqoridan filialni tanlang</p>
-              <p className="text-[12px] text-slate-400 normal-case tracking-normal font-medium">Xizmatlar katalogi har bir filialga alohida bog'langan</p>
+              <p className="text-xs text-slate-400 normal-case tracking-normal font-medium">Xizmatlar katalogi har bir filialga alohida bog'langan</p>
             </div>
           ) : (
             <div className="bg-white rounded-3xl border border-dashed border-slate-200 py-20 flex flex-col items-center gap-3 text-slate-300">
@@ -1468,10 +1468,10 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                         <h4 className="font-bold text-sm sm:text-base text-slate-800 uppercase tracking-tight">{svc.name}</h4>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-sm font-bold text-slate-600">{Number(svc.basePrice).toLocaleString('uz-UZ')} UZS</span>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">/ {svc.unit}</span>
-                          <span className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full uppercase">{svc.options?.length || 0} optsiya</span>
+                          <span className="text-[11px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">/ {svc.unit}</span>
+                          <span className="text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full uppercase">{svc.options?.length || 0} optsiya</span>
                           {Array.isArray((svc as any).variantAxes) && (svc as any).variantAxes.length > 0 && (
-                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full uppercase">
+                            <span className="text-[11px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full uppercase">
                               {(svc as any).variantAxes.join(' · ')}
                             </span>
                           )}
@@ -1483,13 +1483,13 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                 <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
                   {isEditing ? (
                     <>
-                      <button onClick={() => handleUpdateService(svc.id)} className="h-8 px-3 bg-emerald-500 text-white text-[11px] font-bold rounded-lg flex items-center gap-1 hover:bg-emerald-600 shadow-md shadow-emerald-500/20"><Save size={12} /> SAQLASH</button>
-                      <button onClick={() => setEditSvcId(null)} className="h-8 px-3 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-lg hover:bg-slate-200">BEKOR</button>
+                      <button onClick={() => handleUpdateService(svc.id)} className="h-8 px-3 bg-emerald-500 text-white text-xs font-bold rounded-lg flex items-center gap-1 hover:bg-emerald-600 shadow-md shadow-emerald-500/20"><Save size={12} /> SAQLASH</button>
+                      <button onClick={() => setEditSvcId(null)} className="h-8 px-3 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg hover:bg-slate-200">BEKOR</button>
                     </>
                   ) : (
                     <>
                       {canManageOptions && (
-                        <button onClick={() => { setSelectedService(svc); setNewOptionForm(f => ({ ...f, percentageMarkup: '0' })); setIsOptionOpen(true); }} className="h-8 px-2 sm:px-3 text-[11px] font-bold text-slate-600 bg-slate-50 border border-slate-100 rounded-lg hover:bg-slate-100 transition-all flex items-center gap-1"><Plus size={11} /> <span className="hidden sm:inline">Optsiya</span></button>
+                        <button onClick={() => { setSelectedService(svc); setNewOptionForm(f => ({ ...f, percentageMarkup: '0' })); setIsOptionOpen(true); }} className="h-8 px-2 sm:px-3 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-100 rounded-lg hover:bg-slate-100 transition-all flex items-center gap-1"><Plus size={11} /> <span className="hidden sm:inline">Optsiya</span></button>
                       )}
                       {canEdit && (
                         <button onClick={() => setImageEditSvc({ id: svc.id, name: svc.name, imageUrl: svc.imageUrl })} title="Rasm" className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-orange-500 hover:text-white transition-all">
@@ -1518,20 +1518,20 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                 <div className="px-6 pb-6 border-t border-slate-50 pt-5 animate-slide-up space-y-6">
                   {/* Options List */}
                   <div>
-                    <h5 className="text-[11px] font-bold text-slate-600 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                    <h5 className="text-xs font-bold text-slate-600 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
                       <Tag size={12} /> Opsiyalar (Ustama Narxlar)
                     </h5>
                     {svc.options?.length === 0 ? (
-                      <p className="text-slate-300 text-[11px] font-bold uppercase italic">Opsiyalar yo'q</p>
+                      <p className="text-slate-300 text-xs font-bold uppercase italic">Opsiyalar yo'q</p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {svc.options.map((opt: any) => (
                           <div key={opt.id} className="group flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 hover:border-orange-200 hover:bg-orange-50 transition-all">
                             <div>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1">{opt.name}</p>
+                              <p className="text-[11px] font-bold text-slate-400 uppercase leading-none mb-1">{opt.name}</p>
                               <p className="text-xs font-bold text-slate-800">{opt.value}</p>
                             </div>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${Number(opt.percentageMarkup) >= 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
+                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md border ${Number(opt.percentageMarkup) >= 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
                               {opt.percentageMarkup > 0 ? '+' : ''}{opt.percentageMarkup}% ({Number(opt.priceAdd).toLocaleString()} UZS)
                             </span>
                             {canManageOptions && (
@@ -1548,17 +1548,17 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                   {/* Materials List (BOM) */}
                   <div className="pt-4 border-t border-slate-50">
                     <div className="flex justify-between items-center mb-3">
-                      <h5 className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.3em] flex items-center gap-2">
+                      <h5 className="text-xs font-bold text-emerald-600 uppercase tracking-[0.3em] flex items-center gap-2">
                         <Package size={12} /> Xomashyo Sarfi (BOM)
                       </h5>
                       {canManageOptions && (
-                        <button onClick={() => { setSelectedService(svc); setIsBOMOpen(true); }} className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-all flex items-center gap-1">
+                        <button onClick={() => { setSelectedService(svc); setIsBOMOpen(true); }} className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-all flex items-center gap-1">
                           <Plus size={12} /> BIRIKTIRISH
                         </button>
                       )}
                     </div>
                     {svc.materials?.length === 0 ? (
-                      <p className="text-slate-300 text-[11px] font-bold uppercase italic">Materiallar biriktirilmagan</p>
+                      <p className="text-slate-300 text-xs font-bold uppercase italic">Materiallar biriktirilmagan</p>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                         {svc.materials.map((sm: any) => (
@@ -1569,7 +1569,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                               </div>
                               <div>
                                 <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{sm.material?.name}</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase">Sarfi: <span className="text-emerald-600 font-bold">{sm.normPerUnit} {sm.material?.unit}</span> / {svc.unit}</p>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase">Sarfi: <span className="text-emerald-600 font-bold">{sm.normPerUnit} {sm.material?.unit}</span> / {svc.unit}</p>
                               </div>
                             </div>
                             {canManageOptions && (
@@ -1599,12 +1599,12 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             label="Rasm (ixtiyoriy — price list'da ko'rinadi)"
           />
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Xizmat Nomi</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Xizmat Nomi</label>
             <input type="text" required value={newSvcForm.name} onChange={e => setNewSvcForm(f => ({ ...f, name: e.target.value }))} className="input-minimal text-lg font-bold" placeholder="Masalan: Banner Bosish, Vizitka..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Asosiy Narx</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Asosiy Narx</label>
               <CurrencyInput
                 value={newSvcForm.basePrice}
                 onChange={(uzs) => setNewSvcForm(f => ({ ...f, basePrice: uzs ? String(uzs) : '' }))}
@@ -1612,14 +1612,14 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">O'lchov Birligi</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">O'lchov Birligi</label>
               <select value={newSvcForm.unit} onChange={e => setNewSvcForm(f => ({ ...f, unit: e.target.value }))} className="select-minimal font-bold">
                 {['dona', 'metr', 'sm', 'm2', 'kg', 'litr', 'soat', 'rulon', 'varaq'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Variant o'qlari (ixtiyoriy)</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Variant o'qlari (ixtiyoriy)</label>
             <input
               type="text"
               value={newSvcForm.variantAxes}
@@ -1627,15 +1627,15 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
               className="input-minimal"
               placeholder="Rang, O'lcham"
             />
-            <p className="text-[11px] text-slate-500 mt-1.5 px-1">Buyurtmada rang/o'lcham bo'yicha ajratma kerak bo'lsa, vergul bilan ajratib yozing. Masalan: <strong>Rang, O'lcham</strong> — futbolka uchun.</p>
+            <p className="text-xs text-slate-500 mt-1.5 px-1">Buyurtmada rang/o'lcham bo'yicha ajratma kerak bo'lsa, vergul bilan ajratib yozing. Masalan: <strong>Rang, O'lcham</strong> — futbolka uchun.</p>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Tavsif (ixtiyoriy)</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Tavsif (ixtiyoriy)</label>
             <textarea value={newSvcForm.description} onChange={e => setNewSvcForm(f => ({ ...f, description: e.target.value }))} className="input-minimal min-h-[60px]" placeholder="Qo'shimcha ma'lumot..." />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[11px] tracking-widest" onClick={() => setIsAddOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-10 bg-slate-600 text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-lg hover:bg-slate-700 transition-all">Yaratish</button>
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setIsAddOpen(false)}>Bekor</button>
+            <button type="submit" className="h-12 flex-2 px-10 bg-slate-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-slate-700 transition-all">Yaratish</button>
           </div>
         </form>
       </Modal>
@@ -1643,21 +1643,21 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
       {/* Add Option Modal */}
       <Modal isOpen={isOptionOpen} onClose={() => setIsOptionOpen(false)} title={`Optsiya: ${selectedService?.name || ''}`}>
         <form onSubmit={handleAddOption} className="space-y-5">
-          <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-[12px] font-bold text-orange-700">
+          <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-xs font-bold text-orange-700">
             Asosiy narx: <strong>{Number(selectedService?.basePrice || 0).toLocaleString()} UZS</strong> / {selectedService?.unit}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Parametr Nomi</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Parametr Nomi</label>
               <input type="text" required value={newOptionForm.name} onChange={e => setNewOptionForm(f => ({ ...f, name: e.target.value }))} className="input-minimal" placeholder="Qog'oz turi, Rang..." />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Qiymat</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Qiymat</label>
               <input type="text" required value={newOptionForm.value} onChange={e => setNewOptionForm(f => ({ ...f, value: e.target.value }))} className="input-minimal" placeholder="A4, To'q ko'k, Ha..." />
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Yakuniy Narx</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Yakuniy Narx</label>
             <CurrencyInput
               value={newOptionForm.percentageMarkup === '' ? '' : String(Number(selectedService?.basePrice || 0) + Math.round(Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100)))}
               onChange={(uzs) => {
@@ -1673,38 +1673,38 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
 
             <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
               <div className="space-y-1">
-                <p className="text-[11px] font-bold uppercase text-slate-400">Ustama Foizi:</p>
+                <p className="text-xs font-bold uppercase text-slate-400">Ustama Foizi:</p>
                 <p className={`text-lg font-bold ${Number(newOptionForm.percentageMarkup) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {Number(newOptionForm.percentageMarkup) > 0 ? '+' : ''}{Math.round(Number(newOptionForm.percentageMarkup) * 100) / 100}%
                 </p>
               </div>
               <div className="text-right space-y-1">
-                <p className="text-[11px] font-bold uppercase text-slate-400">Narx Farqi:</p>
+                <p className="text-xs font-bold uppercase text-slate-400">Narx Farqi:</p>
                 <p className={`text-lg font-bold ${Number(newOptionForm.percentageMarkup) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {Number(newOptionForm.percentageMarkup) >= 0 ? '+' : ''}{Math.round(Number(selectedService?.basePrice || 0) * (Number(newOptionForm.percentageMarkup) / 100))} UZS
                 </p>
               </div>
             </div>
 
-            <p className="text-[11px] font-bold text-slate-400 mt-3 px-1 italic">
+            <p className="text-xs font-bold text-slate-400 mt-3 px-1 italic">
               * Yakuniy narxni yozing, tizim foizni avtomatik hisoblab oladi. Keyinchalik asosiy narx o'zgarganda, bu optsiya foizga qarab moslashadi.
             </p>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[11px] tracking-widest" onClick={() => setIsOptionOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-10 bg-orange-600 text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-lg hover:bg-orange-700 transition-all">Qo'shish</button>
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setIsOptionOpen(false)}>Bekor</button>
+            <button type="submit" className="h-12 flex-2 px-10 bg-orange-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-orange-700 transition-all">Qo'shish</button>
           </div>
         </form>
       </Modal>
       {/* BOM Modal */}
       <Modal isOpen={isBOMOpen} onClose={() => setIsBOMOpen(false)} title={`Xomashyo Biriktirish: ${selectedService?.name || ''}`}>
         <form onSubmit={handleAddMaterial} className="space-y-5">
-          <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-[12px] font-bold text-emerald-700">
+          <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-xs font-bold text-emerald-700">
             Xizmat: <strong>{selectedService?.name}</strong> uchun 1 <strong>{selectedService?.unit}</strong> sarfini belgilang.
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Materialni tanlang</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Materialni tanlang</label>
               <select
                 required
                 value={newMaterialForm.materialId}
@@ -1718,7 +1718,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Sarflash miqdori (Norma)</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Sarflash miqdori (Norma)</label>
               <input
                 type="number"
                 step="0.0001"
@@ -1729,14 +1729,14 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                 className="input-minimal font-bold h-12 border-emerald-100 focus:border-emerald-500"
                 placeholder="Masalan: 0.1"
               />
-              <p className="text-[11px] font-bold text-slate-400 mt-2 px-1 italic">
+              <p className="text-xs font-bold text-slate-400 mt-2 px-1 italic">
                 Masalan: 1ta qog'ozdan 10ta vizitka chiqsa, 0.1 deb yozing.
               </p>
             </div>
           </div>
           <div className="flex gap-3 pt-4">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[11px] tracking-widest" onClick={() => setIsBOMOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-10 bg-emerald-600 text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-lg hover:bg-emerald-700 transition-all">Biriktirish</button>
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setIsBOMOpen(false)}>Bekor</button>
+            <button type="submit" className="h-12 flex-2 px-10 bg-emerald-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-emerald-700 transition-all">Biriktirish</button>
           </div>
         </form>
       </Modal>
@@ -1776,7 +1776,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             </div>
             <div>
               <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{cloneModal.service?.name}</p>
-              <p className="text-[11px] font-bold text-slate-600">{Number(cloneModal.service?.basePrice || 0).toLocaleString('uz-UZ')} UZS / {cloneModal.service?.unit}</p>
+              <p className="text-xs font-bold text-slate-600">{Number(cloneModal.service?.basePrice || 0).toLocaleString('uz-UZ')} UZS / {cloneModal.service?.unit}</p>
             </div>
           </div>
 
@@ -1788,7 +1788,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           ) : (
             <>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1">Maqsad filial</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Maqsad filial</label>
                 <select
                   value={cloneTargetBranchId}
                   onChange={e => setCloneTargetBranchId(e.target.value)}
@@ -1799,11 +1799,11 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                   ))}
                 </select>
               </div>
-              <p className="text-[11px] text-slate-400 px-1">Opsiyalar ham ko'chiriladi. Narxni keyinchalik o'sha filialda tahrirlashingiz mumkin.</p>
+              <p className="text-xs text-slate-400 px-1">Opsiyalar ham ko'chiriladi. Narxni keyinchalik o'sha filialda tahrirlashingiz mumkin.</p>
               <div className="flex gap-3 pt-1">
                 <button
                   type="button"
-                  className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[11px] tracking-widest"
+                  className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest"
                   onClick={() => setCloneModal({ isOpen: false, service: null })}
                 >
                   Bekor
@@ -1812,7 +1812,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                   type="button"
                   disabled={isCloning}
                   onClick={handleClone}
-                  className="h-12 flex-1 bg-slate-600 text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-lg shadow-slate-500/20 hover:bg-slate-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="h-12 flex-1 bg-slate-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-slate-500/20 hover:bg-slate-700 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   <Copy size={13} /> {isCloning ? 'Nusxalanmoqda...' : 'Nusxalash'}
                 </button>
@@ -1843,13 +1843,13 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             onChange={(url) => setImageEditSvc(prev => prev ? { ...prev, imageUrl: url } : prev)}
             size="lg"
           />
-          <p className="text-[11px] text-slate-400 px-1">
+          <p className="text-xs text-slate-400 px-1">
             Bu rasm xizmatlar ro'yxatida va Price List'da ko'rinadi. Mijozga jo'natiladigan formatlarda ham chiqadi.
           </p>
           <div className="flex gap-3 pt-1">
             <button
               type="button"
-              className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[11px] tracking-widest"
+              className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest"
               onClick={() => setImageEditSvc(null)}
             >
               Bekor
@@ -1857,7 +1857,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
             <button
               type="button"
               onClick={() => handleSaveServiceImage(imageEditSvc?.imageUrl ?? null)}
-              className="h-12 flex-1 bg-orange-600 text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
+              className="h-12 flex-1 bg-orange-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
             >
               Saqlash
             </button>

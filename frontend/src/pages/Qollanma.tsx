@@ -812,7 +812,7 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
   if (block.type === 'p') {
     return (
       <p
-        className="text-[15px] leading-7 text-slate-700"
+        className="text-base leading-7 text-slate-700"
         dangerouslySetInnerHTML={{ __html: highlightHtml(block.html, search) }}
       />
     );
@@ -823,11 +823,11 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
       <ol className="space-y-3 my-2">
         {block.items.map((html, i) => (
           <li key={i} className="flex gap-3 items-start">
-            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 text-white text-[12px] font-bold flex items-center justify-center mt-0.5">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center mt-0.5">
               {i + 1}
             </span>
             <span
-              className="text-[15px] leading-7 text-slate-700 flex-1"
+              className="text-base leading-7 text-slate-700 flex-1"
               dangerouslySetInnerHTML={{ __html: highlightHtml(html, search) }}
             />
           </li>
@@ -843,7 +843,7 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
           <li key={i} className="flex gap-3 items-start">
             <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-orange-500 mt-3" />
             <span
-              className="text-[15px] leading-7 text-slate-700 flex-1"
+              className="text-base leading-7 text-slate-700 flex-1"
               dangerouslySetInnerHTML={{ __html: highlightHtml(html, search) }}
             />
           </li>
@@ -863,7 +863,7 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
             <p className="font-bold text-slate-800 text-sm mb-1">{block.title}</p>
           )}
           <div
-            className="text-[14px] leading-6 text-slate-700"
+            className="text-sm leading-6 text-slate-700"
             dangerouslySetInnerHTML={{ __html: highlightHtml(block.html, search) }}
           />
         </div>
@@ -894,11 +894,11 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
       <div className="rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
         {block.rows.map((row, i) => (
           <div key={i} className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/50 transition-colors">
-            <code className="font-mono text-[13px] text-orange-600 bg-orange-50 px-2 py-1 rounded font-bold flex-shrink-0">
+            <code className="font-mono text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded font-bold flex-shrink-0">
               {row.cmd}
             </code>
             <span
-              className="text-[14px] text-slate-600 flex-1"
+              className="text-sm text-slate-600 flex-1"
               dangerouslySetInnerHTML={{ __html: highlightHtml(row.desc, search) }}
             />
           </div>
@@ -1017,7 +1017,7 @@ export default function Qollanma() {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-slate-800 text-sm leading-tight">Qo'llanma</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Yordam markazi</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Yordam markazi</p>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -1040,7 +1040,7 @@ export default function Qollanma() {
 
         <button
           onClick={restartTour}
-          className="w-full mt-3 flex items-center justify-center gap-2 h-9 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-[12px] font-bold uppercase tracking-wider transition-colors"
+          className="w-full mt-3 flex items-center justify-center gap-2 h-9 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider transition-colors"
         >
           <PlayCircle size={13} /> Tour qaytadan
         </button>
@@ -1055,7 +1055,7 @@ export default function Qollanma() {
             <div key={cat.id} className="mb-1">
               <button
                 onClick={() => toggleCat(cat.id)}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 <span>{cat.label}</span>
                 <ChevronDown size={12} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -1075,7 +1075,7 @@ export default function Qollanma() {
                       <span className={activeId === g.id ? 'text-orange-500' : 'text-slate-400'}>
                         {g.icon}
                       </span>
-                      <span className="text-[13px] font-medium leading-tight flex-1 truncate">
+                      <span className="text-sm font-medium leading-tight flex-1 truncate">
                         {g.title}
                       </span>
                       {activeId === g.id && <ChevronRight size={12} className="text-orange-400 flex-shrink-0" />}
@@ -1127,7 +1127,7 @@ export default function Qollanma() {
           <div className="max-w-3xl mx-auto px-6 md:px-10 py-8 md:py-12">
 
             {/* Mobile open-sidebar + breadcrumb */}
-            <div className="flex items-center gap-3 mb-6 text-[12px] font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-3 mb-6 text-xs font-bold uppercase tracking-wider">
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="md:hidden w-8 h-8 rounded-lg border border-slate-200 hover:border-slate-300 flex items-center justify-center text-slate-500 mr-1"
@@ -1187,7 +1187,7 @@ export default function Qollanma() {
                     >
                       <ChevronLeft size={18} className="text-slate-400 group-hover:text-orange-500 flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Avvalgi</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Avvalgi</p>
                         <p className="text-sm font-bold text-slate-700 group-hover:text-orange-700 truncate">{prevGuide.title}</p>
                       </div>
                     </button>
@@ -1198,7 +1198,7 @@ export default function Qollanma() {
                       className="group flex items-center justify-end gap-3 p-4 rounded-xl border border-slate-200 hover:border-orange-300 hover:bg-orange-50/40 transition-all text-right"
                     >
                       <div className="min-w-0">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Keyingi</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Keyingi</p>
                         <p className="text-sm font-bold text-slate-700 group-hover:text-orange-700 truncate">{nextGuide.title}</p>
                       </div>
                       <ChevronRight size={18} className="text-slate-400 group-hover:text-orange-500 flex-shrink-0" />
@@ -1223,13 +1223,13 @@ export default function Qollanma() {
         {activeGuide && activeGuide.sections.length > 1 && (
           <aside className="hidden lg:block w-56 flex-shrink-0 border-l border-slate-100 px-5 py-12">
             <div className="sticky top-12">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">Bu sahifada</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Bu sahifada</p>
               <nav className="space-y-1">
                 {activeGuide.sections.map(s => (
                   <button
                     key={s.id}
                     onClick={() => goToSection(s.id)}
-                    className={`w-full text-left text-[13px] leading-snug py-1.5 pl-3 border-l-2 transition-colors ${
+                    className={`w-full text-left text-sm leading-snug py-1.5 pl-3 border-l-2 transition-colors ${
                       activeSection === s.id
                         ? 'border-orange-500 text-orange-700 font-bold'
                         : 'border-slate-100 text-slate-500 hover:text-slate-800 hover:border-slate-300'

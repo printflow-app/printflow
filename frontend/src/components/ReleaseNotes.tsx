@@ -23,23 +23,23 @@ export const ReleaseBanner: React.FC<{ onOpen: () => void; onDismiss: () => void
       <Sparkles size={17} />
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-[13px] font-bold text-slate-800">
+      <p className="text-sm font-bold text-slate-800">
         {LATEST_RELEASE.date}dagi yangilanishni hali ko'rmadingiz
       </p>
-      <p className="text-[12px] font-semibold text-slate-500 mt-0.5">
+      <p className="text-xs font-semibold text-slate-500 mt-0.5">
         {LATEST_RELEASE.title} — {LATEST_RELEASE.items.length} ta yangilik qo'shildi
       </p>
     </div>
     <div className="flex items-center gap-2 flex-shrink-0">
       <button
         onClick={onDismiss}
-        className="h-9 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
+        className="h-9 px-3 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
       >
         Keyinroq
       </button>
       <button
         onClick={onOpen}
-        className="h-9 px-4 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-md shadow-orange-500/20 transition-colors"
+        className="h-9 px-4 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-md shadow-orange-500/20 transition-colors"
       >
         Nima o'zgardi
       </button>
@@ -77,7 +77,7 @@ export const ReleaseTour: React.FC<{
             <Sparkles size={19} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-orange-600">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-orange-600">
               Yangilanish · {LATEST_RELEASE.date}
             </p>
             <h3 className="text-base font-bold text-slate-800 tracking-tight">
@@ -94,16 +94,16 @@ export const ReleaseTour: React.FC<{
 
         {/* Qadam mazmuni */}
         <div className="px-6 py-6 min-h-[190px]">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">
             {step + 1} / {items.length}
           </p>
           <h4 className="text-lg font-bold text-slate-900 tracking-tight mb-2">{item.title}</h4>
-          <p className="text-[13px] font-medium text-slate-600 leading-relaxed">{item.text}</p>
+          <p className="text-sm font-medium text-slate-600 leading-relaxed">{item.text}</p>
 
           {item.tab && (
             <button
               onClick={() => goTo(item.tab!)}
-              className="mt-4 h-9 px-4 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg inline-flex items-center gap-1.5 transition-colors"
+              className="mt-4 h-9 px-4 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-lg inline-flex items-center gap-1.5 transition-colors"
             >
               {item.cta || 'Ochish'} <ArrowUpRight size={13} />
             </button>
@@ -136,14 +136,14 @@ export const ReleaseTour: React.FC<{
             {last ? (
               <button
                 onClick={finish}
-                className="h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg inline-flex items-center gap-1.5"
+                className="h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg inline-flex items-center gap-1.5"
               >
                 <Check size={13} /> Tushunarli
               </button>
             ) : (
               <button
                 onClick={() => setStep(s => Math.min(items.length - 1, s + 1))}
-                className="h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg inline-flex items-center gap-1.5"
+                className="h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg inline-flex items-center gap-1.5"
               >
                 Keyingisi <ChevronRight size={13} />
               </button>

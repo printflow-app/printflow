@@ -204,7 +204,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Jamoa vazifalari</h2>
-          <p className="text-[12px] font-semibold text-slate-400">
+          <p className="text-xs font-semibold text-slate-400">
             Buyurtmalar va operatsion ishlar birga — kim nima bilan band
           </p>
         </div>
@@ -233,7 +233,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       {yukRoyxati.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           {kechikkan > 0 && (
-            <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-rose-50 text-rose-600 text-[11px] font-bold">
+            <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold">
               <AlertTriangle size={11} /> {kechikkan} ta kechikkan
             </span>
           )}
@@ -244,7 +244,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 key={e.id}
                 onClick={() => setFilterEmp(tanlangan ? '' : e.id)}
                 title={tanlangan ? 'Filtrni olib tashlash' : `Faqat ${e.ism}`}
-                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-bold transition-colors ${
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-bold transition-colors ${
                   tanlangan
                     ? 'bg-orange-500 text-white'
                     : 'bg-white border border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-600'
@@ -291,14 +291,14 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${u.rang}`} />
-                    <span className="text-[12px] font-bold text-slate-700 uppercase tracking-wider">{u.nom}</span>
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{u.nom}</span>
                   </div>
-                  <span className="text-[11px] font-bold text-slate-400">{items.length}</span>
+                  <span className="text-xs font-bold text-slate-400">{items.length}</span>
                 </div>
 
                 <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto custom-scroll pr-1">
                   {items.length === 0 && (
-                    <p className="text-[11px] font-bold text-slate-300 text-center py-8">
+                    <p className="text-xs font-bold text-slate-300 text-center py-8">
                       {filterEmp ? 'Bu xodimda ish yo\'q' : 'Bo\'sh'}
                     </p>
                   )}
@@ -321,27 +321,27 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-slate-800 leading-snug">{it.sarlavha}</p>
-                          {it.izoh && <p className="text-[11px] font-semibold text-slate-400 mt-1 leading-relaxed">{it.izoh}</p>}
+                          {it.izoh && <p className="text-xs font-semibold text-slate-400 mt-1 leading-relaxed">{it.izoh}</p>}
                           <div className="flex items-center gap-2 mt-2 flex-wrap">
                             {it.masul ? (
-                              <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg">
+                              <span className="text-[11px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg">
                                 {it.masul.ism}
                                 {it.qoshimcha_masullar > 0 && ` +${it.qoshimcha_masullar}`}
                               </span>
                             ) : (
-                              <span className="text-[10px] font-bold text-rose-400">mas'ul yo'q</span>
+                              <span className="text-[11px] font-bold text-rose-400">mas'ul yo'q</span>
                             )}
                             {(() => {
                               const m = muddatUslubi(it.muddat, u.key === 'bajarildi');
                               if (!m) return null;
                               return (
-                                <span className={`text-[10px] font-bold flex items-center gap-1 ${m.klass}`}>
+                                <span className={`text-[11px] font-bold flex items-center gap-1 ${m.klass}`}>
                                   {m.ogoh ? <AlertTriangle size={9} /> : <Clock size={9} />} {m.matn}
                                 </span>
                               );
                             })()}
                             {it.tur === 'buyurtma' && fmtSumma(it.summa) && (
-                              <span className="text-[10px] font-bold text-slate-400">
+                              <span className="text-[11px] font-bold text-slate-400">
                                 {fmtSumma(it.summa)}
                               </span>
                             )}
@@ -363,7 +363,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                             <button
                               key={x.key}
                               onClick={() => move(it.id, x.key)}
-                              className="text-[10px] font-bold text-slate-400 hover:text-orange-600 px-1.5 py-1 rounded hover:bg-orange-50 transition-colors"
+                              className="text-[11px] font-bold text-slate-400 hover:text-orange-600 px-1.5 py-1 rounded hover:bg-orange-50 transition-colors"
                             >
                               → {x.nom}
                             </button>
@@ -389,7 +389,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Yangi vazifa">
         <form onSubmit={save} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Sarlavha</label>
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Sarlavha</label>
             <input
               required autoFocus value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -398,7 +398,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             />
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Izoh</label>
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Izoh</label>
             <textarea
               rows={3} value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -407,7 +407,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             />
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest flex items-center gap-1.5">
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest flex items-center gap-1.5">
               <Users size={11} /> Kim qilishi kerak
             </label>
             <select
@@ -420,12 +420,12 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 <option key={e.id} value={e.id}>{e.fullName}</option>
               ))}
             </select>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5">
+            <p className="text-xs font-semibold text-slate-400 mt-1.5">
               Xodim tanlansa — unga Telegram orqali xabar yuboriladi.
             </p>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Muddat</label>
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Muddat</label>
             <input
               type="date" value={form.deadlineAt}
               onChange={(e) => setForm({ ...form, deadlineAt: e.target.value })}

@@ -52,7 +52,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     maxWidth="max-w-sm"
   >
     {message && (
-      <p className="text-[13px] font-semibold text-slate-600 leading-relaxed">{message}</p>
+      <p className="text-sm font-semibold text-slate-600 leading-relaxed">{message}</p>
     )}
     {children}
     <div className="flex gap-3 pt-5 mt-4 border-t border-slate-100">
@@ -64,7 +64,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         autoFocus
         disabled={busy}
         onClick={onConfirm}
-        className={`flex-1 h-11 rounded-xl text-[12px] font-bold uppercase tracking-widest text-white transition-colors disabled:opacity-60 ${
+        className={`flex-1 h-11 rounded-xl text-xs font-bold uppercase tracking-widest text-white transition-colors disabled:opacity-60 ${
           danger ? 'bg-rose-500 hover:bg-rose-600' : 'bg-orange-500 hover:bg-orange-600'
         }`}
       >

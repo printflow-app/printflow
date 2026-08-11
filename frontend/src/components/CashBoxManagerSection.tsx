@@ -91,7 +91,7 @@ export const CashBoxManagerSection: React.FC<{
         <h3 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
           <Wallet className="text-emerald-500" size={24} /> Kassalar
         </h3>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
           Kassir / moliyachi kassalari, mas'ul xodim va balans
         </p>
       </div>
@@ -150,8 +150,8 @@ export const CashBoxManagerSection: React.FC<{
                       ))}
                     </select>
                     <div className="flex gap-2">
-                      <button onClick={() => saveEdit(b.id)} className="flex-1 h-8 bg-emerald-500 text-white text-[11px] font-bold rounded-md hover:bg-emerald-600">SAQLASH</button>
-                      <button onClick={() => setEditingId(null)} className="flex-1 h-8 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-md hover:bg-slate-200">BEKOR</button>
+                      <button onClick={() => saveEdit(b.id)} className="flex-1 h-8 bg-emerald-500 text-white text-xs font-bold rounded-md hover:bg-emerald-600">SAQLASH</button>
+                      <button onClick={() => setEditingId(null)} className="flex-1 h-8 bg-slate-100 text-slate-500 text-xs font-bold rounded-md hover:bg-slate-200">BEKOR</button>
                     </div>
                   </div>
                 ) : (
@@ -161,10 +161,10 @@ export const CashBoxManagerSection: React.FC<{
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm font-bold text-slate-800 truncate">{b.name}</span>
                           {b.type === 'main' && (
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-500">asosiy</span>
+                            <span className="text-[11px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-500">asosiy</span>
                           )}
                         </div>
-                        <p className="text-[12px] text-slate-400 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
                           <User size={11} /> {b.assignedUserName || employeeName(b.assignedUserId) || "Mas'ulsiz"}
                         </p>
                       </div>

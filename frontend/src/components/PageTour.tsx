@@ -181,19 +181,19 @@ export function PageTour({ tab, onClose }: Props) {
 
       <div className="px-5 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold text-orange-500 uppercase tracking-widest">
+          <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">
             Qadam {idx + 1} / {steps.length}
           </span>
           <button
             onClick={onClose}
-            className="text-[11px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-widest transition"
+            className="text-xs font-bold text-slate-400 hover:text-slate-700 uppercase tracking-widest transition"
           >
             Yopish
           </button>
         </div>
         <h3 className="text-sm font-bold text-slate-900 mb-2 leading-snug">{current.title}</h3>
         <div
-          className="text-[13px] text-slate-600 leading-relaxed"
+          className="text-sm text-slate-600 leading-relaxed"
           dangerouslySetInnerHTML={{ __html: current.description }}
         />
       </div>

@@ -25,7 +25,7 @@ interface IdentityProps {
 export function TaskIdentityBadges({ task, vendor, isMyTask }: IdentityProps) {
   return (
     <div className="flex items-center gap-1 mb-1.5 -mt-0.5 flex-wrap">
-      <span className="text-[12px] font-medium font-mono text-slate-400">
+      <span className="text-xs font-medium font-mono text-slate-400">
         {task.displayId || `#${task.id.slice(-6).toUpperCase()}`}
       </span>
       {vendor && (
@@ -46,17 +46,27 @@ interface DeadlineProps {
   task: Task;
   activeBranchId?: string;
   branches: { id: string; name: string }[];
+  /** Buyurtma "bajarildi" ustunidami — muddat ogohlantirishi berilmaydi. */
+  bajarilgan?: boolean;
 }
 
 /** Deadline + age + cross-branch badges row */
-export function TaskDeadlineBadges({ task, activeBranchId, branches }: DeadlineProps) {
+export function TaskDeadlineBadges({ task, activeBranchId, branches, bajarilgan }: DeadlineProps) {
   const now = new Date();
   const created = task.createdAt ? new Date(task.createdAt) : null;
   const deadline = task.deadlineAt ? new Date(task.deadlineAt) : null;
   const ageHours = created ? (now.getTime() - created.getTime()) / 3600000 : 0;
-  const isPastDeadline = deadline && now > deadline;
-  const isDeadlineSoon = deadline && !isPastDeadline && (deadline.getTime() - now.getTime()) < 86400000;
-  const isOld = !deadline && ageHours > 10;
+
+  // TOPSHIRILGAN BUYURTMA KECHIKKAN BO'LMAYDI.
+  //
+  // Ilgari bu yer faqat sanaga qarardi: ish allaqachon topshirilgan
+  // bo'lsa ham, muddati o'tgan bo'lsa karta qizarib "Muddat o'tdi" deb
+  // turardi. Doskaning yarmi doim qizil bo'lib, ogohlantirish ma'nosini
+  // yo'qotardi — haqiqatan kechikkan ish ko'zga tashlanmasdi.
+  // Bajarilgan ustunda muddat oddiy sana bo'lib ko'rsatiladi.
+  const isPastDeadline = !bajarilgan && deadline && now > deadline;
+  const isDeadlineSoon = !bajarilgan && deadline && !isPastDeadline && (deadline.getTime() - now.getTime()) < 86400000;
+  const isOld = !bajarilgan && !deadline && ageHours > 10;
 
   const crossBranch = !activeBranchId && task.branchId
     ? branches.find((b) => b.id === task.branchId)

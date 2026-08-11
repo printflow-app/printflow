@@ -148,6 +148,12 @@ export class TeamTasksService {
       `*${t.title}*`,
       t.description ? `\n${t.description}` : '',
       muddat ? `\n🗓 Muddat: *${muddat}*` : '',
+      // Buyurtma xabaridagi bilan bir xil eslatma — javobgarlik ikkala
+      // turdagi ishda ham bir xil o'tadi, matn ham bir xil bo'lishi kerak.
+      '',
+      "⚠️ *Diqqat!* Ishni qabul qilgan paytdan boshlab javobgarlik sizda.",
+      "Muddat va sifat talablariga rioya qiling, noaniqlik bo'lsa DARHOL rahbaringizga murojaat qiling.",
+      "E'tiborsizlik yoki xatoyingiz sababli yetkazilgan zarar uchun javobgarlik sizning zimmangizda.",
     ].filter(Boolean);
     await this.telegram.sendMessage(tg, lines.join('\n'));
   }

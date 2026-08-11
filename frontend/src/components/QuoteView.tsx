@@ -126,7 +126,7 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
                 >
                   {br.companyName || tenant.name}
                 </h1>
-                <p className="text-[12px] font-bold uppercase tracking-[0.3em] mt-1"
+                <p className="text-xs font-bold uppercase tracking-[0.3em] mt-1"
                    style={{ color: br.headerText, opacity: 0.8 }}>
                   {br.headerTitle}
                 </p>
@@ -145,7 +145,7 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
             </div>
 
             <div className="text-right flex-shrink-0">
-              <p className="text-[11px] font-bold uppercase tracking-widest"
+              <p className="text-xs font-bold uppercase tracking-widest"
                  style={{ color: br.headerText, opacity: 0.7 }}>Sana</p>
               <p className="text-base font-bold mt-0.5">{formatDate()}</p>
               {phone && (
@@ -176,7 +176,7 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr
-                    className="text-[12px] font-bold uppercase tracking-wider"
+                    className="text-xs font-bold uppercase tracking-wider"
                     style={{ backgroundColor: br.tableHeaderBg, color: br.tableHeaderText }}
                   >
                     <th className="px-4 py-3 text-center font-bold w-10">#</th>
@@ -191,20 +191,20 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
                     <tr key={line.id} className="odd:bg-white even:bg-slate-50">
                       <td className="px-4 py-3.5 text-center font-bold text-slate-400">{idx + 1}</td>
                       <td className="px-4 py-3.5">
-                        <p className="font-bold text-slate-900 uppercase tracking-wider text-[13px]">{line.serviceName}</p>
+                        <p className="font-bold text-slate-900 uppercase tracking-wider text-sm">{line.serviceName}</p>
                         {line.optionLabel && (
-                          <p className="text-[11px] text-slate-500 mt-0.5">{line.optionLabel}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{line.optionLabel}</p>
                         )}
                       </td>
                       <td className="px-4 py-3.5 text-center font-bold text-slate-900 text-sm">
-                        {formatPrice(line.quantity)} <span className="text-[11px] font-normal text-slate-400">{line.unit}</span>
+                        {formatPrice(line.quantity)} <span className="text-xs font-normal text-slate-400">{line.unit}</span>
                       </td>
                       <td className="px-4 py-3.5 text-right font-bold text-slate-900 text-xs whitespace-nowrap">
-                        {formatPrice(line.unitPrice)} <span className="text-[11px] font-normal text-slate-400">so'm</span>
+                        {formatPrice(line.unitPrice)} <span className="text-xs font-normal text-slate-400">so'm</span>
                       </td>
                       <td className="px-4 py-3.5 text-right font-bold text-sm whitespace-nowrap"
                           style={{ color: br.totalSum }}>
-                        {formatPrice(line.total)} <span className="text-[11px] font-normal" style={{ color: br.totalSum, opacity: 0.7 }}>so'm</span>
+                        {formatPrice(line.total)} <span className="text-xs font-normal" style={{ color: br.totalSum, opacity: 0.7 }}>so'm</span>
                       </td>
                     </tr>
                   ))}
@@ -225,7 +225,7 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
         </div>
 
         {/* Footer */}
-        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">
+        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-widest bg-white">
           <span>{br.companyName || tenant.name} &copy; {new Date().getFullYear()}</span>
           <span className="text-right max-w-[60%]">{br.footerNote}</span>
         </div>

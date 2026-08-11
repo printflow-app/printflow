@@ -63,7 +63,7 @@ const Modal: React.FC<ModalProps> = ({
         <div className={`px-4 sm:px-5 py-3.5 border-b border-slate-100 flex justify-between items-center ${typeConfig[type].bg}`}>
           <div className="flex items-center gap-2.5">
             {typeConfig[type].icon}
-            <h3 className={`text-[15px] font-semibold tracking-tight ${typeConfig[type].color}`}>{title}</h3>
+            <h3 className={`text-base font-semibold tracking-tight ${typeConfig[type].color}`}>{title}</h3>
           </div>
           <button onClick={onClose} className="icon-btn">
             <X size={18} />

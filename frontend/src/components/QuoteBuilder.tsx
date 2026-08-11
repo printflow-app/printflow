@@ -273,7 +273,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
           <Sparkles size={18} className="text-orange-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-bold text-orange-900 uppercase tracking-wider">Buyurtma tuzish</p>
-            <p className="text-[12px] text-orange-800 mt-0.5">
+            <p className="text-xs text-orange-800 mt-0.5">
               Kerakli mahsulotni tanlang, sonini kiriting va "Qo'shish" bosing. Pastda jami summa avtomatik hisoblanadi.
             </p>
           </div>
@@ -301,7 +301,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
         </div>
 
         {search.trim() && (
-          <p className="text-[12px] font-bold text-slate-500 uppercase tracking-widest px-1">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">
             {visibleServices.length} ta natija topildi
           </p>
         )}
@@ -344,7 +344,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                     <div className="text-right flex-shrink-0">
                       <span className="text-lg font-bold text-orange-600">{formatPrice(unitPrice)}</span>
                       <span className="text-xs font-bold text-slate-400 ml-1">so'm</span>
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">/ {svc.unit}</p>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">/ {svc.unit}</p>
                     </div>
                   </div>
 
@@ -353,7 +353,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                     <div className="mt-3 space-y-2">
                       {groups.map(group => (
                         <div key={group.name} className="flex items-start gap-3 flex-wrap">
-                          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest pt-1.5 min-w-[80px]">
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest pt-1.5 min-w-[80px]">
                             {group.name}:
                           </p>
                           <div className="flex flex-wrap gap-1.5 flex-1">
@@ -363,7 +363,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                                 <button
                                   key={opt.id}
                                   onClick={() => toggleDraftOption(svc.id, group.name, opt.id)}
-                                  className={`px-3 h-8 text-[12px] font-bold uppercase tracking-wider rounded-lg border-2 transition-all ${
+                                  className={`px-3 h-8 text-xs font-bold uppercase tracking-wider rounded-lg border-2 transition-all ${
                                     active
                                       ? 'bg-orange-500 text-white border-orange-500'
                                       : 'bg-white text-slate-700 border-slate-200 hover:border-orange-300 hover:bg-orange-50'
@@ -387,7 +387,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                   {/* Miqdor + Live narx + Qo'shish */}
                   <div className="mt-4 flex flex-wrap items-end gap-3">
                     <div>
-                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Soni</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Soni</p>
                       <div className="flex items-center gap-1 bg-slate-50 rounded-lg border border-slate-200 p-1">
                         <button
                           onClick={() => setDraftQuantity(svc.id, String(Math.max(0, draftQty - 1)))}
@@ -414,7 +414,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                     </div>
 
                     <div className="flex-1 min-w-[120px]">
-                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Hisob</p>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Hisob</p>
                       <p className="text-sm font-bold text-slate-700">
                         {formatPrice(unitPrice)} × {draftQty} =
                         <span className="text-orange-600 ml-1">{formatPrice(lineTotal)} so'm</span>
@@ -448,7 +448,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
             {cart.length > 0 && (
               <button
                 onClick={clearCart}
-                className="text-[11px] font-bold text-slate-400 hover:text-rose-500 uppercase tracking-wider transition-colors"
+                className="text-xs font-bold text-slate-400 hover:text-rose-500 uppercase tracking-wider transition-colors"
               >
                 Tozalash
               </button>
@@ -459,7 +459,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-slate-300">
                 <ShoppingCart size={28} className="mb-2" />
-                <p className="text-[12px] font-bold uppercase tracking-widest text-center">Savat bo'sh.<br/>Mahsulot qo'shing</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-center">Savat bo'sh.<br/>Mahsulot qo'shing</p>
               </div>
             ) : (
               cart.map(line => {
@@ -470,7 +470,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-slate-900 uppercase tracking-tight truncate">{line.service.name}</p>
                         {optionLabel && (
-                          <p className="text-[11px] text-slate-500 truncate">{optionLabel}</p>
+                          <p className="text-xs text-slate-500 truncate">{optionLabel}</p>
                         )}
                       </div>
                       <button
@@ -505,7 +505,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                         </button>
                       </div>
                       <div className="text-right">
-                        <p className="text-[11px] text-slate-400">{formatPrice(unitPrice)} × {line.quantity}</p>
+                        <p className="text-xs text-slate-400">{formatPrice(unitPrice)} × {line.quantity}</p>
                         <p className="text-sm font-bold text-orange-600 whitespace-nowrap">{formatPrice(total)} so'm</p>
                       </div>
                     </div>
@@ -542,7 +542,7 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
                 Yuklab olish
               </button>
             </div>
-            <p className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1">
+            <p className="text-xs text-slate-400 text-center flex items-center justify-center gap-1">
               <FileText size={11} /> Quote chiroyli ko'rinishda yuklanadi
             </p>
           </div>

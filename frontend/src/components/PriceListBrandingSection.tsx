@@ -182,7 +182,7 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
           <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <Palette className="text-orange-600" size={22} /> Narx Ro'yxati Brandingi
           </h3>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             Mijozga ko'rinadigan narxlar varaqasi — ranglar, logo, sarlavha
           </p>
         </div>
@@ -216,7 +216,7 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
           <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-6">
             {/* Logo */}
             <div>
-              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <ImageIcon size={14} /> Logotip
               </h4>
               <div className="flex items-center gap-4">
@@ -228,7 +228,7 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <label className="inline-flex items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 text-orange-700 h-9 px-4 text-[12px] font-bold uppercase tracking-widest rounded-lg cursor-pointer transition-all">
+                  <label className="inline-flex items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 text-orange-700 h-9 px-4 text-xs font-bold uppercase tracking-widest rounded-lg cursor-pointer transition-all">
                     Rasm tanlash
                     <input
                       type="file"
@@ -240,19 +240,19 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
                   {branding.logoBase64 && (
                     <button
                       onClick={removeLogo}
-                      className="ml-2 inline-flex items-center justify-center h-9 px-3 text-[12px] font-bold uppercase tracking-widest rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 transition-all"
+                      className="ml-2 inline-flex items-center justify-center h-9 px-3 text-xs font-bold uppercase tracking-widest rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 transition-all"
                     >
                       O'chirish
                     </button>
                   )}
-                  <p className="text-[11px] text-slate-400 mt-2">PNG/JPG. Maks 300 KB. Kichik logoda yaxshi ko'rinadi.</p>
+                  <p className="text-xs text-slate-400 mt-2">PNG/JPG. Maks 300 KB. Kichik logoda yaxshi ko'rinadi.</p>
                 </div>
               </div>
             </div>
 
             {/* Matnlar */}
             <div className="space-y-3">
-              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Matnlar</h4>
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Matnlar</h4>
               <TextField
                 label="Kompaniya nomi (bo'sh qoldirilsa tenant nomi ishlatiladi)"
                 placeholder="Masalan: Puff Print Studio"
@@ -293,7 +293,7 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
 
             {/* Ranglar */}
             <div>
-              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
                 Ranglar — har birini tanlang
               </h4>
               <div className="space-y-3">
@@ -307,13 +307,13 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
                       title={field.label}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-bold text-slate-800 uppercase tracking-tight">{field.label}</p>
-                      <p className="text-[11px] text-slate-500 leading-snug mt-0.5">{field.description}</p>
+                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight">{field.label}</p>
+                      <p className="text-xs text-slate-500 leading-snug mt-0.5">{field.description}</p>
                       <input
                         type="text"
                         value={(branding as any)[field.key] || DEFAULTS[field.key]}
                         onChange={e => updateColor(field.key, e.target.value)}
-                        className="mt-1.5 h-7 px-2 w-28 text-[12px] font-mono font-bold uppercase border border-slate-200 rounded-md focus:outline-none focus:border-orange-400"
+                        className="mt-1.5 h-7 px-2 w-28 text-xs font-mono font-bold uppercase border border-slate-200 rounded-md focus:outline-none focus:border-orange-400"
                         spellCheck={false}
                       />
                     </div>
@@ -325,7 +325,7 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
 
           {/* O'NG: live preview */}
           <div className="bg-slate-100 rounded-3xl border border-slate-200 p-4 sm:p-6 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-hidden">
-            <div className="flex items-center gap-2 mb-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+            <div className="flex items-center gap-2 mb-3 text-xs font-bold text-slate-500 uppercase tracking-widest">
               <Eye size={14} /> Live preview
             </div>
             <div className="overflow-auto custom-scroll bg-slate-200 rounded-2xl p-3" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
@@ -339,7 +339,7 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 mt-2 text-center">
+            <p className="text-xs text-slate-400 mt-2 text-center">
               Saqlagandan keyin mijozlar ushbu ko'rinishni ko'radi
             </p>
           </div>
@@ -357,7 +357,7 @@ const TextField: React.FC<{
   placeholder?: string;
 }> = ({ label, value, onChange, placeholder }) => (
   <div>
-    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
       {label}
     </label>
     <input

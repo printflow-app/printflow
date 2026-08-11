@@ -79,7 +79,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
           <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2 px-1">
             <Filter size={18} className="text-[#FF6B00]" /> Filtrlar
           </h3>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1">Sana bo'yicha tahlil</p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1">Sana bo'yicha tahlil</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0">
@@ -88,7 +88,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`flex-1 sm:flex-none px-4 py-1.5 text-[11px] font-bold rounded-md transition-all ${activeFilter === f ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-md transition-all ${activeFilter === f ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 {f === 'all' ? 'Barchasi' : f === 'today' ? 'Bugun' : f === 'week' ? 'Hafta' : 'Oy'}
               </button>
@@ -107,7 +107,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             <div className="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3 border border-emerald-200 shadow-sm">
               <TrendingUp size={18} />
             </div>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Jami Kirim</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Jami Kirim</p>
             <h3 className="text-xl font-bold text-slate-800 tracking-tight">{formatCurrency(dashboard.totalKirim)}</h3>
           </div>
         </div>
@@ -119,7 +119,7 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             <div className="w-9 h-9 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-3 border border-orange-200 shadow-sm">
               <CheckCircle size={18} />
             </div>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilgan Buyurtmalar</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilgan Buyurtmalar</p>
             <h3 className="text-xl font-bold text-slate-800 tracking-tight">{dashboard.completedTasks || 0} ta</h3>
           </div>
         </div>
@@ -138,10 +138,10 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
             }`}>
               {overdueOrders > 0 ? <AlertCircle size={18} /> : <Clock size={18} />}
             </div>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilishi Kutilmoqda</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilishi Kutilmoqda</p>
             <h3 className="text-xl font-bold text-slate-800 tracking-tight">{pendingOrders} ta</h3>
             {overdueOrders > 0 && (
-              <p className="text-[10px] font-bold text-rose-500 mt-0.5 flex items-center gap-1">
+              <p className="text-[11px] font-bold text-rose-500 mt-0.5 flex items-center gap-1">
                 <AlertCircle size={10} /> {overdueOrders} ta muddati o'tgan
               </p>
             )}

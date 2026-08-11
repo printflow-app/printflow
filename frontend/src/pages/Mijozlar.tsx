@@ -74,7 +74,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const [formStep, setFormStep] = useState<1 | 2>(1);
 
   // Contacts management
-  const [contactsCustomer, setContactsCustomer] = useState<any | null>(null);
   const [contacts, setContacts] = useState<any[]>([]);
   const [isContactsLoading, setIsContactsLoading] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', phone: '', role: '', email: '' });
@@ -150,7 +149,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     setIsEditing(false);
     setFormStep(1);
     setContacts([]);
-    setContactsCustomer(null);
     setIsFormOpen(true);
   };
 
@@ -166,7 +164,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     setIsEditing(true);
     setFormStep(1);
     setContacts([]);
-    setContactsCustomer(c);
     setIsFormOpen(true);
   };
 
@@ -224,7 +221,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       // Ikkinchi bosqichga o'tamiz va vakillarni yuklaymiz.
       setCustForm(f => ({ ...f, id }));
       setIsEditing(true);
-      setContactsCustomer({ id, name: custForm.name });
       setFormStep(2);
       setIsContactsLoading(true);
       try {
@@ -244,7 +240,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const closeCustomerModal = () => {
     setIsFormOpen(false);
     setFormStep(1);
-    setContactsCustomer(null);
     setContacts([]);
     setContactForm({ name: '', phone: '', role: '', email: '' });
   };
@@ -279,7 +274,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         : null,
     });
     setIsEditing(true);
-    setContactsCustomer(c);
     setFormStep(2);
     setIsFormOpen(true);
     setIsContactsLoading(true);
@@ -293,32 +287,40 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     }
   };
 
+  // MIJOZ ID'SI YAGONA MANBADAN — `custForm.id`.
+  //
+  // Ilgari bu yer `contactsCustomer` ga tayanardi. Oyna ikki bosqichga
+  // birlashtirilgandan keyin ikkita holat paydo bo'ldi va ular ajralib
+  // qolishi mumkin edi: 2-tabga o'tish `custForm.id` ni ishlatadi,
+  // qo'shish esa `contactsCustomer` ni — u null bo'lsa tugma jimgina
+  // hech narsa qilmasdi.
   const handleAddContact = async () => {
-    if (!contactsCustomer || !contactForm.name.trim()) return;
+    if (!custForm.id || !contactForm.name.trim()) return;
     setIsAddingContact(true);
     try {
-      await customersApi.createContact(contactsCustomer.id, {
+      await customersApi.createContact(custForm.id, {
         name: contactForm.name,
         phone: contactForm.phone || undefined,
         role: contactForm.role || undefined,
         email: contactForm.email || undefined,
       });
       setContactForm({ name: '', phone: '', role: '', email: '' });
-      const res = await customersApi.getContacts(contactsCustomer.id);
+      const res = await customersApi.getContacts(custForm.id);
       setContacts(res.data || []);
-      showStatus('success', "Kontakt qo'shildi!");
-    } catch {
-      showStatus('error', "Kontakt qo'shishda xato!");
+      fetchData(true); // jadvaldagi vakillar ro'yxati ham yangilansin
+      showStatus('success', "Vakil qo'shildi!");
+    } catch (e: any) {
+      showStatus('error', e?.response?.data?.message || "Vakil qo'shishda xato!");
     } finally {
       setIsAddingContact(false);
     }
   };
 
   const handleDeleteContact = async (contactId: string) => {
-    if (!contactsCustomer) return;
+    if (!custForm.id) return;
     try {
-      await customersApi.deleteContact(contactsCustomer.id, contactId);
-      const res = await customersApi.getContacts(contactsCustomer.id);
+      await customersApi.deleteContact(custForm.id, contactId);
+      const res = await customersApi.getContacts(custForm.id);
       setContacts(res.data || []);
       showStatus('success', "Kontakt o'chirildi.");
     } catch {
@@ -403,7 +405,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
           <h2 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight">Mijozlar Bazasi</h2>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
           {activeView === 'all' && (
@@ -466,19 +468,19 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[9px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Jami Mijozlar</p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Jami Mijozlar</p>
           <h4 className="text-lg font-bold text-slate-800">{customers.length}</h4>
         </div>
         <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[9px] font-bold text-rose-400 uppercase mb-1 tracking-widest">Qarzdorlar</p>
+          <p className="text-[11px] font-bold text-rose-400 uppercase mb-1 tracking-widest">Qarzdorlar</p>
           <h4 className="text-lg font-bold text-rose-600">{totalDebtors}</h4>
         </div>
         <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[9px] font-bold text-rose-400 uppercase mb-1 tracking-widest">Umumiy Qarzlar</p>
+          <p className="text-[11px] font-bold text-rose-400 uppercase mb-1 tracking-widest">Umumiy Qarzlar</p>
           <h4 className="text-lg font-bold text-rose-600 truncate">{formatCurrency(totalDebtAmount)}</h4>
         </div>
         <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[9px] font-bold text-emerald-400 uppercase mb-1 tracking-widest">Hisobi yopilgan</p>
+          <p className="text-[11px] font-bold text-emerald-400 uppercase mb-1 tracking-widest">Hisobi yopilgan</p>
           <h4 className="text-lg font-bold text-emerald-600">{totalSettled}</h4>
         </div>
       </div>
@@ -504,11 +506,11 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         return (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                 Xaritada {nuqtalar.length} ta mijoz
               </p>
               {belgilanmagan > 0 && (
-                <p className="text-[11px] font-semibold text-amber-600">
+                <p className="text-xs font-semibold text-amber-600">
                   {belgilanmagan} ta mijozning joyi belgilanmagan — kartasini tahrirlab xaritadan belgilang
                 </p>
               )}
@@ -546,13 +548,13 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             <table className="w-full min-w-[900px] text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-100">
-                  <th className="py-3 px-5 text-[10px] uppercase font-bold text-slate-400 tracking-widest w-8"></th>
-                  <th className="py-3 px-5 text-[10px] uppercase font-bold text-slate-400 tracking-widest">Mijoz</th>
-                  <th className="px-5 text-[10px] uppercase font-bold text-slate-400 tracking-widest">Telefon</th>
-                  <th className="px-5 text-[10px] uppercase font-bold text-slate-400 tracking-widest">Umumiy</th>
-                  <th className="px-5 text-[10px] uppercase font-bold text-emerald-500 tracking-widest">To'langan</th>
-                  <th className="px-5 text-[10px] uppercase font-bold text-slate-400 tracking-widest">Holat</th>
-                  <th className="px-5 text-[10px] uppercase font-bold text-slate-400 tracking-widest text-right pr-6">Harakat</th>
+                  <th className="py-3 px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest w-8"></th>
+                  <th className="py-3 px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest">Mijoz</th>
+                  <th className="px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest">Telefon</th>
+                  <th className="px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest">Umumiy</th>
+                  <th className="px-5 text-[11px] uppercase font-bold text-emerald-500 tracking-widest">To'langan</th>
+                  <th className="px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest">Holat</th>
+                  <th className="px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest text-right pr-6">Harakat</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -599,7 +601,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                           </td>
                           <td className="py-3 px-5">
                             <div className="font-bold text-slate-800 text-xs flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-500 group-hover:bg-slate-500 group-hover:text-white transition-all shadow-sm">{c.name.charAt(0)}</div>
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 group-hover:bg-slate-500 group-hover:text-white transition-all shadow-sm">{c.name.charAt(0)}</div>
                               <div className="min-w-0">
                                 <p>{c.name}</p>
                                 {/* VAKILLAR — brend nomining tagida. Ilgari ular faqat
@@ -607,13 +609,13 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                     degan savolga javob olish uchun har safar modal
                                     ochish kerak bo'lardi. */}
                                 {contactCount > 0 && (
-                                  <p className="text-[10px] font-medium text-slate-500 truncate mt-0.5 normal-case">
+                                  <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5 normal-case">
                                     {(c.contacts || []).slice(0, 2).map((k: any) => k.name).join(', ')}
                                     {contactCount > 2 ? ` +${contactCount - 2}` : ''}
                                   </p>
                                 )}
                                 {c.companyInfo && (
-                                  <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1 mt-0.5 normal-case font-medium">
+                                  <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-0.5 normal-case font-medium">
                                     <Building2 size={8}/> {c.companyInfo}
                                   </p>
                                 )}
@@ -621,12 +623,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                             </div>
                           </td>
                           <td className="px-5">
-                            <p className="text-[12px] font-bold text-slate-500 flex items-center gap-1.5"><Phone size={11} className="text-slate-400"/> {c.phone || '—'}</p>
+                            <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Phone size={11} className="text-slate-400"/> {c.phone || '—'}</p>
                           </td>
-                          <td className="px-5 font-bold text-[12px] text-slate-600">{formatCurrency(c.totalDebt)}</td>
-                          <td className="px-5 font-bold text-[12px] text-emerald-600">{formatCurrency(c.totalPaid)}</td>
+                          <td className="px-5 font-bold text-xs text-slate-600">{formatCurrency(c.totalDebt)}</td>
+                          <td className="px-5 font-bold text-xs text-emerald-600">{formatCurrency(c.totalPaid)}</td>
                           <td className="px-5">
-                            <span className={`px-2 py-1 rounded-lg text-[10px] font-bold border uppercase tracking-tight ${balance >= MIN_DEBT ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                            <span className={`px-2 py-1 rounded-lg text-[11px] font-bold border uppercase tracking-tight ${balance >= MIN_DEBT ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
                               {balance >= MIN_DEBT ? formatCurrency(balance) : 'Yopilgan'}
                             </span>
                           </td>
@@ -641,7 +643,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                     <button onClick={e => openContacts(c, e)} className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-500 hover:text-white transition-all shadow-sm relative" title="Vakillar">
                                       <UserPlus size={13}/>
                                       {contactCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-slate-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{contactCount}</span>
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-slate-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">{contactCount}</span>
                                       )}
                                     </button>
                                   )}
@@ -683,15 +685,15 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                                       {(c.contacts || []).map((k: any) => (
                                         <div key={k.id} className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
-                                          <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[11px] font-bold text-slate-500 shrink-0">
+                                          <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">
                                             {(k.name || '?').charAt(0)}
                                           </div>
                                           <div className="min-w-0">
-                                            <p className="text-[12px] font-bold text-slate-700 truncate">
+                                            <p className="text-xs font-bold text-slate-700 truncate">
                                               {k.name}
-                                              {k.isPrimary && <span className="ml-1 text-[9px] font-bold text-slate-500 uppercase">asosiy</span>}
+                                              {k.isPrimary && <span className="ml-1 text-[11px] font-bold text-slate-500 uppercase">asosiy</span>}
                                             </p>
-                                            <p className="text-[10px] font-medium text-slate-400 truncate">
+                                            <p className="text-[11px] font-medium text-slate-400 truncate">
                                               {[k.role, k.phone].filter(Boolean).join(' · ') || '—'}
                                             </p>
                                           </div>
@@ -717,15 +719,15 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                               <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                                                 {t.title}
                                                 {t.isArchived && (
-                                                  <span className="text-[9px] font-bold text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded uppercase tracking-wide">Arxiv</span>
+                                                  <span className="text-[11px] font-bold text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded uppercase tracking-wide">Arxiv</span>
                                                 )}
                                               </p>
                                               {t.service && (
-                                                <p className="text-[10px] text-orange-600 font-bold mt-0.5 uppercase tracking-wide bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100/50 inline-block">
+                                                <p className="text-[11px] text-orange-600 font-bold mt-0.5 uppercase tracking-wide bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100/50 inline-block">
                                                   {t.service.name}
                                                 </p>
                                               )}
-                                              <p className="text-[11px] text-slate-400 font-bold mt-0.5">{formatDate(t.createdAt)}</p>
+                                              <p className="text-xs text-slate-400 font-bold mt-0.5">{formatDate(t.createdAt)}</p>
                                             </div>
                                             <p className="text-xs font-bold text-slate-800">{formatCurrency(t.totalAmount)}</p>
                                           </div>
@@ -751,7 +753,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                               </div>
                                               <div>
                                                 <p className="text-xs font-bold text-slate-700">{tr.serviceType || tr.expenseReason || tr.type}</p>
-                                                <p className="text-[11px] text-slate-400 font-bold">{formatDate(tr.date)} • {tr.paymentType?.name || 'Naqd'}</p>
+                                                <p className="text-xs text-slate-400 font-bold">{formatDate(tr.date)} • {tr.paymentType?.name || 'Naqd'}</p>
                                               </div>
                                             </div>
                                             <span className={`text-xs font-bold ${tr.type === 'kirim' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -820,7 +822,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             {/* MIJOZ = TASHKILOT. Jadvalda tashkilot nomi turadi, odamlar
                 esa 2-bosqichda vakil bo'lib qo'shiladi. */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">
                 <Building2 size={10} className="inline mr-1"/> Tashkilot nomi *
               </label>
               <input
@@ -834,7 +836,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Telefon</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Telefon</label>
                 <input
                   type="text"
                   value={custForm.phone}
@@ -844,7 +846,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qo'shimcha</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qo'shimcha</label>
                 <input
                   type="text"
                   value={custForm.companyInfo}
@@ -856,7 +858,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">
                 <MapPin size={10} className="inline mr-1"/> Manzil
               </label>
               <input
@@ -936,8 +938,8 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               ) : contacts.length === 0 ? (
                 <div className="py-10 flex flex-col items-center justify-center text-slate-300">
                   <UserPlus size={28} className="mb-2"/>
-                  <p className="text-[11px] font-bold uppercase tracking-widest">Vakillar yo'q</p>
-                  <p className="text-[11px] font-medium text-slate-400 mt-1">Bu tashkilot bilan kim gaplashadi?</p>
+                  <p className="text-xs font-bold uppercase tracking-widest">Vakillar yo'q</p>
+                  <p className="text-xs font-medium text-slate-400 mt-1">Bu tashkilot bilan kim gaplashadi?</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scroll pr-1">
@@ -951,13 +953,13 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                           <p className="text-xs font-bold text-slate-800 truncate">{ct.name}</p>
                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             {ct.role && (
-                              <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Briefcase size={8}/> {ct.role}</span>
+                              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Briefcase size={8}/> {ct.role}</span>
                             )}
                             {ct.phone && (
-                              <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Phone size={8}/> {ct.phone}</span>
+                              <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1"><Phone size={8}/> {ct.phone}</span>
                             )}
                             {ct.email && (
-                              <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 truncate"><Mail size={8}/> {ct.email}</span>
+                              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 truncate"><Mail size={8}/> {ct.email}</span>
                             )}
                           </div>
                         </div>
@@ -1007,26 +1009,26 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                     <p className="text-sm font-bold text-slate-800 truncate">{order.title}</p>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {order.service && (
-                        <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded-lg border border-orange-100 uppercase">{order.service.name}</span>
+                        <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg border border-orange-100 uppercase">{order.service.name}</span>
                       )}
                       {order.column && (
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-lg uppercase">{order.column.title}</span>
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-lg uppercase">{order.column.title}</span>
                       )}
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-lg">{formatDate(order.createdAt)}</span>
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-lg">{formatDate(order.createdAt)}</span>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-bold text-slate-800">{formatCurrency(order.totalAmount || 0)}</p>
                     {order.depositAmount > 0 && (
-                      <p className="text-[11px] font-bold text-emerald-500">Zakolat: {formatCurrency(order.depositAmount)}</p>
+                      <p className="text-xs font-bold text-emerald-500">Zakolat: {formatCurrency(order.depositAmount)}</p>
                     )}
                     {order.remainingAmount > 0 && (
-                      <p className="text-[11px] font-bold text-rose-500">Qoldiq: {formatCurrency(order.remainingAmount)}</p>
+                      <p className="text-xs font-bold text-rose-500">Qoldiq: {formatCurrency(order.remainingAmount)}</p>
                     )}
                   </div>
                 </div>
                 {order.note && (
-                  <p className="text-[11px] text-slate-400 font-medium mt-2 italic border-t border-slate-100 pt-2">{order.note}</p>
+                  <p className="text-xs text-slate-400 font-medium mt-2 italic border-t border-slate-100 pt-2">{order.note}</p>
                 )}
               </div>
             ))}
@@ -1052,10 +1054,10 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-[11px] tracking-widest" onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}>
+            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}>
               Bekor qilish
             </button>
-            <button type="button" className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
+            <button type="button" className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
               Ha, o'chirilsin
             </button>
           </div>

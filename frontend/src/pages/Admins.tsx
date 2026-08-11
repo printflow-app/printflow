@@ -130,7 +130,7 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
             key={tab.id}
             data-tour-id={`admin-tab-${tab.id}`}
             onClick={() => setActiveAdminTab(tab.id as any)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[12px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
               activeAdminTab === tab.id
                 ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/20'
                 : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800'
@@ -153,10 +153,10 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
             <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
               <ShieldCheck className="text-orange-600" size={22} /> Tizim Ma'murlari
             </h3>
-            <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Asoschilar va raxbarlar uchun maxsus saxifa</p>
+            <p className="text-[11px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Asoschilar va raxbarlar uchun maxsus saxifa</p>
           </div>
           {(isAdmin || p.canManageAdmins) && (
-             <button className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-6 bg-orange-600 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all" onClick={() => { setGeneratedCredentials(null); setShowGenPass(false); setIsEmployeeModalOpen(true); }}>
+             <button className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-6 bg-orange-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all" onClick={() => { setGeneratedCredentials(null); setShowGenPass(false); setIsEmployeeModalOpen(true); }}>
                <UserPlus size={16} strokeWidth={2.5} /> Yangi Ma'mur Qo'shish
              </button>
           )}
@@ -167,10 +167,10 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
             <table className="w-full text-left">
                <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-100">
-                  <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 py-3 px-5">F.I.SH & Aloqa</th>
-                  <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 px-5">Lavozimi</th>
-                  <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 px-5">Login</th>
-                  <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 text-right pr-6 px-5">Harakat</th>
+                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 py-3 px-5">F.I.SH & Aloqa</th>
+                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 px-5">Lavozimi</th>
+                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 px-5">Login</th>
+                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 text-right pr-6 px-5">Harakat</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -178,14 +178,14 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
                   <tr key={emp.id} className="hover:bg-slate-50/40 transition-colors group">
                     <td className="py-3 px-5">
                       <p className="font-bold text-slate-800 text-xs lowercase first-letter:uppercase tracking-tight">{emp.fullName}</p>
-                      <p className="text-[11px] font-bold text-slate-500 mt-0.5">{emp.phone}</p>
+                      <p className="text-xs font-bold text-slate-500 mt-0.5">{emp.phone}</p>
                     </td>
                     <td className="px-5">
-                      <span className="bg-orange-50 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-lg border border-orange-100 uppercase tracking-tight">
+                      <span className="bg-orange-50 text-orange-700 text-[11px] font-bold px-2 py-1 rounded-lg border border-orange-100 uppercase tracking-tight">
                         {emp.role?.name || '—'}
                       </span>
                     </td>
-                    <td className="px-5 font-mono font-bold text-[12px] text-slate-500">
+                    <td className="px-5 font-mono font-bold text-xs text-slate-500">
                       <div className="flex items-center gap-1.5">
                         {emp.login}
                         {isAdmin && (
@@ -241,11 +241,11 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
                <p className="text-sm font-bold text-slate-600 mb-6">Ma'mur tizimga kirishi uchun quyidagi ma'lumotlarni siri saqlagan holda unga taqdim eting:</p>
                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-left space-y-4">
                   <div>
-                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
+                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
                      <p className="font-mono text-lg font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 select-all tracking-wider">{generatedCredentials.login}</p>
                   </div>
                   <div>
-                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
+                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
                      <div className="relative">
                         <input 
                            type={showGenPass ? "text" : "password"} 
@@ -270,15 +270,15 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
           ) : (
             <form onSubmit={handleAddEmployee} className="space-y-5">
                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">F.I.SH</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">F.I.SH</label>
                   <input type="text" required value={newEmployee.fullName} onChange={(e) => setNewEmployee({...newEmployee, fullName: e.target.value})} className="input-minimal w-full" placeholder="Ism Familiya" />
                </div>
                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Telefon</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Telefon</label>
                   <input type="text" value={newEmployee.phone} onChange={(e) => setNewEmployee({...newEmployee, phone: e.target.value})} className="input-minimal w-full" placeholder="+998 90 123 45 67" />
                </div>
                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Lavozimi</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Lavozimi</label>
                   <select required value={newEmployee.roleId} onChange={(e) => setNewEmployee({...newEmployee, roleId: e.target.value})} className="select-minimal font-bold w-full">
                      <option value="">Tanlang...</option>
                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -302,15 +302,15 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
           {selectedEmp && (
             <div className="space-y-4 animate-fade-in">
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Foydalanuvchi</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Foydalanuvchi</p>
                 <p className="font-bold text-slate-800">{selectedEmp.fullName}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
                 <p className="font-mono font-bold text-slate-800 select-all tracking-wider">{selectedEmp.login}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
                 <div className="relative">
                   <input 
                     type={showSelectedPass ? "text" : "password"} 
@@ -329,7 +329,7 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
               </div>
               <button 
                 onClick={() => handleRegeneratePassword(selectedEmp.id)}
-                className="btn-outline w-full mt-6 h-12 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-widest rounded-xl"
+                className="btn-outline w-full mt-6 h-12 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest rounded-xl"
               >
                 <RefreshCw size={14} /> YANGI PAROL GENERATSIYA QILISH
               </button>

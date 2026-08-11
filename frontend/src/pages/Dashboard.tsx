@@ -12,7 +12,6 @@ import { OnboardingTour, isTourComplete } from '../components/OnboardingTour';
 import { PageTour } from '../components/PageTour';
 import { hasPageTour } from '../components/pageTours';
 import { CommandPalette } from '../components/CommandPalette';
-import MatnOlchami from '../components/MatnOlchami';
 import { ReleaseTour } from '../components/ReleaseNotes';
 import { useSidebarCounts, markTabSeen } from '../hooks/useSidebarCounts';
 
@@ -44,6 +43,18 @@ interface DashboardProps {
 
 type TabId = 'boshsahifa' | 'kassa' | 'moliya' | 'hodimlar' | 'topshiriqlar' | 'vazifalar' | 'mijozlar' | 'sozlamalar' | 'ombor' | 'davomat' | 'admins' | 'billing' | 'filiallar' | 'hamkorlar' | 'hisobotlar' | 'qollanma';
 const VALID_TABS: TabId[] = ['boshsahifa','kassa','moliya','hodimlar','topshiriqlar','vazifalar','mijozlar','sozlamalar','ombor','davomat','admins','billing','filiallar','hamkorlar','hisobotlar','qollanma'];
+
+/**
+ * Menyudagi bandga moslash.
+ *
+ * Kanban va Jamoa vazifalari bitta menyu bandi ostida birlashtirilgan
+ * (IshlarSahifasi), lekin ikkala URL ham saqlangan. `vazifalar` uchun
+ * menyuda alohida band yo'q — shuning uchun `topshiriqlar` ga
+ * moslanadi. Busiz ikki narsa buzilardi: chapdagi band yonmasdi va
+ * pastda "Kirish cheklangan" bloki chiqib qolardi (band topilmagani
+ * uchun ruxsat yo'q deb hisoblanardi).
+ */
+const menyuBandi = (t: TabId): TabId => (t === 'vazifalar' ? 'topshiriqlar' : t);
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUser }) => {
   const navigate = useNavigate();
@@ -522,7 +533,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           <h1 className="text-lg font-semibold text-white tracking-tight mb-1">
             {pendingTab === 'settings_access' ? 'Sozlamalarga kirish' : pendingTab === 'profile_access' ? 'Profilga kirish' : pendingTab ? 'Sahifaga kirish' : 'Tizim qulflangan'}
           </h1>
-          <p className="text-[13px] text-slate-400 mb-8">Davom etish uchun PIN kodni kiriting</p>
+          <p className="text-sm text-slate-400 mb-8">Davom etish uchun PIN kodni kiriting</p>
 
           <form onSubmit={handleUnlock} className="space-y-3">
             <div className="relative group">
@@ -545,7 +556,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             </div>
             <button
               type="submit"
-              className="w-full h-12 bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] text-white text-[13px] font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+              className="w-full h-12 bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] text-white text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
             >
               <Unlock size={15} />
               <span>Ochish</span>
@@ -561,7 +572,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   onLogout();
                 }
               }}
-              className="w-full h-10 text-slate-500 text-[13px] font-medium hover:text-white transition-colors"
+              className="w-full h-10 text-slate-500 text-sm font-medium hover:text-white transition-colors"
             >
               {pendingTab ? 'Bekor qilish' : 'Tizimdan chiqish'}
             </button>
@@ -610,8 +621,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           <div className="flex items-center gap-2">
             <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
             <div>
-              <h1 className="text-[15px] font-semibold text-slate-900 tracking-tight leading-none">Print<span className="text-[color:var(--primary)]">Flow</span></h1>
-              <p className="text-[12px] font-medium text-slate-400 mt-0.5">{currentUser.role?.name || 'Xodim'}</p>
+              <h1 className="text-base font-semibold text-slate-900 tracking-tight leading-none">Print<span className="text-[color:var(--primary)]">Flow</span></h1>
+              <p className="text-xs font-medium text-slate-400 mt-0.5">{currentUser.role?.name || 'Xodim'}</p>
             </div>
           </div>
           <div className="flex items-center gap-0.5">
@@ -659,7 +670,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   data-tour-group={group.label.toLowerCase()}
                   data-tour-open={isOpen ? '1' : '0'}
                   onClick={() => toggleGroup(group.label)}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-[12px] font-medium uppercase tracking-wider transition-colors duration-150 ${
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors duration-150 ${
                     containsActive
                       ? 'text-slate-800'
                       : 'text-slate-400 hover:text-slate-600'
@@ -670,7 +681,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     <span>{group.label}</span>
                     {/* Group-level notification badge — collapsed bo'lganda ham ko'rinadi */}
                     {!isOpen && groupNotifications > 0 && (
-                      <span className="text-[12px] font-semibold px-1.5 py-px rounded-md bg-orange-500 text-white normal-case tracking-normal min-w-[18px] text-center">
+                      <span className="text-xs font-semibold px-1.5 py-px rounded-md bg-orange-500 text-white normal-case tracking-normal min-w-[18px] text-center">
                         {groupNotifications > 99 ? '99+' : groupNotifications}
                       </span>
                     )}
@@ -690,18 +701,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     key={item.id}
                     data-tour-id={`nav-${item.id}`}
                     onClick={() => handleTabChange(item.id as any)}
-                    className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors duration-150 ${activeTab === item.id
+                    className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors duration-150 ${menyuBandi(activeTab) === item.id
                         ? 'bg-white text-slate-900 font-semibold border border-[color:var(--border)] shadow-sm'
                         : 'text-slate-600 font-medium hover:bg-slate-900/[0.04] hover:text-slate-900 border border-transparent'
                       }`}
                   >
-                    <item.icon size={16} strokeWidth={2} className={activeTab === item.id ? 'text-[color:var(--primary)]' : 'text-slate-400 group-hover:text-slate-600'} />
+                    <item.icon size={16} strokeWidth={2} className={menyuBandi(activeTab) === item.id ? 'text-[color:var(--primary)]' : 'text-slate-400 group-hover:text-slate-600'} />
                     <p className="text-left flex-1 leading-tight tracking-tight truncate">{item.label}</p>
 
                     {/* Per-item notification badge — yangilik soni */}
                     {showBadge && (
                       <span
-                        className="text-[12px] font-semibold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-orange-500 text-white"
+                        className="text-xs font-semibold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-orange-500 text-white"
                         title={`${itemCount} ta yangi`}
                       >
                         {itemCount > 99 ? '99+' : itemCount}
@@ -736,21 +747,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             }}
             className="flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-900/[0.04] transition-colors group"
           >
-            <div className="w-7 h-7 rounded-full bg-orange-100 text-orange-700 font-semibold flex items-center justify-center text-[12px]">
+            <div className="w-7 h-7 rounded-full bg-orange-100 text-orange-700 font-semibold flex items-center justify-center text-xs">
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="overflow-hidden min-w-0 flex-1">
-              <p className="text-[13px] font-medium text-slate-800 truncate leading-tight">{currentUser.fullName}</p>
-              <p className="text-[12px] text-slate-400 mt-0.5 truncate">Profil sozlamalari</p>
+              <p className="text-sm font-medium text-slate-800 truncate leading-tight">{currentUser.fullName}</p>
+              <p className="text-xs text-slate-400 mt-0.5 truncate">Profil sozlamalari</p>
             </div>
             <Settings size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
           </button>
-          {/* Matn o'lchami — qurilma sozlamasi, brauzerda saqlanadi.
-              Sarlavhaga emas, shu yerga qo'yildi: u bir marta sozlanadi
-              va kundalik ishlatilmaydi, sarlavha esa allaqachon to'la. */}
-          <div className="flex justify-center pb-1">
-            <MatnOlchami />
-          </div>
           <div className="flex gap-1">
             <button
               onClick={() => handleTabChange('qollanma')}
@@ -776,20 +781,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <LogOut size={24} className="text-rose-500" strokeWidth={2.5} />
               </div>
-              <h3 className="text-[15px] font-semibold text-slate-900 tracking-tight mb-1">Chiqishni tasdiqlang</h3>
-              <p className="text-[13px] text-slate-500">Tizimdan chiqmoqchimisiz? Barcha ochiq ma'lumotlar yopiladi.</p>
+              <h3 className="text-base font-semibold text-slate-900 tracking-tight mb-1">Chiqishni tasdiqlang</h3>
+              <p className="text-sm text-slate-500">Tizimdan chiqmoqchimisiz? Barcha ochiq ma'lumotlar yopiladi.</p>
             </div>
             <div className="flex border-t border-slate-100">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-3 text-[13px] font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                className="flex-1 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 Bekor qilish
               </button>
               <div className="w-px bg-slate-100" />
               <button
                 onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
-                className="flex-1 py-3 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                className="flex-1 py-3 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
               >
                 Ha, chiqish
               </button>
@@ -890,7 +895,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               title="Tezkor qidiruv"
             >
               <span>Qidiruv</span>
-              <kbd className="text-[12px] font-medium bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+              <kbd className="text-xs font-medium bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
 
             {/* Filial filtri faqat: bir nechta filial bor + foydalanuvchining filiallar ruxsati bor bo'lsa */}
@@ -932,8 +937,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg border border-slate-100">
                   <Lock className="w-6 h-6 text-rose-500" strokeWidth={2} />
                 </div>
-                <h3 className="text-[15px] font-semibold text-slate-900 tracking-tight mb-1">Sahifa qulflangan</h3>
-                <p className="text-[13px] text-slate-500 mb-6">Ushbu bo'limga kirish uchun PIN kodni kiriting</p>
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight mb-1">Sahifa qulflangan</h3>
+                <p className="text-sm text-slate-500 mb-6">Ushbu bo'limga kirish uchun PIN kodni kiriting</p>
 
                 <form onSubmit={(e) => { e.preventDefault(); setPendingTab(activeTab); }}>
                   <button type="submit" className="btn-primary w-full">
@@ -981,13 +986,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               {(() => {
                 const SPECIAL_TABS = new Set(['qollanma', 'filiallar', 'billing']);
                 if (SPECIAL_TABS.has(activeTab)) return null;
-                const item = navItems.find(i => i.id === activeTab);
+                const item = navItems.find(i => i.id === menyuBandi(activeTab));
                 if (item?.show) return null;
                 return (
                   <div className="flex flex-col items-center justify-center h-full text-center p-10 bg-white rounded-xl border border-[color:var(--border)]">
                     <Lock size={40} className="text-slate-200 mb-4" />
-                    <h3 className="text-[15px] font-semibold text-slate-900">Kirish cheklangan</h3>
-                    <p className="text-[13px] text-slate-500 mt-1">Ushbu bo'limni ko'rish uchun ruxsatingiz yo'q.</p>
+                    <h3 className="text-base font-semibold text-slate-900">Kirish cheklangan</h3>
+                    <p className="text-sm text-slate-500 mt-1">Ushbu bo'limni ko'rish uchun ruxsatingiz yo'q.</p>
                   </div>
                 );
               })()}
@@ -1070,7 +1075,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 onChange={(e) => setLockTimeout(Number(e.target.value))}
                 className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-orange-600"
               />
-              <div className="flex justify-between mt-1 text-[12px] text-slate-400">
+              <div className="flex justify-between mt-1 text-xs text-slate-400">
                 <span>1 min</span>
                 <span>30 min</span>
                 <span>60 min</span>

@@ -34,7 +34,7 @@ const DepartmentPicker: React.FC<{
 
   return (
     <div>
-      <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">
+      <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
         Bo'limlar
       </label>
       <div className="flex flex-wrap gap-2">
@@ -56,7 +56,7 @@ const DepartmentPicker: React.FC<{
           );
         })}
       </div>
-      <p className="text-[11px] font-semibold text-slate-400 mt-2 leading-relaxed">
+      <p className="text-xs font-semibold text-slate-400 mt-2 leading-relaxed">
         {selected.length === 0
           ? "Bo'lim tanlanmasa, xodim barcha bo'limlar bo'yicha hisoblanadi."
           : "Maosh hisobida faqat shu bo'lim(lar)dagi buyurtma va tushum inobatga olinadi — bo'limlar moliyasi aralashmaydi."}
@@ -291,10 +291,10 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
             <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight">Jamoa A'zolari</h3>
-            <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">
+            <p className="text-[11px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">
               Tizimga kirish huquqiga ega barcha xodimlar
               {maxEmployees > 0 && (
-                <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${employees.length >= maxEmployees ? 'bg-rose-100 text-rose-600' : 'bg-orange-50 text-orange-600'}`}>
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-[11px] font-bold ${employees.length >= maxEmployees ? 'bg-rose-100 text-rose-600' : 'bg-orange-50 text-orange-600'}`}>
                   {employees.length} / {maxEmployees}
                 </span>
               )}
@@ -304,7 +304,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             {(isAdmin || p.canExportEmployees) && (
               <button
                 onClick={handleExport}
-                className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+                className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
                 title="Xodimlar ro'yxatini Excel'ga eksport qilish"
               >
                 <Download size={13} strokeWidth={2.5}/> EKSPORT
@@ -317,7 +317,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   data-tour-id="hodim-add"
                   disabled={atLimit}
                   onClick={() => !atLimit && setIsEmployeeModalOpen(true)}
-                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-5 text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-5 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 text-white shadow-orange-500/20 hover:bg-orange-700'}`}
                   title={atLimit ? `Limit to'ldi: ${maxEmployees} ta xodim (tarifni yangilang)` : ''}
                 >
                   <UserPlus size={16} strokeWidth={2.5} />
@@ -333,15 +333,15 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             <table className="w-full text-left">
                <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-100">
-                  <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 py-3 px-5">F.I.SH & Aloqa</th>
-                  <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 px-5">Lavozimi</th>
-                  <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 px-5">Login</th>
-                  {branches.length > 0 && <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 px-5">Filial</th>}
-                  {departments.length > 0 && <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 px-5">Bo'limlar</th>}
+                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 py-3 px-5">F.I.SH & Aloqa</th>
+                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 px-5">Lavozimi</th>
+                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 px-5">Login</th>
+                  {branches.length > 0 && <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 px-5">Filial</th>}
+                  {departments.length > 0 && <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 px-5">Bo'limlar</th>}
                   {/* Qarzdorlik ustuni faqat kimdadir qarz bo'lsa chiqadi —
                       qarzsiz tashkilotda bo'sh ustun turishi shart emas. */}
-                  {anyDebt && <th className="text-[10px] uppercase tracking-widest font-bold text-rose-500 px-5">Qarzdorlik</th>}
-                  <th className="text-[10px] uppercase tracking-widest font-bold text-slate-400 text-right pr-6 px-5">Harakat</th>
+                  {anyDebt && <th className="text-[11px] uppercase tracking-widest font-bold text-rose-500 px-5">Qarzdorlik</th>}
+                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 text-right pr-6 px-5">Harakat</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -366,14 +366,14 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   <tr key={emp.id} className="hover:bg-slate-50/40 transition-colors group">
                     <td className="py-3 px-5">
                       <p className="font-bold text-slate-800 text-xs lowercase first-letter:uppercase tracking-tight">{emp.fullName}</p>
-                      <p className="text-[11px] font-bold text-slate-500 mt-0.5">{emp.phone}</p>
+                      <p className="text-xs font-bold text-slate-500 mt-0.5">{emp.phone}</p>
                     </td>
                     <td className="px-5">
-                      <span className="bg-orange-50 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-lg border border-orange-100 uppercase tracking-tight">
+                      <span className="bg-orange-50 text-orange-700 text-[11px] font-bold px-2 py-1 rounded-lg border border-orange-100 uppercase tracking-tight">
                         {emp.role?.name || '—'}
                       </span>
                     </td>
-                    <td className="px-5 font-mono font-bold text-[12px] text-slate-500">
+                    <td className="px-5 font-mono font-bold text-xs text-slate-500">
                       <div className="flex items-center gap-1.5">
                         {emp.login}
                         {canResetPassword && (
@@ -386,11 +386,11 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                     {branches.length > 0 && (
                       <td className="px-5">
                         {emp.branchId ? (
-                          <span className="text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 px-2 py-1 rounded-lg uppercase tracking-tight">
+                          <span className="text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 px-2 py-1 rounded-lg uppercase tracking-tight">
                             {branches.find(b => b.id === emp.branchId)?.name || '—'}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-300 font-bold">—</span>
+                          <span className="text-[11px] text-slate-300 font-bold">—</span>
                         )}
                       </td>
                     )}
@@ -399,24 +399,24 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                         {(emp.departmentNames || []).length ? (
                           <div className="flex flex-wrap gap-1">
                             {emp.departmentNames.map((n: string) => (
-                              <span key={n} className="text-[10px] font-bold bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded-lg">
+                              <span key={n} className="text-[11px] font-bold bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded-lg">
                                 {n}
                               </span>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-[10px] text-slate-300 font-bold">hammasi</span>
+                          <span className="text-[11px] text-slate-300 font-bold">hammasi</span>
                         )}
                       </td>
                     )}
                     {anyDebt && (
                       <td className="px-5">
                         {Number(emp.workDebt || 0) > 0 ? (
-                          <span className="text-[11px] font-bold bg-rose-50 text-rose-600 border border-rose-100 px-2 py-1 rounded-lg tabular-nums">
+                          <span className="text-xs font-bold bg-rose-50 text-rose-600 border border-rose-100 px-2 py-1 rounded-lg tabular-nums">
                             {fmtDebt(emp.workDebt)}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-300 font-bold">—</span>
+                          <span className="text-[11px] text-slate-300 font-bold">—</span>
                         )}
                       </td>
                     )}
@@ -475,11 +475,11 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                <p className="text-sm font-bold text-slate-600 mb-6">Xodim tizimga kirishi uchun quyidagi ma'lumotlarni siri saqlagan holda unga taqdim eting:</p>
                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-left space-y-4">
                   <div>
-                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
+                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
                      <p className="font-mono text-lg font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 select-all tracking-wider">{generatedCredentials.login}</p>
                   </div>
                   <div>
-                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
+                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
                      <div className="relative">
                         <input 
                            type={showGenPass ? "text" : "password"} 
@@ -504,15 +504,15 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           ) : (
             <form onSubmit={handleAddEmployee} className="space-y-5">
                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">F.I.SH</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">F.I.SH</label>
                   <input type="text" required value={newEmployee.fullName} onChange={(e) => setNewEmployee({...newEmployee, fullName: e.target.value})} className="input-minimal w-full" placeholder="Ism Familiya" />
                </div>
                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Telefon</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Telefon</label>
                   <input type="text" value={newEmployee.phone} onChange={(e) => setNewEmployee({...newEmployee, phone: e.target.value})} className="input-minimal w-full" placeholder="+998 90 123 45 67" />
                </div>
                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Lavozimi</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Lavozimi</label>
                   <select required value={newEmployee.roleId} onChange={(e) => setNewEmployee({...newEmployee, roleId: e.target.value})} className="select-minimal font-bold w-full">
                      <option value="">Tanlang...</option>
                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -520,7 +520,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                </div>
                {branches.length > 0 && (
                  <div>
-                    <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Filial</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Filial</label>
                     <select value={newEmployee.branchId} onChange={(e) => setNewEmployee({...newEmployee, branchId: e.target.value})} className="select-minimal font-bold w-full">
                        <option value="">Filial tanlanmagan</option>
                        {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -552,15 +552,15 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         {editEmployee && (
           <form onSubmit={handleUpdateEmployee} className="space-y-5">
              <div>
-                <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">F.I.SH</label>
+                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">F.I.SH</label>
                 <input type="text" required value={editEmployee.fullName} onChange={(e) => setEditEmployee({...editEmployee, fullName: e.target.value})} className="input-minimal w-full" placeholder="Ism Familiya" />
              </div>
              <div>
-                <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Telefon</label>
+                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Telefon</label>
                 <input type="text" value={editEmployee.phone} onChange={(e) => setEditEmployee({...editEmployee, phone: e.target.value})} className="input-minimal w-full" placeholder="+998 90 123 45 67" />
              </div>
              <div>
-                <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Lavozimi</label>
+                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Lavozimi</label>
                 <select required value={editEmployee.roleId} onChange={(e) => setEditEmployee({...editEmployee, roleId: e.target.value})} className="select-minimal font-bold w-full">
                    <option value="">Tanlang...</option>
                    {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -568,7 +568,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
              </div>
              {branches.length > 0 && (
                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Filial</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Filial</label>
                   <select value={editEmployee.branchId} onChange={(e) => setEditEmployee({...editEmployee, branchId: e.target.value})} className="select-minimal font-bold w-full">
                      <option value="">Filial tanlanmagan</option>
                      {branches.filter(b => b.isActive).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -581,7 +581,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                onChange={(ids) => setEditEmployee({ ...editEmployee, departmentIds: ids })}
              />
              {/* Maosh bu yerda tahrirlanmaydi — "Maosh sxemasi" bo'limida. */}
-             <p className="text-[11px] font-bold text-slate-400 leading-relaxed bg-slate-50 border border-slate-200 rounded-xl p-3">
+             <p className="text-xs font-bold text-slate-400 leading-relaxed bg-slate-50 border border-slate-200 rounded-xl p-3">
                Login va parol bu yerda o'zgartirilmaydi. Parolni yangilash uchun qatordagi
                <RefreshCw size={10} className="inline mx-1 -mt-0.5" strokeWidth={3} />
                tugmasidan foydalaning.
@@ -606,15 +606,15 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           {selectedEmp && (
             <div className="space-y-4 animate-fade-in">
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Xodim</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Xodim</p>
                 <p className="font-bold text-slate-800">{selectedEmp.fullName}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
                 <p className="font-mono font-bold text-slate-800 select-all tracking-wider">{selectedEmp.login}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
                 <div className="relative">
                   <input 
                     type={showSelectedPass ? "text" : "password"} 
@@ -633,7 +633,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               </div>
               <button 
                 onClick={() => handleRegeneratePassword(selectedEmp.id)}
-                className="btn-outline w-full mt-6 h-12 flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-widest rounded-xl"
+                className="btn-outline w-full mt-6 h-12 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest rounded-xl"
               >
                 <RefreshCw size={14} /> YANGI PAROL GENERATSIYA QILISH
               </button>

@@ -557,14 +557,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-bold whitespace-nowrap">{b.name}</span>
                     {b.type === 'main' && (
-                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${active ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>asosiy</span>
+                      <span className={`text-[11px] font-bold uppercase px-1.5 py-0.5 rounded ${active ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>asosiy</span>
                     )}
                   </div>
                   {/* Bu — kassadagi HOZIRGI QOLDIQ (butun davr uchun), pastdagi
                       kartalar esa tanlangan sana oralig'i uchun. Ikkalasi turli
                       narsa; belgisiz ular bir-biriga zid ko'rinardi. */}
-                  <div className={`text-[12px] font-bold tabular-nums mt-0.5 ${active ? 'text-white/90' : ((b.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600')}`}>
-                    <span className={`text-[9px] font-bold uppercase mr-1 ${active ? 'text-white/60' : 'text-slate-400'}`}>qoldiq</span>
+                  <div className={`text-xs font-bold tabular-nums mt-0.5 ${active ? 'text-white/90' : ((b.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600')}`}>
+                    <span className={`text-[11px] font-bold uppercase mr-1 ${active ? 'text-white/60' : 'text-slate-400'}`}>qoldiq</span>
                     {formatCurrency(b.balance || 0)}
                   </div>
                 </button>
@@ -593,7 +593,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><Inbox size={16}/></div>
             <div>
               <h3 className="text-sm font-bold text-amber-900">Qabul qilinishi kutilmoqda</h3>
-              <p className="text-[12px] text-amber-700">Sizga topshirilgan pulni sanab, tasdiqlang</p>
+              <p className="text-xs text-amber-700">Sizga topshirilgan pulni sanab, tasdiqlang</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -603,7 +603,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   <p className="text-sm font-bold text-slate-800 truncate">
                     {t.fromCashBoxName || 'Kassa'} <span className="text-slate-400">→</span> {t.toCashBoxName || 'Kassa'}
                   </p>
-                  <p className="text-[12px] text-slate-500 truncate">
+                  <p className="text-xs text-slate-500 truncate">
                     {t.initiatedByName ? `${t.initiatedByName} yubordi` : 'Topshirildi'}
                     {t.note ? ` · ${t.note}` : ''} · {new Date(t.createdAt).toLocaleString('uz-UZ')}
                   </p>
@@ -633,7 +633,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         <div className="flex items-start gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50/60">
           <div className="p-2 bg-amber-100 text-amber-600 rounded-lg flex-shrink-0"><AlertTriangle size={16} /></div>
           <div className="min-w-0">
-            <p className="text-[13px] font-bold text-amber-800">Bu summalar bo'lim bo'yicha to'liq emas</p>
+            <p className="text-sm font-bold text-amber-800">Bu summalar bo'lim bo'yicha to'liq emas</p>
             <p className="text-xs font-medium text-amber-700 mt-0.5 leading-relaxed">
               Hech qaysi bo'limga biriktirilmagan{' '}
               <b>{formatCurrency(summary.biriktirilmagan.kirim)}</b> kirim va{' '}
@@ -702,7 +702,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               {formatCurrency(summary?.balance || 0)}
             </p>
             {ownCashOnly && (
-              <span className="mt-1 text-[12px] font-medium text-orange-600">Faqat o'zingiz kiritgan</span>
+              <span className="mt-1 text-xs font-medium text-orange-600">Faqat o'zingiz kiritgan</span>
             )}
             <div className="mt-2 px-3 py-1 bg-slate-100 rounded-full">
                <span className="text-xs font-medium text-slate-500">{startDate === endDate ? new Date(startDate).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) : `${startDate} → ${endDate}`}</span>
@@ -729,7 +729,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                  onKeyDown={(e) => { if (e.key === 'Enter') applyDateFilter(); }}
                  className="text-xs font-medium text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
                />
-               <span className="text-[11px] font-bold text-slate-400">→</span>
+               <span className="text-xs font-bold text-slate-400">→</span>
                <input
                  type="date"
                  value={draftEnd}
@@ -828,8 +828,8 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                           ? (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.customer?.name || t.customerName || t.serviceType || '—'))
                           : (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.employeeId && !p.canViewSalary) ? 'Xodim maoshi' : (t.expenseReason || (t.expenseType?.name + (t.employee?.fullName ? ' - ' + t.employee.fullName : ''))))}
                       </p>
-                      {t.vendor && <span className="text-[12px] font-medium text-slate-600 mt-0.5">{Array.isArray(t.vendor.roles) && t.vendor.roles.length ? t.vendor.roles.join(', ') : 'Hamkor'}</span>}
-                      {!t.vendor && t.expenseType && <span className="text-[12px] font-medium text-slate-400 mt-0.5">{t.expenseType.name}</span>}
+                      {t.vendor && <span className="text-xs font-medium text-slate-600 mt-0.5">{Array.isArray(t.vendor.roles) && t.vendor.roles.length ? t.vendor.roles.join(', ') : 'Hamkor'}</span>}
+                      {!t.vendor && t.expenseType && <span className="text-xs font-medium text-slate-400 mt-0.5">{t.expenseType.name}</span>}
                   </td>
                   <td className="py-3 px-5 text-right whitespace-nowrap">
                       <span className={`font-bold text-xs tabular-nums ${t.type === 'kirim' ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -837,13 +837,13 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                       </span>
                   </td>
                   <td className="py-3 px-5 text-center hidden md:table-cell">
-                      <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200/60 uppercase tracking-tighter">
+                      <span className="text-[11px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200/60 uppercase tracking-tighter">
                         {t.paymentType?.name || '—'}
                       </span>
                   </td>
                   <td className="py-3 px-5 text-right pr-6 whitespace-nowrap">
-                      <p className="text-[11px] font-bold text-slate-400 tabular-nums">{new Date(t.date).toLocaleDateString('uz-UZ')}</p>
-                      <p className="text-[10px] font-medium text-slate-300 mt-0.5 tabular-nums">{new Date(t.date).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-xs font-bold text-slate-400 tabular-nums">{new Date(t.date).toLocaleDateString('uz-UZ')}</p>
+                      <p className="text-[11px] font-medium text-slate-300 mt-0.5 tabular-nums">{new Date(t.date).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p>
                   </td>
                   {canManageFinance && (
                     <td className="py-3 px-3 text-center whitespace-nowrap">
@@ -915,14 +915,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         <form onSubmit={handleAddKirim} className="space-y-4">
           {vendors.length > 0 && (
             <div className="flex bg-slate-100 p-1 rounded-2xl">
-              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: ''}))} className={`flex-1 py-2 text-[11px] font-bold uppercase rounded-xl transition-colors ${!kirimForm.vendorId ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>MIJOZDAN</button>
-              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: '_', customerId: '', customerName: ''}))} className={`flex-1 py-2 text-[11px] font-bold uppercase rounded-xl transition-colors ${kirimForm.vendorId ? 'bg-white shadow text-slate-600' : 'text-slate-400'}`}>HAMKORDAN</button>
+              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: ''}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${!kirimForm.vendorId ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>MIJOZDAN</button>
+              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: '_', customerId: '', customerName: ''}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${kirimForm.vendorId ? 'bg-white shadow text-slate-600' : 'text-slate-400'}`}>HAMKORDAN</button>
             </div>
           )}
 
           {kirimForm.vendorId ? (
             <div className="animate-fade-in">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
               <select required value={kirimForm.vendorId === '_' ? '' : kirimForm.vendorId} onChange={e => setKirimForm(f => ({...f, vendorId: e.target.value}))} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{Array.isArray(v.roles) && v.roles.length ? ` — ${v.roles.join(', ')}` : ''}</option>)}
@@ -930,7 +930,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </div>
           ) : (
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Mijozni tanlang</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Mijozni tanlang</label>
               <SearchableSelect
                 options={customers.map(c => ({ id: c.id, label: c.name, subLabel: c.phone || 'Tel yo\'q', value: c }))}
                 value={kirimForm.customerId}
@@ -947,7 +947,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {!kirimForm.vendorId && customerTasks.length > 0 && (
             <div className="animate-fade-in">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1 text-orange-500">Bog'liq buyurtma (qarzni shu task'ga belgilash)</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1 text-orange-500">Bog'liq buyurtma (qarzni shu task'ga belgilash)</label>
               <select
                 value={kirimForm.taskId}
                 onChange={e => {
@@ -991,12 +991,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           )}
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Xizmat Nomi / Izoh</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Xizmat Nomi / Izoh</label>
             <input type="text" required={!kirimForm.forExistingDebt} value={kirimForm.serviceType} onChange={(e) => setKirimForm({...kirimForm, serviceType: e.target.value})} className="input-minimal" placeholder={kirimForm.forExistingDebt ? "Qarz to'lovi" : "Masalan: Banner bosish..."} />
           </div>
           
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
             <CurrencyInput
               value={kirimForm.amount}
               onChange={(uzs) => setKirimForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
@@ -1005,7 +1005,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           </div>
           
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov Turi</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov Turi</label>
             <select required value={kirimForm.paymentTypeId} onChange={(e) => setKirimForm({...kirimForm, paymentTypeId: e.target.value})} className="select-minimal">
               <option value="">Tanlang...</option>
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
@@ -1016,7 +1016,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               Bitta kassa bo'lsa ko'rsatilmaydi: tanlov yo'q, o'zi qo'yiladi. */}
           {cashBoxes.length > 1 && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassaga</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassaga</label>
               <select required value={kirimForm.cashBoxId} onChange={(e) => setKirimForm({ ...kirimForm, cashBoxId: e.target.value })} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {cashBoxes.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1030,7 +1030,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               ko'rsatardi. */}
           {departments.length > 0 && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Bo'lim</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Bo'lim</label>
               <select value={kirimForm.departmentId} onChange={(e) => setKirimForm({ ...kirimForm, departmentId: e.target.value })} className="select-minimal">
                 <option value="">Bo'limsiz</option>
                 {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -1040,7 +1040,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {canSetDate && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Sana (qaysi kunga)</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Sana (qaysi kunga)</label>
               <input type="date" value={kirimForm.date} onChange={(e) => setKirimForm(f => ({ ...f, date: e.target.value }))} className="input-minimal" />
             </div>
           )}
@@ -1064,14 +1064,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         <form onSubmit={handleAddChiqim} className="space-y-4">
           <div className="flex bg-slate-100 p-1 rounded-2xl mb-2">
-            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: false, isVendorExpense: false}))} className={`flex-1 py-2 text-[11px] font-bold uppercase rounded-xl transition-colors ${!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>UMUMIY</button>
-            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true, isVendorExpense: false}))} className={`flex-1 py-2 text-[11px] font-bold uppercase rounded-xl transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow text-orange-600' : 'text-slate-400'}`}>HODIM</button>
-            {vendors.length > 0 && <button type="button" onClick={() => setChiqimForm(f => ({...f, isVendorExpense: true, isEmployeeExpense: false}))} className={`flex-1 py-2 text-[11px] font-bold uppercase rounded-xl transition-colors ${chiqimForm.isVendorExpense ? 'bg-white shadow text-slate-600' : 'text-slate-400'}`}>HAMKOR</button>}
+            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: false, isVendorExpense: false}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>UMUMIY</button>
+            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true, isVendorExpense: false}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow text-orange-600' : 'text-slate-400'}`}>HODIM</button>
+            {vendors.length > 0 && <button type="button" onClick={() => setChiqimForm(f => ({...f, isVendorExpense: true, isEmployeeExpense: false}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${chiqimForm.isVendorExpense ? 'bg-white shadow text-slate-600' : 'text-slate-400'}`}>HAMKOR</button>}
           </div>
 
           {!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense && (
             <div className="animate-fade-in">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Xarajat Turi</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Xarajat Turi</label>
               <select required value={chiqimForm.expenseTypeId} onChange={(e) => setChiqimForm({...chiqimForm, expenseTypeId: e.target.value})} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {expenseTypes.map(et => <option key={et.id} value={et.id}>{et.name}</option>)}
@@ -1081,7 +1081,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           {chiqimForm.isEmployeeExpense && (
             <div className="animate-fade-in space-y-3">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Hodimni tanlang</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Hodimni tanlang</label>
                 <SearchableSelect
                   options={employees.map(e => ({ id: e.id, label: e.fullName, subLabel: e.role?.name || 'Xodim', value: e }))}
                   value={chiqimForm.employeeId}
@@ -1098,14 +1098,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 />
                 <span className="text-xs font-bold text-orange-800">
                   Bu avans (oylikdan ushlanadi)
-                  <span className="block text-[11px] font-medium text-orange-500 mt-0.5">Belgilansa — oy oxirida maoshdan avtomatik ayiriladi. Belgilanmasa — oddiy xarajat qoplash (maoshga tegmaydi).</span>
+                  <span className="block text-xs font-medium text-orange-500 mt-0.5">Belgilansa — oy oxirida maoshdan avtomatik ayiriladi. Belgilanmasa — oddiy xarajat qoplash (maoshga tegmaydi).</span>
                 </span>
               </label>
             </div>
           )}
           {chiqimForm.isVendorExpense && (
             <div className="animate-fade-in">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
               <select required value={chiqimForm.vendorId} onChange={e => setChiqimForm(f => ({...f, vendorId: e.target.value}))} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{Array.isArray(v.roles) && v.roles.length ? ` — ${v.roles.join(', ')}` : ''}</option>)}
@@ -1114,12 +1114,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           )}
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Xarajat Sababi (Ixtiyoriy)</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Xarajat Sababi (Ixtiyoriy)</label>
             <input type="text" value={chiqimForm.expenseReason} onChange={(e) => setChiqimForm({...chiqimForm, expenseReason: e.target.value})} className="input-minimal" placeholder="Masalan: Kommunal to'lov, Material..." />
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
             <CurrencyInput
               value={chiqimForm.amount}
               onChange={(uzs) => setChiqimForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
@@ -1128,7 +1128,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov Turi</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov Turi</label>
             <select required value={chiqimForm.paymentTypeId} onChange={(e) => setChiqimForm({...chiqimForm, paymentTypeId: e.target.value})} className="select-minimal">
               <option value="">Tanlang...</option>
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
@@ -1141,7 +1141,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           {/* KASSA — pul aynan qaysi kassadan chiqishi. */}
           {cashBoxes.length > 1 && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassadan</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassadan</label>
               <select required value={chiqimForm.cashBoxId} onChange={(e) => setChiqimForm({ ...chiqimForm, cashBoxId: e.target.value })} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {cashBoxes.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1151,7 +1151,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {departments.length > 0 && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Bo'lim</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Bo'lim</label>
               <select value={chiqimForm.departmentId} onChange={(e) => setChiqimForm({ ...chiqimForm, departmentId: e.target.value })} className="select-minimal">
                 <option value="">Bo'limsiz</option>
                 {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -1161,7 +1161,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {canSetDate && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Sana (qaysi kunga)</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Sana (qaysi kunga)</label>
               <input type="date" value={chiqimForm.date} onChange={(e) => setChiqimForm(f => ({ ...f, date: e.target.value }))} className="input-minimal" />
             </div>
           )}
@@ -1190,7 +1190,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </p>
             <div className={`p-4 rounded-2xl border ${deleteTarget.type === 'kirim' ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Summa</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Summa</span>
                 <span className={`font-bold text-lg ${deleteTarget.type === 'kirim' ? 'text-emerald-700' : 'text-rose-700'}`}>
                   {(deleteTarget.type === 'kirim' ? '+' : '-') + formatCurrency(deleteTarget.amount)}
                 </span>
@@ -1200,7 +1200,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   ? `Hamkor: ${deleteTarget.vendor.name}`
                   : (deleteTarget.customer?.name || deleteTarget.customerName || deleteTarget.serviceType || deleteTarget.expenseReason || deleteTarget.expenseType?.name || '—')}
               </p>
-              <p className="text-[11px] font-medium text-slate-400 mt-1">{new Date(deleteTarget.date).toLocaleString('uz-UZ')}</p>
+              <p className="text-xs font-medium text-slate-400 mt-1">{new Date(deleteTarget.date).toLocaleString('uz-UZ')}</p>
             </div>
             <div className="flex gap-3 pt-2">
               <button
@@ -1233,14 +1233,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         <form onSubmit={handleTransfer} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassadan</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassadan</label>
             <select required value={transferForm.fromCashBoxId} onChange={e => setTransferForm(f => ({ ...f, fromCashBoxId: e.target.value }))} className="select-minimal">
               <option value="">Tanlang...</option>
               {cashBoxes.map((b: any) => <option key={b.id} value={b.id}>{b.name} — {formatCurrency(b.balance || 0)}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassaga</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassaga</label>
             <select required value={transferForm.toCashBoxId} onChange={e => setTransferForm(f => ({ ...f, toCashBoxId: e.target.value }))} className="select-minimal">
               <option value="">Tanlang...</option>
               {cashBoxes.filter((b: any) => b.id !== transferForm.fromCashBoxId).map((b: any) => (
@@ -1249,7 +1249,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </select>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
             <CurrencyInput
               value={transferForm.amount}
               onChange={(uzs) => setTransferForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
@@ -1257,17 +1257,17 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             />
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov turi (ixtiyoriy)</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov turi (ixtiyoriy)</label>
             <select value={transferForm.paymentTypeId} onChange={e => setTransferForm(f => ({ ...f, paymentTypeId: e.target.value }))} className="select-minimal">
               <option value="">Tanlang...</option>
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Izoh (ixtiyoriy)</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Izoh (ixtiyoriy)</label>
             <input type="text" value={transferForm.note} onChange={e => setTransferForm(f => ({ ...f, note: e.target.value }))} className="input-minimal" placeholder="Masalan: Kunlik tushum" />
           </div>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[12px] text-slate-500 flex items-start gap-2">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 flex items-start gap-2">
             <AlertCircle size={14} className="text-slate-400 mt-0.5 shrink-0" />
             <span>Topshirilgach pul sizning kassangizdan chiqim bo'ladi. Qabul qiluvchi tasdiqlaganda uning kassasiga kirim bo'ladi.</span>
           </div>
@@ -1289,18 +1289,18 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         <form onSubmit={handleCreateBox} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Kassa nomi</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Kassa nomi</label>
             <input type="text" required value={newBoxForm.name} onChange={e => setNewBoxForm(f => ({ ...f, name: e.target.value }))} className="input-minimal" placeholder="Masalan: Kassir kassasi, Moliyachi kassasi..." />
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Mas'ul xodim (ixtiyoriy)</label>
+            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Mas'ul xodim (ixtiyoriy)</label>
             <SearchableSelect
               options={employees.map(e => ({ id: e.id, label: e.fullName, subLabel: e.role?.name || 'Xodim', value: e }))}
               value={newBoxForm.assignedUserId}
               onChange={(id) => setNewBoxForm(f => ({ ...f, assignedUserId: id }))}
               placeholder="Xodim qidirish..."
             />
-            <p className="text-[12px] text-slate-400 mt-1.5 px-1">Biriktirilgan xodim (agar "Boshqa kassalarni ko'rish" ruxsati bo'lmasa) faqat shu kassani ko'radi.</p>
+            <p className="text-xs text-slate-400 mt-1.5 px-1">Biriktirilgan xodim (agar "Boshqa kassalarni ko'rish" ruxsati bo'lmasa) faqat shu kassani ko'radi.</p>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={() => setIsNewBoxModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>

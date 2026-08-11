@@ -101,7 +101,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
             key={c}
             type="button"
             onClick={() => handleCurrencyChange(c)}
-            className={`px-3.5 py-1 text-[11px] font-bold rounded-lg border transition-all ${
+            className={`px-3.5 py-1 text-xs font-bold rounded-lg border transition-all ${
               currency === c
                 ? c === 'UZS'
                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/20'
@@ -119,7 +119,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
       {/* Exchange rate row — shown only for non-UZS */}
       {currency !== 'UZS' && (
         <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
-          <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
+          <span className="text-[11px] font-bold text-slate-400 whitespace-nowrap">
             1 {currency} =
           </span>
           <NumberInput
@@ -128,7 +128,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
             placeholder="kurs"
             className="w-28 h-7 text-xs font-bold border border-slate-200 rounded-lg px-2 bg-white text-slate-700 text-center"
           />
-          <span className="text-[10px] font-bold text-slate-400">UZS</span>
+          <span className="text-[11px] font-bold text-slate-400">UZS</span>
           {uzsEquivalent !== null && uzsEquivalent > 0 && (
             <span className="ml-auto text-xs font-bold text-emerald-600 whitespace-nowrap">
               ≈ {uzsEquivalent.toLocaleString()} UZS

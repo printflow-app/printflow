@@ -690,7 +690,9 @@ export class TasksService {
     if (data.assignees && data.assignees !== oldTask.assignees) {
       this.notifyAssignees(updatedTask, '👥 Sizga topshiriq biriktirildi');
     } else if (data.columnId && data.columnId !== oldTask.columnId) {
-      this.notifyAssignees(updatedTask, '🚚 Topshiriq bosqichi o\'zgardi');
+      // Bosqich o'zgarishi — yangi biriktirish emas, mas'uliyat eslatmasi
+      // takrorlanmaydi (u har ko'chirishda chiqsa o'qilmay qo'yadi).
+      this.notifyAssignees(updatedTask, '🚚 Topshiriq bosqichi o\'zgardi', false);
     }
 
     return updatedTask;
@@ -735,14 +737,41 @@ export class TasksService {
     return this.prisma.taskAttachment.delete({ where: { id: attachmentId } });
   }
 
-  private async notifyAssignees(task: any, prefix: string) {
+  /**
+   * MAS'ULIYAT ESLATMASI — faqat ish BIRIKTIRILGANDA.
+   *
+   * Bosqich o'zgarganda ham chiqarilsa, u har ko'chirishda takrorlanib
+   * shunchaki shovqinga aylanardi va o'qilmay qo'yardi. Eslatma aynan
+   * javobgarlik o'tgan onda, bir marta ko'rsatiladi.
+   */
+  private static readonly MASULIYAT_ESLATMA =
+    "⚠️ *Diqqat!* Ishni qabul qilgan paytdan boshlab javobgarlik sizda.\n" +
+    "Muddat va sifat talablariga rioya qiling, noaniqlik bo'lsa DARHOL " +
+    "rahbaringizga murojaat qiling.\n" +
+    "E'tiborsizlik yoki xatoyingiz sababli yetkazilgan zarar uchun " +
+    "javobgarlik sizning zimmangizda.";
+
+  private async notifyAssignees(task: any, prefix: string, yangiBiriktirish = true) {
     try {
       const assigneeIds = JSON.parse(task.assignees || "[]");
       // Summa atayin ko'rsatilmaydi — faqat buyurtma nomi, xizmat va tafsilot.
       const orderLine = task.orderName
         ? `📌 *Buyurtma:* ${task.orderName}\n🛠 *Xizmat:* ${task.title}`
         : `🛠 *Xizmat:* ${task.title}`;
-      const message = `*${prefix}*\n\n${orderLine}\n📝 *Tafsilot:* ${task.description || '-'}\n\nIltimos, platformaga kirib batafsil ko'ring.`;
+
+      // Muddat — e'tiborni tortadigan eng muhim ma'lumot, shuning uchun
+      // tafsilotdan oldin turadi. Toshkent vaqtida ko'rsatiladi.
+      const muddat = task.deadlineAt
+        ? `\n⏰ *Muddat:* ${new Date(task.deadlineAt).toLocaleString('uz-UZ', {
+            timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit',
+            year: 'numeric', hour: '2-digit', minute: '2-digit',
+          })}`
+        : '';
+
+      const message =
+        `*${prefix}*\n\n${orderLine}${muddat}\n📝 *Tafsilot:* ${task.description || '-'}\n\n` +
+        `Iltimos, platformaga kirib batafsil ko'ring.` +
+        (yangiBiriktirish ? `\n\n${TasksService.MASULIYAT_ESLATMA}` : '');
 
       for (const empId of assigneeIds) {
         await this.telegramService.sendNotification(empId, message);

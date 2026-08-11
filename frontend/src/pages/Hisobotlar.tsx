@@ -72,16 +72,16 @@ const GrowthCard = ({ label, value, previous, growth, icon, format }: {
       <div className="flex items-center justify-between">
         <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600">{icon}</div>
         {growth !== null ? (
-          <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${up ? 'bg-emerald-50 text-emerald-600' : dn ? 'bg-rose-50 text-rose-500' : 'bg-slate-100 text-slate-500'}`}>
+          <span className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${up ? 'bg-emerald-50 text-emerald-600' : dn ? 'bg-rose-50 text-rose-500' : 'bg-slate-100 text-slate-500'}`}>
             {up ? <TrendingUp size={11} /> : dn ? <TrendingDown size={11} /> : <Minus size={11} />}
             {up ? '+' : ''}{growth}%
           </span>
-        ) : <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-400">—</span>}
+        ) : <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-400">—</span>}
       </div>
       <div>
-        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
         <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{format(value)}</h3>
-        <p className="text-[11px] font-bold text-slate-400 mt-0.5">O'tgan oy: {format(previous)}</p>
+        <p className="text-xs font-bold text-slate-400 mt-0.5">O'tgan oy: {format(previous)}</p>
       </div>
     </div>
   );
@@ -102,7 +102,7 @@ const LineTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-3 py-2 text-xs space-y-1 min-w-[160px]">
-      <p className="font-bold text-slate-500 text-[10px] uppercase tracking-widest">{label}</p>
+      <p className="font-bold text-slate-500 text-[11px] uppercase tracking-widest">{label}</p>
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center justify-between gap-4">
           <span className="font-bold" style={{ color: p.color }}>{p.name}</span>
@@ -122,7 +122,7 @@ const Section = ({ title, sub, icon, children, span2 = false }: {
       <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
         {icon} {title}
       </h3>
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{sub}</p>
+      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{sub}</p>
     </div>
     {children}
   </div>
@@ -150,9 +150,9 @@ const PieWithLegend = ({ data, colors }: { data: { name: string; value: number }
         {data.map((entry, i) => (
           <div key={i} className="flex items-center gap-2.5">
             <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
-            <span className="flex-1 text-[12px] font-bold text-slate-700 truncate">{entry.name}</span>
-            <span className="text-[11px] font-bold text-slate-400">{total > 0 ? Math.round((entry.value / total) * 100) : 0}%</span>
-            <span className="text-[11px] font-bold text-slate-700 tabular-nums whitespace-nowrap">{fmtNum(entry.value)}</span>
+            <span className="flex-1 text-xs font-bold text-slate-700 truncate">{entry.name}</span>
+            <span className="text-xs font-bold text-slate-400">{total > 0 ? Math.round((entry.value / total) * 100) : 0}%</span>
+            <span className="text-xs font-bold text-slate-700 tabular-nums whitespace-nowrap">{fmtNum(entry.value)}</span>
           </div>
         ))}
       </div>
@@ -178,7 +178,7 @@ const ServiceStats = ({ services }: { services: any[] }) => {
           <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <BarChart3 size={16} className="text-orange-500" /> Xizmat Hajmi & O'rtacha Chek
           </h3>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Xizmat tanlang va ko'rsatkichlarni ko'ring</p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Xizmat tanlang va ko'rsatkichlarni ko'ring</p>
         </div>
         <div className="relative">
           <select
@@ -197,32 +197,32 @@ const ServiceStats = ({ services }: { services: any[] }) => {
       <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Orders count */}
         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Buyurtmalar</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Buyurtmalar</p>
           <p className="text-3xl font-bold text-slate-900 tabular-nums">{totalTasks}</p>
-          <p className="text-[11px] font-bold text-slate-400 mt-1">ta bajarilgan</p>
+          <p className="text-xs font-bold text-slate-400 mt-1">ta bajarilgan</p>
         </div>
 
         {/* Total revenue — aniq qiymat (yumaloqlanmaydi) */}
         <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Jami Daromad</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Jami Daromad</p>
           <p className="text-lg font-bold text-emerald-700 tabular-nums leading-tight break-all">
             {fmtNum(totalRevenue)}
           </p>
-          <p className="text-[11px] font-bold text-emerald-500 mt-1">UZS</p>
+          <p className="text-xs font-bold text-emerald-500 mt-1">UZS</p>
         </div>
 
         {/* Average check — aniq qiymat (yumaloqlanmaydi) */}
         <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-2">O'rtacha Chek</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-orange-500 mb-2">O'rtacha Chek</p>
           <p className="text-lg font-bold text-orange-700 tabular-nums leading-tight break-all">
             {fmtNum(avgCheck)}
           </p>
-          <p className="text-[11px] font-bold text-orange-400 mt-1">UZS</p>
+          <p className="text-xs font-bold text-orange-400 mt-1">UZS</p>
         </div>
 
         {/* Share of total */}
         <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col justify-between">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Umumiy ulushi</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Umumiy ulushi</p>
           <div>
             <p className="text-3xl font-bold text-slate-800 tabular-nums">{share}%</p>
             <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -234,7 +234,7 @@ const ServiceStats = ({ services }: { services: any[] }) => {
 
       {/* Mini ranking */}
       <div className="px-5 pb-5">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Barcha xizmatlar reytingi (daromad bo'yicha)</p>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">Barcha xizmatlar reytingi (daromad bo'yicha)</p>
         <div className="space-y-2">
           {[...services].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 6).map((s, i) => {
             const pct = allRevenue > 0 ? (s.totalRevenue / allRevenue) * 100 : 0;
@@ -242,13 +242,13 @@ const ServiceStats = ({ services }: { services: any[] }) => {
             return (
               <button key={s.serviceName} onClick={() => setSelectedId(s.serviceName)}
                 className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all text-left ${isActive ? 'bg-orange-50 border border-orange-200' : 'hover:bg-slate-50 border border-transparent'}`}>
-                <span className={`text-[11px] font-bold w-4 ${isActive ? 'text-orange-500' : 'text-slate-400'}`}>{i + 1}</span>
-                <span className={`flex-1 text-[12px] font-bold truncate ${isActive ? 'text-orange-700' : 'text-slate-700'}`}>{s.serviceName}</span>
-                <span className="text-[11px] font-bold text-slate-400 tabular-nums w-10 text-right">{s.totalTasks} ta</span>
+                <span className={`text-xs font-bold w-4 ${isActive ? 'text-orange-500' : 'text-slate-400'}`}>{i + 1}</span>
+                <span className={`flex-1 text-xs font-bold truncate ${isActive ? 'text-orange-700' : 'text-slate-700'}`}>{s.serviceName}</span>
+                <span className="text-xs font-bold text-slate-400 tabular-nums w-10 text-right">{s.totalTasks} ta</span>
                 <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full transition-all ${isActive ? 'bg-orange-500' : 'bg-slate-400'}`} style={{ width: `${pct}%` }} />
                 </div>
-                <span className={`text-[11px] font-bold tabular-nums text-right whitespace-nowrap pl-1 ${isActive ? 'text-orange-600' : 'text-slate-600'}`}>{fmtNum(s.totalRevenue)}</span>
+                <span className={`text-xs font-bold tabular-nums text-right whitespace-nowrap pl-1 ${isActive ? 'text-orange-600' : 'text-slate-600'}`}>{fmtNum(s.totalRevenue)}</span>
               </button>
             );
           })}
@@ -641,7 +641,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
             <BarChart3 className="text-orange-600" size={22} /> Hisobotlar & Tahlil
           </h1>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
           {(isAdmin || p.canExportReports) && (
@@ -670,13 +670,13 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
       {/* ── Filter Bar ── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
           <Calendar size={14} /> Davr:
         </div>
         <div className="flex bg-slate-100 p-0.5 rounded-lg shadow-inner">
           {(['month', '3month', '6month', 'year', 'custom'] as DatePreset[]).map((pr) => (
             <button key={pr} onClick={() => setPreset(pr)}
-              className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all ${preset === pr ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-800'}`}>
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${preset === pr ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-800'}`}>
               {pr === 'month' ? 'Bu oy' : pr === '3month' ? '3 oy' : pr === '6month' ? '6 oy' : pr === 'year' ? 'Bu yil' : 'Boshqa'}
             </button>
           ))}
@@ -732,7 +732,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 <TrendingDown size={18} />
               </div>
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Jami Chiqim</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Jami Chiqim</p>
                 <h3 className="text-xl font-bold text-slate-900 tracking-tight">{fmtFull(dashStats.totalChiqim)}</h3>
               </div>
             </div>
@@ -744,7 +744,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {canViewGrowthCards && dashStats && (
         <div className="bg-slate-900 rounded-2xl p-5 shadow-lg flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Sof Foyda (Davr)</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Sof Foyda (Davr)</p>
             <h3 className="text-2xl font-bold text-white tracking-tight">{fmtFull(dashStats.balance)}</h3>
           </div>
           <div className="w-12 h-12 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center">
@@ -817,11 +817,11 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   <div key={i} className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: EXPENSE_COLORS[i % EXPENSE_COLORS.length] }} />
-                      <span className="text-[12px] font-bold text-slate-600 truncate">{item.name}</span>
+                      <span className="text-xs font-bold text-slate-600 truncate">{item.name}</span>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-[12px] font-bold text-slate-800">{fmtFull(item.value)}</p>
-                      <p className="text-[10px] font-bold text-slate-400">{pct}%</p>
+                      <p className="text-xs font-bold text-slate-800">{fmtFull(item.value)}</p>
+                      <p className="text-[11px] font-bold text-slate-400">{pct}%</p>
                     </div>
                   </div>
                 );
@@ -838,10 +838,10 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             <table className="w-full text-xs">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="text-left p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hamkor</th>
-                  <th className="text-right p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Xarajat</th>
-                  <th className="text-right p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Daromad</th>
-                  <th className="text-right p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Marja</th>
+                  <th className="text-left p-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Hamkor</th>
+                  <th className="text-right p-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Xarajat</th>
+                  <th className="text-right p-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Daromad</th>
+                  <th className="text-right p-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Marja</th>
                 </tr>
               </thead>
               <tbody>
@@ -849,12 +849,12 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   <tr key={v.vendorId} className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
                     <td className="p-3">
                       <div className="font-bold text-slate-800">{v.vendorName}</div>
-                      {Array.isArray(v.roles) && v.roles.length > 0 && <div className="text-[11px] text-slate-400 font-bold">{v.roles.join(', ')}</div>}
+                      {Array.isArray(v.roles) && v.roles.length > 0 && <div className="text-xs text-slate-400 font-bold">{v.roles.join(', ')}</div>}
                     </td>
                     <td className="p-3 text-right font-bold text-rose-500 tabular-nums whitespace-nowrap">{fmtNum(v.totalCost)}</td>
                     <td className="p-3 text-right font-bold text-emerald-600 tabular-nums whitespace-nowrap">{fmtNum(v.linkedRevenue)}</td>
                     <td className="p-3 text-right">
-                      <span className={`inline-block px-2 py-0.5 rounded-md font-bold text-[11px] ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'}`}>
+                      <span className={`inline-block px-2 py-0.5 rounded-md font-bold text-xs ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'}`}>
                         {v.marginPct >= 0 ? '+' : ''}{v.marginPct}%
                       </span>
                     </td>
@@ -898,7 +898,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             <Users size={28} className="mx-auto text-rose-300 mb-2" />
             <p className="text-xs font-bold text-rose-600">Xodimlar samaradorligini yuklab bo'lmadi</p>
             <button onClick={() => { kpiQuery.refetch(); velocityQuery.refetch(); }}
-              className="mt-3 px-3 py-1.5 bg-rose-50 text-rose-600 text-[11px] font-bold rounded-lg hover:bg-rose-100">
+              className="mt-3 px-3 py-1.5 bg-rose-50 text-rose-600 text-xs font-bold rounded-lg hover:bg-rose-100">
               Qayta urinib ko'rish
             </button>
           </div>
@@ -920,7 +920,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
                 <Package size={16} className="text-orange-500" /> Bo'limlar bo'yicha taqsimot
               </h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                 Buyurtmalar va daromad — bo'limlarga guruhlangan
               </p>
             </div>
@@ -981,7 +981,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
               <Package size={16} className="text-orange-500" /> Tannarx Kalkulyatori
             </h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
               Buyurtma ID, nomi yoki mijoz bo'yicha tannarx va foyda tahlili
             </p>
           </div>
@@ -990,7 +990,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
         <div className="p-5 space-y-5">
           {/* Order Selection Dropdown */}
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Buyurtmani tanlang</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Buyurtmani tanlang</p>
             <div className="flex gap-3">
               <div className="relative flex-1">
                 <select
@@ -1028,7 +1028,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               <button
                 onClick={handleCostingSearch}
                 disabled={isSearchingCosting || !costingQuery.trim()}
-                className="h-11 px-5 bg-slate-900 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-lg hidden sm:block"
+                className="h-11 px-5 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-lg hidden sm:block"
               >
                 {isSearchingCosting ? '...' : 'QIDIRISH'}
               </button>
@@ -1058,14 +1058,14 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
                 {/* Task identity strip */}
                 <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
-                  <span className="text-[12px] font-bold font-mono bg-white border border-orange-300 text-orange-600 px-3 py-1 rounded-lg tracking-widest shrink-0">
+                  <span className="text-xs font-bold font-mono bg-white border border-orange-300 text-orange-600 px-3 py-1 rounded-lg tracking-widest shrink-0">
                     {costingTask.displayId || `#${costingTask.id.slice(-6).toUpperCase()}`}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-800 truncate uppercase tracking-tight">
                       {costingTask.orderName ? `${costingTask.orderName} — ` : ''}{costingTask.title}
                     </p>
-                    <p className="text-[11px] font-bold text-slate-400 mt-0.5">
+                    <p className="text-xs font-bold text-slate-400 mt-0.5">
                       {costingTask.customerName || 'Mijoz ko\'rsatilmagan'} · {qty} dona
                     </p>
                   </div>
@@ -1077,26 +1077,26 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   {/* Revenue + Cost */}
                   <div className="grid grid-cols-2 divide-x divide-slate-200 border-b border-slate-200">
                     <div className="p-4">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
                       <p className="text-xl font-bold text-slate-800 font-mono tabular-nums">{revenue.toLocaleString()}</p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">UZS</p>
+                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">UZS</p>
                     </div>
                     <div className="p-4">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
                       <p className="text-xl font-bold text-slate-700 font-mono tabular-nums">{totalCost.toLocaleString()}</p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">UZS · {costingExpenses.length} ta moddа</p>
+                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">UZS · {costingExpenses.length} ta moddа</p>
                     </div>
                   </div>
 
                   {/* Net profit hero */}
                   <div className="p-5 border-b border-slate-200">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sof Foyda</p>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sof Foyda</p>
                     <div className="flex items-baseline gap-4">
                       <p className={`text-3xl font-bold font-mono tracking-tight ${netProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
                         {netProfit.toLocaleString()} <span className="text-sm font-bold">UZS</span>
                       </p>
                       {revenue > 0 && (
-                        <span className={`text-[12px] font-bold px-3 py-1 rounded-lg ${netProfit >= 0 ? 'bg-orange-50 text-orange-600 border border-orange-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
+                        <span className={`text-xs font-bold px-3 py-1 rounded-lg ${netProfit >= 0 ? 'bg-orange-50 text-orange-600 border border-orange-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
                           {netProfit >= 0 ? '+' : ''}{margin.toFixed(1)}% marja
                         </span>
                       )}
@@ -1106,18 +1106,18 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   {/* Unit metrics */}
                   <div className="grid grid-cols-2 divide-x divide-slate-200">
                     <div className="p-4">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
                       <p className="text-lg font-bold text-slate-700 font-mono tabular-nums">
-                        {unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[11px] font-bold text-slate-400 ml-1">UZS</span>
+                        {unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-xs font-bold text-slate-400 ml-1">UZS</span>
                       </p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">{qty} dona asosida</p>
+                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">{qty} dona asosida</p>
                     </div>
                     <div className="p-4">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
                       <p className={`text-lg font-bold font-mono tabular-nums ${unitProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
-                        {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[11px] font-bold text-slate-400 ml-1">UZS</span>
+                        {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-xs font-bold text-slate-400 ml-1">UZS</span>
                       </p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">UZS / dona</p>
+                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">UZS / dona</p>
                     </div>
                   </div>
                 </div>
@@ -1125,7 +1125,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 {/* Add expense form */}
                 <div className="border border-orange-200 rounded-xl overflow-hidden">
                   <div className="bg-orange-50 px-4 py-2.5 border-b border-orange-200">
-                    <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Xarajat qo'shish</p>
+                    <p className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Xarajat qo'shish</p>
                   </div>
                   <div className="p-4 flex gap-3">
                     <input
@@ -1147,7 +1147,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                     <button
                       onClick={handleAddCostingExpense}
                       disabled={isAddingExpense || !expenseForm.expenseName.trim() || !expenseForm.amount}
-                      className="h-10 px-4 bg-orange-600 text-white rounded-xl text-[11px] font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-orange-700 transition-all active:scale-95 flex items-center gap-1.5 shadow-sm shadow-orange-500/20"
+                      className="h-10 px-4 bg-orange-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-orange-700 transition-all active:scale-95 flex items-center gap-1.5 shadow-sm shadow-orange-500/20"
                     >
                       <Plus size={13} strokeWidth={3} /> QO'SH
                     </button>
@@ -1158,14 +1158,14 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 {costingExpenses.length > 0 && (
                   <div className="border border-slate-200 rounded-xl overflow-hidden">
                     <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Xarajatlar ro'yxati</p>
+                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Xarajatlar ro'yxati</p>
                     </div>
                     <div className="divide-y divide-slate-100">
                       {costingExpenses.map((exp: any) => (
                         <div key={exp.id} className="flex items-center justify-between px-4 py-3 hover:bg-orange-50/40 transition-colors group">
                           <div>
-                            <p className="text-[12px] font-bold text-slate-800 uppercase tracking-tight">{exp.expenseName}</p>
-                            <p className="text-[10px] text-slate-400 font-bold mt-0.5">
+                            <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{exp.expenseName}</p>
+                            <p className="text-[11px] text-slate-400 font-bold mt-0.5">
                               {new Date(exp.createdAt).toLocaleDateString('uz-UZ')}
                             </p>
                           </div>
@@ -1184,7 +1184,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                       ))}
                       {/* Total row */}
                       <div className="flex items-center justify-between px-4 py-3 bg-orange-50">
-                        <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Jami Xarajat</span>
+                        <span className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Jami Xarajat</span>
                         <span className="text-sm font-bold text-slate-800 font-mono tabular-nums">
                           {totalCost.toLocaleString()} UZS
                         </span>
@@ -1194,7 +1194,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 )}
 
                 {costingExpenses.length === 0 && (
-                  <p className="text-center text-[12px] font-bold text-slate-400 py-4">
+                  <p className="text-center text-xs font-bold text-slate-400 py-4">
                     Xarajat yo'q — yuqorida qo'shing
                   </p>
                 )}
@@ -1206,7 +1206,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           {!costingTask && !costingError && !isSearchingCosting && (
             <div className="py-10 flex flex-col items-center justify-center gap-2 opacity-40">
               <Package size={32} className="text-orange-400" />
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
                 Buyurtma ID yoki nomini kiriting
               </p>
             </div>

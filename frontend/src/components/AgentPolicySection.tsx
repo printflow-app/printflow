@@ -115,7 +115,7 @@ const StatusChip: React.FC<{ status: string }> = ({ status }) => {
   const m = map[status] || map.failed;
   const Icon = m.icon;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider ${m.cls}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[11px] font-bold uppercase tracking-wider ${m.cls}`}>
       <Icon size={10} /> {m.text}
     </span>
   );
@@ -182,7 +182,7 @@ export const AgentPolicySection: React.FC = () => {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-bold text-slate-800">{title}</p>
-        <p className="text-[12px] font-semibold text-slate-400 mt-0.5 leading-relaxed">{desc}</p>
+        <p className="text-xs font-semibold text-slate-400 mt-0.5 leading-relaxed">{desc}</p>
         {on && children}
       </div>
       <Toggle on={on} onChange={onChange} />
@@ -196,7 +196,7 @@ export const AgentPolicySection: React.FC = () => {
           <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <Sparkles className="text-orange-600" size={22} /> Girgitton Agent
           </h3>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
             Avtonom ishlar — agent siz so'ramasdan nima qilishiga ruxsat
           </p>
         </div>
@@ -240,7 +240,7 @@ export const AgentPolicySection: React.FC = () => {
             }
           >
             <div className="flex items-center gap-2 mt-3">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                 Muddatdan keyin kutish:
               </span>
               <input
@@ -259,7 +259,7 @@ export const AgentPolicySection: React.FC = () => {
                 }
                 className="w-16 h-9 text-center text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500"
               />
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">kun</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">kun</span>
             </div>
           </Row>
           <Row
@@ -285,10 +285,10 @@ export const AgentPolicySection: React.FC = () => {
             <div className="mt-3 space-y-4">
               {/* SOHALAR — AI qayerda mustaqil qaror qabul qila oladi */}
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
                   AI qayerda qaror qabul qila oladi
                 </p>
-                <p className="text-[11px] font-semibold text-slate-400 mb-2 leading-relaxed">
+                <p className="text-xs font-semibold text-slate-400 mb-2 leading-relaxed">
                   <b className="text-slate-500">Tegmasin</b> — AI bu sohaga aralashmaydi, faqat ogohlantiradi. {' '}
                   <b className="text-amber-600">Taklif qilsin</b> — qaror tayyorlaydi, lekin siz tasdiqlamaguningizcha
                   hech nima o'zgarmaydi. {' '}
@@ -302,8 +302,8 @@ export const AgentPolicySection: React.FC = () => {
                         key={a.key}
                         className={`p-3 rounded-xl border ${cur === 'off' ? 'border-slate-200 bg-white' : 'border-orange-200 bg-orange-50/40'}`}
                       >
-                        <p className="text-[13px] font-bold text-slate-700">{a.label}</p>
-                        <p className="text-[11px] font-semibold text-slate-400 mt-0.5 leading-relaxed">{a.desc}</p>
+                        <p className="text-sm font-bold text-slate-700">{a.label}</p>
+                        <p className="text-xs font-semibold text-slate-400 mt-0.5 leading-relaxed">{a.desc}</p>
                         <div className="flex gap-1.5 mt-2">
                           {(['off', 'propose', 'execute'] as AreaMode[]).map((m) => (
                             <button
@@ -318,7 +318,7 @@ export const AgentPolicySection: React.FC = () => {
                                   },
                                 })
                               }
-                              className={`h-7 px-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                              className={`h-7 px-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
                                 cur === m ? MODE_LABEL[m].cls : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'
                               }`}
                             >
@@ -334,7 +334,7 @@ export const AgentPolicySection: React.FC = () => {
 
               {/* Ruxsat berilgan amallar */}
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                   AI qila oladigan amallar
                 </p>
                 <div className="space-y-2">
@@ -367,10 +367,10 @@ export const AgentPolicySection: React.FC = () => {
                           {on && <CheckCircle2 size={11} strokeWidth={3} />}
                         </span>
                         <span className="min-w-0">
-                          <span className={`block text-[13px] font-bold ${on ? 'text-orange-700' : 'text-slate-700'}`}>
+                          <span className={`block text-sm font-bold ${on ? 'text-orange-700' : 'text-slate-700'}`}>
                             {a.label}
                           </span>
-                          <span className="block text-[11px] font-semibold text-slate-400 mt-0.5 leading-relaxed">
+                          <span className="block text-xs font-semibold text-slate-400 mt-0.5 leading-relaxed">
                             {a.desc}
                           </span>
                         </span>
@@ -379,7 +379,7 @@ export const AgentPolicySection: React.FC = () => {
                   })}
                 </div>
                 {policies.autoResolve.allowedActions.length === 0 && (
-                  <p className="text-[11px] font-bold text-rose-500 mt-2">
+                  <p className="text-xs font-bold text-rose-500 mt-2">
                     Hech bir amal tanlanmagan — AI hech narsa qila olmaydi.
                   </p>
                 )}
@@ -387,10 +387,10 @@ export const AgentPolicySection: React.FC = () => {
 
               {/* SIZNING QOIDALARINGIZ — tizimni har tashkilotga moslashtiradigan joy */}
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
                   Sizning qoidalaringiz
                 </p>
-                <p className="text-[11px] font-semibold text-slate-400 mb-2 leading-relaxed">
+                <p className="text-xs font-semibold text-slate-400 mb-2 leading-relaxed">
                   AI qaror qilishdan oldin shu qoidalarni o'qiydi va ularga amal qiladi. O'z tilingizda,
                   oddiy jumlalar bilan yozing — har qoida yangi qatordan.
                 </p>
@@ -410,16 +410,16 @@ export const AgentPolicySection: React.FC = () => {
                     "Zoxidga qo'shimcha ish berma, u allaqachon band.\n" +
                     "Muddati bugun bo'lgan ishlarni birinchi navbatda hal qil."
                   }
-                  className="w-full p-3 text-[13px] font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 leading-relaxed resize-y"
+                  className="w-full p-3 text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 leading-relaxed resize-y"
                 />
-                <p className="text-[11px] font-semibold text-slate-400 mt-1">
+                <p className="text-xs font-semibold text-slate-400 mt-1">
                   {policies.autoResolve.instructions.length}/2000
                 </p>
               </div>
 
               {/* Kunlik chegara */}
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Kuniga ko'pi bilan:
                 </span>
                 <input
@@ -438,9 +438,9 @@ export const AgentPolicySection: React.FC = () => {
                   }
                   className="w-16 h-9 text-center text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500"
                 />
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">amal</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">amal</span>
               </div>
-              <p className="text-[11px] font-semibold text-slate-400 leading-relaxed">
+              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
                 Chegara nazorat uchun: bir kunda ko'p muammo topilsa ham AI shu sondan ortiq
                 ish qilmaydi, qolganini sizga qoldiradi.
                 {Object.values(policies.autoResolve.areas).some((m) => m === 'execute') && (
@@ -453,7 +453,7 @@ export const AgentPolicySection: React.FC = () => {
             </div>
           </Row>
 
-          <p className="text-[11px] font-semibold text-slate-400 leading-relaxed px-1">
+          <p className="text-xs font-semibold text-slate-400 leading-relaxed px-1">
             Barcha avtonom amallar jurnalga yoziladi — agent nima qilgani har doim ko'rinadi.
             Xabarlar faqat tarifingizda AI/Telegram bo'lsa yuboriladi.
           </p>
@@ -462,19 +462,19 @@ export const AgentPolicySection: React.FC = () => {
           {stats && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
               <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Davrda amallar</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Davrda amallar</p>
                 <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.davrda}</p>
               </div>
               <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
-                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Bajarilgan</p>
+                <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">Bajarilgan</p>
                 <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.bajarilgan}</p>
               </div>
               <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
-                <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Avtonom</p>
+                <p className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Avtonom</p>
                 <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.avtonom}</p>
               </div>
               <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AI xabarlar</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">AI xabarlar</p>
                 <p className="text-xl font-bold text-slate-900 mt-1">
                   {stats.xabarlar.ishlatilgan}
                   {!stats.xabarlar.cheksiz && <span className="text-xs text-slate-400"> / {stats.xabarlar.limit}</span>}
@@ -488,7 +488,7 @@ export const AgentPolicySection: React.FC = () => {
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-3 bg-slate-50/60 border-b border-slate-100">
                 <Bot size={14} className="text-slate-400" />
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Agent jurnali — so'nggi amallar</p>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Agent jurnali — so'nggi amallar</p>
               </div>
               <div className="divide-y divide-slate-50">
                 {journal.map((a) => (
@@ -499,8 +499,8 @@ export const AgentPolicySection: React.FC = () => {
                       {a.userId === 'autonomous' ? <Sparkles size={12} /> : <Bot size={12} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-slate-700 truncate">{a.summary}</p>
-                      <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                      <p className="text-sm font-bold text-slate-700 truncate">{a.summary}</p>
+                      <p className="text-xs font-semibold text-slate-400 mt-0.5">
                         {a.userId === 'autonomous' ? 'Girgitton (avtonom)' : 'Chat orqali'} ·{' '}
                         {new Date(a.createdAt).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </p>
