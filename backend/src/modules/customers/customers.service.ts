@@ -72,6 +72,41 @@ export class CustomersService {
     }));
   }
 
+  /**
+   * EKSPORT UCHUN XIZMAT QATORLARI — har mijozning har buyurtmasi.
+   *
+   * Mijozlar ro'yxati buyurtmalarni qaytarmaydi (kanban list payload'i
+   * og'ir bo'lmasligi uchun), kartalar esa yoyilganda bittalab yuklanadi.
+   * Eksportda esa hammasi bir vaqtda kerak — 33 mijoz uchun 33 ta so'rov
+   * yubormaslik kerak, shuning uchun bitta so'rovda beriladi.
+   *
+   * Arxivlangan buyurtmalar ham kiradi: arxiv kanban doskasidan
+   * yashirish, mijoz tarixidan o'chirish emas.
+   */
+  async getServiceRows(branchId?: string) {
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        customerId: { not: null },
+        ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
+      } as any,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        displayId: true,
+        orderName: true,
+        title: true,
+        quantity: true,
+        totalAmount: true,
+        remainingAmount: true,
+        createdAt: true,
+        isArchived: true,
+        customer: { select: { id: true, name: true, phone: true } },
+        service: { select: { name: true } },
+        column: { select: { title: true } },
+      } as any,
+    });
+    return tasks;
+  }
+
   // Lazy-loaded expanded row payload — recent tasks + recent transactions.
   // Caps applied because some customers have hundreds of records and the
   // expanded panel only ever shows the most recent ones.

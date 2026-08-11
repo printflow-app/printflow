@@ -203,6 +203,9 @@ export const customersApi = {
   getOrderHistory: (id: string) => api.get(`/customers/${id}/orders`),
   getDetails: (id: string) => api.get(`/customers/${id}/details`),
   getTopCustomers: (limit?: number) => api.get('/customers/top', { params: limit ? { limit } : {} }),
+  // Eksport uchun — barcha mijozlarning xizmat qatorlari bitta so'rovda.
+  getServiceRows: (branchId?: string) =>
+    api.get('/customers/service-rows', { params: branchId ? { branchId } : {} }),
 
   // B2B Contacts
   getContacts: (id: string) => api.get(`/customers/${id}/contacts`),

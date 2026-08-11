@@ -510,9 +510,33 @@ export class TasksService {
             employeeId: historyEmpId,
             action: 'yaratildi',
             details: `Buyurtma (bulk) yaratildi. Summa: ${totalAmount}, Zakolat: ${depositForThisTask}`,
-            note: justification
+            note: justification || null,
           } as any
         });
+
+        // BIRIKTIRILGAN FAYLLAR — HAR XIZMATNING O'Z FAYLI.
+        //
+        // Vizitka dizayni bilan banner maketi boshqa-boshqa fayl va
+        // boshqa odamga kerak, shuning uchun ular buyurtma darajasida
+        // emas, xizmat darajasida yuboriladi ({ name, url } — base64
+        // data URL, ko'chirish oqimidagi bilan bir xil shakl).
+        const itemAttachments: Array<{ name?: string; url?: string }> =
+          Array.isArray(item.attachments) ? item.attachments : [];
+        for (const att of itemAttachments) {
+          if (!att?.url) continue;
+          const mimeMatch = /^data:([^;,]+);/i.exec(att.url);
+          const commaIdx = att.url.indexOf(',');
+          const b64Len = commaIdx === -1 ? 0 : att.url.length - commaIdx - 1;
+          await tx.taskAttachment.create({
+            data: {
+              taskId: task.id,
+              name: att.name || 'fayl',
+              mimeType: mimeMatch?.[1] || null,
+              data: att.url,
+              size: Math.floor(b64Len * 0.75),
+            } as any,
+          });
+        }
 
         createdTasks.push(task);
       }

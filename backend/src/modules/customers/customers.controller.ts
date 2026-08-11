@@ -23,6 +23,14 @@ export class CustomersController {
     return this.customersService.getTopCustomers(limit ? parseInt(limit) : 10);
   }
 
+  // Eksport uchun — barcha mijozlarning xizmat qatorlari bitta so'rovda.
+  // `:id` dan OLDIN turishi shart, aks holda "service-rows" id deb
+  // qabul qilinardi.
+  @Get('service-rows')
+  getServiceRows(@Query('branchId') branchId?: string) {
+    return this.customersService.getServiceRows(branchId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customersService.findOne(id);

@@ -21,6 +21,7 @@ import { SkeletonKanban } from '../components/Skeleton';
 import LinkliMatn from '../components/LinkliMatn';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { TaskIdentityBadges, TaskDeadlineBadges } from './Topshiriqlar/TaskBadges';
+import MasulTanlash from './Topshiriqlar/MasulTanlash';
 
 interface AttachmentRecord {
   id: string;
@@ -474,11 +475,58 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
    * Narxdan farqli — bu maydonlar jamiga ta'sir qilmaydi, shuning uchun
    * `totalAmount` qayta hisoblanmaydi.
    */
-  const updateItemField = (index: number, field: 'departmentId' | 'assigneeIds' | 'description', value: any) => {
+  const updateItemField = (
+    index: number,
+    field: 'departmentId' | 'assigneeIds' | 'description' | 'attachments',
+    value: any,
+  ) => {
     setNewTaskForm(f => ({
       ...f,
       items: f.items.map((it: any, i: number) => (i === index ? { ...it, [field]: value } : it)),
     }));
+  };
+
+  // HAR XIZMATNING O'Z FAYLLARI. Ref'lar massiv bo'lib saqlanadi —
+  // xizmatlar soni oldindan noma'lum va qator o'chirilganda indekslar
+  // suriladi, shuning uchun har render'da qayta biriktiriladi.
+  const itemFileInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [dragOverItemIdx, setDragOverItemIdx] = useState<number | null>(null);
+
+  const processItemFiles = (files: File[], idx: number) => {
+    const wrongFormat = files.filter(f => !isAllowedAttachment(f));
+    const tooLarge = files.filter(f => isAllowedAttachment(f) && isTooLarge(f));
+    const allowed = files.filter(f => isAllowedAttachment(f) && !isTooLarge(f));
+    if (wrongFormat.length > 0) {
+      showStatus('error', `${wrongFormat.length} ta fayl rad etildi: faqat rasm (.png/.jpg/.webp/.gif) yoki dizayn (.tif/.cdr) formatlari qabul qilinadi`);
+    }
+    if (tooLarge.length > 0) {
+      showStatus('error', `${tooLarge.length} ta fayl juda katta (max ${formatMb(MAX_ATTACHMENT_BYTES)})`);
+    }
+    allowed.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewTaskForm(f => ({
+          ...f,
+          items: f.items.map((it: any, i: number) =>
+            i === idx
+              ? { ...it, attachments: [...(it.attachments || []), { name: file.name, url: reader.result as string }] }
+              : it),
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleItemFileSelect = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+    processItemFiles(Array.from(e.target.files || []), idx);
+    e.target.value = '';
+  };
+
+  const handleItemDrop = (e: React.DragEvent<HTMLDivElement>, idx: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverItemIdx(null);
+    processItemFiles(Array.from(e.dataTransfer.files || []), idx);
   };
 
   const handleAddTask = async (e: React.FormEvent) => {
@@ -724,8 +772,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsMoveDragOver(false);
-    const files = Array.from(e.dataTransfer.files || []);
-    processMoveFiles(files);
+    processMoveFiles(Array.from(e.dataTransfer.files || []));
   };
 
   const openAddColumn = () => {
@@ -865,16 +912,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     }
   };
 
-  const toggleAssigneeForNewTask = (id: string) => {
-    setNewTaskForm(prev => {
-      const ids = [...prev.assigneeIds];
-      if (ids.includes(id)) {
-        return { ...prev, assigneeIds: ids.filter(x => x !== id) };
-      } else {
-        return { ...prev, assigneeIds: [...ids, id] };
-      }
-    });
-  };
 
   const toggleAssigneeForMove = (id: string) => {
     setMoveForm(prev => {
@@ -1376,46 +1413,89 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         </select>
                       )}
                       {/* MAS'ULLAR — bittadan ko'p bo'lishi mumkin.
-                          Ilgari faqat bitta tanlanardi; amalda bitta
-                          xizmatni ikki kishi birga bajarishi odatiy. */}
+                          Har xodim uchun alohida tugma o'rniga qidiruvli
+                          ro'yxat: 20 xodimda tugmalar devori xizmat
+                          qatorini bosib ketardi. */}
                       <div className="sm:col-span-1">
-                        <div className="flex flex-wrap gap-1.5">
-                          {employees.map((e: any) => {
-                            const on = (it.assigneeIds || []).includes(e.id);
-                            return (
-                              <button
-                                key={e.id}
-                                type="button"
-                                onClick={() => {
-                                  const cur = it.assigneeIds || [];
-                                  updateItemField(idx, 'assigneeIds',
-                                    on ? cur.filter((x: string) => x !== e.id) : [...cur, e.id]);
-                                }}
-                                className={`px-2 py-1 rounded-lg text-xs font-bold border transition-colors ${
-                                  on ? 'bg-orange-500 text-white border-transparent'
-                                     : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                                }`}
-                              >
-                                {e.fullName}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {(it.assigneeIds || []).length === 0 && (
-                          <p className="text-[11px] font-bold text-slate-400 mt-1">
-                            Tanlanmasa — buyurtmadagi mas'ullar
-                          </p>
-                        )}
+                        <MasulTanlash
+                          odamlar={employees.map((e: any) => ({
+                            id: e.id,
+                            fullName: e.fullName,
+                            roleName: e.role?.name,
+                            band: isEmployeeBusy(e.id),
+                          }))}
+                          tanlangan={it.assigneeIds || []}
+                          onChange={(ids) => updateItemField(idx, 'assigneeIds', ids)}
+                          placeholder="Mas'ul — buyurtmadagidek"
+                        />
                       </div>
 
-                      {/* IZOH — textarea, chunki bu ko'rsatma bo'lishi mumkin */}
-                      <textarea
-                        rows={2}
-                        value={it.description || ''}
-                        onChange={e => updateItemField(idx, 'description', e.target.value)}
-                        placeholder="Shu xizmat uchun izoh / ko'rsatma (ixtiyoriy)"
-                        className="input-minimal text-xs sm:col-span-2 resize-y py-2"
-                      />
+                      {/* IZOH — ko'rsatma bo'lishi mumkin, shuning uchun
+                          keng joy. `input-minimal` bir qatorli qat'iy
+                          balandlikda edi va uzun matn ko'rinmasdi. */}
+                      <div className="sm:col-span-2">
+                        <textarea
+                          rows={4}
+                          value={it.description || ''}
+                          onChange={e => updateItemField(idx, 'description', e.target.value)}
+                          placeholder="Shu xizmat uchun izoh / ko'rsatma (ixtiyoriy)"
+                          className="textarea-minimal text-xs min-h-[96px]"
+                        />
+                      </div>
+
+                      {/* FAYL — HAR XIZMATGA ALOHIDA.
+                          Vizitka dizayni bilan banner maketi boshqa fayl va
+                          boshqa odamga kerak; buyurtma darajasida bitta
+                          joyga yig'ilsa, kim qaysi faylni olishini bilmaydi. */}
+                      <div className="sm:col-span-2">
+                        <div
+                          onClick={() => itemFileInputRefs.current[idx]?.click()}
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverItemIdx(idx); }}
+                          onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverItemIdx(null); }}
+                          onDrop={(e) => handleItemDrop(e, idx)}
+                          className={`border border-dashed rounded-xl px-3 py-2 flex items-center gap-2.5 cursor-pointer transition-all ${
+                            dragOverItemIdx === idx
+                              ? 'border-orange-500 bg-orange-50/50'
+                              : 'border-slate-200 hover:border-orange-400 hover:bg-orange-50/30'
+                          }`}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dragOverItemIdx === idx ? '#f97316' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                          <span className="text-xs font-medium text-slate-500">
+                            Shu xizmat uchun rasm / dizayn — <span className="text-orange-500 underline">tanlang</span>
+                          </span>
+                          {(it.attachments || []).length > 0 && (
+                            <span className="ml-auto text-xs font-bold text-orange-500 shrink-0">
+                              {(it.attachments || []).length} ta
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          hidden
+                          multiple
+                          accept={ALLOWED_ATTACHMENT_ACCEPT}
+                          ref={(el) => { itemFileInputRefs.current[idx] = el; }}
+                          onChange={(e) => handleItemFileSelect(e, idx)}
+                        />
+                        {(it.attachments || []).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {(it.attachments || []).map((f: any, fi: number) => (
+                              <span key={fi} className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg pl-2 pr-1 py-0.5 text-xs font-medium text-slate-600">
+                                {f.name}
+                                <button
+                                  type="button"
+                                  title="Olib tashlash"
+                                  onClick={() => updateItemField(idx, 'attachments',
+                                    (it.attachments || []).filter((_: any, j: number) => j !== fi))}
+                                  className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-rose-500"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1674,10 +1754,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             </div>
 
             <div className="md:col-span-2">
-              <label className="form-label px-1 flex justify-between">
-                Mas'ul Jamoani Tanlang
-                <span className="text-slate-500">{newTaskForm.assigneeIds.length} ta tanlandi</span>
-              </label>
+              {/* Sarlavha "Mas'ul Jamoani Tanlang" edi — mas'ul endi bu
+                  yerda tanlanmaydi, shuning uchun bo'lim nomi ham qolgan
+                  mazmuniga (bajaruvchi, bo'lim, sotuv KPI) moslashtirildi. */}
+              <label className="form-label px-1">Bajaruvchi va bo'lim</label>
 
               {/* Bajaruvchi — executor routing (self / branch / vendor) */}
               {(branches.length > 0 || vendors.length > 0) && (isAdmin || p.canAssignToOtherBranches) && (
@@ -1795,72 +1875,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               </div>
 
 
-              <div className="relative" data-assignee-dropdown>
-                <div
-                  onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
-                  className="w-full min-h-[50px] p-3 rounded-2xl bg-slate-50 border-2 border-slate-100 flex flex-wrap gap-2 cursor-pointer hover:border-p-slate-300 transition-all mb-2"
-                >
-                  {newTaskForm.assigneeIds.length === 0 ? (
-                    <span className="text-sm font-bold text-slate-400 flex items-center gap-2 px-1"><UserPlus size={16} /> Mas'ullarni tanlash...</span>
-                  ) : (
-                    newTaskForm.assigneeIds.map(id => {
-                      const emp = employees.find(e => e.id === id);
-                      return (
-                        <span key={id} className="bg-white px-3 py-1 rounded-xl border border-slate-100 text-xs font-bold text-slate-700 shadow-sm flex items-center gap-1.5 animate-fade-in">
-                          {emp?.fullName}
-                          <button type="button" onClick={(e) => { e.stopPropagation(); toggleAssigneeForNewTask(id); }} className="hover:text-rose-500">×</button>
-                        </span>
-                      )
-                    })
-                  )}
-                </div>
-
-                {isAssigneeDropdownOpen && (
-                  <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 animate-slide-up max-h-[300px] flex flex-col">
-                    <div className="relative mb-4">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                      <input
-                        type="text"
-                        autoFocus
-                        placeholder="Qidirish..."
-                        value={empSearchTerm}
-                        onChange={(e) => setEmpSearchTerm(e.target.value)}
-                        className="w-full pl-9 h-10 text-xs font-bold bg-slate-50 border border-slate-100 rounded-xl outline-none focus:border-slate-500 transition-all"
-                      />
-                    </div>
-                    <div className="overflow-y-auto custom-scroll space-y-1">
-                      {employees
-                        .filter(e => e.fullName.toLowerCase().includes(empSearchTerm.toLowerCase()))
-                        .filter(e => {
-                          if (executorType === 'branch' && executorBranchId) return e.branchId === executorBranchId;
-                          if (activeBranchId) return e.branchId === activeBranchId;
-                          return true;
-                        })
-                        .map(emp => {
-                          const active = newTaskForm.assigneeIds.includes(emp.id);
-                          const busy = isEmployeeBusy(emp.id);
-                          return (
-                            <button
-                              key={emp.id}
-                              type="button"
-                              onClick={() => toggleAssigneeForNewTask(emp.id)}
-                              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${active ? 'bg-slate-50 text-slate-700' : 'hover:bg-slate-50 text-slate-600'}`}
-                            >
-                              <div className="text-left">
-                                <p className="text-xs font-bold uppercase tracking-tight">{emp.fullName}</p>
-                                <p className="text-xs font-bold opacity-60">{emp.role?.name || 'Xodim'}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {busy && <span className="text-[11px] font-bold bg-amber-100/50 text-amber-600 px-2 py-0.5 rounded border border-amber-200 uppercase">band</span>}
-                                {active && <CheckCircle2 size={16} className="text-slate-500" />}
-                              </div>
-                            </button>
-                          )
-                        })}
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* BUYURTMA DARAJASIDAGI MAS'UL TANLAGICH OLIB TASHLANDI.
+                  Mas'ul endi HAR XIZMATDA alohida tanlanadi (yuqoridagi
+                  xizmatlar ro'yxatida). Ikkalasi turganda bir odam ikki
+                  joyda tanlanardi va qaysi biri kuchda ekani noaniq edi. */}
             </div>
 
             {/* Deadline field */}

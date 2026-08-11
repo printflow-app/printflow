@@ -14,7 +14,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { SkeletonTable } from '../components/Skeleton';
 import { toast } from 'react-toastify';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
-import { exportToXlsx } from '../utils/exportToXlsx';
+import { exportMultiSheetXlsx } from '../utils/exportToXlsx';
 
 const formatCurrency = (amount: number | null | undefined) => {
   const val = typeof amount === 'number' ? amount : 0;
@@ -117,28 +117,117 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       return 0; // 'recent' — backend updatedAt desc tartibini saqlaymiz
     });
 
-  const handleExport = () => {
+  /**
+   * EKSPORT — ikki varaq.
+   *
+   * "Mijozlar" — har mijoz bitta qator (moliyaviy yakun).
+   * "Xizmatlar" — har buyurtma bitta qator: kimga qanday xizmat
+   *   ko'rsatilgan va qancha summaga. Bu ma'lumot mijozlar ro'yxatida
+   *   yo'q (kanban payload'i og'ir bo'lmasligi uchun qaytarilmaydi),
+   *   shuning uchun eksport paytida alohida so'rov bilan olinadi.
+   */
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
     const rows = filteredCustomers;
     if (rows.length === 0) {
       toast.info("Eksport qilish uchun ma'lumot yo'q");
       return;
     }
-    const stamp = new Date().toLocaleDateString('en-CA');
-    exportToXlsx({
-      filename: `mijozlar_${stamp}`,
-      sheetName: 'Mijozlar',
-      rows,
-      columns: [
-        { header: 'Mijoz', accessor: (c: any) => c.name || '' },
-        { header: 'Telefon', accessor: (c: any) => c.phone || '' },
-        { header: 'Kompaniya / Info', accessor: (c: any) => c.companyInfo || '' },
-        { header: 'Jami qarzdorlik (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) },
-        { header: "Jami to'langan (UZS)", accessor: (c: any) => Number(c.totalPaid || 0) },
-        { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => (hasDebt(c) ? Math.round(debtOf(c)) : 0) },
-        { header: 'Yaratilgan', accessor: (c: any) => formatDate(c.createdAt) },
-      ],
-    });
-    toast.success(`${rows.length} ta mijoz eksport qilindi`);
+    setIsExporting(true);
+    try {
+      let xizmatlar: any[] = [];
+      try {
+        const res = await customersApi.getServiceRows(activeBranchId);
+        xizmatlar = res.data || [];
+      } catch {
+        // Xizmatlar olinmasa ham mijozlar varag'i chiqaveradi — eksport
+        // butunlay to'xtab qolgandan ko'ra qismi bo'lgani ma'qul.
+        toast.warn("Xizmatlar ro'yxati olinmadi — faqat mijozlar chiqarildi");
+      }
+
+      // Faqat ekrandagi (filtrlangan) mijozlarning xizmatlari.
+      const korinadiganIds = new Set(rows.map((c: any) => c.id));
+      const xizmatQatorlari = xizmatlar.filter((t: any) => korinadiganIds.has(t.customer?.id));
+
+      // Mijoz bo'yicha yakun — "Mijozlar" varag'idagi ustunlar uchun.
+      const yakun = new Map<string, { soni: number; summa: number; nomlar: string[] }>();
+      for (const t of xizmatQatorlari) {
+        const id = t.customer?.id;
+        if (!id) continue;
+        const y = yakun.get(id) || { soni: 0, summa: 0, nomlar: [] };
+        y.soni += 1;
+        y.summa += Number(t.totalAmount || 0);
+        const nom = t.service?.name || t.title || '—';
+        if (!y.nomlar.includes(nom)) y.nomlar.push(nom);
+        yakun.set(id, y);
+      }
+
+      const stamp = new Date().toLocaleDateString('en-CA');
+      exportMultiSheetXlsx({
+        filename: `mijozlar_${stamp}`,
+        sheets: [
+          {
+            sheetName: 'Mijozlar',
+            rows,
+            columns: [
+              // MIJOZ = TASHKILOT, odamlar esa uning vakillari. Ilgari bu
+              // yerda "Kompaniya / Info" ustuni `companyInfo` ni chiqarardi —
+              // u endi INN/izoh maydoni va deyarli hamma joyda bo'sh, ya'ni
+              // ustun nomi ham, mazmuni ham noto'g'ri edi.
+              { header: 'Kompaniya', accessor: (c: any) => c.name || '' },
+              { header: 'Telefon', accessor: (c: any) => c.phone || '' },
+              // Vakillar va ularning raqamlari — HAR BIRI ALOHIDA QATORDA,
+              // shunda ism va telefon yonma-yon turadi. Vergul bilan
+              // yozilsa, telefoni yo'q vakil ro'yxatni siljitib yuborardi
+              // va kimning raqami kimniki ekani chalkashardi.
+              {
+                header: 'Vakillar',
+                accessor: (c: any) => (c.contacts || [])
+                  .map((k: any) => (k.role ? `${k.name} (${k.role})` : k.name))
+                  .join('\n'),
+              },
+              {
+                header: 'Vakillar telefoni',
+                accessor: (c: any) => (c.contacts || [])
+                  .map((k: any) => k.phone || '—')
+                  .join('\n'),
+              },
+              { header: 'Xizmatlar soni', accessor: (c: any) => yakun.get(c.id)?.soni ?? 0 },
+              { header: "Ko'rsatilgan xizmatlar", accessor: (c: any) => (yakun.get(c.id)?.nomlar || []).join(', ') },
+              { header: 'Xizmatlar summasi (UZS)', accessor: (c: any) => Math.round(yakun.get(c.id)?.summa ?? 0) },
+              { header: 'Jami qarzdorlik (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) },
+              { header: "Jami to'langan (UZS)", accessor: (c: any) => Number(c.totalPaid || 0) },
+              { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => (hasDebt(c) ? Math.round(debtOf(c)) : 0) },
+              // INN va shunga o'xshash qo'shimchalar — oxirida, chunki ular
+              // ko'pincha bo'sh va asosiy ustunlarni surib qo'yardi.
+              { header: "Qo'shimcha ma'lumot", accessor: (c: any) => c.companyInfo || '' },
+              { header: 'Yaratilgan', accessor: (c: any) => formatDate(c.createdAt) },
+            ],
+          },
+          {
+            sheetName: 'Xizmatlar',
+            rows: xizmatQatorlari,
+            columns: [
+              { header: 'Mijoz', accessor: (t: any) => t.customer?.name || '' },
+              { header: 'Telefon', accessor: (t: any) => t.customer?.phone || '' },
+              { header: 'Buyurtma ID', accessor: (t: any) => t.displayId || '' },
+              { header: 'Buyurtma', accessor: (t: any) => t.orderName || '' },
+              { header: 'Xizmat', accessor: (t: any) => t.service?.name || t.title || '' },
+              { header: 'Tafsilot', accessor: (t: any) => t.title || '' },
+              { header: 'Miqdor', accessor: (t: any) => Number(t.quantity || 0) },
+              { header: 'Summa (UZS)', accessor: (t: any) => Number(t.totalAmount || 0) },
+              { header: 'Qoldiq (UZS)', accessor: (t: any) => Number(t.remainingAmount || 0) },
+              { header: 'Bosqich', accessor: (t: any) => (t.isArchived ? 'Arxiv' : (t.column?.title || '')) },
+              { header: 'Sana', accessor: (t: any) => formatDate(t.createdAt) },
+            ],
+          },
+        ],
+      });
+      toast.success(`${rows.length} ta mijoz, ${xizmatQatorlari.length} ta xizmat eksport qilindi`);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // =============================================
@@ -447,10 +536,11 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           {(isAdmin || p.canExportCustomers) && (
             <button
               onClick={handleExport}
+              disabled={isExporting}
               className="btn-outline"
-              title="Joriy ro'yxatni Excel'ga eksport qilish"
+              title="Mijozlar va ularga ko'rsatilgan xizmatlarni Excel'ga eksport qilish"
             >
-              <Download size={14}/> Eksport
+              <Download size={14}/> {isExporting ? 'Tayyorlanmoqda...' : 'Eksport'}
             </button>
           )}
           {canAdd && (
