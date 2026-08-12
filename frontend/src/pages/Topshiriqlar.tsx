@@ -218,6 +218,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [executorBranchId, setExecutorBranchId] = useState('');
   // Departments — fetched via useDepartments() RQ hook below.
   const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
+
+  // Boshqa filialga yuborish faqat ikkinchi filial bo'lganda mumkin —
+  // o'z filialiga "yuborish" ma'nosiz.
+  const boshqaFilialBor = branches.length > 1;
+  const bajaruvchiVariantlari = [
+    { key: 'self', label: "O'zimiz", icon: <Building2 size={13} /> },
+    ...(boshqaFilialBor ? [{ key: 'branch', label: 'Filialga', icon: <ArrowRight size={13} /> }] : []),
+    ...(vendors.length > 0 ? [{ key: 'vendor', label: 'Hamkorga', icon: <Handshake size={13} /> }] : []),
+  ];
   // Sotuvni kim oldi — KPI shu xodimga yoziladi (kiritgan odamdan farq qilishi mumkin).
   const [salesEmployeeId, setSalesEmployeeId] = useState('');
   // Vendor assignment (used when executorType === 'vendor')
@@ -624,8 +633,14 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       setVendorAssign({ vendorId: '', amount: '', note: '' });
       showStatus('success', "Buyurtma yaratildi!");
       fetchData(true);
-    } catch (err) {
-      showStatus('error', "Xatolik yuz berdi!");
+    } catch (err: any) {
+      // Serverning haqiqiy sababini ko'rsatamiz. Ilgari bu yer har qanday
+      // xatoni "Xatolik yuz berdi!" ga aylantirardi — omborda material
+      // yetishmasligi ham, ruxsat yo'qligi ham, tarmoq uzilishi ham bir xil
+      // ko'rinardi va foydalanuvchi nima qilishni bilmasdi.
+      const sabab = err?.response?.data?.message;
+      showStatus('error', Array.isArray(sabab) ? sabab.join(', ') : (sabab || "Xatolik yuz berdi!"));
+      console.error('Buyurtma yaratishda xato:', err?.response?.status, err?.response?.data || err);
     }
   };
 
@@ -1787,15 +1802,19 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               <label className="form-label px-1">Bajaruvchi va bo'lim</label>
 
               {/* Bajaruvchi — executor routing (self / branch / vendor) */}
-              {(branches.length > 0 || vendors.length > 0) && (isAdmin || p.canAssignToOtherBranches) && (
+              {/* BAJARUVCHI TANLOVI — faqat tanlaydigan narsa bo'lsa.
+                  Ilgari sharti `branches.length > 0` edi, lekin har tenantda
+                  kamida bitta (o'z) filiali bor — shuning uchun "Filialga"
+                  tugmasi DOIM chiqib turardi va bosilganda yuboradigan
+                  filial yo'q edi. Boshqa filialga berish uchun kamida
+                  ikkitasi, hamkorga berish uchun esa hamkor bo'lishi kerak.
+                  Ikkalasi ham yo'q bo'lsa butun blok ko'rsatilmaydi —
+                  bitta "O'zimiz" tugmasi tanlov emas. */}
+              {(boshqaFilialBor || vendors.length > 0) && (isAdmin || p.canAssignToOtherBranches) && (
                 <div className="mb-3 mt-5 space-y-2 animate-fade-in">
                   <p className="text-xs font-medium text-slate-500 px-1">Bajaruvchi</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { key: 'self', label: "O'zimiz", icon: <Building2 size={13} /> },
-                      ...(branches.length > 0 ? [{ key: 'branch', label: 'Filialga', icon: <ArrowRight size={13} /> }] : []),
-                      ...(vendors.length > 0 ? [{ key: 'vendor', label: 'Hamkorga', icon: <Handshake size={13} /> }] : []),
-                    ].map(opt => (
+                  <div className={`grid gap-2 ${bajaruvchiVariantlari.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                    {bajaruvchiVariantlari.map(opt => (
                       <button
                         key={opt.key}
                         type="button"
