@@ -36,31 +36,54 @@ const QOLLA = process.argv.includes('--qolla');
       orderBy: { name: 'asc' },
     });
 
-    const nomzodlar = hammasi.filter(
+    const barchaNomzod = hammasi.filter(
       (c) => (c.companyInfo || '').trim() && (c.name || '').trim(),
     );
 
+    // NOMI VA KOMPANIYASI BIR XIL BO'LGAN YOZUVLAR.
+    //
+    // Prodda shunday yozuv uchradi: nomi "CNC", kompaniya maydoni ham
+    // "CNC ". Bunda almashtirishning ma'nosi yo'q — mijoz o'sha nom
+    // bilan qoladi-yu, ichiga yana o'sha nomli vakil qo'shilardi.
+    // Ular uchun faqat kompaniya maydoni tozalanadi (u endi "qo'shimcha
+    // ma'lumot" maydoni va tashkilot nomini takrorlab turishi keraksiz).
+    const birXil = (c) =>
+      (c.name || '').trim().toLowerCase() === (c.companyInfo || '').trim().toLowerCase();
+
+    const nomzodlar = barchaNomzod.filter((c) => !birXil(c));
+    const faqatTozalash = barchaNomzod.filter(birXil);
+
     console.log(`\nJami mijoz: ${hammasi.length}`);
     console.log(`Almashtiriladigan: ${nomzodlar.length}`);
-    console.log(`Tegilmaydi (kompaniyasi bo'sh): ${hammasi.length - nomzodlar.length}\n`);
+    console.log(`Faqat kompaniya maydoni tozalanadi (nomi bilan bir xil): ${faqatTozalash.length}`);
+    console.log(`Tegilmaydi (kompaniyasi bo'sh): ${hammasi.length - barchaNomzod.length}\n`);
 
-    if (nomzodlar.length === 0) {
+    if (barchaNomzod.length === 0) {
       console.log("Almashtiriladigan yozuv yo'q.");
       return;
     }
 
-    console.log('OLDIN                          →  KEYIN (tashkilot + vakil)');
-    console.log('─'.repeat(78));
-    for (const c of nomzodlar) {
-      const eski = (c.name || '').slice(0, 28).padEnd(28);
-      const yangi = (c.companyInfo || '').trim();
-      // Shu ismli vakil allaqachon bo'lsa, ikkinchi marta qo'shilmaydi.
-      const bor = c.contacts.some(
-        (k) => (k.name || '').trim().toLowerCase() === (c.name || '').trim().toLowerCase(),
-      );
-      console.log(`${eski}  →  ${yangi}  +  ${c.name}${bor ? '  (vakil allaqachon bor)' : ''}`);
+    if (nomzodlar.length) {
+      console.log('OLDIN                          →  KEYIN (tashkilot + vakil)');
+      console.log('─'.repeat(78));
+      for (const c of nomzodlar) {
+        const eski = (c.name || '').slice(0, 28).padEnd(28);
+        const yangi = (c.companyInfo || '').trim();
+        // Shu ismli vakil allaqachon bo'lsa, ikkinchi marta qo'shilmaydi.
+        const bor = c.contacts.some(
+          (k) => (k.name || '').trim().toLowerCase() === (c.name || '').trim().toLowerCase(),
+        );
+        console.log(`${eski}  →  ${yangi}  +  ${c.name}${bor ? '  (vakil allaqachon bor)' : ''}`);
+      }
+      console.log('─'.repeat(78));
     }
-    console.log('─'.repeat(78));
+
+    if (faqatTozalash.length) {
+      console.log('\nNOMI VA KOMPANIYASI BIR XIL — vakil yaratilmaydi:');
+      for (const c of faqatTozalash) {
+        console.log(`  ${c.name}  (kompaniya maydoni bo'shatiladi)`);
+      }
+    }
 
     if (!QOLLA) {
       console.log('\nHech narsa o\'zgartirilmadi. Qo\'llash uchun:');
@@ -102,7 +125,20 @@ const QOLLA = process.argv.includes('--qolla');
       almashtirildi += 1;
     }
 
-    console.log(`\nBajarildi: ${almashtirildi} ta mijoz tashkilotga aylantirildi, ${vakilQoshildi} ta vakil qo'shildi.\n`);
+    // Nomi bilan bir xil bo'lganlar: faqat kompaniya maydonini tozalaymiz.
+    // Nomni ham trim qilamiz — "CNC " kabi ortiqcha bo'sh joy qolmasin.
+    let tozalandi = 0;
+    for (const c of faqatTozalash) {
+      await prisma.customer.update({
+        where: { id: c.id },
+        data: { name: (c.name || '').trim(), companyInfo: null },
+      });
+      tozalandi += 1;
+    }
+
+    console.log(`\nBajarildi: ${almashtirildi} ta mijoz tashkilotga aylantirildi, ${vakilQoshildi} ta vakil qo'shildi.`);
+    if (tozalandi) console.log(`${tozalandi} ta yozuvda kompaniya maydoni tozalandi (nomi bilan bir xil edi).`);
+    console.log('');
   } catch (e) {
     console.error('XATO:', e.message);
     process.exitCode = 1;
