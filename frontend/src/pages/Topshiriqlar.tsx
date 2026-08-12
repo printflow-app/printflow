@@ -541,9 +541,36 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       showStatus('error', "Kamida bitta xizmat qo'shing!");
       return;
     }
-    if (executorType === 'self' && newTaskForm.assigneeIds.length === 0) {
-      showStatus('error', "Kamida bitta mas'ulni tanlang!");
+
+    // TANLANGAN, LEKIN RO'YXATGA QO'SHILMAGAN XIZMAT.
+    //
+    // Mas'ul endi xizmat qatorida tanlanadi, qator esa faqat ro'yxatga
+    // qo'shilgandan keyin paydo bo'ladi. Shu sabab bunday xizmatni
+    // shundoq o'tkazib yuborsak, foydalanuvchi "mas'ul tanlang" degan
+    // xabarni oladi-yu, tanlaydigan joyni topa olmasdi. Uni ro'yxatga
+    // o'zimiz qo'shamiz — mas'ul tanlagichi bilan birga ko'rinadi.
+    if (pendingItem && executorType === 'self') {
+      addItemToOrder();
+      showStatus('error', "Xizmat ro'yxatga qo'shildi — endi unga mas'ul tanlang");
       return;
+    }
+    // MAS'UL HAR XIZMATDA TEKSHIRILADI.
+    //
+    // Ilgari bu yer buyurtma darajasidagi `assigneeIds` ga qarardi.
+    // Umumiy tanlagich olib tashlangandan keyin u ro'yxat hech qachon
+    // to'lmay qoldi — natijada hamma maydon to'ldirilgan bo'lsa ham
+    // "Kamida bitta mas'ulni tanlang" chiqib, buyurtma saqlanmasdi.
+    if (executorType === 'self') {
+      const masulsiz = effectiveItems.filter((it: any) => !(it.assigneeIds || []).length);
+      if (masulsiz.length) {
+        showStatus(
+          'error',
+          masulsiz.length === effectiveItems.length
+            ? "Har bir xizmatga mas'ul tanlang!"
+            : `Mas'ul tanlanmagan xizmat: ${masulsiz.map((it: any) => it.title).join(', ')}`,
+        );
+        return;
+      }
     }
     if (executorType === 'branch' && !executorBranchId) {
       showStatus('error', "Bajaruvchi filialni tanlang!");
