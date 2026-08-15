@@ -41,6 +41,10 @@ export class TasksService {
       include: {
         column: true,
         customer: true,
+        // Vakil (aloqa shaxsi) — kartochkada "kim buyurtma berdi" ko'rinishi
+        // uchun kerak. Faqat 3 ta ustun olinadi; bu bitta qo'shimcha indeksli
+        // JOIN, histories kabi og'ir emas.
+        customerContact: { select: { id: true, name: true, phone: true } },
         paymentType: true,
         vendor: { select: { id: true, name: true } },
         executorBranch: { select: { id: true, name: true } },
@@ -66,6 +70,7 @@ export class TasksService {
       include: {
         column: true,
         customer: true,
+        customerContact: { select: { id: true, name: true, phone: true } },
         paymentType: true,
         vendor: { select: { id: true, name: true } },
         // Service kerak — modal variant jadvalining ustun nomlarini xizmatning
@@ -360,6 +365,11 @@ export class TasksService {
       orderName, items, customerId, customerName, customerPhone,
       totalDeposit, paymentTypeId, columnId, justification, assigneeIds, deadlineAt,
       branchId, executorBranchId, departmentId,
+      // Tashkilotning qaysi vakili buyurtma bergani. Mavjud vakil tanlansa
+      // `contactId`, yangisi kiritilsa `contactName`/`contactPhone` keladi —
+      // ikkinchi holatda uni shu yerda yaratamiz, aks holda foydalanuvchi
+      // avval mijoz kartasini ochib vakil qo'shishga majbur bo'lardi.
+      contactId, contactName, contactPhone,
     } = data;
 
     const totalDepositNum = Math.round(Number(totalDeposit || 0));
@@ -400,12 +410,43 @@ export class TasksService {
           customer = await tx.customer.create({
             data: {
               name: customerName,
-              phone: customerPhone,
+              // Tashkilot telefoni yozilmagan bo'lsa vakilnikini olamiz —
+              // amalda tashkilotga aynan shu raqam orqali bog'laniladi va
+              // mijoz kartasi telefonsiz qolib ketmaydi.
+              phone: customerPhone || contactPhone || null,
               branchId: branchId || null,
             } as any
           });
         }
         finalCustomerId = customer.id;
+      }
+
+      // VAKIL — mavjudi tanlangan bo'lsa o'sha, yangisi kiritilgan bo'lsa
+      // shu yerda yaratiladi. Ism bo'yicha takror tekshiriladi: bir odam
+      // ikki marta ro'yxatga tushmasin (foydalanuvchi qidiruvda topa
+      // olmay yangisini yozib yuborishi mumkin).
+      let finalContactId: string | null = contactId || null;
+      if (!finalContactId && String(contactName || '').trim() && finalCustomerId) {
+        const ism = String(contactName).trim();
+        const mavjud = await tx.customerContact.findFirst({
+          where: { customerId: finalCustomerId, name: { equals: ism, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (mavjud) {
+          finalContactId = mavjud.id;
+        } else {
+          const soni = await tx.customerContact.count({ where: { customerId: finalCustomerId } });
+          const yangi = await tx.customerContact.create({
+            data: {
+              customerId: finalCustomerId,
+              name: ism,
+              phone: String(contactPhone || '').trim() || null,
+              // Birinchi vakil — asosiy aloqa shaxsi.
+              isPrimary: soni === 0,
+            } as any,
+          });
+          finalContactId = yangi.id;
+        }
       }
 
       // Resolve display-name for initials once before the loop
@@ -465,6 +506,7 @@ export class TasksService {
             title,
             description,
             customerId: finalCustomerId,
+            customerContactId: finalContactId,
             customerName,
             customerPhone,
             totalAmount: Number(totalAmount || 0),

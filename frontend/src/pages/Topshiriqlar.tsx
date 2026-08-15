@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, Search, UserPlus, CheckCircle2, Clock, X,
   Wallet, Layers, Trash2, ArrowRight, ClipboardList, AlertCircle,
-  Users, AlertTriangle, Package, Building2,
+  Users, AlertTriangle, Package, Building2, User,
   Archive, ArchiveRestore, Handshake, AlertOctagon, Download, Pencil
 } from 'lucide-react';
 import { exportToXlsx } from '../utils/exportToXlsx';
@@ -22,6 +22,7 @@ import LinkliMatn from '../components/LinkliMatn';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { TaskIdentityBadges, TaskDeadlineBadges } from './Topshiriqlar/TaskBadges';
 import MasulTanlash from './Topshiriqlar/MasulTanlash';
+import MijozTanlash from './Topshiriqlar/MijozTanlash';
 
 interface AttachmentRecord {
   id: string;
@@ -207,6 +208,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [newTaskForm, setNewTaskForm] = useState({
     orderName: '', title: '', description: '', assigneeIds: [] as string[], columnId: '',
     customerId: '', customerName: '', customerPhone: '',
+    // Vakil = tashkilotdagi aloqa shaxsi. Mijoz endi tashkilot bo'lgani uchun
+    // "kim buyurtma berdi" degan ma'lumot alohida saqlanadi.
+    contactId: '', contactName: '', contactPhone: '',
     totalAmount: '', depositAmount: '', paymentTypeId: '',
     items: [] as any[],
     manualTotal: '',
@@ -357,6 +361,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       orderName: '', title: '', description: '', assigneeIds: [],
       columnId: initialColId || (columns[0]?.id || ''),
       customerId: '', customerName: '', customerPhone: '',
+      contactId: '', contactName: '', contactPhone: '',
       totalAmount: '', depositAmount: '', paymentTypeId: paymentTypes[0]?.id || '',
       items: [], manualTotal: '', justification: '', deadlineAt: '',
     });
@@ -606,6 +611,11 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         customerId: newTaskForm.customerId,
         customerName: newTaskForm.customerName,
         customerPhone: newTaskForm.customerPhone,
+        // Vakil: mavjud bo'lsa contactId, yangi bo'lsa ism+telefon —
+        // serverda buyurtma bilan bitta tranzaksiyada yaratiladi.
+        contactId: newTaskForm.contactId || undefined,
+        contactName: newTaskForm.contactName || undefined,
+        contactPhone: newTaskForm.contactPhone || undefined,
         totalDeposit: Number(newTaskForm.depositAmount) || 0,
         paymentTypeId: newTaskForm.paymentTypeId,
         columnId: newTaskForm.columnId,
@@ -1365,43 +1375,41 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           {/* Customer Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-inner">
             <div className="md:col-span-2">
-              <SearchableSelect
-                label="Mijozni tanlang"
-                placeholder="Mijoz ismini yozing yoki tanlang..."
-                options={customers.map(c => ({ id: c.id, label: c.name, subLabel: c.phone || 'Tel yo\'q', value: c }))}
-                value={newTaskForm.customerId}
-                onChange={(id, val) => setNewTaskForm(f => ({ ...f, customerId: id, customerName: val.name, customerPhone: val.phone || f.customerPhone }))}
+              <MijozTanlash
+                mijozlar={customers as any}
+                qiymat={{
+                  customerId: newTaskForm.customerId,
+                  customerName: newTaskForm.customerName,
+                  customerPhone: newTaskForm.customerPhone,
+                  contactId: newTaskForm.contactId,
+                  contactName: newTaskForm.contactName,
+                  contactPhone: newTaskForm.contactPhone,
+                }}
+                onChange={v => setNewTaskForm(f => ({ ...f, ...v }))}
               />
-              {!newTaskForm.customerId && (
-                <div className="mt-3 animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <input type="text" placeholder="Yangi mijoz ismi..." value={newTaskForm.customerName} onChange={e => setNewTaskForm(f => ({ ...f, customerName: e.target.value }))} className="input-minimal bg-white border-2" />
-                    <input type="text" placeholder="Telefon raqami..." value={newTaskForm.customerPhone} onChange={e => setNewTaskForm(f => ({ ...f, customerPhone: e.target.value }))} className="input-minimal bg-white border-2" />
+              {/* Dublikat aniqlash — yangi tashkilotga yozilgan telefon bazadagi
+                  mijozga mos kelsa, ikkinchi nusxa yaratish o'rniga o'shani
+                  tanlashni taklif qilamiz. */}
+              {!newTaskForm.customerId && (() => {
+                const digits = (newTaskForm.customerPhone || '').replace(/\D/g, '');
+                if (digits.length < 7) return null;
+                const dup = customers.find(c => (c.phone || '').replace(/\D/g, '') === digits);
+                if (!dup) return null;
+                return (
+                  <div className="mt-2 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
+                    <p className="text-xs font-bold text-amber-700">
+                      Bu raqam bazada bor: <span className="text-amber-900">{dup.name}</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setNewTaskForm(f => ({ ...f, customerId: dup.id, customerName: dup.name, customerPhone: dup.phone || f.customerPhone }))}
+                      className="flex-shrink-0 h-7 px-3 bg-amber-500 text-white text-xs font-bold uppercase tracking-wide rounded-lg hover:bg-amber-600 transition-all"
+                    >
+                      Tanlash
+                    </button>
                   </div>
-                  {/* Dublikat aniqlash — yozilgan telefon bazadagi mijozga mos kelsa,
-                      yangi mijoz yaratish o'rniga o'shani tanlashni taklif qilamiz. */}
-                  {(() => {
-                    const digits = (newTaskForm.customerPhone || '').replace(/\D/g, '');
-                    if (digits.length < 7) return null;
-                    const dup = customers.find(c => (c.phone || '').replace(/\D/g, '') === digits);
-                    if (!dup) return null;
-                    return (
-                      <div className="mt-2 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in">
-                        <p className="text-xs font-bold text-amber-700">
-                          Bu raqam bazada bor: <span className="text-amber-900">{dup.name}</span>
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setNewTaskForm(f => ({ ...f, customerId: dup.id, customerName: dup.name, customerPhone: dup.phone || f.customerPhone }))}
-                          className="flex-shrink-0 h-7 px-3 bg-amber-500 text-white text-xs font-bold uppercase tracking-wide rounded-lg hover:bg-amber-600 transition-all"
-                        >
-                          Tanlash
-                        </button>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
 
@@ -2006,6 +2014,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     <p className="text-xs font-medium text-slate-500 mb-1">Mijoz</p>
                     <p className="font-bold text-slate-800 text-sm">{selectedTask.customerName || "Noma'lum"}</p>
                     <p className="text-xs font-bold text-slate-500 mt-1.5">{selectedTask.customerPhone || 'Tel kiritilmagan'}</p>
+                    {/* Vakil — tashkilotdan kim buyurtma bergani. Tashkilot
+                        telefoni bilan vakil telefoni ko'pincha boshqa bo'ladi,
+                        shuning uchun ikkalasi ham ko'rsatiladi. */}
+                    {(selectedTask as any).customerContact && (
+                      <p className="text-xs font-bold text-slate-600 mt-2 pt-2 border-t border-slate-200 flex items-center gap-1.5">
+                        <User size={11} className="text-slate-400" />
+                        {(selectedTask as any).customerContact.name}
+                        {(selectedTask as any).customerContact.phone
+                          ? <span className="text-slate-400 font-medium">· {(selectedTask as any).customerContact.phone}</span>
+                          : null}
+                      </p>
+                    )}
                   </div>
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="flex justify-between items-center mb-2">
@@ -2765,7 +2785,12 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                             <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{Number(task.totalAmount).toLocaleString()} UZS</span>
                           )}
                           {task.customerName && (
-                            <span className="text-[11px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{task.customerName}</span>
+                            <span className="text-[11px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                              {task.customerName}
+                              {task.customerContact?.name && (
+                                <span className="font-medium text-slate-400"> · {task.customerContact.name}</span>
+                              )}
+                            </span>
                           )}
                         </div>
                       </div>

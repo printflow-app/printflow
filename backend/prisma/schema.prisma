@@ -1068,6 +1068,9 @@ model CustomerContact {
 
   isPrimary Boolean @default(false)
 
+  // Shu vakil buyurtma qilgan ishlar.
+  tasks Task[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1370,6 +1373,14 @@ model Task {
   customer      Customer? @relation(fields: [customerId], references: [id])
   customerName  String? // Yangi mijoz bo'lsa yoki backup
   customerPhone String?
+
+  // BUYURTMANI KIM BUYURTMA QILDI — tashkilotning qaysi vakili.
+  // Mijoz = tashkilot, vakil = shu tashkilotdagi aloqa shaxsi. Bitta
+  // kompaniyadan bir necha odam buyurtma berishi odatiy, keyin "kim
+  // aytgan edi" degan savol chiqadi. Vakil o'chirilsa buyurtma
+  // yo'qolmasligi kerak — shuning uchun SetNull.
+  customerContactId String?
+  customerContact   CustomerContact? @relation(fields: [customerContactId], references: [id], onDelete: SetNull)
 
   // Xizmat (Pricing Engine)
   serviceId      String? // Qaysi xizmat asosida
