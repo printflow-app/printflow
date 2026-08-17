@@ -523,6 +523,28 @@ export class TasksService {
       // Barcha bulk tasklar uchun bir xil prefiks — birinchi xizmatdan.
       const bulkPrefixSource = items[0]?.title ?? null;
 
+      /**
+       * BUYURTMA NOMI O'ZI YASALADI — "<Mijoz> — <xizmat>".
+       *
+       * Formadagi "Buyurtma nomi" maydoni olib tashlandi: uni qo'lda yozish
+       * ish qo'shardi va amalda o'sha maydonga ko'pincha MIJOZ nomi yozilib
+       * qolardi (masalan "NamDTU"), natijada mijoz maydoni bo'sh ketardi.
+       *
+       * Har xizmat alohida task bo'lib yaratilgani uchun har biri O'Z nomini
+       * oladi: bitta buyurtmadan "KIA — Vizitka" va "KIA — Banner" chiqadi.
+       * Ro'yxat va bildirishnomalarda nom shu holicha ishlatiladi.
+       *
+       * `orderName` yuborilgan bo'lsa (AI, bot, eski mijoz) unga tegilmaydi.
+       */
+      const nomYasa = (xizmatNomi?: string | null) => {
+        const berilgan = String(orderName || '').trim();
+        if (berilgan) return berilgan;
+        const mijoz = String(effectiveBulkName || '').trim();
+        const xizmat = String(xizmatNomi || '').trim();
+        if (mijoz && xizmat) return `${mijoz} — ${xizmat}`;
+        return mijoz || xizmat || null;
+      };
+
       const createdTasks = [];
       let totalOrderAmount = 0;
 
@@ -549,7 +571,7 @@ export class TasksService {
         const task = await tx.task.create({
           data: {
             displayId,
-            orderName,
+            orderName: nomYasa(title),
             title,
             description,
             customerId: finalCustomerId,

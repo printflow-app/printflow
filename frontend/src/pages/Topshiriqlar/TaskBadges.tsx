@@ -1,4 +1,5 @@
-import { Handshake, Users, Building2, Clock, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { Handshake, Users, Building2, Clock, AlertTriangle, Copy, Check } from 'lucide-react';
 
 // =============================================
 // TaskBadges — kanban card'idagi yuqori qismdagi pill'lar
@@ -21,13 +22,54 @@ interface IdentityProps {
   isMyTask: boolean;
 }
 
+/**
+ * BUYURTMA ID — ko'rinadigan va nusxa olinadigan.
+ *
+ * Ilgari bu oddiy so'nik kulrang matn edi (`text-slate-400`) va umuman
+ * bosilmasdi: ID kundalik ishda mijozga yuborish uchun kerak, lekin uni
+ * qo'lda belgilab nusxa olishga to'g'ri kelardi. Endi brend rangidagi
+ * tugmacha: ko'zga tashlanadi, yonidagi ikonka bosilishini bildiradi.
+ *
+ * `stopPropagation` shart — pill kartochkaning ichida, aks holda bosilganda
+ * buyurtma tafsiloti oynasi ochilib ketadi.
+ */
+function IdPill({ id }: { id: string }) {
+  const [nusxalandi, setNusxalandi] = useState(false);
+
+  const nusxaOl = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(id);
+      setNusxalandi(true);
+      setTimeout(() => setNusxalandi(false), 1500);
+    } catch {
+      // Clipboard API yopiq (HTTPS emas yoki ruxsat berilmagan) — hech
+      // bo'lmasa matn ko'rinib turadi, foydalanuvchi qo'lda belgilay oladi.
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={nusxaOl}
+      title={nusxalandi ? 'Nusxalandi' : 'ID dan nusxa olish'}
+      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-bold font-mono tracking-tight transition-colors ${
+        nusxalandi
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-300'
+      }`}
+    >
+      {nusxalandi ? <Check size={10} strokeWidth={3} /> : <Copy size={10} className="opacity-70" />}
+      {id}
+    </button>
+  );
+}
+
 /** Top row: displayId + vendor + "my task" pill */
 export function TaskIdentityBadges({ task, vendor, isMyTask }: IdentityProps) {
   return (
     <div className="flex items-center gap-1 mb-1.5 -mt-0.5 flex-wrap">
-      <span className="text-xs font-medium font-mono text-slate-400">
-        {task.displayId || `#${task.id.slice(-6).toUpperCase()}`}
-      </span>
+      <IdPill id={task.displayId || `#${task.id.slice(-6).toUpperCase()}`} />
       {vendor && (
         <span className="badge-neutral gap-1 text-amber-700 bg-amber-50">
           <Handshake size={10} /> {vendor.name}
