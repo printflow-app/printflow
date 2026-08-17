@@ -13,7 +13,7 @@ import {
 import { Response, Request } from 'express';
 import { resolveEffectivePlan } from '../../common/effective-plan';
 import { Throttle } from '@nestjs/throttler';
-import { AuthService } from './auth.service';
+import { AuthService, OWNER_ADMIN_ROLE } from './auth.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
 import { RegisterDto } from './dto/register.dto';
@@ -292,17 +292,13 @@ export class AuthController {
       // Workspace admins and employees live in separate tables — try admin first.
       const admin = await prisma.workspaceAdmin.findUnique({ where: { id: payload.sub } });
       if (admin && admin.tenantId === tenant.id) {
-        const adminRole = {
-          name: 'Admin',
-          isAdmin: true,
-          canViewFinance: true, canAddIncome: true, canAddExpense: true, canViewTotalBalance: true,
-          canManagePaymentTypes: true, canViewTasks: true, canCreateTask: true, canEditTask: true,
-          canDeleteTask: true, canMoveTask: true, canManageColumns: true, canViewCustomers: true,
-          canManageCustomers: true, canViewInventory: true, canManageInventory: true,
-          canViewAttendance: true, canManageAttendance: true, canViewServices: true, canManageServices: true,
-          canViewEmployees: true, canManageEmployees: true, canManageRoles: true, canViewSalary: true, canViewTeamTasks: true, canViewBreakEven: true, canManageTeamTasks: true,
-          canUseAi: true,
-        };
+        // Huquq ro'yxati bitta manbadan — `OWNER_ADMIN_ROLE`. Ilgari shu
+        // yerda qo'lda yozilgan qisqa nusxa turardi va unda
+        // `canViewSettings`/`canViewKpi`/`canManageBranches` yo'q edi:
+        // workspace egasi login qilganda hamma narsani ko'rardi, sahifani
+        // yangilagach (ya'ni /auth/me javobidan keyin) Sozlamalar va KPI
+        // menyudan yo'qolardi.
+        const adminRole = { ...OWNER_ADMIN_ROLE, isAdmin: true };
         return {
           id: admin.id,
           fullName: admin.fullName,
@@ -325,6 +321,15 @@ export class AuthController {
       });
       if (!employee) return null;
 
+      // SUPPORT SESSIYASI (super-admin impersonate).
+      //
+      // Token `impersonatedBy` bilan kelsa, huquq xodimning o'z rolidan
+      // OLINMAYDI: super-admin tenantga tekshirish uchun kiradi va o'sha
+      // xodimning cheklovlari unga tegishli emas. Bu qator bo'lmasa,
+      // kirishda berilgan to'liq huquq shu yerda darhol bekor bo'lardi —
+      // sahifa yuklanishida frontend aynan /auth/me javobiga tayanadi.
+      const supportRole = payload.impersonatedBy ? payload.permissions : null;
+
       return {
         id: employee.id,
         fullName: employee.fullName,
@@ -333,10 +338,13 @@ export class AuthController {
         tenantId: tenant.id,
         tenantName: tenant.name,
         workspaceSlug: tenant.slug,
-        role: employee.role,
-        permissions: employee.role,
+        role: supportRole ?? employee.role,
+        permissions: supportRole ?? employee.role,
         isFirstLogin: employee.isFirstLogin,
         passwordVersion: employee.passwordVersion,
+        // Ekranda "boshqa workspace ichidasiz" ogohlantirishini ko'rsatish
+        // uchun — o'z workspace'ida bu maydon bo'lmaydi.
+        impersonatedBy: payload.impersonatedBy ?? undefined,
         tenantFeatures
       };
     } catch (e) {

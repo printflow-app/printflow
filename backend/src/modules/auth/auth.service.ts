@@ -45,7 +45,12 @@ function buildTenantFeatures(plan: any): Record<string, any> {
 // Full permission shape for a workspace owner/admin. Shared by register() and
 // telegramAuth() so an owner who connects via Telegram gets the identical
 // permission set the signup flow returns.
-const OWNER_ADMIN_ROLE = {
+//
+// EKSPORT: `/auth/me` ham AYNAN shu ro'yxatni qaytarishi kerak. Ilgari u
+// yerda qisqartirilgan nusxa yozilgan edi va `canViewSettings`/`canViewKpi`
+// unda yo'q edi — natijada egasi login qilganda hamma sahifani ko'rar, sahifa
+// yangilangach (/auth/me ishlagach) Sozlamalar va KPI yo'qolardi.
+export const OWNER_ADMIN_ROLE = {
   name: 'Admin',
   canViewFinance: true, canAddIncome: true, canAddExpense: true, canViewTotalBalance: true,
   canManagePaymentTypes: true, canViewTasks: true, canCreateTask: true, canEditTask: true,
@@ -728,9 +733,10 @@ export class AuthService {
               where: { id: target.userId }, include: { role: true },
             });
             if (emp) {
+              // Huquq — SUPPORT rejimi, xodimning o'z roli emas (izohga qarang).
               return {
                 userId: emp.id, fullName: emp.fullName, login: emp.login,
-                phone: emp.phone, role: emp.role, isAdmin: false,
+                phone: emp.phone, role: OWNER_ADMIN_ROLE, isAdmin: false,
                 passwordVersion: emp.passwordVersion,
               };
             }
@@ -764,18 +770,30 @@ export class AuthService {
             emps.find((e) => e.role?.canManageEmployees) ||
             emps.find((e) => (e.role?.name || '').toLowerCase().includes('admin')) ||
             emps[0];
+          // HUQUQ — XODIMNING O'ZINIKI EMAS, TO'LIQ SUPPORT HUQUQI.
+          //
+          // Xodim yozuvi bu yerda faqat "kim nomidan" degan texnik ehtiyoj:
+          // JWT `sub` mavjud foydalanuvchiga ishora qilishi kerak (task
+          // tarixi, FK'lar shunga bog'lanadi). Lekin super-admin tenantga
+          // o'sha odamning cheklovlari bilan emas, TEKSHIRUV uchun kiradi.
+          //
+          // Ilgari xodimning o'z roli berilardi va, masalan, Nuqta printda
+          // "Admin" rolida `canViewSettings`/`canViewKpi` yopiq bo'lgani uchun
+          // super-admin Sozlamalar va KPI sahifalarini umuman ocholmasdi —
+          // ya'ni aynan tekshirmoqchi bo'lgan joyiga kira olmasdi.
           return {
             userId: adminEmp.id, fullName: adminEmp.fullName, login: adminEmp.login,
-            phone: adminEmp.phone, role: adminEmp.role, isAdmin: false,
+            phone: adminEmp.phone, role: OWNER_ADMIN_ROLE, isAdmin: false,
             passwordVersion: adminEmp.passwordVersion,
           };
         },
       );
 
-    // Audit — kim, qaysi tenantga, kim sifatida kirdi.
+    // Audit — kim, qaysi tenantga, kim sifatida kirdi. Huquq har doim to'liq
+    // (support rejimi), shuning uchun log'da ham shu aniq ko'rsatiladi.
     console.warn(
       `[IMPERSONATE] super-admin "${superAdminLogin}" → tenant "${tenant.slug}" ` +
-        `(${tenant.name}) as user "${login}" (${userId})`,
+        `(${tenant.name}) as user "${login}" (${userId}) — SUPPORT (to'liq huquq)`,
     );
 
     const token = this.jwt.sign(

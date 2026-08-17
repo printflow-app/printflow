@@ -104,6 +104,8 @@ export function TenantsDataTable() {
   const [renameName, setRenameName] = useState('');
   const [renameSlug, setRenameSlug] = useState('');
   const [renaming, setRenaming] = useState(false);
+  // Qaysi workspace'ga kirish jarayonda — tugma ikki marta bosilmasin.
+  const [kirilyapti, setKirilyapti] = useState<string | null>(null);
 
   // refresh() shim — invalidates RQ caches, hooks auto-refetch
   const refresh = () => { invalidate.tenants(); invalidate.plans(); };
@@ -202,15 +204,20 @@ export function TenantsDataTable() {
   // Backend qisqa muddatli tenant JWT qaytaradi; uni asosiy ilovaga URL hash
   // orqali uzatamiz (Referer/loglarga tushmasligi uchun hash, query emas),
   // ilova esa uni Bearer sifatida saqlab, sessiyani ochadi.
+  // BIR BOSISHDA KIRISH — tasdiq oynasi yo'q.
+  //
+  // Bu tugma support uchun: mijozga aytishdan oldin o'zgarishni o'z ko'zi
+  // bilan ko'rish kerak bo'ladi va har safar "ha/yo'q" so'rash shu ishni
+  // sekinlashtiradi. Kirish baribir server logida super-admin nomi bilan
+  // yoziladi, ya'ni iz qoladi.
   const handleImpersonate = async (t: Tenant) => {
-    const ok = await ui.confirm({
-      title: `"${t.name}" ga kirish`,
-      message:
-        'Siz bu workspace\'ga uning admini sifatida kirasiz. Kirish super-admin ' +
-        'nomidan logda yoziladi. Yangi oynada ochiladi.',
-      confirmText: 'Kirish',
-    });
-    if (!ok) return;
+    if (kirilyapti) return;
+    // Oyna AYNAN BOSISH PAYTIDA ochiladi. Token kelishini kutib, keyin
+    // ochsak — brauzer buni foydalanuvchi so'ramagan popup deb bloklaydi.
+    // Shu sabab `noopener` ham berilmaydi: u bilan `window.open` null
+    // qaytaradi va manzilni keyin yozib bo'lmaydi (opener quyida uziladi).
+    const oyna = window.open('', '_blank');
+    setKirilyapti(t.id);
     try {
       const res = await tenantsApi.impersonate(t.id);
       const { token } = res.data || {};
@@ -219,10 +226,19 @@ export function TenantsDataTable() {
       // shart emas. Ilova ildizda autentifikatsiyadan so'ng dashboard'ga
       // o'zi yo'naltiradi (`/t/slug` yo'lida bu redirect ishlamaydi).
       const url = `${APP_URL}/#impersonate=${encodeURIComponent(token)}`;
-      window.open(url, '_blank', 'noopener');
-      ui.toast(`"${t.name}" yangi oynada ochilmoqda`, 'success');
+      if (oyna) {
+        oyna.opener = null;
+        oyna.location.replace(url);
+      } else {
+        // Popup bloklangan — o'sha oynada ochamiz, kirish yo'qolmasin.
+        window.location.href = url;
+      }
+      ui.toast(`"${t.name}" ochilmoqda`, 'success');
     } catch (e: any) {
+      oyna?.close();
       ui.toast(e?.response?.data?.message || 'Kira olmadik', 'error');
+    } finally {
+      setKirilyapti(null);
     }
   };
 
@@ -246,13 +262,8 @@ export function TenantsDataTable() {
       icon: <CalendarPlus size={14} />,
       onSelect: () => handleExtendTrial(t),
     },
-    { kind: 'separator' },
-    {
-      kind: 'item',
-      label: 'Admin sifatida kirish',
-      icon: <LogIn size={14} />,
-      onSelect: () => handleImpersonate(t),
-    },
+    // "Admin sifatida kirish" endi menyuda emas — qatorning o'zida
+    // ko'rinadigan "Kirish" tugmasi bor.
     { kind: 'separator' },
     t.isActive
       ? { kind: 'item', label: 'Workspaceni bloklash', icon: <Ban size={14} />, danger: true, onSelect: () => handleSuspendToggle(t) }
@@ -342,7 +353,7 @@ export function TenantsDataTable() {
               <SortHeader k="employees">Xodimlar</SortHeader>
               <SortHeader k="createdAt">Yaratilgan</SortHeader>
               <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>Trial/Obuna</th>
-              <th style={{ width: 40, borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }} />
+              <th style={{ width: 150, borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }} />
             </tr>
           </thead>
           <tbody>
@@ -382,7 +393,30 @@ export function TenantsDataTable() {
                     })()}
                   </td>
                   <td style={{ padding: '6px 8px', textAlign: 'right' }}>
-                    <DropdownMenu items={buildMenu(t)} />
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {/* KIRISH — har qatorda ko'rinib turadi. Ilgari bu amal
+                          faqat "..." menyusi ichida edi va topilmasdi. */}
+                      <button
+                        onClick={() => handleImpersonate(t)}
+                        disabled={!t.isActive || kirilyapti === t.id}
+                        title={t.isActive
+                          ? `"${t.name}" ga admin sifatida kirish`
+                          : 'Workspace bloklangan — kirib bo\'lmaydi'}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          padding: '5px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                          border: '1px solid ' + (t.isActive ? '#c7d2fe' : '#e2e8f0'),
+                          background: t.isActive ? '#eef2ff' : '#f8fafc',
+                          color: t.isActive ? '#4338ca' : '#cbd5e1',
+                          cursor: t.isActive && kirilyapti !== t.id ? 'pointer' : 'not-allowed',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <LogIn size={13} />
+                        {kirilyapti === t.id ? 'Ochilmoqda...' : 'Kirish'}
+                      </button>
+                      <DropdownMenu items={buildMenu(t)} />
+                    </div>
                   </td>
                 </tr>
               );
