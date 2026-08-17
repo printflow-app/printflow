@@ -372,7 +372,8 @@ export class TasksService {
       // `contactId`, yangisi kiritilsa `contactName`/`contactPhone` keladi —
       // ikkinchi holatda uni shu yerda yaratamiz, aks holda foydalanuvchi
       // avval mijoz kartasini ochib vakil qo'shishga majbur bo'lardi.
-      contactId, contactName, contactPhone,
+      // `contactRole` — lavozimi ("Direktor", "Menejer"), ixtiyoriy.
+      contactId, contactName, contactPhone, contactRole,
     } = data;
 
     const totalDepositNum = Math.round(Number(totalDeposit || 0));
@@ -459,10 +460,21 @@ export class TasksService {
         const ism = String(contactName).trim();
         const mavjud = await tx.customerContact.findFirst({
           where: { customerId: finalCustomerId, name: { equals: ism, mode: 'insensitive' } },
-          select: { id: true },
+          // `role` ham kerak — mavjud lavozimni ustidan yozib yubormaslik uchun.
+          select: { id: true, role: true },
         });
+        const lavozim = String(contactRole || '').trim() || null;
         if (mavjud) {
           finalContactId = mavjud.id;
+          // Bir xil ismli vakil bor, lekin lavozimi hali yozilmagan bo'lsa —
+          // shu buyurtmada kiritilgani bilan to'ldiramiz. Mavjud lavozimni
+          // ustidan yozmaymiz: mijoz kartasidagi ma'lumot aniqroq.
+          if (lavozim && !mavjud.role) {
+            await tx.customerContact.update({
+              where: { id: mavjud.id },
+              data: { role: lavozim } as any,
+            });
+          }
         } else {
           const soni = await tx.customerContact.count({ where: { customerId: finalCustomerId } });
           const yangi = await tx.customerContact.create({
@@ -470,6 +482,7 @@ export class TasksService {
               customerId: finalCustomerId,
               name: ism,
               phone: String(contactPhone || '').trim() || null,
+              role: lavozim,
               // Birinchi vakil — asosiy aloqa shaxsi.
               isPrimary: soni === 0,
             } as any,

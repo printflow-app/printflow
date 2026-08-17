@@ -27,6 +27,8 @@ export interface MijozTanlov {
   contactId: string;
   contactName: string;
   contactPhone: string;
+  /** Vakilning lavozimi ("Direktor", "Menejer"). Mijoz kartasida saqlanadi. */
+  contactRole: string;
 }
 
 interface Vakil { id: string; name: string; phone?: string | null; role?: string | null }
@@ -96,7 +98,7 @@ const MijozTanlash: React.FC<{
 
   const bosh: MijozTanlov = {
     customerId: '', customerName: '', customerPhone: '',
-    contactId: '', contactName: '', contactPhone: '',
+    contactId: '', contactName: '', contactPhone: '', contactRole: '',
   };
 
   const mijozTanla = (m: Mijoz) => {
@@ -109,6 +111,7 @@ const MijozTanlash: React.FC<{
       ...bosh,
       customerId: m.id, customerName: m.name, customerPhone: m.phone || '',
       contactId: v.id, contactName: v.name, contactPhone: v.phone || '',
+      contactRole: v.role || '',
     });
     setOchiq(false); setQidiruv(''); setVakilQoshish(false); setYangiRejim(false);
   };
@@ -131,7 +134,7 @@ const MijozTanlash: React.FC<{
 
   const vakilBekor = () => {
     setVakilQoshish(false);
-    onChange({ ...qiymat, contactId: '', contactName: '', contactPhone: '' });
+    onChange({ ...qiymat, contactId: '', contactName: '', contactPhone: '', contactRole: '' });
   };
 
   // Qidiruvga AYNAN mos tashkilot bormi — bo'lsa "yangi" taklifi ortiqcha
@@ -271,12 +274,15 @@ const MijozTanlash: React.FC<{
             {qiymat.contactId ? (
               <p className="text-sm font-semibold text-slate-700 truncate">
                 {qiymat.contactName}
+                {qiymat.contactRole && (
+                  <span className="font-medium text-slate-400"> · {qiymat.contactRole}</span>
+                )}
                 {qiymat.contactPhone && (
                   <span className="font-medium text-slate-400"> · {qiymat.contactPhone}</span>
                 )}
               </p>
             ) : yangiVakilRejimi ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <label className="block">
                   <span className="block text-[11px] font-semibold text-slate-500 mb-1">Ismi</span>
                   <input
@@ -297,6 +303,17 @@ const MijozTanlash: React.FC<{
                     className="input-minimal"
                   />
                 </label>
+                <label className="block">
+                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">
+                    Lavozimi <span className="font-normal text-slate-400">— ixtiyoriy</span>
+                  </span>
+                  <input
+                    placeholder="Masalan: Menejer"
+                    value={qiymat.contactRole}
+                    onChange={(e) => onChange({ ...qiymat, contactRole: e.target.value })}
+                    className="input-minimal"
+                  />
+                </label>
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
@@ -309,6 +326,7 @@ const MijozTanlash: React.FC<{
                     className="inline-flex items-center gap-1.5 bg-white border border-[color:var(--border)] rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-colors"
                   >
                     <User size={11} /> {v.name}
+                    {v.role && <span className="text-slate-400">· {v.role}</span>}
                   </button>
                 ))}
                 <button
