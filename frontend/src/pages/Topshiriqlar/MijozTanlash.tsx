@@ -173,120 +173,154 @@ const MijozTanlash: React.FC<{
           </button>
         </div>
       ) : (
-        // TANLANGAN HOLAT — bitta qatorda tashkilot va vakil.
-        <div className="w-full bg-white border-2 border-[color:var(--border)] rounded-lg px-3 py-2.5 flex items-start gap-2.5">
-          <Building2 size={15} className="text-slate-400 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
+        // TANLANGAN HOLAT — IKKI ANIQ BO'LIM: TASHKILOT va VAKIL.
+        //
+        // Ilgari hammasi bitta qatorga siqilgan edi va tushunarsiz chiqardi:
+        // tashkilot nomi oddiy matndek ko'rinar (uni tahrirlash mumkinligi
+        // bilinmasdi), uning tagida esa "Yangi vakil — bekor qilish" degan
+        // qator turardi — bu xabarmi, tugmami, nimani bekor qiladi, ayon
+        // emasdi. Maydonlar faqat placeholder bilan belgilangani uchun
+        // to'ldirilgach nima ekani ham yo'qolardi: amalda vakil TELEFONI
+        // maydoniga "Menejer" deb lavozim yozib yuborilgan.
+        //
+        // Endi har maydonning tepasida doimiy yorlig'i bor va ikki bo'lim
+        // chiziq bilan ajratilgan.
+        <div className="w-full bg-white border-2 border-[color:var(--border)] rounded-lg overflow-hidden">
+          {/* ————— 1. TASHKILOT ————— */}
+          <div className="px-3 pt-2.5 pb-3">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Building2 size={11} /> Tashkilot
+                {!qiymat.customerId && (
+                  <span className="text-[9px] text-orange-600 bg-orange-50 border border-orange-200 rounded px-1 py-0.5">
+                    yangi
+                  </span>
+                )}
+              </span>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => { setOchiq(true); setQidiruv(''); }}
+                  className="text-[11px] font-bold text-slate-500 hover:text-slate-800 px-2 py-1"
+                >
+                  Boshqasini tanlash
+                </button>
+                <button type="button" onClick={tozala} title="Tozalash" className="icon-btn">
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+
             {qiymat.customerId ? (
               <p className="text-sm font-semibold text-slate-800 truncate">{qiymat.customerName}</p>
             ) : (
-              // Yangi tashkilot — nomi shu yerda tahrirlanadi. Qidiruvga qaytib,
-              // qayta yozish shart emas.
-              <input
-                autoFocus={!qiymat.customerName}
-                placeholder="Yangi tashkilot nomi"
-                value={qiymat.customerName}
-                onChange={(e) => onChange({ ...qiymat, customerName: e.target.value })}
-                className="w-full text-sm font-semibold text-slate-800 bg-transparent outline-none placeholder:font-normal placeholder:text-slate-400"
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">Nomi</span>
+                  <input
+                    autoFocus={!qiymat.customerName}
+                    placeholder="Masalan: KIA"
+                    value={qiymat.customerName}
+                    onChange={(e) => onChange({ ...qiymat, customerName: e.target.value })}
+                    className="input-minimal"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">
+                    Telefoni <span className="font-normal text-slate-400">— ixtiyoriy</span>
+                  </span>
+                  <input
+                    inputMode="tel"
+                    placeholder="+998 90 123 45 67"
+                    value={qiymat.customerPhone}
+                    onChange={(e) => onChange({ ...qiymat, customerPhone: e.target.value })}
+                    className="input-minimal"
+                  />
+                </label>
+              </div>
             )}
+
+            {/* JISMONIY SHAXS. Bosmaxonaga buyurtmaning katta qismi tashkilotdan
+                emas, odamning o'zidan keladi — soxta tashkilot nomi o'ylab
+                topish shart emasligini aytib qo'yamiz. */}
+            {!qiymat.customerId && !qiymat.customerName.trim() && (
+              <p className="mt-1.5 text-[11px] text-slate-400 leading-snug">
+                Bo'sh qolsa — pastdagi vakil ismi mijoz bo'lib saqlanadi (jismoniy shaxs).
+              </p>
+            )}
+          </div>
+
+          {/* ————— 2. VAKIL ————— */}
+          <div className="px-3 pt-2.5 pb-3 border-t border-slate-100 bg-slate-50/70">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <User size={11} /> Vakil
+                <span className="normal-case font-medium text-slate-400">— kim buyurtma berdi</span>
+              </span>
+              {(qiymat.contactId || yangiVakilRejimi) && (
+                <button
+                  type="button"
+                  onClick={vakilBekor}
+                  className="text-[11px] font-bold text-slate-400 hover:text-rose-600 px-2 py-1 shrink-0"
+                >
+                  Olib tashlash
+                </button>
+              )}
+            </div>
+
             {qiymat.contactId ? (
-              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 truncate">
-                <User size={10} className="shrink-0" />
+              <p className="text-sm font-semibold text-slate-700 truncate">
                 {qiymat.contactName}
-                {qiymat.contactPhone ? ` · ${qiymat.contactPhone}` : ''}
+                {qiymat.contactPhone && (
+                  <span className="font-medium text-slate-400"> · {qiymat.contactPhone}</span>
+                )}
               </p>
             ) : yangiVakilRejimi ? (
-              <button
-                type="button"
-                onClick={vakilBekor}
-                className="text-xs font-semibold text-slate-400 hover:text-slate-600 mt-0.5"
-              >
-                Yangi vakil — bekor qilish
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">Ismi</span>
+                  <input
+                    autoFocus
+                    placeholder="Masalan: Zafarbek"
+                    value={qiymat.contactName}
+                    onChange={(e) => onChange({ ...qiymat, contactId: '', contactName: e.target.value })}
+                    className="input-minimal"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">Telefoni</span>
+                  <input
+                    inputMode="tel"
+                    placeholder="+998 90 123 45 67"
+                    value={qiymat.contactPhone}
+                    onChange={(e) => onChange({ ...qiymat, contactPhone: e.target.value })}
+                    className="input-minimal"
+                  />
+                </label>
+              </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setVakilQoshish(true)}
-                className="text-xs font-semibold text-orange-500 hover:text-orange-600 mt-0.5 inline-flex items-center gap-1"
-              >
-                <Plus size={11} /> Vakil qo'shish
-              </button>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {/* Tanlangan tashkilotning mavjud vakillari — bir bosishda */}
+                {(tanlanganMijoz?.contacts || []).map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => vakilTanla(tanlanganMijoz!, v)}
+                    className="inline-flex items-center gap-1.5 bg-white border border-[color:var(--border)] rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-colors"
+                  >
+                    <User size={11} /> {v.name}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setVakilQoshish(true)}
+                  className="inline-flex items-center gap-1 bg-white border border-dashed border-orange-300 rounded-lg px-2.5 py-1 text-xs font-bold text-orange-600 hover:bg-orange-50 transition-colors"
+                >
+                  <Plus size={11} /> Yangi vakil
+                </button>
+              </div>
             )}
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            {!qiymat.customerId && (
-              <span className="text-[10px] font-bold uppercase tracking-wide text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
-                yangi
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => { setOchiq(true); setQidiruv(''); }}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-2 py-1"
-            >
-              Tanlash
-            </button>
-            <button type="button" onClick={tozala} title="Tozalash" className="icon-btn">
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Yangi tashkilot uchun telefon — id yo'q bo'lsa */}
-      {tanlangan && !qiymat.customerId && (
-        <input
-          placeholder="Tashkilot telefoni (ixtiyoriy)"
-          value={qiymat.customerPhone}
-          onChange={(e) => onChange({ ...qiymat, customerPhone: e.target.value })}
-          className="input-minimal mt-2"
-        />
-      )}
-
-      {/* Tanlangan tashkilotga yangi vakil — inline, oyna ochilmaydi. */}
-      {tanlangan && yangiVakilRejimi && (
-        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input
-            autoFocus
-            placeholder="Vakil ismi"
-            value={qiymat.contactName}
-            onChange={(e) => onChange({ ...qiymat, contactId: '', contactName: e.target.value })}
-            className="input-minimal"
-          />
-          <input
-            placeholder="Vakil telefoni"
-            value={qiymat.contactPhone}
-            onChange={(e) => onChange({ ...qiymat, contactPhone: e.target.value })}
-            className="input-minimal"
-          />
-        </div>
-      )}
-
-      {/* JISMONIY SHAXS. Bosmaxonaga buyurtmaning katta qismi tashkilotdan
-          emas, odamning o'zidan keladi — ular uchun soxta tashkilot nomi
-          o'ylab topish shart emasligini aytib qo'yamiz, aks holda "tashkilot
-          nomi" majburiydek tuyulib, maydon bo'sh qoladi. */}
-      {tanlangan && !qiymat.customerId && !qiymat.customerName.trim() && (
-        <p className="mt-1.5 px-1 text-[11px] text-slate-400 leading-snug">
-          Tashkilot nomi bo'sh qolsa — vakil ismi mijoz bo'lib saqlanadi.
-        </p>
-      )}
-
-      {/* Tanlangan tashkilotning mavjud vakillari — bir bosishda almashtirish */}
-      {tanlangan && qiymat.customerId && !qiymat.contactId && !yangiVakilRejimi
-        && (tanlanganMijoz?.contacts || []).length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {(tanlanganMijoz!.contacts || []).map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => vakilTanla(tanlanganMijoz!, v)}
-              className="inline-flex items-center gap-1.5 bg-white border border-[color:var(--border)] rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-colors"
-            >
-              <User size={11} /> {v.name}
-            </button>
-          ))}
         </div>
       )}
 
