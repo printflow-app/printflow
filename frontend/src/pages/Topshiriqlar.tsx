@@ -605,6 +605,15 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       return;
     }
 
+    // Zakolat kiritilgan bo'lsa to'lov turi shart — aks holda kirim
+    // tranzaksiyasi qaysi kassaga tushgani noma'lum bo'lib qoladi va
+    // Kassa hisobida bo'shliq paydo bo'ladi. Zakolatsiz buyurtmada
+    // to'lov turi kerak emas.
+    if (Number(newTaskForm.depositAmount) > 0 && !newTaskForm.paymentTypeId) {
+      showStatus('error', "Zakolat kiritilgan — to'lov turini tanlang");
+      return;
+    }
+
     try {
       const payload = {
         orderName: newTaskForm.orderName,
