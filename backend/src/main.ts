@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 
 // =============================================
 // PRINTFLOW BACKEND BOOTSTRAP
@@ -33,6 +34,10 @@ async function bootstrap() {
 
   // Enable cookie parsing (for httpOnly JWT cookies)
   app.use(cookieParser());
+
+  // Prisma xatolari 500 "Internal server error" bo'lib chiqmasin — sabab
+  // foydalanuvchiga ham, logga ham tushunarli yozilsin.
+  app.useGlobalFilters(new PrismaExceptionFilter());
 
   // Global validation pipe — rejects requests with invalid data shapes
   app.useGlobalPipes(
