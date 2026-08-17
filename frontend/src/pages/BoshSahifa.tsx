@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   TrendingUp, TrendingDown, Wallet, ClipboardList, QrCode, ShieldAlert, ShieldCheck,
-  Settings2, Check, UserSquare2, AlertTriangle, Bot,
+  Settings2, Check, UserSquare2, AlertTriangle, Bot, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis,
@@ -186,6 +186,8 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
   // "qora quti" ga aylanadi.
   const [aiActions, setAiActions] = useState<any[]>([]);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  // AI o'zi bajarib bo'lgan ishlar — sukut bo'yicha yopiq (izohga qarang).
+  const [aiTarixOchiq, setAiTarixOchiq] = useState(false);
 
   const loadAiActions = () => {
     aiApi.listActions(20)
@@ -229,6 +231,29 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
 
   const nothingToShow = availableWidgets.every(w => !visible[w.key]) ||
     (!s?.finance && !s?.tasks && !s?.attendance && !s?.customers && !s?.inventory && !s?.vendors && !s?.employees && risks.length === 0 && aiActions.length === 0);
+
+  // AI YOZUVLARI IKKIGA BO'LINADI.
+  //
+  // Ilgari hammasi bir xil kattalikdagi kartochka bo'lib chiqardi va AI
+  // faol ishlagan kunlarda (o'nlab eslatma) butun ekranni egallab, moliya
+  // va boshqa haqiqiy ko'rsatkichlarni pastga surib yuborardi.
+  //
+  // Endi rahbardan AMAL talab qiladigani (tasdiq kutayotgan, bajarilmagan)
+  // yuqorida to'liq ko'rinadi, AI o'zi bajarib bo'lgani esa yopiq holda
+  // turadi — u hisobot, har kuni o'qish shart emas.
+  const etiborKerak = aiActions.filter(a => a.status === 'pending' || a.status === 'failed');
+  const bajarilgan = aiActions.filter(a => a.status !== 'pending' && a.status !== 'failed');
+
+  // Bir xil matnli yozuvlar birlashtiriladi: AI har yugurishida "11 ta
+  // muddati o'tgan buyurtma bo'yicha eslatma yuborildi" deb yozadi va bu
+  // qator kuniga o'n marta takrorlanadi. Takrorni sanab ko'rsatgan
+  // ma'lumotliroq va o'n barobar qisqa.
+  const bajarilganGuruh: { summary: string; soni: number; vaqt: string | null }[] = [];
+  for (const a of bajarilgan) {
+    const bor = bajarilganGuruh.find(g => g.summary === a.summary);
+    if (bor) bor.soni += 1;
+    else bajarilganGuruh.push({ summary: a.summary, soni: 1, vaqt: a.createdAt || null });
+  }
 
   return (
     <div className="space-y-5 animate-fade-in pb-4">
@@ -339,12 +364,15 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               `executed` — avtonom rejim yoqilgani uchun AI o'zi bajardi;
               bu yerda u faqat hisobot beradi, chunki rahbar nima
               bo'layotganini ko'rib turishi shart. */}
-          {aiActions.length > 0 && (
+          {/* E'TIBOR TALAB QILADIGANLARI — tasdiq kutayotgan va bajarilmagan
+              ishlar. Faqat shular to'liq kartochka bo'lib chiqadi: ular
+              ustida rahbar amal qilishi kerak. */}
+          {etiborKerak.length > 0 && (
             <div className="space-y-2">
               <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pt-1">
-                AI qilgan ishlar
+                AI — e'tiboringiz kerak
               </p>
-              {aiActions.map(a => {
+              {etiborKerak.map(a => {
                 const pending = a.status === 'pending';
                 const failed = a.status === 'failed';
                 return (
@@ -396,6 +424,54 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* AI O'ZI BAJARGAN ISHLAR — yopiq hisobot.
+              Bitta qatorga sig'adi; ochilganda takrorlar «×N» bilan
+              birlashtirilgan qisqa ro'yxat chiqadi. */}
+          {bajarilganGuruh.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <button
+                onClick={() => setAiTarixOchiq(v => !v)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border bg-emerald-50 text-emerald-600 border-emerald-100">
+                  <Bot size={15} strokeWidth={2.5} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                    AI bajargan ishlar
+                  </p>
+                  <p className="text-sm font-bold tracking-tight text-slate-800">
+                    {bajarilgan.length} ta ish
+                    {bajarilganGuruh.length !== bajarilgan.length && (
+                      <span className="font-semibold text-slate-400"> · {bajarilganGuruh.length} xil</span>
+                    )}
+                  </p>
+                </div>
+                {aiTarixOchiq
+                  ? <ChevronUp size={16} className="text-slate-400 flex-shrink-0" />
+                  : <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />}
+              </button>
+
+              {aiTarixOchiq && (
+                <div className="border-t border-slate-100 divide-y divide-slate-50">
+                  {bajarilganGuruh.map((g, i) => (
+                    <div key={i} className="flex items-start gap-2.5 px-4 py-2">
+                      <Check size={13} className="text-emerald-500 flex-shrink-0 mt-0.5" strokeWidth={3} />
+                      <p className="text-xs font-semibold text-slate-600 leading-snug flex-1 min-w-0">
+                        {g.summary}
+                      </p>
+                      {g.soni > 1 && (
+                        <span className="text-[11px] font-bold text-slate-400 flex-shrink-0 tabular-nums">
+                          ×{g.soni}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </section>
