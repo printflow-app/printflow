@@ -696,17 +696,38 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           </div>
         </div>
 
+        {/* DAVR BALANSI — YUQORIDAGI "QOLDIQ" BILAN BIR NARSA EMAS.
+            Bu karta tanlangan sana oralig'idagi kirim − chiqim ni ko'rsatadi
+            va kassalararo o'tkazmani hisobga OLMAYDI (o'tkazma daromad ham,
+            xarajat ham emas — pul shunchaki bir kassadan ikkinchisiga
+            ko'chadi). Kassa tugmasidagi "qoldiq" esa butun davr uchun va
+            o'tkazma bilan birga — ya'ni kassada hozir turgan haqiqiy pul.
+            Ikkalasi turlicha bo'lishi normal; farqni tushuntirish uchun
+            tanlangan kassaning qoldig'i shu yerda yonma-yon chiqadi. */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="label-caps mb-1">{ownCashOnly ? 'Mening balansim' : 'Balans'}</span>
+            <span className="label-caps mb-1">{ownCashOnly ? 'Mening balansim' : 'Davr balansi'}</span>
             <p className={`text-2xl font-bold tracking-tighter ${(summary?.balance || 0) >= 0 ? 'text-slate-800' : 'text-rose-600'}`}>
               {formatCurrency(summary?.balance || 0)}
             </p>
+            <span className="mt-0.5 text-[11px] font-semibold text-slate-400">kirim − chiqim · o'tkazmasiz</span>
             {ownCashOnly && (
               <span className="mt-1 text-xs font-medium text-orange-600">Faqat o'zingiz kiritgan</span>
             )}
             <div className="mt-2 px-3 py-1 bg-slate-100 rounded-full">
                <span className="text-xs font-medium text-slate-500">{startDate === endDate ? new Date(startDate).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) : `${startDate} → ${endDate}`}</span>
             </div>
+            {(() => {
+              const tanlangan = cashBoxes.find(b => b.id === selectedCashBoxId);
+              if (!tanlangan) return null;
+              return (
+                <p className="mt-2.5 pt-2.5 border-t border-slate-100 w-full text-xs font-semibold text-slate-500">
+                  {tanlangan.name} qoldig'i:{' '}
+                  <span className={(tanlangan.balance || 0) >= 0 ? 'text-slate-800 font-bold' : 'text-rose-600 font-bold'}>
+                    {formatCurrency(tanlangan.balance || 0)}
+                  </span>
+                </p>
+              );
+            })()}
         </div>
       </div>
 
