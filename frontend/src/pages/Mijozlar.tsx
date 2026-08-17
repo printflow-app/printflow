@@ -78,6 +78,10 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const [isContactsLoading, setIsContactsLoading] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', phone: '', role: '', email: '' });
   const [isAddingContact, setIsAddingContact] = useState(false);
+  // Tahrirlanayotgan vakil. null bo'lsa forma "yangi qo'shish" rejimida.
+  // Ilgari vakilni faqat qo'shish va o'chirish mumkin edi: bitta harfi
+  // xato yozilsa ham o'chirib, qaytadan kiritishga to'g'ri kelardi.
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
 
   // Order history modal
   const [orderHistoryModal, setOrderHistoryModal] = useState<{ isOpen: boolean; customer: any | null; orders: any[] }>({
@@ -331,6 +335,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     setFormStep(1);
     setContacts([]);
     setContactForm({ name: '', phone: '', role: '', email: '' });
+    setEditingContactId(null);
   };
 
   const handleDelete = async () => {
@@ -348,33 +353,8 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   // =============================================
   // Contacts
   // =============================================
-  /**
-   * Jadvaldagi "Vakillar" tugmasi — mijoz oynasini DARHOL 2-bosqichda
-   * ochadi. Alohida kontakt oynasi yo'q: u va tahrirlash oynasi bitta
-   * oynaning ikki bosqichiga birlashtirilgan.
-   */
-  const openContacts = async (c: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCustForm({
-      id: c.id, name: c.name, phone: c.phone || '', companyInfo: c.companyInfo || '',
-      address: c.address || '',
-      joy: typeof c.latitude === 'number' && typeof c.longitude === 'number'
-        ? { lat: c.latitude, lng: c.longitude }
-        : null,
-    });
-    setIsEditing(true);
-    setFormStep(2);
-    setIsFormOpen(true);
-    setIsContactsLoading(true);
-    try {
-      const res = await customersApi.getContacts(c.id);
-      setContacts(res.data || []);
-    } catch {
-      setContacts([]);
-    } finally {
-      setIsContactsLoading(false);
-    }
-  };
+  // Vakillarga alohida kirish tugmasi yo'q — qalamcha mijoz oynasini
+  // ochadi, vakillar esa uning 2-bosqichida (`openVakillar`).
 
   // MIJOZ ID'SI YAGONA MANBADAN — `custForm.id`.
   //
@@ -383,23 +363,45 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   // qolishi mumkin edi: 2-tabga o'tish `custForm.id` ni ishlatadi,
   // qo'shish esa `contactsCustomer` ni — u null bo'lsa tugma jimgina
   // hech narsa qilmasdi.
-  const handleAddContact = async () => {
+  /** Vakil qatoridagi qalamcha — ma'lumotini yuqoridagi formaga oladi. */
+  const startEditContact = (ct: any) => {
+    setEditingContactId(ct.id);
+    setContactForm({
+      name: ct.name || '', phone: ct.phone || '',
+      role: ct.role || '', email: ct.email || '',
+    });
+  };
+
+  const cancelEditContact = () => {
+    setEditingContactId(null);
+    setContactForm({ name: '', phone: '', role: '', email: '' });
+  };
+
+  /** Bitta forma ikki ish uchun: yangi vakil qo'shish va mavjudini saqlash. */
+  const handleSaveContact = async () => {
     if (!custForm.id || !contactForm.name.trim()) return;
     setIsAddingContact(true);
+    const tahrir = !!editingContactId;
     try {
-      await customersApi.createContact(custForm.id, {
+      const data = {
         name: contactForm.name,
         phone: contactForm.phone || undefined,
         role: contactForm.role || undefined,
         email: contactForm.email || undefined,
-      });
+      };
+      if (tahrir) {
+        await customersApi.updateContact(custForm.id, editingContactId!, data);
+      } else {
+        await customersApi.createContact(custForm.id, data);
+      }
       setContactForm({ name: '', phone: '', role: '', email: '' });
+      setEditingContactId(null);
       const res = await customersApi.getContacts(custForm.id);
       setContacts(res.data || []);
       fetchData(true); // jadvaldagi vakillar ro'yxati ham yangilansin
-      showStatus('success', "Vakil qo'shildi!");
+      showStatus('success', tahrir ? "Vakil yangilandi!" : "Vakil qo'shildi!");
     } catch (e: any) {
-      showStatus('error', e?.response?.data?.message || "Vakil qo'shishda xato!");
+      showStatus('error', e?.response?.data?.message || (tahrir ? "Saqlashda xato!" : "Vakil qo'shishda xato!"));
     } finally {
       setIsAddingContact(false);
     }
@@ -727,18 +729,15 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                               <button onClick={() => openOrderHistory(c)} className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-400 hover:bg-orange-500 hover:text-white transition-all shadow-sm" title="Buyurtmalar tarixi">
                                 <ClipboardList size={13}/>
                               </button>
-                              {(canManageContacts || canEdit || canDelete) && (
+                              {(canEdit || canDelete) && (
                                 <>
-                                  {canManageContacts && (
-                                    <button onClick={e => openContacts(c, e)} className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-500 hover:text-white transition-all shadow-sm relative" title="Vakillar">
-                                      <UserPlus size={13}/>
-                                      {contactCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-slate-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">{contactCount}</span>
-                                      )}
-                                    </button>
-                                  )}
+                                  {/* Alohida "Vakillar" ikonkasi olib tashlandi:
+                                      u qalamcha bilan bir xil oynani ochardi,
+                                      faqat 2-bosqichdan. Ikkita ikonka bir ishni
+                                      qilishi chalkashtirardi — endi qalamcha
+                                      bosiladi, ichida "2. Vakillar" bosqichi bor. */}
                                   {canEdit && (
-                                    <button onClick={e => openEdit(c, e)} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-500 hover:text-white transition-all shadow-sm" title="Tahrirlash">
+                                    <button onClick={e => openEdit(c, e)} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-500 hover:text-white transition-all shadow-sm" title="Tahrirlash va vakillar">
                                       <Edit3 size={13}/>
                                     </button>
                                   )}
@@ -978,45 +977,65 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           </form>
         ) : (
           <div className="space-y-3">
-            {/* Yangi vakil */}
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
-                placeholder="Ism *"
-                value={contactForm.name}
-                onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))}
-                className="input-minimal font-semibold"
-              />
-              <input
-                type="text"
-                placeholder="Telefon"
-                value={contactForm.phone}
-                onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
-                className="input-minimal"
-              />
-              <input
-                type="text"
-                placeholder="Lavozim (Direktor)"
-                value={contactForm.role}
-                onChange={e => setContactForm(f => ({ ...f, role: e.target.value }))}
-                className="input-minimal"
-              />
-              <input
-                type="email"
-                placeholder="Email (ixtiyoriy)"
-                value={contactForm.email}
-                onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
-                className="input-minimal"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleAddContact}
-              disabled={isAddingContact || !contactForm.name.trim()}
-              className="btn-outline w-full"
-            >
-              <UserPlus size={14}/> {isAddingContact ? "Qo'shilmoqda..." : "Vakil qo'shish"}
-            </button>
+            {/* Yangi vakil — yoki tahrirlanayotgani (bitta forma, ikki ish).
+                Faqat vakillarni boshqarish huquqi bo'lganda ko'rinadi;
+                huquqsiz foydalanuvchi ro'yxatni ko'radi, o'zgartira olmaydi. */}
+            {canManageContacts && editingContactId && (
+              <div className="flex items-center justify-between gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-xl">
+                <p className="text-xs font-bold text-orange-700">Vakil tahrirlanmoqda</p>
+                <button
+                  type="button"
+                  onClick={cancelEditContact}
+                  className="text-xs font-bold text-orange-600 hover:text-orange-800 px-2 py-0.5"
+                >
+                  Bekor qilish
+                </button>
+              </div>
+            )}
+            {canManageContacts && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Ism *"
+                    value={contactForm.name}
+                    onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))}
+                    className="input-minimal font-semibold"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Telefon"
+                    value={contactForm.phone}
+                    onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
+                    className="input-minimal"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Lavozim (Direktor)"
+                    value={contactForm.role}
+                    onChange={e => setContactForm(f => ({ ...f, role: e.target.value }))}
+                    className="input-minimal"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email (ixtiyoriy)"
+                    value={contactForm.email}
+                    onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+                    className="input-minimal"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveContact}
+                  disabled={isAddingContact || !contactForm.name.trim()}
+                  className={editingContactId ? 'btn-primary w-full' : 'btn-outline w-full'}
+                >
+                  {editingContactId
+                    ? <><CheckCircle2 size={14}/> {isAddingContact ? 'Saqlanmoqda...' : "O'zgarishni saqlash"}</>
+                    : <><UserPlus size={14}/> {isAddingContact ? "Qo'shilmoqda..." : "Vakil qo'shish"}</>}
+                </button>
+              </>
+            )}
 
             {/* Ro'yxat — bu yerda skroll bor, chunki vakillar soni
                 oldindan noma'lum. Oynaning o'zi esa skrollanmaydi. */}
@@ -1054,13 +1073,22 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteContact(ct.id)}
-                        className="text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-                        title="Vakilni o'chirish"
-                      >
-                        <Trash2 size={14}/>
-                      </button>
+                      <div className={`flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${canManageContacts ? '' : 'hidden'}`}>
+                        <button
+                          onClick={() => startEditContact(ct)}
+                          className="text-slate-300 hover:text-orange-500 transition-colors p-1"
+                          title="Vakilni tahrirlash"
+                        >
+                          <Edit3 size={14}/>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteContact(ct.id)}
+                          className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                          title="Vakilni o'chirish"
+                        >
+                          <Trash2 size={14}/>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
