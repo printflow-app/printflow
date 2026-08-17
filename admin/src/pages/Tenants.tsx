@@ -1,7 +1,7 @@
 import { useState } from 'react';
 // Infinity ikonkasi nomi global `Infinity` ni to'sib qo'yadi — nom o'zgartirildi.
-import { Building2, Plus, X, AlertTriangle, Calendar, Trash2, Search, Infinity as InfinityIcon } from 'lucide-react';
-import { tenantsApi } from '../api';
+import { Building2, Plus, X, AlertTriangle, Calendar, Trash2, Search, LogIn, Infinity as InfinityIcon } from 'lucide-react';
+import { tenantsApi, APP_URL } from '../api';
 import { useUI } from '../ui';
 import { useTenants, usePlans, useInvalidate } from '../hooks/queries';
 import { getAttPct, getActiveModules } from '../shared/constants';
@@ -27,6 +27,8 @@ export default function Tenants() {
   const [selectedTenant, setSelectedTenant] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  // Qaysi workspace'ga kirish jarayonda — tugma ikki marta bosilmasin.
+  const [kirilyapti, setKirilyapti] = useState<string | null>(null);
 
   const load = () => invalidate.tenants();
   const generateRandomPassword = () => Math.random().toString(36).slice(-8);
@@ -45,6 +47,36 @@ export default function Tenants() {
   const openDetails = async (id: string) => {
     try { const res = await tenantsApi.findOne(id); setSelectedTenant(res.data); }
     catch (err) { console.error(err); }
+  };
+
+  // WORKSPACE'GA KIRISH (impersonate) — parolsiz, bir bosishda.
+  //
+  // Super-admin mijozga aytishdan oldin o'zgarishni o'z ko'zi bilan
+  // ko'rishi kerak bo'ladi, shuning uchun tasdiq oynasi so'ralmaydi.
+  // Kirish serverda super-admin nomi bilan logga yoziladi.
+  //
+  // Oyna AYNAN BOSISH PAYTIDA ochiladi: token kelishini kutib ochsak,
+  // brauzer buni foydalanuvchi so'ramagan popup deb bloklaydi. Shu sabab
+  // `noopener` ham berilmaydi — u bilan `window.open` null qaytaradi va
+  // manzilni keyin yozib bo'lmaydi (opener quyida uziladi).
+  const kirish = async (t: any) => {
+    if (kirilyapti) return;
+    const oyna = window.open('', '_blank');
+    setKirilyapti(t.id);
+    try {
+      const res = await tenantsApi.impersonate(t.id);
+      const token = res.data?.token;
+      if (!token) throw new Error('Token kelmadi');
+      const url = `${APP_URL}/#impersonate=${encodeURIComponent(token)}`;
+      if (oyna) { oyna.opener = null; oyna.location.replace(url); }
+      else window.location.href = url; // popup bloklangan — shu oynada
+      toast(`"${t.name}" ochilmoqda`, 'success');
+    } catch (e: any) {
+      oyna?.close();
+      toast(e?.response?.data?.message || 'Kira olmadik', 'error');
+    } finally {
+      setKirilyapti(null);
+    }
   };
 
   const toggleStatus = async (id: string, cur: boolean) => {
@@ -216,6 +248,23 @@ export default function Tenants() {
                     <span className="font-mono">{new Date(t.createdAt).toLocaleDateString('uz-UZ')}</span>
                   </span>
                 )}
+
+                {/* KIRISH — kartochkadagi asosiy amal, shuning uchun butun
+                    kenglikda va alohida qatorda. Bloklangan workspace'ga
+                    kirib bo'lmaydi (server ham rad etadi). */}
+                <button
+                  onClick={() => kirish(t)}
+                  disabled={!t.isActive || kirilyapti === t.id}
+                  title={t.isActive ? `"${t.name}" ga admin sifatida kirish` : 'Workspace bloklangan'}
+                  className={`h-9 w-full flex items-center justify-center gap-1.5 text-[11px] font-bold rounded-lg transition-colors ${
+                    t.isActive
+                      ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
+                >
+                  <LogIn size={13} />
+                  {kirilyapti === t.id ? 'Ochilmoqda...' : 'Workspacega kirish'}
+                </button>
 
                 <div className="flex items-center gap-1.5">
                   <button
