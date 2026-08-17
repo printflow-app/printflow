@@ -161,8 +161,17 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   // Reset selected department when active branch changes
   useEffect(() => { setSelectedDepartmentId(''); }, [activeBranchId]);
 
+  // Buyurtma oynasidagi xato — TOAST BILAN BIRGA oynaning ichida ham qoladi.
+  //
+  // Toast 3 soniyada o'chadi. Prodda foydalanuvchi shu sababli "Buyurtma
+  // qo'shish"ni 12 marta bosgan: server har safar aniq sabab bilan 400
+  // qaytargan, lekin xabar ko'zga tashlanmay yo'qolgan va tashqaridan
+  // "tugma ishlamayapti"dek ko'ringan.
+  const [formError, setFormError] = useState<string | null>(null);
+
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text });
+    setFormError(type === 'error' ? text : null);
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
@@ -357,6 +366,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   };
 
   const openNewTaskModal = (initialColId?: string) => {
+    setFormError(null);
     setNewTaskForm({
       orderName: '', title: '', description: '', assigneeIds: [],
       columnId: initialColId || (columns[0]?.id || ''),
@@ -545,6 +555,19 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
+    // BOSQICH (kanban ustuni) — oynada tanlagichi yo'q, u oyna OCHILGANDA
+    // `columns[0]` dan bir marta olinadi. Ustunlar hali yuklanmagan (yoki
+    // filial endi almashgan) paytda oyna ochilsa qiymat bo'sh qoladi va
+    // BUTUN oyna davomida bo'sh qolib ketadi: har bosishda server 400
+    // "Buyurtma bosqichi tanlanmagan" qaytaradi. Shu sabab uni yuborishdan
+    // oldin joyida tiklaymiz.
+    const bosqichId = newTaskForm.columnId || columns[0]?.id || '';
+    if (!bosqichId) {
+      showStatus('error', 'Kanban ustunlari hali yuklanmadi — sahifani yangilang');
+      return;
+    }
 
     // Foydalanuvchi xizmatni tanlab, lekin "RO'YXATGA QO'SHISH"ni bosmagan bo'lsa —
     // tanlovini yo'qotmaslik uchun shu xizmatni avtomatik buyurtmaga qo'shamiz.
@@ -642,7 +665,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         contactPhone: newTaskForm.contactPhone || undefined,
         totalDeposit: Number(newTaskForm.depositAmount) || 0,
         paymentTypeId: newTaskForm.paymentTypeId,
-        columnId: newTaskForm.columnId,
+        columnId: bosqichId,
         justification: newTaskForm.justification,
         assigneeIds: executorType !== 'branch' ? newTaskForm.assigneeIds : [],
         deadlineAt: newTaskForm.deadlineAt || null,
@@ -1976,8 +1999,18 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               />
             </div>
 
+            {/* XATO SABABI — TUGMANING YONIDA VA YO'QOLMAYDI.
+                Toast 3 soniyada o'chadi va foydalanuvchi sababni o'qib
+                ulgurmasdi: tashqaridan "tugma ishlamayapti"dek ko'rinardi. */}
+            {formError && (
+              <div className="mt-6 flex items-start gap-2.5 p-3.5 rounded-xl border border-rose-200 bg-rose-50">
+                <AlertTriangle size={16} className="text-rose-500 shrink-0 mt-0.5" />
+                <p className="text-sm font-bold text-rose-700 leading-snug">{formError}</p>
+              </div>
+            )}
+
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 pt-4 mt-6 border-t border-slate-100">
+            <div className={`flex flex-col sm:flex-row gap-2 pt-4 border-t border-slate-100 ${formError ? 'mt-3' : 'mt-6'}`}>
               <button
                 type="button"
                 className="btn-outline flex-1"
