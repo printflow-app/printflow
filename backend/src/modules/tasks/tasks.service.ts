@@ -12,12 +12,21 @@ import {
 /**
  * FK maydonini tozalaydi: bo'sh satr → null.
  *
- * Frontend tanlanmagan bog'lanishni ko'pincha `''` qilib yuboradi
- * (`paymentTypes[0]?.id || ''` kabi). Postgres uchun `''` — bu "yo'q" emas,
- * MAVJUD BO'LMAGAN ID: FK buziladi va butun buyurtma tranzaksiyasi
- * P2003 bilan yiqilib, foydalanuvchiga 500 "Internal server error"
- * ko'rinadi. Aynan shu sababdan to'lov turi sozlanmagan workspace'da
- * buyurtma umuman yaratilmasdi.
+ * Frontend tanlanmagan bog'lanishni `''` qilib yuboradi. Postgres uchun
+ * `''` — bu "yo'q" emas, MAVJUD BO'LMAGAN ID: FK buziladi va butun
+ * buyurtma tranzaksiyasi P2003 bilan yiqilib, foydalanuvchiga 500
+ * "Internal server error" ko'rinadi.
+ *
+ * PRODDA TASDIQLANGAN HOLAT (`Task_customerId_fkey`, Railway logi):
+ * xodim MIJOZNI UMUMAN TANLAMAY buyurtma yaratsa, uchala maydon ham
+ * bo'sh keladi. Quyidagi shart esa mijoz yaratishni o'tkazib yuborardi:
+ *
+ *     if (!finalCustomerId && (customerName || customerPhone))
+ *
+ * `customerId=''` falsy, lekin nom ham telefon ham bo'sh → shart FALSE →
+ * mijoz yaratilmaydi va `finalCustomerId` `''` bo'lib qolib, task.create
+ * FK ni buzadi. Ya'ni "mijozsiz buyurtma" (kelib-ketuvchi mijoz) oqimi
+ * butunlay ishlamasdi.
  *
  * `null` esa to'g'ri ishlaydi — bu maydonlarning hammasi ixtiyoriy.
  */
