@@ -1248,6 +1248,8 @@ model Transaction {
   @@index([departmentId])
   @@index([createdById])
   @@index([cashBoxId])
+  // Migratsiyada bor, sxemada yo'q edi — yuqoridagi Task izohiga qarang.
+  @@index([isInternalTransfer])
 }
 
 // =============================================
@@ -1455,6 +1457,11 @@ model Task {
   @@unique([tenantId, displayId])
   @@index([tenantId])
   @@index([tenantId, isArchived])
+  // Quyidagi ikki indeks migratsiyalarda yaratilgan, lekin bu yerda e'lon
+  // qilinmagan edi. Natijada `prisma migrate dev` ularni "ortiqcha" deb
+  // sanab, o'chiradigan migratsiya yozardi.
+  @@index([customerContactId])
+  @@index([orderGroupId])
 }
 
 model SystemSetting {
