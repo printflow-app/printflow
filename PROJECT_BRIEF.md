@@ -52,7 +52,8 @@ Bitta tizimda: buyurtmalar Kanban'i, mijozlar bazasi, kassa, ombor, davomat, xod
 - Class-validator + class-transformer (DTO validation)
 - @nestjs/schedule (cron jobs)
 - @nestjs/throttler (rate limiting)
-- Railway'da deploy + auto `prisma db push` har deploy'da
+- Railway'da deploy + har deploy'da migratsiyalar avtomatik qo'llanadi
+  (`backend/scripts/migratsiya-qolla.js`, `start:prod` ichida)
 
 **Infra:**
 - DB: PostgreSQL on Railway (`switchback.proxy.rlwy.net`)
@@ -100,7 +101,8 @@ Bitta tizimda: buyurtmalar Kanban'i, mijozlar bazasi, kassa, ombor, davomat, xod
 - **Multi-tenant secure-by-default:** tenant izolyatsiya guard/middleware darajasida, dasturchi unutib qo'ya olmaydi
 - **Auth fleksibilligi:** cookie (web) + Bearer (mobile/PWA) + Telegram WebApp — har platformada ishlaydi
 - **Plan/feature gating:** tariff o'zgartirilsa avtomatik UI va backend mos keladi
-- **DB sync:** har deploy'da `prisma db push` — schema o'zgarishlari avtomatik
+- **DB sync:** har deploy'da `prisma/migrations` avtomatik qo'llanadi — sxema
+  o'zgarishi kod bilan birga prodga yetadi, migratsiya qo'lda yugurtirilmaydi
 - **AI yordamida tezkor shipping:** murakkab feature'lar 1-2 kunda yetkaziladi (men + Claude = sizning loyihangiz uchun real dev partner)
 
 ### Texnik zaif tomonlar (ochiq aytaman)

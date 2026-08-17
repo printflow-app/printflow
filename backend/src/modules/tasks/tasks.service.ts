@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
@@ -8,6 +8,33 @@ import {
   buildDisplayIdFromService,
   parseDisplayIdSequence,
 } from './task-id.util';
+
+/**
+ * FK maydonini tozalaydi: bo'sh satr → null.
+ *
+ * Frontend tanlanmagan bog'lanishni `''` qilib yuboradi. Postgres uchun
+ * `''` — bu "yo'q" emas, MAVJUD BO'LMAGAN ID: FK buziladi va butun
+ * buyurtma tranzaksiyasi P2003 bilan yiqilib, foydalanuvchiga 500
+ * "Internal server error" ko'rinadi.
+ *
+ * PRODDA TASDIQLANGAN HOLAT (`Task_customerId_fkey`, Railway logi):
+ * xodim MIJOZNI UMUMAN TANLAMAY buyurtma yaratsa, uchala maydon ham
+ * bo'sh keladi. Quyidagi shart esa mijoz yaratishni o'tkazib yuborardi:
+ *
+ *     if (!finalCustomerId && (customerName || customerPhone))
+ *
+ * `customerId=''` falsy, lekin nom ham telefon ham bo'sh → shart FALSE →
+ * mijoz yaratilmaydi va `finalCustomerId` `''` bo'lib qolib, task.create
+ * FK ni buzadi. Ya'ni "mijozsiz buyurtma" (kelib-ketuvchi mijoz) oqimi
+ * butunlay ishlamasdi.
+ *
+ * `null` esa to'g'ri ishlaydi — bu maydonlarning hammasi ixtiyoriy.
+ */
+const fkYoNull = (qiymat: any): string | null => {
+  if (typeof qiymat !== 'string') return qiymat ?? null;
+  const tozalangan = qiymat.trim();
+  return tozalangan.length > 0 ? tozalangan : null;
+};
 
 @Injectable()
 export class TasksService {
@@ -203,10 +230,19 @@ export class TasksService {
 
   async create(data: any, employeeId?: string) {
     const {
-      orderName, title, description, customerId, customerName, customerPhone,
-      totalAmount, depositAmount, paymentTypeId, columnId, assignees, attachments, deadlineAt,
-      departmentId,
+      orderName, title, description, customerName, customerPhone,
+      totalAmount, depositAmount, assignees, attachments, deadlineAt,
     } = data;
+
+    // FK maydonlari — bo'sh satr null'ga (izoh `fkYoNull` da).
+    const customerId = fkYoNull(data.customerId);
+    const paymentTypeId = fkYoNull(data.paymentTypeId);
+    const columnId = fkYoNull(data.columnId);
+    const departmentId = fkYoNull(data.departmentId);
+
+    if (!columnId) {
+      throw new BadRequestException("Buyurtma bosqichi (kanban ustuni) tanlanmagan.");
+    }
 
     const remainingAmount = Math.max(0, Math.round(Number(totalAmount || 0) - Number(depositAmount || 0)));
     const historyEmpId = await this.historyEmployeeId(employeeId, data.salesEmployeeId);
@@ -284,19 +320,20 @@ export class TasksService {
           columnId,
           assignees: assignees || "[]",
           attachments: attachments || "[]",
-          serviceId: data.serviceId,
+          serviceId: fkYoNull(data.serviceId),
           quantity: effectiveQuantity,
           coefficient: Number(data.coefficient || 1.0),
           variants: normalizedVariants ?? undefined,
           deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
-          branchId: data.branchId || data.targetBranchId || undefined,
+          branchId: fkYoNull(data.branchId) || fkYoNull(data.targetBranchId) || undefined,
           departmentId: departmentId || null,
         } as any
       });
 
       // Handle Stock Reservation
-      if (data.serviceId) {
-        await this.reserveStock(tx, createdTask.id, data.serviceId, effectiveQuantity);
+      const yakkaServiceId = fkYoNull(data.serviceId);
+      if (yakkaServiceId) {
+        await this.reserveStock(tx, createdTask.id, yakkaServiceId, effectiveQuantity);
       }
 
       // MIJOZ QARZI BU YERDA YANGILANMAYDI.
@@ -338,9 +375,13 @@ export class TasksService {
           return createdTask;
         });
       } catch (err: any) {
+        // FAQAT displayId to'qnashuvi qayta uriniladi. Ilgari bu yerda
+        // `message.includes('displayId')` sharti ham bor edi — u HAR QANDAY
+        // xatoni ushlab qolardi, chunki Prisma xato matniga kod parchasini
+        // qo'shadi, parchada esa `const displayId = ...` qatori turadi.
+        // Natijada FK buzilishi ham 5 marta behuda qaytarilardi.
         const isUniqueViolation = err?.code === 'P2002' ||
-          err?.message?.includes('Unique constraint') ||
-          err?.message?.includes('displayId');
+          err?.message?.includes('Unique constraint');
         if (isUniqueViolation && retryCount < 5) {
           retryCount++;
           continue;
@@ -362,15 +403,32 @@ export class TasksService {
 
   async createBulk(data: any, employeeId?: string) {
     const {
-      orderName, items, customerId, customerName, customerPhone,
-      totalDeposit, paymentTypeId, columnId, justification, assigneeIds, deadlineAt,
-      branchId, executorBranchId, departmentId,
-      // Tashkilotning qaysi vakili buyurtma bergani. Mavjud vakil tanlansa
-      // `contactId`, yangisi kiritilsa `contactName`/`contactPhone` keladi —
-      // ikkinchi holatda uni shu yerda yaratamiz, aks holda foydalanuvchi
-      // avval mijoz kartasini ochib vakil qo'shishga majbur bo'lardi.
-      contactId, contactName, contactPhone,
+      orderName, items, customerName, customerPhone,
+      totalDeposit, justification, assigneeIds, deadlineAt,
+      contactName, contactPhone,
     } = data;
+
+    // FK maydonlari — bo'sh satr null'ga aylantiriladi (izoh `fkYoNull` da).
+    const customerId = fkYoNull(data.customerId);
+    const paymentTypeId = fkYoNull(data.paymentTypeId);
+    const columnId = fkYoNull(data.columnId);
+    const branchId = fkYoNull(data.branchId);
+    const executorBranchId = fkYoNull(data.executorBranchId);
+    const departmentId = fkYoNull(data.departmentId);
+    // Tashkilotning qaysi vakili buyurtma bergani. Mavjud vakil tanlansa
+    // `contactId`, yangisi kiritilsa `contactName`/`contactPhone` keladi —
+    // ikkinchi holatda uni shu yerda yaratamiz, aks holda foydalanuvchi
+    // avval mijoz kartasini ochib vakil qo'shishga majbur bo'lardi.
+    const contactId = fkYoNull(data.contactId);
+
+    // Bosqich MAJBURIY — u null bo'lsa Postgres baribir yiqiladi, lekin
+    // xato "FK buzildi" bo'lib chiqadi. Sababni shu yerda aniq aytamiz.
+    if (!columnId) {
+      throw new BadRequestException("Buyurtma bosqichi (kanban ustuni) tanlanmagan.");
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new BadRequestException("Buyurtmaga hech bo'lmasa bitta xizmat qo'shing.");
+    }
 
     const totalDepositNum = Math.round(Number(totalDeposit || 0));
     // Zakolatni har taskning O'Z summasiga proporsional taqsimlaymiz (teng emas).
@@ -481,7 +539,11 @@ export class TasksService {
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const { title, description, totalAmount, serviceId, serviceOptions, quantity, coefficient } = item;
+        const { title, description, totalAmount, serviceOptions, quantity, coefficient } = item;
+        // Xizmat qatoridagi FK'lar ham bo'sh satr bo'lib kelishi mumkin.
+        const serviceId = fkYoNull(item.serviceId);
+        const itemVendorId = fkYoNull(item.vendorId);
+        const itemDepartmentId = fkYoNull(item.departmentId);
         totalOrderAmount += Number(totalAmount || 0);
 
         // Variant qatorlari berilgan bo'lsa — quantity sum bo'yicha hisoblanadi
@@ -532,11 +594,11 @@ export class TasksService {
             deadlineAt: (() => { const d = deadlineAt ? new Date(deadlineAt) : null; return d && !isNaN(d.getTime()) ? d : null; })(),
             branchId: branchId || undefined,
             executorBranchId: executorBranchId || null,
-            vendorId: item.vendorId || undefined,
+            vendorId: itemVendorId || undefined,
             vendorCost: Number(item.vendorCost || 0),
             // Bo'lim ham xizmatniki — shu orqali maosh va moliya to'g'ri
             // bo'limga tushadi.
-            departmentId: item.departmentId || departmentId || null,
+            departmentId: itemDepartmentId || departmentId || null,
             orderGroupId,
           } as any
         });
@@ -606,9 +668,9 @@ export class TasksService {
           return createdTasks;
         });
       } catch (err: any) {
+        // Faqat displayId to'qnashuvi — yuqoridagi `create()` dagi izohga qarang.
         const isUniqueViolation = err?.code === 'P2002' ||
-          err?.message?.includes('Unique constraint') ||
-          err?.message?.includes('displayId');
+          err?.message?.includes('Unique constraint');
         if (isUniqueViolation && bulkRetry < 5) {
           bulkRetry += items.length; // skip ahead by item count to avoid all collisions
           continue;
