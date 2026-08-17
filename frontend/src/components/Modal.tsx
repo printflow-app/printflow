@@ -10,6 +10,12 @@ interface ModalProps {
   type?: 'default' | 'danger' | 'success' | 'warning';
   footer?: React.ReactNode;
   maxWidth?: string;
+  /**
+   * `drawer` — o'ng tomondan surilib chiqadigan panel (uzun formalar uchun).
+   * Sukut bo'yicha o'rtadagi oyna: mavjud oynalarning hech biri o'zgarmaydi.
+   * Panelda balandlik har doim to'liq ekran, telefonda kengligi ham to'liq.
+   */
+  variant?: 'modal' | 'drawer';
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -20,6 +26,7 @@ const Modal: React.FC<ModalProps> = ({
   type = 'default',
   footer,
   maxWidth = 'max-w-md',
+  variant = 'modal',
 }) => {
   // Esc — eng yuqori (oxirgi ochilgan) modalni yopadi. stopPropagation bilan
   // pastdagi modal listener'iga ko'tarilmaydi.
@@ -49,9 +56,13 @@ const Modal: React.FC<ModalProps> = ({
   // `position: fixed` containing block'ni o'zgartiradi va backdrop ekranni
   // to'liq qoplamasligi mumkin. Portal bilan modal har doim viewport bo'yicha
   // joylashadi va tepada ochiq joy qolmaydi.
+  const drawer = variant === 'drawer';
+
   const overlay = (
     <div
-      className="fixed top-0 left-0 right-0 bottom-0 z-[1000] flex items-center justify-center p-4 overflow-y-auto"
+      className={`fixed top-0 left-0 right-0 bottom-0 z-[1000] flex ${
+        drawer ? 'justify-end' : 'items-center justify-center p-4 overflow-y-auto'
+      }`}
       style={{ height: '100dvh', width: '100vw' }}
     >
       <div
@@ -59,7 +70,15 @@ const Modal: React.FC<ModalProps> = ({
         style={{ height: '100dvh', width: '100vw' }}
         onClick={onClose}
       />
-      <div className={`relative bg-white rounded-xl shadow-2xl w-full ${maxWidth} overflow-hidden animate-slide-up border border-slate-100 flex flex-col max-h-[95vh] sm:max-h-[90vh] z-10`}>
+      <div
+        className={
+          drawer
+            // Panel: o'ng chetga yopishadi, balandligi to'liq ekran. Faqat chap
+            // burchaklari yumaloq — o'ng chet ekran qirrasi bilan tutashadi.
+            ? `relative bg-white shadow-2xl w-full ${maxWidth} h-full rounded-none sm:rounded-l-2xl overflow-hidden animate-drawer-in border-l border-slate-100 flex flex-col z-10`
+            : `relative bg-white rounded-xl shadow-2xl w-full ${maxWidth} overflow-hidden animate-slide-up border border-slate-100 flex flex-col max-h-[95vh] sm:max-h-[90vh] z-10`
+        }
+      >
         <div className={`px-4 sm:px-5 py-3.5 border-b border-slate-100 flex justify-between items-center ${typeConfig[type].bg}`}>
           <div className="flex items-center gap-2.5">
             {typeConfig[type].icon}

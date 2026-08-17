@@ -24,6 +24,10 @@ import { TaskIdentityBadges, TaskDeadlineBadges } from './Topshiriqlar/TaskBadge
 import MasulTanlash from './Topshiriqlar/MasulTanlash';
 import MijozTanlash from './Topshiriqlar/MijozTanlash';
 
+// Panel tugmalari forma tegidan tashqarida turadi (footer slotida), shuning
+// uchun ular `form` atributi orqali bog'lanadi — id ikkala joyda bir xil.
+const YANGI_BUYURTMA_FORM_ID = 'yangi-buyurtma-forma';
+
 interface AttachmentRecord {
   id: string;
   name: string;
@@ -215,7 +219,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const [overrides, setOverrides] = useState<any[]>([]); // {materialId, name, unit, quantity}
 
   const [newTaskForm, setNewTaskForm] = useState({
-    orderName: '', title: '', description: '', assigneeIds: [] as string[], columnId: '',
+    title: '', description: '', assigneeIds: [] as string[], columnId: '',
     customerId: '', customerName: '', customerPhone: '',
     // Vakil = tashkilotdagi aloqa shaxsi. Mijoz endi tashkilot bo'lgani uchun
     // "kim buyurtma berdi" degan ma'lumot alohida saqlanadi.
@@ -241,7 +245,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     ...(vendors.length > 0 ? [{ key: 'vendor', label: 'Hamkorga', icon: <Handshake size={13} /> }] : []),
   ];
   // Sotuvni kim oldi — KPI shu xodimga yoziladi (kiritgan odamdan farq qilishi mumkin).
-  const [salesEmployeeId, setSalesEmployeeId] = useState('');
   // Vendor assignment (used when executorType === 'vendor')
   const [vendorAssign, setVendorAssign] = useState({ vendorId: '', amount: '', note: '' });
   const [currentOrderService, setCurrentOrderService] = useState({
@@ -368,7 +371,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
   const openNewTaskModal = (initialColId?: string) => {
     setFormError(null);
     setNewTaskForm({
-      orderName: '', title: '', description: '', assigneeIds: [],
+      title: '', description: '', assigneeIds: [],
       columnId: initialColId || (columns[0]?.id || ''),
       customerId: '', customerName: '', customerPhone: '',
       contactId: '', contactName: '', contactPhone: '', contactRole: '',
@@ -654,7 +657,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
 
     try {
       const payload = {
-        orderName: newTaskForm.orderName,
         customerId: newTaskForm.customerId,
         customerName: newTaskForm.customerName,
         customerPhone: newTaskForm.customerPhone,
@@ -673,7 +675,6 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         branchId: activeBranchId || undefined,
         executorBranchId: executorType === 'branch' ? executorBranchId : null,
         departmentId: selectedDepartmentId || null,
-        salesEmployeeId: salesEmployeeId || null,
         // Har task O'Z xizmatining aniq narxini oladi — umumiy summa qayta taqsimlanmaydi.
         items: effectiveItems.map(it => ({
           ...it,
@@ -1403,27 +1404,60 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         )}
       </div>
 
-      {/* MODAL: NEW TASK */}
+      {/* PANEL: NEW TASK.
+          Forma uzun, shuning uchun o'rtadagi oyna emas — o'ngdan suriladigan
+          panel. Tugmalar `footer` slotida: u skroll maydonidan tashqarida,
+          ya'ni panel ichi qanchalik aylansa ham ko'rinib turadi. */}
       <Modal
         isOpen={isNewTaskModalOpen}
         onClose={() => setIsNewTaskModalOpen(false)}
         title="Yangi Buyurtma"
         maxWidth="max-w-2xl"
-      >
-        <form onSubmit={handleAddTask} className="flex flex-col gap-6">
-          {/* Order Details */}
-          <div className="bg-white p-5 rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
-            <div>
-              <label className="form-label">Buyurtma Nomi (Masalan: Bahor To'yi, Reklama Loyiha)</label>
-              <input
-                type="text"
-                placeholder="Buyurtma nomini kiriting..."
-                value={newTaskForm.orderName}
-                onChange={e => setNewTaskForm(f => ({ ...f, orderName: e.target.value }))}
-                className="input-minimal font-bold text-slate-700 h-12 border-2"
-              />
+        variant="drawer"
+        footer={
+          <div className="w-full space-y-2.5">
+            {/* XATO SABABI — tugma yonida va yo'qolmaydi. */}
+            {formError && (
+              <div className="flex items-start gap-2.5 p-3 rounded-xl border border-rose-200 bg-rose-50">
+                <AlertTriangle size={16} className="text-rose-500 shrink-0 mt-0.5" />
+                <p className="text-sm font-bold text-rose-700 leading-snug">{formError}</p>
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                className="btn-outline flex-1"
+                onClick={() => setIsNewTaskModalOpen(false)}
+              >
+                Bekor qilish
+              </button>
+              {(() => {
+                const finalTotal = newTaskForm.manualTotal ? Number(newTaskForm.manualTotal) : Number(newTaskForm.totalAmount);
+                const deposit = Number(newTaskForm.depositAmount);
+                const pct = finalTotal > 0 ? Math.round((deposit / finalTotal) * 100) : 100;
+                const blocked = finalTotal > 0 && pct < minPrepaymentPct && !prepaymentWarningAccepted;
+                return (
+                  // Tugma forma tegidan tashqarida — `form` atributi orqali
+                  // bog'lanadi, shunda submit avvalgidek ishlaydi.
+                  <button
+                    type="submit"
+                    form={YANGI_BUYURTMA_FORM_ID}
+                    disabled={blocked}
+                    className="btn-primary flex-[1.5]"
+                  >
+                    Buyurtma qo'shish
+                  </button>
+                );
+              })()}
             </div>
           </div>
+        }
+      >
+        <form id={YANGI_BUYURTMA_FORM_ID} onSubmit={handleAddTask} className="flex flex-col gap-6">
+          {/* BUYURTMA NOMI MAYDONI YO'Q.
+              Nom serverda o'zi yasaladi: "<Mijoz> — <xizmat>". Har xizmat
+              alohida task bo'lgani uchun har biri o'z nomini oladi. Qo'lda
+              yozilganda bu maydonga ko'pincha mijoz nomi tushib qolardi. */}
           {/* Customer Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-inner">
             <div className="md:col-span-2">
@@ -1606,11 +1640,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             )}
 
             {/* Add Item Form */}
+            {/* Sarlavha olib tashlandi: u tugmaga o'xshab ko'rinar, lekin
+                bosilmasdi — bitta ish uchun ikkita boshqaruv taassuroti
+                berardi. Endi faqat selekt: bosasan, qidirasan, tanlaysan. */}
             <div className="bg-orange-50/50 border border-orange-100 rounded-3xl p-5 space-y-4">
-              <h4 className="text-[11px] font-bold text-orange-600 uppercase tracking-widest flex items-center gap-2 mb-2">
-                <Plus size={13} /> Xizmat Qo'shish
-              </h4>
-
               <SearchableSelect
                 placeholder="Xizmatni tanlang..."
                 options={services.map(s => ({ id: s.id, label: s.name, subLabel: `${Number(s.basePrice).toLocaleString()} UZS/${s.unit}`, value: s }))}
@@ -1956,30 +1989,9 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                 </div>
               )}
 
-              {/* BUYURTMANI KIM OLDI — KPI shu xodimga yoziladi.
-                  Kiritgan odam bilan bir xil bo'lmasligi mumkin: doimiy mijoz
-                  ko'pincha rahbarga qo'ng'iroq qiladi, rahbar kiritadi, lekin
-                  sotuvni menejer olgan bo'ladi. Ilgari bunday holatda KPI
-                  umuman yozilmasdi (rahbar Employee jadvalida yo'q). */}
-              <div className="space-y-2 mt-5 mb-7">
-                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                  <Users size={11} /> Buyurtmani kim oldi (KPI)
-                </label>
-                <select
-                  value={salesEmployeeId}
-                  onChange={e => setSalesEmployeeId(e.target.value)}
-                  className="select-minimal h-10 font-bold w-full"
-                >
-                  <option value="">— Belgilanmagan —</option>
-                  {employees.map((e: any) => (
-                    <option key={e.id} value={e.id}>{e.fullName}</option>
-                  ))}
-                </select>
-                <p className="text-xs font-semibold text-slate-400 leading-relaxed">
-                  Sotuv KPI'si shu xodimga yoziladi. Buyurtmani o'zingiz olgan bo'lsangiz
-                  o'zingizni tanlang.
-                </p>
-              </div>
+              {/* "BUYURTMANI KIM OLDI (KPI)" TANLAGICHI OLIB TASHLANDI.
+                  Sotuv KPI'si endi buyurtmani KIRITGAN xodimga yoziladi
+                  (server `salesEmployeeId` kelmasa shunday qiladi). */}
 
 
               {/* BUYURTMA DARAJASIDAGI MAS'UL TANLAGICH OLIB TASHLANDI.
@@ -2001,41 +2013,8 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
               />
             </div>
 
-            {/* XATO SABABI — TUGMANING YONIDA VA YO'QOLMAYDI.
-                Toast 3 soniyada o'chadi va foydalanuvchi sababni o'qib
-                ulgurmasdi: tashqaridan "tugma ishlamayapti"dek ko'rinardi. */}
-            {formError && (
-              <div className="mt-6 flex items-start gap-2.5 p-3.5 rounded-xl border border-rose-200 bg-rose-50">
-                <AlertTriangle size={16} className="text-rose-500 shrink-0 mt-0.5" />
-                <p className="text-sm font-bold text-rose-700 leading-snug">{formError}</p>
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className={`flex flex-col sm:flex-row gap-2 pt-4 border-t border-slate-100 ${formError ? 'mt-3' : 'mt-6'}`}>
-              <button
-                type="button"
-                className="btn-outline flex-1"
-                onClick={() => setIsNewTaskModalOpen(false)}
-              >
-                Bekor qilish
-              </button>
-              {(() => {
-                const finalTotal = newTaskForm.manualTotal ? Number(newTaskForm.manualTotal) : Number(newTaskForm.totalAmount);
-                const deposit = Number(newTaskForm.depositAmount);
-                const pct = finalTotal > 0 ? Math.round((deposit / finalTotal) * 100) : 100;
-                const blocked = finalTotal > 0 && pct < minPrepaymentPct && !prepaymentWarningAccepted;
-                return (
-                  <button
-                    type="submit"
-                    disabled={blocked}
-                    className="btn-primary flex-[1.5]"
-                  >
-                    Buyurtma qo'shish
-                  </button>
-                );
-              })()}
-            </div>
+            {/* Tugmalar bu yerdan panelning `footer` slotiga ko'chirildi —
+                skroll bilan ketmasin, doim ko'rinib tursin. */}
           </div>
         </form>
       </Modal>
