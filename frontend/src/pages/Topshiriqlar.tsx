@@ -219,7 +219,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
     customerId: '', customerName: '', customerPhone: '',
     // Vakil = tashkilotdagi aloqa shaxsi. Mijoz endi tashkilot bo'lgani uchun
     // "kim buyurtma berdi" degan ma'lumot alohida saqlanadi.
-    contactId: '', contactName: '', contactPhone: '',
+    contactId: '', contactName: '', contactPhone: '', contactRole: '',
     totalAmount: '', depositAmount: '', paymentTypeId: '',
     items: [] as any[],
     manualTotal: '',
@@ -371,7 +371,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       orderName: '', title: '', description: '', assigneeIds: [],
       columnId: initialColId || (columns[0]?.id || ''),
       customerId: '', customerName: '', customerPhone: '',
-      contactId: '', contactName: '', contactPhone: '',
+      contactId: '', contactName: '', contactPhone: '', contactRole: '',
       totalAmount: '', depositAmount: '', paymentTypeId: paymentTypes[0]?.id || '',
       items: [], manualTotal: '', justification: '', deadlineAt: '',
     });
@@ -663,6 +663,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
         contactId: newTaskForm.contactId || undefined,
         contactName: newTaskForm.contactName || undefined,
         contactPhone: newTaskForm.contactPhone || undefined,
+        contactRole: newTaskForm.contactRole || undefined,
         totalDeposit: Number(newTaskForm.depositAmount) || 0,
         paymentTypeId: newTaskForm.paymentTypeId,
         columnId: bosqichId,
@@ -1435,6 +1436,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                   contactId: newTaskForm.contactId,
                   contactName: newTaskForm.contactName,
                   contactPhone: newTaskForm.contactPhone,
+                  contactRole: newTaskForm.contactRole,
                 }}
                 onChange={v => setNewTaskForm(f => ({ ...f, ...v }))}
               />

@@ -408,7 +408,11 @@ export class TasksService {
     const {
       orderName, items, customerName, customerPhone,
       totalDeposit, justification, assigneeIds, deadlineAt,
-      contactName, contactPhone,
+      // Tashkilotning qaysi vakili buyurtma bergani. Mavjud vakil tanlansa
+      // `contactId` (u pastda `fkYoNull` orqali olinadi), yangisi kiritilsa
+      // `contactName`/`contactPhone`/`contactRole` keladi va shu yerda
+      // yaratiladi — foydalanuvchi mijoz kartasini ochishga majbur bo'lmasin.
+      contactName, contactPhone, contactRole,
     } = data;
 
     // FK maydonlari — bo'sh satr null'ga aylantiriladi (izoh `fkYoNull` da).
@@ -519,10 +523,21 @@ export class TasksService {
         const ism = String(contactName).trim();
         const mavjud = await tx.customerContact.findFirst({
           where: { customerId: finalCustomerId, name: { equals: ism, mode: 'insensitive' } },
-          select: { id: true },
+          // `role` ham kerak — mavjud lavozimni ustidan yozib yubormaslik uchun.
+          select: { id: true, role: true },
         });
+        const lavozim = String(contactRole || '').trim() || null;
         if (mavjud) {
           finalContactId = mavjud.id;
+          // Bir xil ismli vakil bor, lekin lavozimi hali yozilmagan bo'lsa —
+          // shu buyurtmada kiritilgani bilan to'ldiramiz. Mavjud lavozimni
+          // ustidan yozmaymiz: mijoz kartasidagi ma'lumot aniqroq.
+          if (lavozim && !mavjud.role) {
+            await tx.customerContact.update({
+              where: { id: mavjud.id },
+              data: { role: lavozim } as any,
+            });
+          }
         } else {
           const soni = await tx.customerContact.count({ where: { customerId: finalCustomerId } });
           const yangi = await tx.customerContact.create({
@@ -530,6 +545,7 @@ export class TasksService {
               customerId: finalCustomerId,
               name: ism,
               phone: String(contactPhone || '').trim() || null,
+              role: lavozim,
               // Birinchi vakil — asosiy aloqa shaxsi.
               isPrimary: soni === 0,
             } as any,
