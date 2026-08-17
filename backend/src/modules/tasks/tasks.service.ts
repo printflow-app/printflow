@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
@@ -228,7 +228,10 @@ export class TasksService {
       if (!finalCustomerId && (customerName || customerPhone)) {
         // Dublikatning oldini olish — telefon (normalizatsiya bilan), keyin ism bo'yicha.
         let customer = await this.findExistingCustomer(tx, customerName, customerPhone);
-        if (!customer) {
+        // Ismsiz mijoz yaratib bo'lmaydi (Customer.name majburiy). Faqat telefon
+        // kelib, u bo'yicha mos mijoz topilmasa — butun buyurtma Prisma xatosi
+        // bilan yiqilib ketmasin, buyurtma mijozsiz saqlanadi.
+        if (!customer && customerName) {
           // Mijozni buyurtmaning filiali bilan yaratamiz — aks holda branchId=null
           // bo'lib qoladi va filial tanlangan Mijozlar ro'yxati filtridan tushib ketadi.
           customer = await tx.customer.create({
@@ -239,7 +242,7 @@ export class TasksService {
             } as any
           });
         }
-        finalCustomerId = customer.id;
+        if (customer) finalCustomerId = customer.id;
       }
 
       // Resolve the name to use for initials (fetch from DB if only ID was supplied)
@@ -397,19 +400,40 @@ export class TasksService {
     while (!tasks) {
       try {
         tasks = await this.prisma.$transaction(async (tx) => {
+      // MIJOZSIZ BUYURTMA SAQLANMAYDI.
+      //
+      // Tanlagich bo'sh qoldirilsa buyurtma kanbanda paydo bo'lardi-yu, hech
+      // qaysi mijozga bog'lanmasdi: Mijozlar sahifasida umuman ko'rinmas,
+      // summasi qarz hisobiga tushmas, zakolat tranzaksiyasi ham egasiz
+      // qolardi. Frontend tekshiruvi chetlab o'tilsa ham (eski tab, bot,
+      // to'g'ridan-to'g'ri so'rov) baza buzilmasligi uchun shart shu yerda ham
+      // turadi.
+      //
+      // Tashkilot nomi yozilmay faqat vakil ismi kiritilsa — o'sha odamning
+      // o'zi mijoz bo'ladi. Bosmaxonaga buyurtmaning katta qismi jismoniy
+      // shaxsdan keladi va ular uchun soxta "tashkilot" o'ylab topish shart
+      // emas (bazadagi mijozlarning ko'pi allaqachon shunday: "Ozodbek aka").
+      const mijozNomi =
+        String(customerName || '').trim() || String(contactName || '').trim();
+
       let finalCustomerId = customerId;
 
-      if (!finalCustomerId && (customerName || customerPhone)) {
+      if (!finalCustomerId) {
+        if (!mijozNomi) {
+          throw new BadRequestException(
+            "Mijozni tanlang — buyurtma mijozga bog'lanmasdan saqlanmaydi",
+          );
+        }
         // Dublikatning oldini olish: avval telefon bo'yicha (raqamlar normalizatsiyasi
         // bilan), keyin ism bo'yicha mavjud mijozni qidiramiz. Topilsa — o'shani
         // ishlatamiz, yangi yaratmaymiz.
-        let customer = await this.findExistingCustomer(tx, customerName, customerPhone);
+        let customer = await this.findExistingCustomer(tx, mijozNomi, customerPhone);
         if (!customer) {
           // Mijozni buyurtmaning filiali bilan yaratamiz — aks holda branchId=null
           // bo'lib qoladi va filial tanlangan Mijozlar ro'yxati filtridan tushib ketadi.
           customer = await tx.customer.create({
             data: {
-              name: customerName,
+              name: mijozNomi,
               // Tashkilot telefoni yozilmagan bo'lsa vakilnikini olamiz —
               // amalda tashkilotga aynan shu raqam orqali bog'laniladi va
               // mijoz kartasi telefonsiz qolib ketmaydi.
@@ -425,8 +449,13 @@ export class TasksService {
       // shu yerda yaratiladi. Ism bo'yicha takror tekshiriladi: bir odam
       // ikki marta ro'yxatga tushmasin (foydalanuvchi qidiruvda topa
       // olmay yangisini yozib yuborishi mumkin).
+      //
+      // Odamning o'zi mijoz bo'lib qolgan holatda (tashkilot nomi yozilmagan)
+      // vakil yozuvi yaratilmaydi — aks holda kartochkada "Ali · Ali" degan
+      // ma'nosiz takror chiqadi.
+      const odamMijozBoldi = !customerId && !String(customerName || '').trim();
       let finalContactId: string | null = contactId || null;
-      if (!finalContactId && String(contactName || '').trim() && finalCustomerId) {
+      if (!finalContactId && !odamMijozBoldi && String(contactName || '').trim() && finalCustomerId) {
         const ism = String(contactName).trim();
         const mavjud = await tx.customerContact.findFirst({
           where: { customerId: finalCustomerId, name: { equals: ism, mode: 'insensitive' } },
@@ -449,14 +478,19 @@ export class TasksService {
         }
       }
 
-      // Resolve display-name for initials once before the loop
-      let effectiveBulkName = customerName;
-      if (!effectiveBulkName && finalCustomerId) {
+      // Kartochkada ko'rinadigan nom/telefon. Bu maydonlar task'ning o'zida
+      // nusxa saqlanadi (kanban ro'yxati mijoz jadvaliga JOIN qilmasligi
+      // uchun), shuning uchun ular BO'SH QOLMASLIGI kerak: faqat `customerId`
+      // yuborilganda kartochka mijozsiz ko'rinardi.
+      let effectiveBulkName = mijozNomi || null;
+      let effectiveBulkPhone = String(customerPhone || '').trim() || String(contactPhone || '').trim() || null;
+      if (finalCustomerId && (!effectiveBulkName || !effectiveBulkPhone)) {
         const c = await tx.customer.findUnique({
           where: { id: finalCustomerId },
-          select: { name: true },
+          select: { name: true, phone: true },
         });
-        effectiveBulkName = c?.name ?? null;
+        effectiveBulkName = effectiveBulkName || c?.name || null;
+        effectiveBulkPhone = effectiveBulkPhone || c?.phone || null;
       }
       const bulkTenant = await tx.tenant.findUnique({
         where: { id: TenantContext.getTenantId() },
@@ -507,8 +541,8 @@ export class TasksService {
             description,
             customerId: finalCustomerId,
             customerContactId: finalContactId,
-            customerName,
-            customerPhone,
+            customerName: effectiveBulkName,
+            customerPhone: effectiveBulkPhone,
             totalAmount: Number(totalAmount || 0),
             depositAmount: depositForThisTask,
             remainingAmount: Math.max(0, Math.round(Number(totalAmount || 0) - depositForThisTask)),

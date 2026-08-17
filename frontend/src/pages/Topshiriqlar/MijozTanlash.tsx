@@ -142,7 +142,11 @@ const MijozTanlash: React.FC<{
 
   return (
     <div ref={idishRef} className="relative">
-      <label className="form-label px-1">Mijoz (tashkilot) va vakili</label>
+      {/* Yulduzcha — mijoz majburiy. Buyurtma mijozga bog'lanmasa Mijozlar
+          sahifasida ham, qarz hisobida ham ko'rinmaydi. */}
+      <label className="form-label px-1">
+        Mijoz (tashkilot) va vakili <span className="text-red-500">*</span>
+      </label>
 
       {!tanlangan ? (
         <div className="flex gap-2">
@@ -257,6 +261,16 @@ const MijozTanlash: React.FC<{
             className="input-minimal"
           />
         </div>
+      )}
+
+      {/* JISMONIY SHAXS. Bosmaxonaga buyurtmaning katta qismi tashkilotdan
+          emas, odamning o'zidan keladi — ular uchun soxta tashkilot nomi
+          o'ylab topish shart emasligini aytib qo'yamiz, aks holda "tashkilot
+          nomi" majburiydek tuyulib, maydon bo'sh qoladi. */}
+      {tanlangan && !qiymat.customerId && !qiymat.customerName.trim() && (
+        <p className="mt-1.5 px-1 text-[11px] text-slate-400 leading-snug">
+          Tashkilot nomi bo'sh qolsa — vakil ismi mijoz bo'lib saqlanadi.
+        </p>
       )}
 
       {/* Tanlangan tashkilotning mavjud vakillari — bir bosishda almashtirish */}

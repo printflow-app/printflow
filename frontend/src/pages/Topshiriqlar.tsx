@@ -556,6 +556,21 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       return;
     }
 
+    // MIJOZ MAJBURIY.
+    //
+    // Tanlagich bo'sh qoldirilsa buyurtma kanbanda paydo bo'lardi-yu, hech
+    // qaysi mijozga bog'lanmasdi: Mijozlar sahifasida ko'rinmas, summasi
+    // qarz hisobiga tushmas edi. Amalda mijoz nomi "Buyurtma nomi" maydoniga
+    // yozilib, tanlagich umuman ochilmay qolgan (45.5 mln so'mlik buyurtma
+    // shunday egasiz qolgan). Vakil ismi yozilgan bo'lsa yetarli — o'sha
+    // odamning o'zi mijoz bo'ladi.
+    if (!newTaskForm.customerId
+        && !newTaskForm.customerName.trim()
+        && !newTaskForm.contactName.trim()) {
+      showStatus('error', 'Mijozni tanlang — buyurtma mijozsiz saqlanmaydi!');
+      return;
+    }
+
     // TANLANGAN, LEKIN RO'YXATGA QO'SHILMAGAN XIZMAT.
     //
     // Mas'ul endi xizmat qatorida tanlanadi, qator esa faqat ro'yxatga
@@ -643,6 +658,10 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
       setVendorAssign({ vendorId: '', amount: '', note: '' });
       showStatus('success', "Buyurtma yaratildi!");
       fetchData(true);
+      // Buyurtma bilan birga yangi mijoz/vakil yaratilgan bo'lishi mumkin —
+      // ro'yxatni yangilamasak, keyingi buyurtmada o'sha mijoz tanlagichda
+      // topilmay, foydalanuvchi uni yana "yangi" qilib yozib yuboradi.
+      invalidate.customers();
     } catch (err: any) {
       // Serverning haqiqiy sababini ko'rsatamiz. Ilgari bu yer har qanday
       // xatoni "Xatolik yuz berdi!" ga aylantirardi — omborda material
