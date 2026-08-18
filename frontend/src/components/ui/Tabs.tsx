@@ -1,4 +1,3 @@
-import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
 export interface TabItem<T extends string = string> {
@@ -27,7 +26,7 @@ export function Tabs<T extends string = string>({
 
   return (
     <div
-      className={`inline-flex items-center gap-1 bg-slate-100 p-1 rounded-card border border-slate-200/50 ${className}`}
+      className={`inline-flex items-center gap-1 bg-slate-100 p-1 rounded-card border border-slate-200/50 max-w-full overflow-x-auto no-scrollbar ${className}`}
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
@@ -51,14 +50,13 @@ export function Tabs<T extends string = string>({
             {Icon && (
               <Icon
                 size={isSm ? 14 : 16}
-                strokeWidth={1.75}
                 className={isActive ? 'text-orange-600' : 'text-slate-500'}
               />
             )}
             <span>{tab.label}</span>
             {tab.count !== undefined && (
               <span
-                className={`ml-1 px-1.5 py-0.2 rounded-full text-[11px] font-semibold ${
+                className={`ml-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
                   isActive
                     ? 'bg-orange-50 text-orange-700'
                     : 'bg-slate-200/70 text-slate-600'

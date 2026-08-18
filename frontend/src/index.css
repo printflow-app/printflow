@@ -163,6 +163,14 @@
 /* Lucide ikonkalar — spec §9: bitta qalinlik 1.75 (CSS SVG atributidan ustun) */
 .lucide { stroke-width: 1.75; }
 
+/* react-toastify — global toast konteynerini dizayn-tizimga moslash */
+.Toastify__toast {
+  border-radius: var(--radius-card);
+  font-family: inherit;
+  font-size: 14px;
+  box-shadow: 0 10px 30px rgba(41, 37, 36, 0.12);
+}
+
 /* Spec §11: bir xil focus halqasi hamma joyda */
 :focus-visible {
   outline: 2px solid var(--primary);

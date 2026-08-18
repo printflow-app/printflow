@@ -47,39 +47,39 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   return (
     <div className="relative w-full" ref={containerRef}>
-      {label && <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">{label}</label>}
-      
-      <div 
+      {label && <label className="form-label">{label}</label>}
+
+      <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full bg-slate-50 border rounded-xl py-3 px-4 flex items-center justify-between cursor-pointer transition-all ${
-          isOpen ? 'border-slate-500 ring-4 ring-slate-500/10 bg-white' : 'border-slate-200 hover:border-slate-300'
-        } ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}`}
+        className={`w-full min-h-control bg-white border rounded-control px-3 py-1.5 flex items-center justify-between cursor-pointer transition-all duration-120 ${
+          isOpen ? 'border-orange-500 ring-2 ring-orange-500/20' : 'border-slate-200 hover:border-slate-300'
+        } ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
       >
         <div className="flex-1 truncate">
           {selectedOption ? (
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-slate-800">{selectedOption.label}</span>
-              {selectedOption.subLabel && <span className="text-xs font-bold text-slate-600 uppercase">{selectedOption.subLabel}</span>}
+              <span className="text-sm font-medium text-slate-900">{selectedOption.label}</span>
+              {selectedOption.subLabel && <span className="text-xs text-slate-500">{selectedOption.subLabel}</span>}
             </div>
           ) : (
-            <span className="text-sm font-bold text-slate-400">{placeholder}</span>
+            <span className="text-sm text-slate-400">{placeholder}</span>
           )}
         </div>
-        <ChevronDown size={18} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-120 ${isOpen ? 'rotate-180' : ''}`} />
       </div>
 
       {isOpen && (
-        <div className="absolute z-[110] w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
-          <div className="p-3 border-b border-slate-100">
+        <div className="absolute z-dropdown w-full mt-1.5 bg-white border border-slate-200 rounded-card shadow-md overflow-hidden animate-slide-up">
+          <div className="p-2 border-b border-slate-100">
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
+              <input
                 autoFocus
-                type="text" 
-                value={search} 
+                type="text"
+                value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Qidirish..." 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-xs font-bold outline-none focus:border-slate-400 focus:bg-white transition-all"
+                placeholder="Qidirish..."
+                className="w-full h-control-sm bg-white border border-slate-200 rounded-control pl-9 pr-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-120 placeholder-slate-400"
               />
             </div>
           </div>
@@ -94,21 +94,19 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className={`px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors ${
-                    value === opt.id ? 'bg-slate-50/50' : ''
+                  className={`px-3 py-2.5 hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors duration-120 ${
+                    value === opt.id ? 'bg-orange-50/60' : ''
                   }`}
                 >
                   <div className="flex flex-col">
-                    <span className={`text-sm ${value === opt.id ? 'font-bold text-slate-700' : 'font-bold text-slate-700'}`}>
-                      {opt.label}
-                    </span>
-                    {opt.subLabel && <span className="text-xs font-bold text-slate-400 uppercase">{opt.subLabel}</span>}
+                    <span className="text-sm font-medium text-slate-800">{opt.label}</span>
+                    {opt.subLabel && <span className="text-xs text-slate-500">{opt.subLabel}</span>}
                   </div>
-                  {value === opt.id && <Check size={16} className="text-slate-600" />}
+                  {value === opt.id && <Check size={16} className="text-orange-600" />}
                 </div>
               ))
             ) : (
-              <div className="px-4 py-8 text-center text-slate-400 text-xs font-bold italic">
+              <div className="px-4 py-8 text-center text-slate-400 text-sm">
                 Hech narsa topilmadi
               </div>
             )}

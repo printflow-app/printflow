@@ -262,7 +262,8 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
                         </button>
                      </div>
                   </div>
-                             <div className="pt-2">
+               </div>
+               <div className="pt-2">
                   <button type="button" className="btn-primary w-full" onClick={handleCloseModal}>Tushunarli, yopish</button>
                </div>
             </div>

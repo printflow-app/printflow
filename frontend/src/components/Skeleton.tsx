@@ -1,5 +1,3 @@
-import React from 'react';
-
 // =============================================
 // Skeleton — content placeholder while data loads.
 // Replaces full-page spinner with shape-aware shimmer.
@@ -109,49 +107,5 @@ export function SkeletonKanban({ columns = 4 }: { columns?: number }) {
   );
 }
 
-// ---------- Empty State component ----------
-
-interface EmptyStateProps {
-  icon?: React.ReactNode;
-  title: string;
-  description?: string;
-  action?: { label: string; onClick: () => void };
-  secondaryAction?: { label: string; onClick: () => void };
-}
-
-/** Empty state with optional CTA. Use when a list is empty. */
-export function EmptyState({ icon, title, description, action, secondaryAction }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      {icon && (
-        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4 text-slate-400">
-          {icon}
-        </div>
-      )}
-      <h3 className="text-base font-bold text-slate-800 mb-2">{title}</h3>
-      {description && (
-        <p className="text-sm text-slate-500 max-w-md mb-6 leading-relaxed">{description}</p>
-      )}
-      {(action || secondaryAction) && (
-        <div className="flex flex-wrap gap-3 justify-center">
-          {action && (
-            <button
-              onClick={action.onClick}
-              className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm transition-colors"
-            >
-              {action.label}
-            </button>
-          )}
-          {secondaryAction && (
-            <button
-              onClick={secondaryAction.onClick}
-              className="h-10 px-5 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-sm border border-slate-200 transition-colors"
-            >
-              {secondaryAction.label}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+// EmptyState bu yerdan olib tashlandi — yagona manba: components/ui/EmptyState.tsx
+// (bu nusxani hech kim import qilmasdi va ko'rinishi dizayn-tizimga zid edi)
