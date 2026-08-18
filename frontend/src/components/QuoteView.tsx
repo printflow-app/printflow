@@ -121,12 +121,12 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
               )}
               <div className="min-w-0">
                 <h1
-                  className="text-3xl font-bold tracking-tight leading-tight uppercase truncate"
+                  className="text-3xl font-semibold tracking-tight leading-tight truncate"
                   style={{ color: br.companyNameColor }}
                 >
                   {br.companyName || tenant.name}
                 </h1>
-                <p className="text-xs font-bold uppercase tracking-[0.3em] mt-1"
+                <p className="label-caps mt-1"
                    style={{ color: br.headerText, opacity: 0.8 }}>
                   {br.headerTitle}
                 </p>
@@ -138,20 +138,20 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
                 {branch.name && (
                   <p className="text-sm font-medium mt-2 flex items-center gap-1.5"
                      style={{ color: br.headerText, opacity: 0.9 }}>
-                    <Building2 size={14} /> {branch.name}
+                    <Building2 size={16} /> {branch.name}
                   </p>
                 )}
               </div>
             </div>
 
             <div className="text-right flex-shrink-0">
-              <p className="text-xs font-bold uppercase tracking-widest"
+              <p className="label-caps"
                  style={{ color: br.headerText, opacity: 0.7 }}>Sana</p>
-              <p className="text-base font-bold mt-0.5">{formatDate()}</p>
+              <p className="text-base font-semibold mt-0.5">{formatDate()}</p>
               {phone && (
                 <p className="text-sm font-medium mt-3 flex items-center justify-end gap-1.5"
                    style={{ color: br.headerText }}>
-                  <Phone size={13} /> {phone}
+                  <Phone size={16} /> {phone}
                 </p>
               )}
               {address && (
@@ -168,41 +168,41 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
         {/* Lines table */}
         <div className="px-12 py-8">
           {lines.length === 0 ? (
-            <div className="text-center py-20 text-slate-300">
-              <p className="text-sm font-bold uppercase tracking-widest">Hech qaysi pozitsiya tanlanmagan</p>
+            <div className="text-center py-20 text-slate-500">
+              <p className="text-sm font-semibold">Hech qaysi pozitsiya tanlanmagan</p>
             </div>
           ) : (
-            <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${br.cardBorder}` }}>
+            <div className="rounded-card border overflow-x-auto" style={{ borderColor: br.cardBorder }}>
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr
-                    className="text-xs font-bold uppercase tracking-wider"
+                    className="text-xs font-semibold uppercase tracking-wider"
                     style={{ backgroundColor: br.tableHeaderBg, color: br.tableHeaderText }}
                   >
-                    <th className="px-4 py-3 text-center font-bold w-10">#</th>
-                    <th className="px-4 py-3 text-left font-bold">Mahsulot</th>
-                    <th className="px-4 py-3 text-center font-bold">Soni</th>
-                    <th className="px-4 py-3 text-right font-bold">Dona narxi</th>
-                    <th className="px-4 py-3 text-right font-bold">Summa</th>
+                    <th className="px-4 py-3 text-center font-semibold w-10">#</th>
+                    <th className="px-4 py-3 text-left font-semibold">Mahsulot</th>
+                    <th className="px-4 py-3 text-center font-semibold">Soni</th>
+                    <th className="px-4 py-3 text-right font-semibold">Dona narxi</th>
+                    <th className="px-4 py-3 text-right font-semibold">Summa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-xs">
                   {lines.map((line, idx) => (
                     <tr key={line.id} className="odd:bg-white even:bg-slate-50">
-                      <td className="px-4 py-3.5 text-center font-bold text-slate-400">{idx + 1}</td>
+                      <td className="px-4 py-3.5 text-center font-semibold text-slate-500 tabular-nums">{idx + 1}</td>
                       <td className="px-4 py-3.5">
-                        <p className="font-bold text-slate-900 uppercase tracking-wider text-sm">{line.serviceName}</p>
+                        <p className="font-semibold text-slate-900 text-sm">{line.serviceName}</p>
                         {line.optionLabel && (
                           <p className="text-xs text-slate-500 mt-0.5">{line.optionLabel}</p>
                         )}
                       </td>
-                      <td className="px-4 py-3.5 text-center font-bold text-slate-900 text-sm">
-                        {formatPrice(line.quantity)} <span className="text-xs font-normal text-slate-400">{line.unit}</span>
+                      <td className="px-4 py-3.5 text-center font-semibold text-slate-900 text-sm tabular-nums">
+                        {formatPrice(line.quantity)} <span className="text-xs font-normal text-slate-500">{line.unit}</span>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-bold text-slate-900 text-xs whitespace-nowrap">
-                        {formatPrice(line.unitPrice)} <span className="text-xs font-normal text-slate-400">so'm</span>
+                      <td className="px-4 py-3.5 text-right font-semibold text-slate-900 text-xs whitespace-nowrap tabular-nums">
+                        {formatPrice(line.unitPrice)} <span className="text-xs font-normal text-slate-500">so'm</span>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-bold text-sm whitespace-nowrap"
+                      <td className="px-4 py-3.5 text-right font-semibold text-sm whitespace-nowrap tabular-nums"
                           style={{ color: br.totalSum }}>
                         {formatPrice(line.total)} <span className="text-xs font-normal" style={{ color: br.totalSum, opacity: 0.7 }}>so'm</span>
                       </td>
@@ -211,10 +211,10 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
                 </tbody>
                 <tfoot>
                   <tr style={{ backgroundColor: br.accent + '12', borderTop: `2px solid ${br.accent}` }}>
-                    <td colSpan={4} className="px-4 py-4 text-right text-sm font-bold uppercase tracking-widest" style={{ color: br.accent }}>
+                    <td colSpan={4} className="px-4 py-4 text-right text-sm font-semibold" style={{ color: br.accent }}>
                       Jami:
                     </td>
-                    <td className="px-4 py-4 text-right text-base font-bold whitespace-nowrap" style={{ color: br.accent }}>
+                    <td className="px-4 py-4 text-right text-base font-semibold whitespace-nowrap tabular-nums" style={{ color: br.accent }}>
                       {formatPrice(grandTotal)} <span className="text-xs font-normal">so'm</span>
                     </td>
                   </tr>
@@ -225,7 +225,7 @@ export const QuoteView = forwardRef<HTMLDivElement, Props>(
         </div>
 
         {/* Footer */}
-        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-widest bg-white">
+        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500 bg-white">
           <span>{br.companyName || tenant.name} &copy; {new Date().getFullYear()}</span>
           <span className="text-right max-w-[60%]">{br.footerNote}</span>
         </div>

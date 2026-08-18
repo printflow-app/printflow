@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Clock, UserCheck, Calendar, CheckCircle2, AlertCircle, Check, X,
-  LogIn, LogOut, Users, MapPin, AlarmClock, ThumbsUp, ThumbsDown, Activity, Download,
+  Clock, UserCheck, Calendar, CheckCircle2,
+  LogIn, LogOut, Users, MapPin, AlarmClock, ThumbsUp, ThumbsDown, Download,
 } from 'lucide-react';
 import { attendanceApi, settingsApi, overtimeApi } from '../api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEmployees } from '../hooks/queries';
 import Modal from '../components/Modal';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { SkeletonStats, SkeletonTable } from '../components/Skeleton';
+import { Badge, Toast } from '../components/ui';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { exportToXlsx } from '../utils/exportToXlsx';
 import { toast } from 'react-toastify';
@@ -353,7 +354,12 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const fmtClock = (iso: string | null) =>
     iso ? new Date(iso).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '—';
 
-  if (isLoading) return <LoadingSpinner fullPage />;
+  if (isLoading) return (
+    <div className="space-y-4">
+      <SkeletonStats count={3} />
+      <SkeletonTable rows={6} cols={5} />
+    </div>
+  );
 
   const pendingOvertime = overtimeRequests.filter(r => r.status === 'PENDING');
   const reviewedOvertime = overtimeRequests.filter(r => r.status !== 'PENDING').slice(0, 10);
@@ -364,55 +370,40 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   const buttonState: 'keldim' | 'ketdim' | 'done' = !isCheckedIn ? 'keldim' : !isCheckedOut ? 'ketdim' : 'done';
 
   return (
-    <div className="space-y-6 pb-16 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 pb-16 animate-fade-in">
       {/* Status notification */}
-      {statusMessage && (
-        <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-          {statusMessage.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-          <span className="font-bold text-sm tracking-tight">{statusMessage.text}</span>
+      {statusMessage && <Toast type={statusMessage.type}>{statusMessage.text}</Toast>}
+
+      {/* Toolbar — sahifa nomi shell sarlavhasida, bu yerda faqat filtrlar */}
+      {canManage && canViewAll && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-2 bg-white px-3 h-control rounded-control border border-slate-200">
+            <Calendar size={14} className="text-slate-400" />
+            <input
+              type="date"
+              value={filterDate}
+              onChange={e => setFilterDate(e.target.value)}
+              className="text-xs font-medium text-slate-700 bg-transparent outline-none cursor-pointer"
+            />
+          </div>
+          <button
+            data-tour-id="davomat-settings"
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="icon-btn bg-white border border-slate-200"
+            title="Ish vaqti sozlamalari"
+          >
+            <Clock size={18} />
+          </button>
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
-        <div>
-          <h2 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <Activity size={22} className="text-orange-500" /> Davomat
-          </h2>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-            GPS geofencing orqali kelish va ketish
-          </p>
-        </div>
-        {canManage && canViewAll && (
-          <div className="flex items-center flex-wrap gap-2 sm:gap-3">
-            <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200">
-              <Calendar size={14} className="text-slate-400" />
-              <input
-                type="date"
-                value={filterDate}
-                onChange={e => setFilterDate(e.target.value)}
-                className="text-xs font-bold text-slate-700 bg-transparent outline-none cursor-pointer"
-              />
-            </div>
-            <button
-              data-tour-id="davomat-settings"
-              onClick={() => setIsSettingsModalOpen(true)}
-              className="w-11 h-11 flex items-center justify-center bg-slate-100 text-slate-500 rounded-2xl border border-slate-200 hover:bg-white hover:text-orange-600 hover:border-orange-200 transition-all"
-              title="Ish vaqti sozlamalari"
-            >
-              <Clock size={18} />
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* ── KELDIM / KETDIM Card ──────────────────────────────────── */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-orange-100 bg-orange-50/40">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
+      <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+        <div className="p-5 border-b border-slate-100">
+          <h3 className="t-h3 flex items-center gap-2">
             <UserCheck size={16} className="text-orange-500" /> Mening Davomatim — Bugun
           </h3>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="t-caption mt-0.5">
             {currentUser.fullName} · {getTodayString()}
           </p>
         </div>
@@ -423,18 +414,18 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <button
               onClick={handleSelfMark}
               disabled={isMarking || buttonState === 'done'}
-              className={`relative w-44 h-44 rounded-full font-bold uppercase tracking-widest text-base shadow-2xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`relative w-44 h-44 rounded-full font-semibold text-base transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
                 buttonState === 'keldim'
-                  ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-orange-500/40'
+                  ? 'bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] text-white'
                   : buttonState === 'ketdim'
-                  ? 'bg-slate-600 hover:bg-slate-700 text-white shadow-slate-500/40'
-                  : 'bg-emerald-500 text-white shadow-emerald-500/40'
+                  ? 'bg-slate-600 hover:bg-slate-700 text-white'
+                  : 'bg-emerald-500 text-white'
               }`}
             >
               <div className="flex flex-col items-center gap-1.5">
-                {buttonState === 'keldim' && <><LogIn size={32} strokeWidth={2.5} /><span>Keldim</span></>}
-              {buttonState === 'ketdim' && <><LogOut size={32} strokeWidth={2.5} /><span>Ketdim</span></>}
-              {buttonState === 'done' && <><CheckCircle2 size={32} strokeWidth={2.5} /><span>Tayyor</span></>}
+                {buttonState === 'keldim' && <><LogIn size={32} /><span>Keldim</span></>}
+              {buttonState === 'ketdim' && <><LogOut size={32} /><span>Ketdim</span></>}
+              {buttonState === 'done' && <><CheckCircle2 size={32} /><span>Tayyor</span></>}
             </div>
             {isMarking && (
               <div className="absolute inset-0 rounded-full bg-white/20 flex items-center justify-center">
@@ -443,48 +434,48 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             )}
           </button>
           {buttonState === 'ketdim' && (
-            <p className="text-[11px] font-bold text-orange-600 animate-pulse mt-1">
+            <p className="text-xs font-medium text-orange-600 animate-pulse mt-1">
               Ortiqcha ish izohini Telegram'da yozing
             </p>
           )}
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+          <div className="flex items-center gap-1.5 t-caption">
             <MapPin size={11} /> GPS orqali ofis hududi tekshiriladi
           </div>
           </div>
 
           {/* Status panel */}
           <div className="lg:col-span-2 grid grid-cols-2 gap-3">
-            <div className={`rounded-2xl border p-4 ${myToday?.checkIn ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+            <div className={`rounded-card border p-4 ${myToday?.checkIn ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <LogIn size={14} className={myToday?.checkIn ? 'text-emerald-600' : 'text-slate-300'} />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Kelish</span>
+                <span className="label-caps">Kelish</span>
               </div>
               <p className={`text-2xl font-bold font-mono tabular-nums ${myToday?.checkIn ? 'text-emerald-700' : 'text-slate-300'}`}>
                 {formatTime(myToday?.checkIn || null)}
               </p>
               {myToday?.lateMinutes && myToday.lateMinutes > 0 ? (
-                <p className="text-xs font-bold text-rose-600 mt-1">+{myToday.lateMinutes} m kech</p>
+                <p className="text-xs font-semibold text-rose-600 mt-1">+{myToday.lateMinutes} m kech</p>
               ) : myToday?.checkIn ? (
-                <p className="text-xs font-bold text-emerald-600 mt-1">Vaqtida</p>
+                <p className="text-xs font-semibold text-emerald-600 mt-1">Vaqtida</p>
               ) : (
-                <p className="text-xs font-bold text-slate-400 mt-1">Hali belgilanmagan</p>
+                <p className="text-xs font-medium text-slate-500 mt-1">Hali belgilanmagan</p>
               )}
             </div>
 
-            <div className={`rounded-2xl border p-4 ${myToday?.checkOut ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-200'}`}>
+            <div className="rounded-card border p-4 bg-slate-50 border-slate-200">
               <div className="flex items-center gap-2 mb-2">
                 <LogOut size={14} className={myToday?.checkOut ? 'text-slate-600' : 'text-slate-300'} />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Ketish</span>
+                <span className="label-caps">Ketish</span>
               </div>
               <p className={`text-2xl font-bold font-mono tabular-nums ${myToday?.checkOut ? 'text-slate-700' : 'text-slate-300'}`}>
                 {formatTime(myToday?.checkOut || null)}
               </p>
               {myToday?.overtimeMinutes && myToday.overtimeMinutes > 0 ? (
-                <p className="text-xs font-bold text-slate-600 mt-1">+{myToday.overtimeMinutes} m ortiqcha</p>
+                <p className="text-xs font-semibold text-slate-600 mt-1">+{myToday.overtimeMinutes} m ortiqcha</p>
               ) : myToday?.checkOut ? (
-                <p className="text-xs font-bold text-slate-600 mt-1">Tugadi</p>
+                <p className="text-xs font-semibold text-slate-600 mt-1">Tugadi</p>
               ) : (
-                <p className="text-xs font-bold text-slate-400 mt-1">Ish davom etmoqda</p>
+                <p className="text-xs font-medium text-slate-500 mt-1">Ish davom etmoqda</p>
               )}
 
               {/* Adashib bosilgan bo'lsa qaytarish. Tugma faqat 10 daqiqa
@@ -494,85 +485,86 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   <button
                     onClick={handleUndoCheckOut}
                     disabled={isMarking}
-                    className="mt-2 text-xs font-bold text-slate-500 underline underline-offset-2 hover:text-slate-800 disabled:opacity-50"
+                    className="mt-2 text-xs font-semibold text-slate-500 underline underline-offset-2 hover:text-slate-800 disabled:opacity-50"
                   >
                     Adashib bosdimmi — bekor qilish
                   </button>
                 )}
             </div>
 
-            <div className="col-span-2 flex items-center justify-between bg-slate-50 rounded-2xl border border-slate-200 px-4 py-3">
+            <div className="col-span-2 flex items-center justify-between bg-slate-50 rounded-card border border-slate-200 px-4 py-3">
               <div className="flex items-center gap-2">
                 <Clock size={14} className="text-slate-400" />
-                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Holat</span>
+                <span className="label-caps">Holat</span>
               </div>
-              <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-lg ${
-                buttonState === 'keldim' ? 'bg-slate-200 text-slate-600' :
-                buttonState === 'ketdim' ? 'bg-orange-100 text-orange-700 animate-pulse' :
-                'bg-emerald-100 text-emerald-700'
-              }`}>
+              <Badge
+                variant={buttonState === 'keldim' ? 'neutral' : buttonState === 'ketdim' ? 'brand' : 'success'}
+                className={buttonState === 'ketdim' ? 'animate-pulse' : ''}
+              >
                 {buttonState === 'keldim' && 'Kelmagan'}
                 {buttonState === 'ketdim' && 'Ishda'}
                 {buttonState === 'done' && 'Tugadi'}
-              </span>
+              </Badge>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── My Recent Records ─────────────────────────────────────── */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-100">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
+          <h3 className="t-h3 flex items-center gap-2">
             <Calendar size={14} className="text-orange-400" /> Mening Tarixim
           </h3>
-          <p className="text-[11px] font-bold text-slate-400 uppercase mt-0.5">So'nggi 30 kun</p>
+          <p className="t-caption mt-0.5">So'nggi 30 kun</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="table-minimal">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-100">
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Sana</th>
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Keldi</th>
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ketdi</th>
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Kechikish</th>
-                <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ortiqcha</th>
+              <tr>
+                <th>Sana</th>
+                <th>Keldi</th>
+                <th>Ketdi</th>
+                <th>Kechikish</th>
+                <th>Ortiqcha</th>
               </tr>
             </thead>
             <tbody>
               {myRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center">
-                    <Calendar size={28} className="mx-auto text-slate-200 mb-2" />
-                    <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">Hozircha yozuv yo'q</p>
+                  <td colSpan={5}>
+                    <div className="py-12 text-center">
+                      <Calendar size={28} className="mx-auto text-slate-200 mb-2" />
+                      <p className="text-xs font-medium text-slate-500">Hozircha yozuv yo'q</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 myRecords.map(r => (
-                  <tr key={r.id} className="border-b border-slate-50 hover:bg-orange-50/30 transition-colors">
-                    <td className="px-4 py-3 font-bold text-xs text-slate-700 tabular-nums">{r.date}</td>
-                    <td className="px-4 py-3">
+                  <tr key={r.id}>
+                    <td><span className="text-xs font-semibold text-slate-700 tabular-nums">{r.date}</span></td>
+                    <td>
                       <div className="flex items-center gap-1">
                         <LogIn size={12} className={r.checkIn ? 'text-emerald-500' : 'text-slate-200'} />
-                        <span className={`font-bold tabular-nums ${r.checkIn ? 'text-emerald-600' : 'text-slate-300'}`}>{formatTime(r.checkIn)}</span>
+                        <span className={`text-xs font-semibold tabular-nums ${r.checkIn ? 'text-emerald-600' : 'text-slate-300'}`}>{formatTime(r.checkIn)}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <div className="flex items-center gap-1">
                         <LogOut size={12} className={r.checkOut ? 'text-slate-500' : 'text-slate-200'} />
-                        <span className={`font-bold tabular-nums ${r.checkOut ? 'text-slate-600' : 'text-slate-300'}`}>{formatTime(r.checkOut)}</span>
+                        <span className={`text-xs font-semibold tabular-nums ${r.checkOut ? 'text-slate-600' : 'text-slate-300'}`}>{formatTime(r.checkOut)}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {r.lateMinutes > 0 ? (
-                        <span className="inline-flex items-center bg-rose-50 text-rose-600 text-[11px] font-bold px-2 py-0.5 rounded-lg border border-rose-100">+{r.lateMinutes} m</span>
+                        <span className="badge-danger">+{r.lateMinutes} m</span>
                       ) : r.checkIn ? (
-                        <span className="inline-flex items-center bg-emerald-50 text-emerald-600 text-[11px] font-bold px-2 py-0.5 rounded-lg border border-emerald-100">OK</span>
+                        <span className="badge-success">OK</span>
                       ) : '—'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       {r.overtimeMinutes && r.overtimeMinutes > 0 ? (
-                        <span className="inline-flex items-center bg-slate-50 text-slate-700 text-[11px] font-bold px-2 py-0.5 rounded-lg border border-slate-100">+{r.overtimeMinutes} m</span>
+                        <span className="badge-neutral">+{r.overtimeMinutes} m</span>
                       ) : '—'}
                     </td>
                   </tr>
@@ -590,33 +582,33 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       {canViewAll && (
         <>
           {/* All employees journal */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+          <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
               <div>
-                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                <h3 className="t-h3 flex items-center gap-2">
                   <Users size={14} className="text-orange-400" />
                   Barcha Xodimlar Davomati
                 </h3>
-                <p className="text-[11px] font-bold text-slate-400 uppercase mt-0.5">{filterDate} • {records.length} yozuv</p>
+                <p className="t-caption mt-0.5">{filterDate} • {records.length} yozuv</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {canManage && (
                   <button
                     onClick={() => { setManualForm(f => ({ ...f, date: filterDate, employeeId: '' })); setShowManualModal(true); }}
-                    className="flex items-center gap-1.5 h-9 px-3 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+                    className="btn-outline h-sm"
                   >
-                    <LogIn size={12} strokeWidth={3} /> Manual kiritish
+                    <LogIn size={14} /> Manual kiritish
                   </button>
                 )}
-                <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                   {records.filter(r => r.checkIn).length}
                 </div>
-                <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600">
+                <div className="flex items-center gap-1 text-xs font-semibold text-slate-600">
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
                   {records.filter(r => r.checkOut).length}
                 </div>
-                <div className="flex items-center gap-1 text-[11px] font-bold text-rose-500">
+                <div className="flex items-center gap-1 text-xs font-semibold text-rose-500">
                   <div className="w-1.5 h-1.5 rounded-full bg-rose-400"></div>
                   {records.filter(r => r.lateMinutes > 0).length}
                 </div>
@@ -784,11 +776,11 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">{req.employee.fullName}</p>
-                          <span className="text-[11px] font-bold text-slate-400 uppercase">{req.date}</span>
-                          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${req.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
-                            {req.status === 'APPROVED' ? <><Check size={10} strokeWidth={3}/> Tasdiqlangan</> : <><X size={10} strokeWidth={3}/> Rad etilgan</>}
-                          </span>
+                          <p className="text-sm font-semibold text-slate-900">{req.employee.fullName}</p>
+                          <span className="t-caption">{req.date}</span>
+                          <Badge variant={req.status === 'APPROVED' ? 'success' : 'danger'}>
+                            {req.status === 'APPROVED' ? 'Tasdiqlangan' : 'Rad etilgan'}
+                          </Badge>
                         </div>
                         <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{req.message}</p>
                       </div>

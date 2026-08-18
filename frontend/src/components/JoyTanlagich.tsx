@@ -140,7 +140,7 @@ const JoyTanlagich: React.FC<{
           type="button"
           onClick={qidir}
           disabled={qidirilmoqda}
-          className="btn-outline h-9 px-3 text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+          className="btn-outline h-sm"
         >
           {qidirilmoqda ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
           Manzildan topish
@@ -149,7 +149,7 @@ const JoyTanlagich: React.FC<{
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="btn-outline h-9 px-3 text-xs font-bold uppercase tracking-wider text-rose-600"
+            className="btn-danger h-sm"
           >
             <X size={13} /> Nuqtani olib tashlash
           </button>
@@ -161,7 +161,7 @@ const JoyTanlagich: React.FC<{
       <div
         ref={idishRef}
         style={{ height: balandlik }}
-        className="w-full rounded-xl border border-slate-200 overflow-hidden z-0"
+        className="w-full rounded-card border border-slate-200 overflow-hidden z-0"
       />
 
       <p className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">

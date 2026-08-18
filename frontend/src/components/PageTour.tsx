@@ -174,19 +174,19 @@ export function PageTour({ tab, onClose }: Props) {
     >
       <div className="h-1 bg-slate-100">
         <div
-          className="h-full bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-300"
+          className="h-full bg-[color:var(--primary)] transition-all duration-300"
           style={{ width: `${((idx + 1) / steps.length) * 100}%` }}
         />
       </div>
 
       <div className="px-5 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">
+          <span className="label-caps text-primary-700">
             Qadam {idx + 1} / {steps.length}
           </span>
           <button
             onClick={onClose}
-            className="text-xs font-bold text-slate-400 hover:text-slate-700 uppercase tracking-widest transition"
+            className="btn-ghost h-sm"
           >
             Yopish
           </button>
@@ -208,7 +208,7 @@ export function PageTour({ tab, onClose }: Props) {
         </button>
         <button
           onClick={() => (oxirgi ? onClose() : setIdx((i) => i + 1))}
-          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg shadow-md shadow-orange-500/30 transition"
+          className="btn-primary h-sm"
         >
           {oxirgi ? 'Tugatish' : 'Davom →'}
         </button>

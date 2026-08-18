@@ -202,12 +202,12 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
               )}
               <div className="min-w-0">
                 <h1
-                  className="text-3xl font-bold tracking-tight leading-tight uppercase truncate"
+                  className="text-3xl font-semibold tracking-tight leading-tight truncate"
                   style={{ color: br.companyNameColor }}
                 >
                   {br.companyName || tenant.name}
                 </h1>
-                <p className="text-xs font-bold uppercase tracking-[0.3em] mt-1"
+                <p className="label-caps mt-1"
                    style={{ color: br.headerText, opacity: 0.8 }}>
                   {br.headerTitle}
                 </p>
@@ -219,20 +219,20 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
                 {branch.name && (
                   <p className="text-sm font-medium mt-2 flex items-center gap-1.5"
                      style={{ color: br.headerText, opacity: 0.9 }}>
-                    <Building2 size={14} /> {branch.name}
+                    <Building2 size={16} /> {branch.name}
                   </p>
                 )}
               </div>
             </div>
 
             <div className="text-right flex-shrink-0">
-              <p className="text-xs font-bold uppercase tracking-widest"
+              <p className="label-caps"
                  style={{ color: br.headerText, opacity: 0.7 }}>Sana</p>
-              <p className="text-base font-bold mt-0.5">{formatDate()}</p>
+              <p className="text-base font-semibold mt-0.5">{formatDate()}</p>
               {phone && (
                 <p className="text-sm font-medium mt-3 flex items-center justify-end gap-1.5"
                    style={{ color: br.headerText }}>
-                  <Phone size={13} /> {phone}
+                  <Phone size={16} /> {phone}
                 </p>
               )}
               {address && (
@@ -249,15 +249,15 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
         {/* Services */}
         <div className="px-12 py-8">
           {services.length === 0 ? (
-            <div className="text-center py-20 text-slate-300">
-              <p className="text-sm font-bold uppercase tracking-widest">Hozircha xizmatlar yo'q</p>
+            <div className="text-center py-20 text-slate-500">
+              <p className="text-sm font-semibold">Hozircha xizmatlar yo'q</p>
             </div>
           ) : (
             <div className="space-y-6">
               {services.map((svc) => (
                 <div
                   key={svc.id}
-                  className="rounded-2xl p-5 transition-colors break-inside-avoid shadow-sm bg-white flex flex-col gap-5"
+                  className="rounded-card p-5 break-inside-avoid bg-white flex flex-col gap-5"
                   style={{ border: `1px solid ${br.cardBorder}` }}
                 >
                   <div className="flex items-start gap-5">
@@ -275,15 +275,15 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-4 mb-1">
-                        <h3 className="text-lg font-bold text-slate-900 tracking-tight leading-snug uppercase flex-1 min-w-0 truncate">
+                        <h3 className="text-lg font-semibold text-slate-900 tracking-tight leading-snug flex-1 min-w-0 truncate">
                           {svc.name}
                         </h3>
                         <div className="text-right flex-shrink-0">
-                          <span className="text-2xl font-bold tracking-tight" style={{ color: br.accent }}>
+                          <span className="text-2xl font-bold tracking-tight tabular-nums" style={{ color: br.accent }}>
                             {formatPrice(svc.basePrice)}
                           </span>
-                          <span className="text-xs font-bold text-slate-400 ml-1">so'm</span>
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                          <span className="text-xs font-medium text-slate-500 ml-1">so'm</span>
+                          <p className="label-caps mt-0.5">
                             / {svc.unit}
                           </p>
                         </div>
@@ -292,24 +292,24 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
                   </div>
 
                   {svc.options && svc.options.length > 0 && (
-                    <div className="pt-4 border-t border-slate-100 overflow-hidden w-full">
-                      <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
+                    <div className="pt-4 border-t border-slate-100 w-full">
+                      <p className="label-caps mb-3">
                         Opsiyalar va yakuniy narxlar:
                       </p>
-                      <div className="rounded-xl overflow-hidden shadow-sm bg-white w-full"
-                           style={{ border: `1px solid ${br.cardBorder}` }}>
+                      <div className="rounded-card border overflow-x-auto bg-white w-full"
+                           style={{ borderColor: br.cardBorder }}>
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr
-                              className="text-xs font-bold uppercase tracking-wider"
+                              className="text-xs font-semibold uppercase tracking-wider"
                               style={{ backgroundColor: br.tableHeaderBg, color: br.tableHeaderText }}
                             >
-                              <th className="px-4 py-3 text-left font-bold">Opsiya</th>
-                              <th className="px-4 py-3 text-center font-bold">Soni / O'lchami</th>
-                              <th className="px-4 py-3 text-right font-bold">
+                              <th className="px-4 py-3 text-left font-semibold">Opsiya</th>
+                              <th className="px-4 py-3 text-center font-semibold">Soni / O'lchami</th>
+                              <th className="px-4 py-3 text-right font-semibold">
                                 {svc.unit ? svc.unit.charAt(0).toUpperCase() + svc.unit.slice(1) : 'Birlik'} narxi
                               </th>
-                              <th className="px-4 py-3 text-right font-bold">Summasi</th>
+                              <th className="px-4 py-3 text-right font-semibold">Summasi</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200 text-xs">
@@ -323,16 +323,16 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
                                   key={opt.id}
                                   className="odd:bg-white even:bg-slate-50 transition-colors"
                                 >
-                                  <td className="px-4 py-3.5 font-bold text-slate-800 uppercase tracking-wider text-xs">
+                                  <td className="px-4 py-3.5 font-semibold text-slate-800 text-xs">
                                     {opt.name}
                                   </td>
-                                  <td className="px-4 py-3.5 text-center font-bold text-slate-900 text-xs">
+                                  <td className="px-4 py-3.5 text-center font-semibold text-slate-900 text-xs">
                                     {opt.value}
                                   </td>
-                                  <td className="px-4 py-3.5 text-right font-bold text-slate-900 text-xs whitespace-nowrap">
-                                    {formatPrice(finalPrice)} <span className="text-xs font-normal text-slate-400">so'm</span>
+                                  <td className="px-4 py-3.5 text-right font-semibold text-slate-900 text-xs whitespace-nowrap tabular-nums">
+                                    {formatPrice(finalPrice)} <span className="text-xs font-normal text-slate-500">so'm</span>
                                   </td>
-                                  <td className="px-4 py-3.5 text-right font-bold text-xs whitespace-nowrap"
+                                  <td className="px-4 py-3.5 text-right font-semibold text-xs whitespace-nowrap tabular-nums"
                                       style={{ color: br.totalSum }}>
                                     {formatPrice(totalSum)} <span className="text-xs font-normal" style={{ color: br.totalSum, opacity: 0.7 }}>so'm</span>
                                   </td>
@@ -351,7 +351,7 @@ export const PriceListView = forwardRef<HTMLDivElement, Props>(
         </div>
 
         {/* Footer */}
-        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-widest bg-white">
+        <div className="px-12 py-6 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500 bg-white">
           <span>{br.companyName || tenant.name} &copy; {new Date().getFullYear()}</span>
           <span>{br.footerNote}</span>
         </div>

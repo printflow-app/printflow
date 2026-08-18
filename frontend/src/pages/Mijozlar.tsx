@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
   FileText, AlertCircle, ClipboardList, Plus, Edit3,
-  Building2, UserPlus, Mail, Briefcase, CheckCircle2, AlertTriangle, Download,
+  Building2, UserPlus, Mail, Briefcase, CheckCircle2, Download,
   MapPin, Users, Table, Map
 } from 'lucide-react';
 import { customersApi } from '../api';
@@ -15,11 +15,7 @@ import { SkeletonTable } from '../components/Skeleton';
 import { toast } from 'react-toastify';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { exportMultiSheetXlsx } from '../utils/exportToXlsx';
-import StatCard from '../components/ui/StatCard';
-import Tabs from '../components/ui/Tabs';
-import Badge from '../components/ui/Badge';
-import EmptyState from '../components/ui/EmptyState';
-import PhoneInput from '../components/ui/PhoneInput';
+import { Badge, EmptyState, PhoneInput, StatCard, Tabs, Toast } from '../components/ui';
 
 const formatCurrency = (amount: number | null | undefined) => {
   const val = typeof amount === 'number' ? amount : 0;
@@ -427,10 +423,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in pb-12">
       {statusMsg && (
-        <div className={`fixed top-6 right-6 z-[200] p-4 rounded-card shadow-lg flex items-center gap-3 animate-slide-up ${statusMsg.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
-          {statusMsg.type === 'success' ? <CheckCircle2 size={18}/> : <AlertTriangle size={18}/>}
-          <span className="font-semibold text-sm">{statusMsg.text}</span>
-        </div>
+        <Toast type={statusMsg.type}>{statusMsg.text}</Toast>
       )}
 
       {/* Tabs Switcher */}
@@ -446,7 +439,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       {/* Header */}
       <div className="bg-white p-4 sm:p-5 rounded-card border border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+          <h2 className="page-title flex items-center gap-2">
             <Users size={20} className="text-[color:var(--primary)]" /> Mijozlar bazasi
           </h2>
           <p className="t-caption mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
@@ -455,7 +448,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           {activeView === 'all' && (
             <>
               <div className="relative flex-1 sm:w-64 min-w-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14}/>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16}/>
                 <input
                   type="text"
                   placeholder="Qidirish (ism, tel)..."
@@ -484,7 +477,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               className="btn-outline h-control"
               title="Mijozlar va ularga ko'rsatilgan xizmatlarni Excel'ga eksport qilish"
             >
-              <Download size={14}/> {isExporting ? 'Tayyorlanmoqda...' : 'Eksport'}
+              <Download size={16}/> {isExporting ? 'Tayyorlanmoqda...' : 'Eksport'}
             </button>
           )}
           {canAdd && (
@@ -493,7 +486,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               onClick={openAdd}
               className="btn-primary h-control w-full sm:w-auto"
             >
-              <Plus size={15} strokeWidth={2.5}/> Mijoz qo'shish
+              <Plus size={16}/> Mijoz qo'shish
             </button>
           )}
         </div>
@@ -557,14 +550,14 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       {activeView === 'all' && (
         <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="table-minimal min-w-[900px]">
+            <table className="table-minimal">
               <thead>
                 <tr>
                   <th className="w-8"></th>
                   <th>Mijoz</th>
-                  <th>Telefon</th>
-                  <th>Umumiy</th>
-                  <th>To'langan</th>
+                  <th className="hidden md:table-cell">Telefon</th>
+                  <th className="hidden md:table-cell">Umumiy</th>
+                  <th className="hidden md:table-cell">To'langan</th>
                   <th>Holat</th>
                   <th className="text-right pr-6">Amal</th>
                 </tr>
@@ -579,8 +572,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                         icon={UserPlus}
                         title="Hali mijoz qo'shilmagan"
                         description="Mijozlaringizni qo'shing — qarzlar, to'lovlar va buyurtmalar avtomatik kuzatiladi."
-                        actionLabel={canAdd ? "Birinchi mijozni qo'shish" : undefined}
-                        onAction={canAdd ? openAdd : undefined}
+                        action={canAdd ? { label: "Birinchi mijozni qo'shish", onClick: openAdd } : undefined}
                       />
                     )}
                   </td></tr>
@@ -601,7 +593,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                         >
                           <td>
                             <button className="icon-btn-sm text-slate-400 group-hover:text-[color:var(--primary)]">
-                              {isExpanded ? <ChevronUp size={14} strokeWidth={2.5}/> : <ChevronDown size={14} strokeWidth={2.5}/>}
+                              {isExpanded ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
                             </button>
                           </td>
                           <td>
@@ -619,37 +611,37 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                 )}
                                 {c.companyInfo && (
                                   <p className="t-caption flex items-center gap-1">
-                                    <Building2 size={10}/> {c.companyInfo}
+                                    <Building2 size={12}/> {c.companyInfo}
                                   </p>
                                 )}
                               </div>
                             </div>
                           </td>
-                          <td>
+                          <td className="hidden md:table-cell">
                             <p className="text-xs font-medium text-slate-600 flex items-center gap-1.5 tabular-nums">
                               <Phone size={12} className="text-slate-400"/> {c.phone || '—'}
                             </p>
                           </td>
-                          <td className="font-medium text-xs text-slate-700 tabular-nums">{formatCurrency(c.totalDebt)}</td>
-                          <td className="font-semibold text-xs text-emerald-700 tabular-nums">{formatCurrency(c.totalPaid)}</td>
+                          <td className="hidden md:table-cell font-medium text-xs text-slate-700 tabular-nums whitespace-nowrap">{formatCurrency(c.totalDebt)}</td>
+                          <td className="hidden md:table-cell font-semibold text-xs text-emerald-700 tabular-nums whitespace-nowrap">{formatCurrency(c.totalPaid)}</td>
                           <td>
-                            <Badge variant={balance >= MIN_DEBT ? 'danger' : 'success'} size="sm">
+                            <Badge variant={balance >= MIN_DEBT ? 'danger' : 'success'}>
                               {balance >= MIN_DEBT ? formatCurrency(balance) : 'YOPILGAN'}
                             </Badge>
                           </td>
                           <td className="text-right pr-6" onClick={e => e.stopPropagation()}>
-                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                               <button onClick={() => openOrderHistory(c)} className="icon-btn-sm" title="Buyurtmalar tarixi">
-                                <ClipboardList size={14}/>
+                                <ClipboardList size={16}/>
                               </button>
                               {canEdit && (
                                 <button onClick={e => openEdit(c, e)} className="icon-btn-sm" title="Tahrirlash va vakillar">
-                                  <Edit3 size={14}/>
+                                  <Edit3 size={16}/>
                                 </button>
                               )}
                               {canDelete && (
                                 <button onClick={() => setConfirmModal({ isOpen: true, id: c.id, name: c.name })} className="icon-btn-sm hover:text-rose-600" title="O'chirish">
-                                  <Trash2 size={14}/>
+                                  <Trash2 size={16}/>
                                 </button>
                               )}
                             </div>
@@ -666,10 +658,10 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                     {/* Buyurtmalar */}
                                     <div className="bg-white rounded-card border border-slate-200 p-4">
                                       <h5 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-                                        <FileText size={14}/> Oxirgi buyurtmalar
+                                        <FileText size={16}/> Oxirgi buyurtmalar
                                       </h5>
                                       {tasks.length === 0 ? (
-                                        <p className="text-xs text-slate-400 py-4 text-center">Hech qanday buyurtma topilmadi</p>
+                                        <p className="t-caption py-4 text-center">Hech qanday buyurtma topilmadi</p>
                                       ) : (
                                         <div className="space-y-2 max-h-48 overflow-y-auto custom-scroll">
                                           {tasks.map((t: any) => (
@@ -678,11 +670,11 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                                 <p className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                                                   {t.title}
                                                   {t.isArchived && (
-                                                    <span className="badge-neutral text-[10px]">Arxiv</span>
+                                                    <span className="badge-neutral">Arxiv</span>
                                                   )}
                                                 </p>
                                                 {t.service && (
-                                                  <p className="text-[11px] text-orange-700 font-medium mt-0.5">
+                                                  <p className="text-xs text-orange-700 font-medium mt-0.5">
                                                     {t.service.name}
                                                   </p>
                                                 )}
@@ -698,10 +690,10 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                     {/* To'lovlar */}
                                     <div className="bg-white rounded-card border border-slate-200 p-4">
                                       <h5 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-                                        <TrendingUp size={14}/> To'lovlar tarixi
+                                        <TrendingUp size={16}/> To'lovlar tarixi
                                       </h5>
                                       {transactions.length === 0 ? (
-                                        <p className="text-xs text-slate-400 py-4 text-center">Hech qanday tranzaksiya topilmadi</p>
+                                        <p className="t-caption py-4 text-center">Hech qanday tranzaksiya topilmadi</p>
                                       ) : (
                                         <div className="space-y-2 max-h-48 overflow-y-auto custom-scroll">
                                           {transactions.map((tr: any) => (
@@ -882,8 +874,8 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   className={editingContactId ? 'btn-primary w-full' : 'btn-outline w-full'}
                 >
                   {editingContactId
-                    ? <><CheckCircle2 size={14}/> {isAddingContact ? 'Saqlanmoqda...' : "O'zgarishni saqlash"}</>
-                    : <><UserPlus size={14}/> {isAddingContact ? "Qo'shilmoqda..." : "Vakil qo'shish"}</>}
+                    ? <><CheckCircle2 size={16}/> {isAddingContact ? 'Saqlanmoqda...' : "O'zgarishni saqlash"}</>
+                    : <><UserPlus size={16}/> {isAddingContact ? "Qo'shilmoqda..." : "Vakil qo'shish"}</>}
                 </button>
               </>
             )}
@@ -892,7 +884,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               {isContactsLoading ? (
                 <div className="py-8 flex justify-center"><LoadingSpinner /></div>
               ) : contacts.length === 0 ? (
-                <div className="py-8 flex flex-col items-center justify-center text-slate-400">
+                <div className="py-8 flex flex-col items-center justify-center text-slate-500">
                   <UserPlus size={24} className="mb-1.5 opacity-40"/>
                   <p className="text-xs font-semibold">Vakillar yo'q</p>
                   <p className="t-caption mt-0.5">Bu tashkilot bilan kim gaplashadi?</p>
@@ -909,31 +901,31 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                           <p className="text-xs font-semibold text-slate-800 truncate">{ct.name}</p>
                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             {ct.role && (
-                              <span className="t-caption flex items-center gap-1"><Briefcase size={9}/> {ct.role}</span>
+                              <span className="t-caption flex items-center gap-1"><Briefcase size={12}/> {ct.role}</span>
                             )}
                             {ct.phone && (
-                              <span className="t-caption font-medium text-slate-600 flex items-center gap-1"><Phone size={9}/> {ct.phone}</span>
+                              <span className="t-caption font-medium text-slate-600 flex items-center gap-1"><Phone size={12}/> {ct.phone}</span>
                             )}
                             {ct.email && (
-                              <span className="t-caption flex items-center gap-1 truncate"><Mail size={9}/> {ct.email}</span>
+                              <span className="t-caption flex items-center gap-1 truncate"><Mail size={12}/> {ct.email}</span>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className={`flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${canManageContacts ? '' : 'hidden'}`}>
+                      <div className={`flex items-center gap-1 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ${canManageContacts ? '' : 'hidden'}`}>
                         <button
                           onClick={() => startEditContact(ct)}
                           className="icon-btn-sm"
                           title="Vakilni tahrirlash"
                         >
-                          <Edit3 size={13}/>
+                          <Edit3 size={16}/>
                         </button>
                         <button
                           onClick={() => handleDeleteContact(ct.id)}
                           className="icon-btn-sm hover:text-rose-600"
                           title="Vakilni o'chirish"
                         >
-                          <Trash2 size={13}/>
+                          <Trash2 size={16}/>
                         </button>
                       </div>
                     </div>
@@ -964,7 +956,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         {orderHistoryLoading ? (
           <div className="flex justify-center py-12"><LoadingSpinner /></div>
         ) : orderHistoryModal.orders.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 font-medium text-xs">Hech qanday buyurtma topilmadi</div>
+          <div className="py-12 text-center text-slate-500 font-medium text-xs">Hech qanday buyurtma topilmadi</div>
         ) : (
           <div className="space-y-2.5 max-h-[60vh] overflow-y-auto custom-scroll">
             {orderHistoryModal.orders.map((order: any) => (
@@ -993,7 +985,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   </div>
                 </div>
                 {order.note && (
-                  <p className="t-caption mt-2 italic border-t border-slate-200 pt-1.5">{order.note}</p>
+                  <p className="t-caption mt-2 border-t border-slate-200 pt-1.5">{order.note}</p>
                 )}
               </div>
             ))}

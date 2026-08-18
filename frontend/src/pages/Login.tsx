@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, User as UserIcon, Building2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Lock, User as UserIcon, Building2, Eye, EyeOff, AlertTriangle, ChevronLeft } from 'lucide-react';
 import { authApi } from '../api';
 import { buildUser, User } from '../App';
 import logo from '../assets/logo.png';
@@ -76,55 +76,55 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f2f2f7] flex items-center justify-center p-4 font-sans">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
       {/* Background grid */}
       <div className="pf-animated-grid" />
 
       {onBack && (
         <button
           onClick={onBack}
-          className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-white/80 backdrop-blur border border-slate-200 px-4 py-2 rounded-full text-sm font-medium text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-sm transition-all"
+          className="btn-outline absolute top-6 left-6 z-fab"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <ChevronLeft size={16} />
           Bosh sahifa
         </button>
       )}
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-md relative z-sticky">
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="relative w-24 h-24 mx-auto mb-6 group">
-            <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl group-hover:bg-[#FF6B00]/20 transition-all duration-500" />
+            <div className="absolute inset-0 bg-primary-500/10 rounded-full blur-2xl group-hover:bg-primary-500/20 transition-all duration-500" />
             <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain hover:scale-110 transition-transform duration-300" />
           </div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-slate-900 mb-1.5">
-            Print<span className="text-[#FF6B00]">Flow</span>
+          <h1 className="t-display mb-1.5">
+            Print<span className="text-[color:var(--primary)]">Flow</span>
           </h1>
-          <p className="text-sm font-medium text-slate-400 tracking-tight">
+          <p className="text-sm font-medium text-slate-500">
             Bosmaxona boshqaruv tizimi
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white p-8 shadow-xl border border-slate-200/70 relative overflow-hidden rounded-2xl">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-[#FF6B00]/5 rounded-full -mr-20 -mt-20" />
+        <div className="bg-white p-8 rounded-card border border-slate-200 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-primary-500/5 rounded-full -mr-20 -mt-20" />
 
           <form onSubmit={handleSubmit} className="space-y-5 relative" autoComplete="off">
             {/* Workspace Slug */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-600 tracking-tight ml-1">
+            <div>
+              <label className="form-label ml-1" htmlFor="workspace-slug">
                 Workspace
               </label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#FF6B00] transition-colors">
-                  <Building2 className="w-4 h-4" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[color:var(--primary)] transition-colors">
+                  <Building2 size={16} />
                 </div>
                 <input
                   id="workspace-slug"
                   type="text"
                   value={workspaceSlug}
                   onChange={(e) => setWorkspaceSlug(e.target.value.toLowerCase())}
-                  className="w-full h-12 bg-slate-100/70 border border-slate-200 rounded-xl pl-11 pr-4 text-base font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
+                  className="input-minimal h-control-lg pl-11"
                   placeholder="sizning-workspace"
                   autoComplete="off"
                   required
@@ -133,20 +133,20 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
             </div>
 
             {/* Login */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-600 tracking-tight ml-1">
+            <div>
+              <label className="form-label ml-1" htmlFor="username">
                 Login
               </label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#FF6B00] transition-colors">
-                  <UserIcon className="w-4 h-4" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[color:var(--primary)] transition-colors">
+                  <UserIcon size={16} />
                 </div>
                 <input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full h-12 bg-slate-100/70 border border-slate-200 rounded-xl pl-11 pr-4 text-base font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
+                  className="input-minimal h-control-lg pl-11"
                   placeholder="loginni kiriting"
                   autoComplete="off"
                   required
@@ -155,20 +155,20 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
             </div>
 
             {/* Password */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-600 tracking-tight ml-1">
+            <div>
+              <label className="form-label ml-1" htmlFor="password">
                 Parol
               </label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#FF6B00] transition-colors">
-                  <Lock className="w-4 h-4" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[color:var(--primary)] transition-colors">
+                  <Lock size={16} />
                 </div>
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 bg-slate-100/70 border border-slate-200 rounded-xl pl-11 pr-12 text-base font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#FF6B00] focus:ring-4 focus:ring-orange-500/10 focus:outline-none transition-all"
+                  className="input-minimal h-control-lg pl-11 pr-12"
                   placeholder="•••••••••"
                   autoComplete="new-password"
                   required
@@ -176,7 +176,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-[#FF6B00] transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-[color:var(--primary)] transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -185,14 +185,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
 
             {/* Session expired warning */}
             {sessionExpired && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-600 rounded-xl text-sm font-medium tracking-tight p-3 text-center flex items-center justify-center gap-2">
-                <AlertTriangle size={14} strokeWidth={2.5}/> Xavfsizlik yuzasidan tizimdan chiqarildingiz. Qayta kiring.
+              <div className="bg-amber-50 border border-amber-200 text-amber-600 rounded-card text-sm font-medium p-3 text-center flex items-center justify-center gap-2">
+                <AlertTriangle size={16} /> Xavfsizlik yuzasidan tizimdan chiqarildingiz. Qayta kiring.
               </div>
             )}
 
             {/* Error */}
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-sm font-medium tracking-tight p-3 text-center">
+              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-card text-sm font-medium p-3 text-center">
                 {error}
               </div>
             )}
@@ -201,7 +201,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#FF6B00] hover:bg-[#e66000] active:scale-[0.98] disabled:bg-slate-300 rounded-xl text-white flex justify-center items-center gap-3 text-base font-semibold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all duration-200 mt-2 py-4"
+              className="btn-primary h-lg w-full mt-2"
             >
               {loading ? (
                 <>
@@ -220,7 +220,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
               <button
                 type="button"
                 onClick={onRegisterClick}
-                className="text-[#FF6B00] hover:underline font-semibold"
+                className="text-[color:var(--primary)] hover:underline font-semibold"
               >
                 Yangi ochish
               </button>
@@ -228,7 +228,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBack, onRegisterClick }) => {
           )}
         </div>
 
-        <p className="mt-8 text-center text-xs font-medium text-slate-400 tracking-tight">
+        <p className="mt-8 text-center t-caption">
           PrintFlow © {new Date().getFullYear()} — Barcha huquqlar himoyalangan
         </p>
       </div>

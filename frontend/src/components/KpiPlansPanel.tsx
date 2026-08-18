@@ -132,23 +132,20 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-orange-50 to-white">
+      <div className="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
         <div>
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
-            <Target size={15} className="text-orange-500" /> KPI Rejalari
+          <h3 className="t-h3 flex items-center gap-2">
+            <Target size={16} className="text-[color:var(--primary)]" /> KPI Rejalari
           </h3>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="t-caption mt-0.5">
             Oylik maqsadlar va bajarilishi{periodKey ? ` · ${periodKey}` : ''}
           </p>
         </div>
         {canManage && (
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-1.5 h-9 px-3 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
-          >
-            <Plus size={13} strokeWidth={3} /> Reja qo'shish
+          <button onClick={openCreate} className="btn-primary h-sm">
+            <Plus size={16} /> Reja qo'shish
           </button>
         )}
       </div>
@@ -164,11 +161,11 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
             return (
               <span
                 key={p.id}
-                className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg pl-2.5 pr-1.5 py-1 text-xs font-bold text-slate-600"
+                className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-control pl-2.5 pr-1.5 py-1 text-xs font-semibold text-slate-600"
               >
                 {p.scope === 'role'
-                  ? <Users size={11} className="text-orange-500" />
-                  : <User size={11} className="text-slate-500" />}
+                  ? <Users size={12} className="text-[color:var(--primary)]" />
+                  : <User size={12} className="text-slate-500" />}
                 <span className="text-slate-800">{who}</span>
                 <span className="text-slate-400">·</span>
                 <span>{m?.label || p.metricKey}</span>
@@ -185,11 +182,11 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
       {/* Progress — xodimlar bo'yicha */}
       <div className="p-4">
         {progressQ.isLoading ? (
-          <div className="py-10 text-center text-slate-300 text-xs font-bold uppercase tracking-widest">Yuklanmoqda...</div>
+          <div className="py-10 text-center t-caption">Yuklanmoqda...</div>
         ) : visibleProgress.length === 0 ? (
           <div className="py-12 text-center">
-            <TrendingUp size={28} className="mx-auto text-slate-200 mb-2" />
-            <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">
+            <TrendingUp size={28} className="mx-auto text-slate-300 mb-2" />
+            <p className="t-caption font-medium">
               {canManage ? "Hali reja yo'q — \"Reja qo'shish\" bilan boshlang" : "Sizga hali reja qo'yilmagan"}
             </p>
           </div>
@@ -200,17 +197,17 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
               return (
                 <div
                   key={emp.employeeId}
-                  className={`rounded-2xl border p-4 ${isMe ? 'border-orange-200 bg-orange-50/40' : 'border-slate-200 bg-white'}`}
+                  className={`rounded-card border p-4 ${isMe ? 'border-orange-200 bg-orange-50/40' : 'border-slate-200 bg-white'}`}
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <div className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center border ${isMe ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <div className={`w-8 h-8 rounded-control font-semibold text-xs flex items-center justify-center border ${isMe ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                       {emp.fullName?.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight truncate">
-                        {emp.fullName}{isMe && <span className="ml-1.5 text-[11px] text-orange-500">(siz)</span>}
+                      <p className="text-sm font-semibold text-slate-800 truncate">
+                        {emp.fullName}{isMe && <span className="ml-1.5 text-xs font-medium text-[color:var(--primary)]">(siz)</span>}
                       </p>
-                      <p className="text-[11px] font-bold text-slate-400 uppercase truncate">{emp.roleName || 'Xodim'}</p>
+                      <p className="label-caps truncate">{emp.roleName || 'Xodim'}</p>
                     </div>
                   </div>
                   <div className="space-y-2.5">
@@ -245,30 +242,30 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
         <div className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
           <div className="bg-white w-full max-w-md rounded-overlay shadow-2xl overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                <Target size={15} className="text-orange-500" /> Yangi KPI rejasi
+              <h3 className="t-h3 flex items-center gap-2">
+                <Target size={16} className="text-[color:var(--primary)]" /> Yangi KPI rejasi
               </h3>
-              <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400">
+              <button onClick={() => setShowModal(false)} className="icon-btn-sm">
                 <X size={16} />
               </button>
             </div>
             <form onSubmit={handleCreate} className="p-5 space-y-4">
               {/* Scope */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Kimga</label>
-                <div className="inline-flex bg-slate-100 rounded-xl p-1 w-full">
+                <label className="form-label">Kimga</label>
+                <div className="inline-flex bg-slate-100 rounded-control p-1 w-full">
                   {(['role', 'employee'] as const).map((s) => (
                     <button
                       key={s} type="button"
                       onClick={() => setForm((f) => ({ ...f, scope: s }))}
-                      className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${form.scope === s ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
+                      className={`flex-1 flex items-center justify-center gap-1.5 h-9 rounded-md text-xs font-semibold transition-all duration-120 ${form.scope === s ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}
                     >
                       {s === 'role' ? <Users size={12} /> : <User size={12} />}
                       {s === 'role' ? 'Lavozim' : 'Xodim'}
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] font-bold text-slate-400 mt-1 px-1">
+                <p className="t-caption mt-1">
                   {form.scope === 'role' ? "Lavozimdagi hamma xodimga tushadi" : "Bitta xodimga (lavozim shablonini override qiladi)"}
                 </p>
               </div>
@@ -276,16 +273,16 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
               {/* Target subyekt */}
               {form.scope === 'role' ? (
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Lavozim</label>
-                  <select required value={form.roleId} onChange={(e) => setForm((f) => ({ ...f, roleId: e.target.value }))} className="select-minimal text-sm font-bold">
+                  <label className="form-label">Lavozim</label>
+                  <select required value={form.roleId} onChange={(e) => setForm((f) => ({ ...f, roleId: e.target.value }))} className="select-minimal">
                     <option value="">— Lavozimni tanlang —</option>
                     {(roles as any[]).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Xodim</label>
-                  <select required value={form.employeeId} onChange={(e) => setForm((f) => ({ ...f, employeeId: e.target.value }))} className="select-minimal text-sm font-bold">
+                  <label className="form-label">Xodim</label>
+                  <select required value={form.employeeId} onChange={(e) => setForm((f) => ({ ...f, employeeId: e.target.value }))} className="select-minimal">
                     <option value="">— Xodimni tanlang —</option>
                     {(employees as any[]).map((emp) => <option key={emp.id} value={emp.id}>{emp.fullName}</option>)}
                   </select>
@@ -294,27 +291,27 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
 
               {/* Metric */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Metrika</label>
-                <select required value={form.metricKey} onChange={(e) => setForm((f) => ({ ...f, metricKey: e.target.value }))} className="select-minimal text-sm font-bold">
+                <label className="form-label">Metrika</label>
+                <select required value={form.metricKey} onChange={(e) => setForm((f) => ({ ...f, metricKey: e.target.value }))} className="select-minimal">
                   <option value="">— Metrikani tanlang —</option>
                   {metrics.map((m) => <option key={m.key} value={m.key}>{m.label} ({m.unit})</option>)}
                 </select>
-                {form.metricKey && <p className="text-[11px] font-bold text-slate-400 mt-1 px-1">{metricById[form.metricKey]?.hint}</p>}
+                {form.metricKey && <p className="t-caption mt-1">{metricById[form.metricKey]?.hint}</p>}
               </div>
 
               {/* Target */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">
+                <label className="form-label">
                   Oylik maqsad (target){form.metricKey ? ` — ${metricById[form.metricKey]?.unit}` : ''}
                 </label>
                 <input type="number" min="1" step="any" required value={form.targetValue}
                   onChange={(e) => setForm((f) => ({ ...f, targetValue: e.target.value }))}
-                  placeholder="masalan 50" className="input-minimal text-sm font-bold" />
+                  placeholder="masalan 50" className="input-minimal" />
               </div>
 
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setShowModal(false)} className="btn-outline h-11 flex-1 rounded-xl font-bold uppercase text-[11px] tracking-widest">Bekor</button>
-                <button type="submit" disabled={saving} className="h-11 flex-1 rounded-xl font-bold uppercase text-[11px] tracking-widest bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white shadow-md transition-all">
+                <button type="button" onClick={() => setShowModal(false)} className="btn-outline flex-1">Bekor</button>
+                <button type="submit" disabled={saving} className="btn-primary flex-1">
                   {saving ? 'Saqlanmoqda...' : 'Saqlash'}
                 </button>
               </div>

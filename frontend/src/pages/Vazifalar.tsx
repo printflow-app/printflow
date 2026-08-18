@@ -51,11 +51,11 @@ const kunFarqi = (d: any): number | null => {
 const muddatUslubi = (muddat: any, bajarilgan: boolean) => {
   const farq = kunFarqi(muddat);
   if (farq === null) return null;
-  if (bajarilgan) return { klass: 'text-slate-400', matn: fmtDate(muddat)!, ogoh: false };
+  if (bajarilgan) return { klass: 'text-slate-500', matn: fmtDate(muddat)!, ogoh: false };
   if (farq < 0) return { klass: 'text-rose-600 font-bold', matn: `${Math.abs(farq)} kun kechikdi`, ogoh: true };
   if (farq === 0) return { klass: 'text-amber-600 font-bold', matn: 'Bugun', ogoh: true };
   if (farq === 1) return { klass: 'text-amber-600', matn: 'Ertaga', ogoh: false };
-  return { klass: 'text-slate-400', matn: fmtDate(muddat)!, ogoh: false };
+  return { klass: 'text-slate-500', matn: fmtDate(muddat)!, ogoh: false };
 };
 
 const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
@@ -200,19 +200,19 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
     }).length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Jamoa vazifalari</h2>
-          <p className="text-xs font-semibold text-slate-400">
+          <h2 className="t-h2">Jamoa vazifalari</h2>
+          <p className="t-caption">
             Buyurtmalar va operatsion ishlar birga — kim nima bilan band
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <select
             value={filterEmp}
             onChange={(e) => setFilterEmp(e.target.value)}
-            className="select-minimal h-control-sm w-auto text-xs font-bold"
+            className="select-minimal h-control-sm w-auto text-xs font-semibold"
           >
             <option value="">Barcha xodimlar</option>
             {(employees as any[]).map((e: any) => (
@@ -223,7 +223,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
           </select>
           {canManage && (
             <button data-tour-id="vazifa-add" onClick={() => setModalOpen(true)} className="btn-primary h-sm">
-              <Plus size={14} strokeWidth={2.5} /> Vazifa
+              <Plus size={16} /> Vazifa
             </button>
           )}
         </div>
@@ -233,8 +233,8 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       {yukRoyxati.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           {kechikkan > 0 && (
-            <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold">
-              <AlertTriangle size={11} /> {kechikkan} ta kechikkan
+            <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-control bg-rose-50 text-rose-600 text-xs font-semibold">
+              <AlertTriangle size={12} /> {kechikkan} ta kechikkan
             </span>
           )}
           {yukRoyxati.map((e) => {
@@ -244,9 +244,9 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 key={e.id}
                 onClick={() => setFilterEmp(tanlangan ? '' : e.id)}
                 title={tanlangan ? 'Filtrni olib tashlash' : `Faqat ${e.ism}`}
-                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-bold transition-colors ${
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-control text-xs font-semibold transition-colors duration-120 ${
                   tanlangan
-                    ? 'bg-orange-500 text-white'
+                    ? 'bg-[color:var(--primary)] text-white'
                     : 'bg-white border border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-600'
                 }`}
               >
@@ -262,7 +262,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
 
       {isLoading ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {USTUNLAR.map((u) => <div key={u.key} className="h-64 bg-white rounded-2xl border border-slate-200 animate-pulse" />)}
+          {USTUNLAR.map((u) => <div key={u.key} className="h-64 bg-white rounded-card border border-slate-200 animate-pulse" />)}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -282,7 +282,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 }}
                 onDragLeave={() => setOverCol((c) => (c === u.key ? null : c))}
                 onDrop={(e) => onDrop(e, u.key)}
-                className={`rounded-2xl border p-3 transition-colors ${
+                className={`rounded-card border p-3 transition-colors ${
                   overCol === u.key
                     ? 'bg-orange-50/70 border-orange-300 border-dashed'
                     : 'bg-slate-50/60 border-slate-200'
@@ -291,14 +291,14 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${u.rang}`} />
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{u.nom}</span>
+                    <span className="label-caps text-slate-700">{u.nom}</span>
                   </div>
-                  <span className="text-xs font-bold text-slate-400">{items.length}</span>
+                  <span className="text-xs font-semibold text-slate-500 tabular-nums">{items.length}</span>
                 </div>
 
                 <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto custom-scroll pr-1">
                   {items.length === 0 && (
-                    <p className="text-xs font-bold text-slate-300 text-center py-8">
+                    <p className="t-caption font-medium text-center py-8">
                       {filterEmp ? 'Bu xodimda ish yo\'q' : 'Bo\'sh'}
                     </p>
                   )}
@@ -309,7 +309,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       onDragStart={(e) => onDragStart(e, it)}
                       onDragEnd={() => { setDragged(null); setOverCol(null); }}
                       title={it.tur === 'buyurtma' ? "Buyurtma bosqichi Kanban sahifasida o'zgartiriladi" : "Bosqichga sudrab o'tkazing"}
-                      className={`bg-white rounded-xl border p-3 shadow-sm group transition-opacity ${
+                      className={`bg-white rounded-card border p-3 group transition-opacity ${
                         it.tur === 'buyurtma'
                           ? 'border-slate-100 cursor-not-allowed'
                           : 'border-slate-100 cursor-grab active:cursor-grabbing'
@@ -321,27 +321,27 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-slate-800 leading-snug">{it.sarlavha}</p>
-                          {it.izoh && <p className="text-xs font-semibold text-slate-400 mt-1 leading-relaxed">{it.izoh}</p>}
+                          {it.izoh && <p className="text-xs text-slate-500 mt-1 leading-relaxed">{it.izoh}</p>}
                           <div className="flex items-center gap-2 mt-2 flex-wrap">
                             {it.masul ? (
-                              <span className="text-[11px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg">
+                              <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-control">
                                 {it.masul.ism}
                                 {it.qoshimcha_masullar > 0 && ` +${it.qoshimcha_masullar}`}
                               </span>
                             ) : (
-                              <span className="text-[11px] font-bold text-rose-400">mas'ul yo'q</span>
+                              <span className="text-xs font-semibold text-rose-500">mas'ul yo'q</span>
                             )}
                             {(() => {
                               const m = muddatUslubi(it.muddat, u.key === 'bajarildi');
                               if (!m) return null;
                               return (
-                                <span className={`text-[11px] font-bold flex items-center gap-1 ${m.klass}`}>
-                                  {m.ogoh ? <AlertTriangle size={9} /> : <Clock size={9} />} {m.matn}
+                                <span className={`text-xs font-semibold flex items-center gap-1 ${m.klass}`}>
+                                  {m.ogoh ? <AlertTriangle size={12} /> : <Clock size={12} />} {m.matn}
                                 </span>
                               );
                             })()}
                             {it.tur === 'buyurtma' && fmtSumma(it.summa) && (
-                              <span className="text-[11px] font-bold text-slate-400">
+                              <span className="text-xs font-semibold text-slate-500 tabular-nums">
                                 {fmtSumma(it.summa)}
                               </span>
                             )}
@@ -363,7 +363,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                             <button
                               key={x.key}
                               onClick={() => move(it.id, x.key)}
-                              className="text-[11px] font-bold text-slate-400 hover:text-orange-600 px-1.5 py-1 rounded hover:bg-orange-50 transition-colors"
+                              className="text-xs font-semibold text-slate-500 hover:text-orange-600 px-1.5 py-1 rounded hover:bg-orange-50 transition-colors duration-120"
                             >
                               → {x.nom}
                             </button>
@@ -373,7 +373,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                             title="Vazifani o'chirish"
                             className="ml-auto text-slate-300 hover:text-rose-500 transition-colors"
                           >
-                            <Trash2 size={11} />
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       )}
@@ -389,7 +389,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Yangi vazifa">
         <form onSubmit={save} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Sarlavha</label>
+            <label className="form-label">Sarlavha</label>
             <input
               required autoFocus value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -398,34 +398,34 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Izoh</label>
+            <label className="form-label">Izoh</label>
             <textarea
               rows={3} value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Nima qilish kerakligini yozing (ixtiyoriy)"
-              className="input-minimal w-full resize-y"
+              className="textarea-minimal w-full"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest flex items-center gap-1.5">
-              <Users size={11} /> Kim qilishi kerak
+            <label className="form-label flex items-center gap-1.5">
+              <Users size={12} /> Kim qilishi kerak
             </label>
             <select
               value={form.assigneeId}
               onChange={(e) => setForm({ ...form, assigneeId: e.target.value })}
-              className="select-minimal w-full font-bold"
+              className="select-minimal w-full"
             >
               <option value="">— Tanlanmagan —</option>
               {(employees as any[]).map((e: any) => (
                 <option key={e.id} value={e.id}>{e.fullName}</option>
               ))}
             </select>
-            <p className="text-xs font-semibold text-slate-400 mt-1.5">
+            <p className="text-hint mt-1.5">
               Xodim tanlansa — unga Telegram orqali xabar yuboriladi.
             </p>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Muddat</label>
+            <label className="form-label">Muddat</label>
             <input
               type="date" value={form.deadlineAt}
               onChange={(e) => setForm({ ...form, deadlineAt: e.target.value })}
@@ -433,8 +433,8 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             />
           </div>
           <div className="flex gap-3 pt-4 border-t border-slate-100">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-outline flex-1 h-11">BEKOR</button>
-            <button type="submit" disabled={saving} className="btn-primary flex-1 h-11">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-outline flex-1">BEKOR</button>
+            <button type="submit" disabled={saving} className="btn-primary flex-1">
               {saving ? 'Saqlanmoqda...' : 'YARATISH'}
             </button>
           </div>

@@ -137,7 +137,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
     <div className="flex items-center gap-2 mb-6">
       {[1, 2, 3].map(n => (
         <React.Fragment key={n}>
-          <div className={`flex-1 h-1.5 rounded-full transition-colors ${step >= n ? 'bg-orange-500' : 'bg-slate-200'}`} />
+          <div className={`flex-1 h-1.5 rounded-full transition-colors duration-120 ${step >= n ? 'bg-[color:var(--primary)]' : 'bg-slate-200'}`} />
         </React.Fragment>
       ))}
     </div>
@@ -145,23 +145,23 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
 
   return (
     <div className="fixed inset-0 z-tour bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="bg-white w-full max-w-xl rounded-overlay shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-slide-up">
         {/* Header */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white relative">
+        <div className="px-6 py-5 border-b border-slate-100 relative">
           <button
             onClick={skipAll}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white"
+            className="icon-btn absolute top-3 right-3"
             title="O'tkazib yuborish"
           >
             <X size={18} />
           </button>
-          <div className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-1">
+          <div className="label-caps text-primary-700 mb-1">
             Qadam {step} / 3
           </div>
-          <h2 className="text-xl font-bold tracking-tight">
-            PrintFlow'ga <span className="text-orange-400">xush kelibsiz</span>
+          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+            PrintFlow'ga <span className="text-[color:var(--primary)]">xush kelibsiz</span>
           </h2>
-          <p className="text-sm text-slate-300 mt-1">3 qadamda biznes uchun tayyorlanamiz</p>
+          <p className="text-sm text-slate-500 mt-1">3 qadamda biznes uchun tayyorlanamiz</p>
         </div>
 
         {/* Body */}
@@ -171,20 +171,20 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
           {step === 1 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500">
+                <div className="w-10 h-10 rounded-control bg-primary-50 border border-primary-100 flex items-center justify-center text-primary-600">
                   <Building2 size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Filialingiz nomi</h3>
+                  <h3 className="t-h2">Filialingiz nomi</h3>
                   <p className="text-xs text-slate-500">Asosiy filial avtomatik yaratildi. Nomini o'zgartirishingiz mumkin.</p>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Filial nomi</label>
+                <label className="form-label">Filial nomi</label>
                 <input
                   value={branchName}
                   onChange={(e) => setBranchName(e.target.value)}
-                  className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                  className="input-minimal mt-1"
                   placeholder="Ideal Print — Toshkent"
                 />
                 <p className="text-xs text-slate-400 mt-2">Keyinroq Filiallar bo'limidan qo'shimcha filiallarni qo'shishingiz mumkin.</p>
@@ -195,40 +195,40 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
           {step === 2 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500">
+                <div className="w-10 h-10 rounded-control bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500">
                   <Package size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Birinchi xizmat</h3>
+                  <h3 className="t-h2">Birinchi xizmat</h3>
                   <p className="text-xs text-slate-500">Mijozlarga sotadigan asosiy xizmatingiz nima? Yo'q bo'lsa o'tkazing.</p>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Xizmat nomi</label>
+                <label className="form-label">Xizmat nomi</label>
                 <input
                   value={serviceName}
                   onChange={(e) => setServiceName(e.target.value)}
-                  className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                  className="input-minimal mt-1"
                   placeholder="Banner Bosma"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Asosiy narx (UZS)</label>
+                  <label className="form-label">Asosiy narx (UZS)</label>
                   <input
                     type="number"
                     value={servicePrice}
                     onChange={(e) => setServicePrice(e.target.value)}
-                    className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                    className="input-minimal mt-1"
                     placeholder="50000"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Birlik</label>
+                  <label className="form-label">Birlik</label>
                   <select
                     value={serviceUnit}
                     onChange={(e) => setServiceUnit(e.target.value)}
-                    className="select-minimal mt-1 h-11 font-bold"
+                    className="select-minimal mt-1"
                   >
                     <option value="dona">dona</option>
                     <option value="m2">m²</option>
@@ -243,29 +243,29 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
           {step === 3 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500">
+                <div className="w-10 h-10 rounded-control bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
                   <UserPlus size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Birinchi xodim</h3>
+                  <h3 className="t-h2">Birinchi xodim</h3>
                   <p className="text-xs text-slate-500">Jamoangizning birinchi a'zosini qo'shing. Yolg'iz ishlasangiz o'tkazing.</p>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Ism Familiya</label>
+                <label className="form-label">Ism Familiya</label>
                 <input
                   value={empName}
                   onChange={(e) => setEmpName(e.target.value)}
-                  className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                  className="input-minimal mt-1"
                   placeholder="Sardor Karimov"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Telefon (ixtiyoriy)</label>
+                <label className="form-label">Telefon (ixtiyoriy)</label>
                 <input
                   value={empPhone}
                   onChange={(e) => setEmpPhone(e.target.value)}
-                  className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 h-11 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                  className="input-minimal mt-1"
                   placeholder="+998 90 123 45 67"
                 />
               </div>
@@ -278,7 +278,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
           <button
             onClick={skipAll}
             disabled={submitting}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+            className="btn-ghost h-sm"
           >
             O'tkazib yuborish
           </button>
@@ -287,7 +287,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
               <button
                 onClick={() => setStep((step - 1) as 1 | 2 | 3)}
                 disabled={submitting}
-                className="h-11 px-5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm rounded-xl"
+                className="btn-outline"
               >
                 Orqaga
               </button>
@@ -295,7 +295,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
             <button
               onClick={step === 1 ? handleStep1 : step === 2 ? handleStep2 : handleStep3}
               disabled={submitting}
-              className="h-11 px-6 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white font-bold text-sm rounded-xl flex items-center gap-2"
+              className="btn-primary"
             >
               {submitting ? 'Saqlanmoqda...' : step < 3 ? (
                 <>Davom etish <ChevronRight size={16} /></>

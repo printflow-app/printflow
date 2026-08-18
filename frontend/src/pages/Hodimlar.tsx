@@ -303,7 +303,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       <div className={`space-y-4 sm:space-y-6 animate-fade-in ${activeTab !== 'xodimlar' ? 'hidden' : ''}`}>
         <div className="bg-white p-4 sm:p-5 rounded-card border border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
-            <h3 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">Jamoa a'zolari</h3>
+            <h3 className="card-title">Jamoa a'zolari</h3>
             <p className="t-caption mt-0.5">
               Tizimga kirish huquqiga ega barcha xodimlar
               {maxEmployees > 0 && (
@@ -320,7 +320,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                 className="btn-outline h-control"
                 title="Xodimlar ro'yxatini Excel'ga eksport qilish"
               >
-                <Download size={14} /> Eksport
+                <Download size={16} /> Eksport
               </button>
             )}
             {canAdd && (() => {
@@ -333,7 +333,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   className={`btn-primary h-control ${atLimit ? 'opacity-50 cursor-not-allowed' : ''}`}
                   title={atLimit ? `Limit to'ldi: ${maxEmployees} ta xodim` : ''}
                 >
-                  <UserPlus size={15} strokeWidth={2.5} />
+                  <UserPlus size={16} />
                   {atLimit ? `Limit to'ldi (${maxEmployees}/${maxEmployees})` : "Yangi xodim"}
                 </button>
               );
@@ -348,10 +348,10 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                 <tr>
                   <th>F.I.SH & Aloqa</th>
                   <th>Lavozimi</th>
-                  <th>Login</th>
-                  {branches.length > 0 && <th>Filial</th>}
-                  {departments.length > 0 && <th>Bo'limlar</th>}
-                  {anyDebt && <th>Qarzdorlik</th>}
+                  <th className="hidden md:table-cell">Login</th>
+                  {branches.length > 0 && <th className="hidden md:table-cell">Filial</th>}
+                  {departments.length > 0 && <th className="hidden md:table-cell">Bo'limlar</th>}
+                  {anyDebt && <th className="hidden md:table-cell">Qarzdorlik</th>}
                   <th className="text-right pr-6">Amal</th>
                 </tr>
               </thead>
@@ -360,7 +360,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   <tr><td colSpan={6} className="py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
-                        <UserPlus size={24} />
+                        <UserPlus size={20} />
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-slate-800">Hali xodim qo'shilmagan</p>
@@ -368,7 +368,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                       </div>
                       {canAdd && (
                         <button onClick={() => setIsEmployeeModalOpen(true)} className="btn-primary mt-1">
-                          <UserPlus size={15} /> Birinchi xodimni qo'shish
+                          <UserPlus size={16} /> Birinchi xodimni qo'shish
                         </button>
                       )}
                     </div>
@@ -380,24 +380,24 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                       <p className="t-caption mt-0.5 tabular-nums">{emp.phone}</p>
                     </td>
                     <td>
-                      <Badge variant="brand" size="sm">
+                      <Badge variant="brand">
                         {emp.role?.name || '—'}
                       </Badge>
                     </td>
-                    <td className="font-mono text-xs text-slate-600">
+                    <td className="hidden md:table-cell font-mono text-xs text-slate-600">
                       <div className="flex items-center gap-1.5">
                         {emp.login}
                         {canResetPassword && (
                           <button onClick={() => openCredentialsModal(emp)} className="icon-btn-sm" title="Ma'lumotlarni ko'rish">
-                            <Eye size={12} strokeWidth={2.5} />
+                            <Eye size={12} />
                           </button>
                         )}
                       </div>
                     </td>
                     {branches.length > 0 && (
-                      <td>
+                      <td className="hidden md:table-cell">
                         {emp.branchId ? (
-                          <Badge variant="neutral" size="sm">
+                          <Badge variant="neutral">
                             {branches.find(b => b.id === emp.branchId)?.name || '—'}
                           </Badge>
                         ) : (
@@ -406,11 +406,11 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                       </td>
                     )}
                     {departments.length > 0 && (
-                      <td>
+                      <td className="hidden md:table-cell">
                         {(emp.departmentNames || []).length ? (
                           <div className="flex flex-wrap gap-1">
                             {emp.departmentNames.map((n: string) => (
-                              <Badge key={n} variant="neutral" size="sm">
+                              <Badge key={n} variant="neutral">
                                 {n}
                               </Badge>
                             ))}
@@ -421,9 +421,9 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                       </td>
                     )}
                     {anyDebt && (
-                      <td>
+                      <td className="hidden md:table-cell">
                         {Number(emp.workDebt || 0) > 0 ? (
-                          <Badge variant="danger" size="sm">
+                          <Badge variant="danger">
                             {fmtDebt(emp.workDebt)}
                           </Badge>
                         ) : (
@@ -432,19 +432,19 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                       </td>
                     )}
                     <td className="text-right pr-6">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         {canEdit && (
                           <button
                             onClick={() => openEditModal(emp)}
                             className="icon-btn-sm"
                             title="Tahrirlash"
                           >
-                            <Pencil size={13} strokeWidth={2.5} />
+                            <Pencil size={12} />
                           </button>
                         )}
                         {canResetPassword && (
                           <button onClick={() => handleRegeneratePassword(emp.id)} className="icon-btn-sm hover:text-amber-600" title="Parolni yangilash">
-                            <RefreshCw size={13} strokeWidth={2.5} />
+                            <RefreshCw size={12} />
                           </button>
                         )}
                         {canDelete && (
@@ -458,7 +458,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                             }`}
                             title={emp.login === 'admin' ? "Asosiy adminni o'chirib bo'lmaydi" : "O'chirish"}
                           >
-                            <Trash2 size={13} strokeWidth={2.5} />
+                            <Trash2 size={12} />
                           </button>
                         )}
                       </div>
@@ -590,7 +590,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
              />
              <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-card p-3">
                Login va parol bu yerda o'zgartirilmaydi. Parolni yangilash uchun qatordagi
-               <RefreshCw size={11} className="inline mx-1 -mt-0.5" strokeWidth={2.5} />
+               <RefreshCw size={12} className="inline mx-1 -mt-0.5" />
                tugmasidan foydalaning.
              </p>
              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
@@ -642,7 +642,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                 onClick={() => handleRegeneratePassword(selectedEmp.id)}
                 className="btn-outline w-full mt-2"
               >
-                <RefreshCw size={14} /> Yangi parol generatsiya qilish
+                <RefreshCw size={16} /> Yangi parol generatsiya qilish
               </button>
             </div>
           )}

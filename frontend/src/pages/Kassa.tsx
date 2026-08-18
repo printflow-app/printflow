@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, AlertTriangle, CheckCircle2, Download, Search, Pencil, Trash2, Plus, ArrowRightLeft, Inbox, Check, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, AlertTriangle, Download, Search, Pencil, Trash2, Plus, ArrowRightLeft, Inbox, Check, X } from 'lucide-react';
 import { financeApi, customersApi, cashBoxApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -13,9 +13,7 @@ import { SkeletonTable, SkeletonStats } from '../components/Skeleton';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { exportToXlsx } from '../utils/exportToXlsx';
 import { toast } from 'react-toastify';
-import { StatCard } from '../components/ui/StatCard';
-import { EmptyState } from '../components/ui/EmptyState';
-import { Badge } from '../components/ui/Badge';
+import { Badge, EmptyState, StatCard, Toast } from '../components/ui';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
@@ -532,10 +530,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       
       {/* Global Status Notification */}
       {statusMessage && (
-        <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-          {statusMessage.type === 'success' ? <CheckCircle2 size={20}/> : <AlertCircle size={20}/>}
-          <span className="font-bold text-sm">{statusMessage.text}</span>
-        </div>
+        <Toast type={statusMessage.type}>{statusMessage.text}</Toast>
       )}
 
       {/* Kassa selektori + amallar */}
@@ -544,7 +539,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-1 flex-1">
             <button
               onClick={() => setSelectedCashBoxId('')}
-              className={`shrink-0 px-3 py-1.5 rounded-control text-xs font-medium transition-colors border ${!selectedCashBoxId ? 'bg-orange-600 text-white border-orange-600 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+              className={`shrink-0 px-3 py-1.5 rounded-control text-xs font-medium transition-colors border ${!selectedCashBoxId ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
             >
               Barcha kassalar
             </button>
@@ -555,16 +550,16 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   key={b.id}
                   onClick={() => setSelectedCashBoxId(b.id)}
                   title={b.assignedUserName ? `Mas'ul: ${b.assignedUserName}` : undefined}
-                  className={`shrink-0 px-3 py-1.5 rounded-control text-left transition-colors border ${active ? 'bg-orange-600 text-white border-orange-600 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-control text-left transition-colors border ${active ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
                 >
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-medium whitespace-nowrap">{b.name}</span>
                     {b.type === 'main' && (
-                      <span className={`text-[10px] font-semibold uppercase px-1 py-0.2 rounded-full ${active ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>asosiy</span>
+                      <span className={`text-[10px] font-semibold uppercase px-1 py-0.5 rounded-full ${active ? 'bg-primary-100 text-primary-700' : 'bg-slate-200 text-slate-600'}`}>asosiy</span>
                     )}
                   </div>
-                  <div className={`text-xs tabular-nums mt-0.5 ${active ? 'text-white/90 font-semibold' : ((b.balance || 0) >= 0 ? 'text-emerald-700 font-medium' : 'text-rose-700 font-medium')}`}>
-                    <span className={`text-[10px] font-semibold uppercase mr-1 ${active ? 'text-white/70' : 'text-slate-400'}`}>qoldiq:</span>
+                  <div className={`text-xs tabular-nums mt-0.5 ${active ? 'text-primary-700 font-semibold' : ((b.balance || 0) >= 0 ? 'text-emerald-700 font-medium' : 'text-rose-700 font-medium')}`}>
+                    <span className={`text-[10px] font-semibold uppercase mr-1 ${active ? 'text-primary-600' : 'text-slate-400'}`}>qoldiq:</span>
                     {formatCurrency(b.balance || 0)}
                   </div>
                 </button>
@@ -574,12 +569,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="flex gap-2 shrink-0">
             {canTransferCash && cashBoxes.length >= 2 && (
               <button data-tour-id="kassa-topshirish" onClick={openTransferModal} className="btn-outline h-sm">
-                <ArrowRightLeft size={14} strokeWidth={1.75} /> Topshirish
+                <ArrowRightLeft size={16} /> Topshirish
               </button>
             )}
             {canManageCashBoxes && (
-              <button data-tour-id="kassa-yangi-kassa" onClick={() => setIsNewBoxModalOpen(true)} className="btn-outline h-sm">
-                <Plus size={14} strokeWidth={1.75} /> Yangi kassa
+              <button data-tour-id="kassa-yangi-kassa" onClick={() => setIsNewBoxModalOpen(true)} className="btn-primary h-sm">
+                <Plus size={16} /> Yangi kassa
               </button>
             )}
           </div>
@@ -590,7 +585,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       {incomingTransfers.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-card p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-amber-100 text-amber-700 rounded-control"><Inbox size={16} strokeWidth={1.75} /></div>
+            <div className="p-2 bg-amber-100 text-amber-700 rounded-control"><Inbox size={16} /></div>
             <div>
               <h3 className="text-sm font-semibold text-amber-900">Qabul qilinishi kutilmoqda</h3>
               <p className="text-xs text-amber-700">Sizga topshirilgan pulni sanab, tasdiqlang</p>
@@ -611,10 +606,10 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-sm font-semibold text-emerald-600 tabular-nums mr-1">+{formatCurrency(t.amount)}</span>
                   <button onClick={() => handleAcceptTransfer(t.id)} disabled={respondingId === t.id} className="btn-success h-sm">
-                    <Check size={14} strokeWidth={1.75} /> Qabul qildim
+                    <Check size={16} /> Qabul qildim
                   </button>
                   <button onClick={() => handleRejectTransfer(t.id)} disabled={respondingId === t.id} className="btn-outline h-sm">
-                    <X size={14} strokeWidth={1.75} /> Rad etish
+                    <X size={16} /> Rad etish
                   </button>
                 </div>
               </div>
@@ -627,7 +622,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       {departmentId && summary?.biriktirilmagan &&
        (summary.biriktirilmagan.kirim > 0 || summary.biriktirilmagan.chiqim > 0) && (
         <div className="flex items-start gap-3 p-4 rounded-card border border-amber-200 bg-amber-50/60">
-          <div className="p-2 bg-amber-100 text-amber-700 rounded-control flex-shrink-0"><AlertTriangle size={16} strokeWidth={1.75} /></div>
+          <div className="p-2 bg-amber-100 text-amber-700 rounded-control flex-shrink-0"><AlertTriangle size={16} /></div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-amber-900">Bu summalar bo'lim bo'yicha to'liq emas</p>
             <p className="text-xs font-normal text-amber-800 mt-0.5 leading-relaxed">
@@ -689,7 +684,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div>
               <h3 className="t-h3 flex items-center gap-2">
-                <Wallet size={16} strokeWidth={1.75} className="text-orange-600" /> Amaliyotlar
+                <Wallet size={16} className="text-[color:var(--primary)]" /> Amaliyotlar
               </h3>
               <p className="t-caption mt-0.5">{meta?.totalCount ? `${meta.totalCount} ta yozuv` : `${transactions.length} ta yozuv`}</p>
             </div>
@@ -716,9 +711,9 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                  onClick={applyDateFilter}
                  disabled={!draftDiffers}
                  title="Qidirish"
-                 className={`w-6 h-6 flex items-center justify-center rounded-control transition-colors ${draftDiffers ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+                 className={`w-6 h-6 flex items-center justify-center rounded-control border transition-colors ${draftDiffers ? 'bg-primary-50 border-primary-300 text-primary-700 hover:bg-primary-100' : 'bg-slate-100 border-transparent text-slate-300 cursor-not-allowed'}`}
                >
-                 <Search size={13} strokeWidth={2} />
+                 <Search size={12} />
                </button>
                <button
                  onClick={() => { const t = new Date().toLocaleDateString('en-CA'); setDraftStart(t); setDraftEnd(t); setStartDate(t); setEndDate(t); setPage(1); }}
@@ -760,19 +755,19 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 className="btn-outline h-sm"
                 title="Tranzaksiyalarni Excel'ga eksport qilish"
               >
-                <Download size={14} strokeWidth={1.75} /> {isExporting ? 'Eksport...' : 'Eksport'}
+                <Download size={16} /> {isExporting ? 'Eksport...' : 'Eksport'}
               </button>
             )}
 
             {p.canAddIncome && (
               <button data-tour-id="kassa-kirim" onClick={openKirimModal} className="btn-success h-sm">
-                <TrendingUp size={14} strokeWidth={1.75} /> Kirim
+                <TrendingUp size={16} /> Kirim
               </button>
             )}
 
             {p.canAddExpense && (
               <button data-tour-id="kassa-chiqim" onClick={openChiqimModal} className="btn-danger h-sm">
-                <TrendingDown size={14} strokeWidth={1.75} /> Chiqim
+                <TrendingDown size={16} /> Chiqim
               </button>
             )}
           </div>
@@ -785,7 +780,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 icon={Wallet}
                 title="Tanlangan davrda amaliyotlar yo'q"
                 description="Bu sana oralig'ida hech qanday kirim yoki chiqim qayd etilmagan."
-                action={p.canAddIncome ? { label: "Kirim qo'shish", onClick: openKirimModal, primary: true } : undefined}
+                action={p.canAddIncome ? { label: "Kirim qo'shish", onClick: openKirimModal } : undefined}
               />
             </div>
           ) : (
@@ -807,7 +802,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   <tr key={t.id}>
                     <td className="text-center">
                       <div className={`w-6 h-6 mx-auto rounded-control flex items-center justify-center ${t.type === 'kirim' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                        {t.type === 'kirim' ? <TrendingUp size={13} strokeWidth={1.75} /> : <TrendingDown size={13} strokeWidth={1.75} />}
+                        {t.type === 'kirim' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                       </div>
                     </td>
                     <td>
@@ -817,7 +812,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                           : (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.employeeId && !p.canViewSalary) ? 'Xodim maoshi' : (t.expenseReason || (t.expenseType?.name + (t.employee?.fullName ? ' - ' + t.employee.fullName : ''))))}
                       </p>
                       {t.vendor && <span className="text-xs text-slate-500 mt-0.5 block">{Array.isArray(t.vendor.roles) && t.vendor.roles.length ? t.vendor.roles.join(', ') : 'Hamkor'}</span>}
-                      {!t.vendor && t.expenseType && <span className="text-xs text-slate-400 mt-0.5 block">{t.expenseType.name}</span>}
+                      {!t.vendor && t.expenseType && <span className="t-caption mt-0.5 block">{t.expenseType.name}</span>}
                     </td>
                     <td className="text-right whitespace-nowrap">
                       <span className={`font-semibold text-sm tabular-nums ${t.type === 'kirim' ? 'text-emerald-700' : 'text-rose-700'}`}>
@@ -831,7 +826,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     </td>
                     <td className="text-right pr-6 whitespace-nowrap">
                       <p className="text-xs font-medium text-slate-600 tabular-nums">{new Date(t.date).toLocaleDateString('uz-UZ')}</p>
-                      <p className="text-[11px] text-slate-400 tabular-nums">{new Date(t.date).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="t-caption tabular-nums">{new Date(t.date).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p>
                     </td>
                     {canManageFinance && (
                       <td className="text-center whitespace-nowrap">
@@ -841,14 +836,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                             title="Tahrirlash"
                             className="icon-btn-sm"
                           >
-                            <Pencil size={14} strokeWidth={1.75} />
+                            <Pencil size={16} />
                           </button>
                           <button
                             onClick={() => setDeleteTarget(t)}
                             title="O'chirish"
                             className="icon-btn-sm text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                           >
-                            <Trash2 size={14} strokeWidth={1.75} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -956,7 +951,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           {!kirimForm.vendorId && hasDebt && (
             <div className="bg-orange-50 border border-orange-200 rounded-card p-3 space-y-2">
               <p className="text-xs font-semibold text-orange-900 flex items-center gap-2">
-                <AlertCircle size={14} className="text-orange-600" />
+                <AlertCircle size={12} className="text-orange-600" />
                 Mijoz qarzi: <span className="font-bold">{formatCurrency(currentDebtAmount)}</span>
               </p>
               <label className="flex items-center gap-2.5 cursor-pointer">
@@ -1232,7 +1227,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             <input type="text" value={transferForm.note} onChange={e => setTransferForm(f => ({ ...f, note: e.target.value }))} className="input-minimal" placeholder="Masalan: Kunlik tushum" />
           </div>
           <div className="bg-slate-50 border border-slate-200 rounded-card p-3 text-xs text-slate-500 flex items-start gap-2">
-            <AlertCircle size={14} className="text-slate-400 mt-0.5 shrink-0" />
+            <AlertCircle size={12} className="text-slate-400 mt-0.5 shrink-0" />
             <span>Topshirilgach pul sizning kassangizdan chiqim bo'ladi. Qabul qiluvchi tasdiqlaganda uning kassasiga kirim bo'ladi.</span>
           </div>
           <div className="flex gap-2.5 pt-2">
@@ -1264,7 +1259,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               onChange={(id) => setNewBoxForm(f => ({ ...f, assignedUserId: id }))}
               placeholder="Xodim qidirish..."
             />
-            <p className="text-xs text-slate-400 mt-1.5 px-1">Biriktirilgan xodim (agar "Boshqa kassalarni ko'rish" ruxsati bo'lmasa) faqat shu kassani ko'radi.</p>
+            <p className="text-hint mt-1.5 px-1">Biriktirilgan xodim (agar "Boshqa kassalarni ko'rish" ruxsati bo'lmasa) faqat shu kassani ko'radi.</p>
           </div>
           <div className="flex gap-2.5 pt-2">
             <button type="button" onClick={() => setIsNewBoxModalOpen(false)} className="flex-1 btn-outline">Bekor qilish</button>

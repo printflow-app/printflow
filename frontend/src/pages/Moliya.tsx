@@ -3,6 +3,7 @@ import { TrendingUp, Filter, CheckCircle, Clock, AlertCircle } from 'lucide-reac
 import { financeApi, tasksApi } from '../api';
 import { useQuery } from '@tanstack/react-query';
 import { SkeletonStats } from '../components/Skeleton';
+import { StatCard } from '../components/ui';
 import Kpi from './Kpi';
 
 // =============================================
@@ -74,21 +75,21 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
       {isLoading ? null : (<>
 
       {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-card border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2 px-1">
-            <Filter size={18} className="text-[#FF6B00]" /> Filtrlar
+          <h3 className="t-h2 flex items-center gap-2 px-1">
+            <Filter size={18} className="text-[color:var(--primary)]" /> Filtrlar
           </h3>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 px-1">Sana bo'yicha tahlil</p>
+          <p className="t-caption mt-0.5 px-1">Sana bo'yicha tahlil</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0">
-          <div className="flex bg-slate-100 p-0.5 rounded-lg w-full sm:w-auto shadow-inner">
+          <div className="flex bg-slate-100 p-0.5 rounded-control w-full sm:w-auto overflow-x-auto no-scrollbar">
             {(['all', 'today', 'week', 'month'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-md transition-all ${activeFilter === f ? 'bg-white shadow-sm text-[#FF6B00]' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-semibold rounded-md transition-all duration-120 ${activeFilter === f ? 'bg-white shadow-sm text-[color:var(--primary)]' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 {f === 'all' ? 'Barchasi' : f === 'today' ? 'Bugun' : f === 'week' ? 'Hafta' : 'Oy'}
               </button>
@@ -101,52 +102,32 @@ const Moliya: React.FC<{ currentUser?: any; activeBranchId?: string }> = ({ curr
       {/* KPI Cards — Kirim + Bajarilgan + Kutilmoqda */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {canViewFinance && (
-        <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125" />
-          <div className="relative">
-            <div className="w-9 h-9 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-3 border border-emerald-200 shadow-sm">
-              <TrendingUp size={18} />
-            </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Jami Kirim</p>
-            <h3 className="text-xl font-bold text-slate-800 tracking-tight">{formatCurrency(dashboard.totalKirim)}</h3>
-          </div>
-        </div>
+          <StatCard
+            label="Jami Kirim"
+            value={formatCurrency(dashboard.totalKirim)}
+            icon={TrendingUp}
+            tone="success"
+          />
         )}
 
-        <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125" />
-          <div className="relative">
-            <div className="w-9 h-9 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-3 border border-orange-200 shadow-sm">
-              <CheckCircle size={18} />
-            </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilgan Buyurtmalar</p>
-            <h3 className="text-xl font-bold text-slate-800 tracking-tight">{dashboard.completedTasks || 0} ta</h3>
-          </div>
-        </div>
+        <StatCard
+          label="Bajarilgan Buyurtmalar"
+          value={`${dashboard.completedTasks || 0} ta`}
+          icon={CheckCircle}
+          tone="brand"
+        />
 
-        <div className={`bg-white p-4 rounded-xl border shadow-sm relative overflow-hidden group ${
-          overdueOrders > 0 ? 'border-rose-200' : 'border-amber-100'
-        }`}>
-          <div className={`absolute top-0 right-0 w-24 h-24 opacity-40 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125 ${
-            overdueOrders > 0 ? 'bg-rose-50' : 'bg-amber-50'
-          }`} />
-          <div className="relative">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 border shadow-sm ${
-              overdueOrders > 0
-                ? 'bg-rose-100 text-rose-600 border-rose-200'
-                : 'bg-amber-100 text-amber-600 border-amber-200'
-            }`}>
-              {overdueOrders > 0 ? <AlertCircle size={18} /> : <Clock size={18} />}
-            </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Bajarilishi Kutilmoqda</p>
-            <h3 className="text-xl font-bold text-slate-800 tracking-tight">{pendingOrders} ta</h3>
-            {overdueOrders > 0 && (
-              <p className="text-[11px] font-bold text-rose-500 mt-0.5 flex items-center gap-1">
-                <AlertCircle size={10} /> {overdueOrders} ta muddati o'tgan
-              </p>
-            )}
-          </div>
-        </div>
+        <StatCard
+          label="Bajarilishi Kutilmoqda"
+          value={`${pendingOrders} ta`}
+          icon={overdueOrders > 0 ? AlertCircle : Clock}
+          tone={overdueOrders > 0 ? 'danger' : 'warning'}
+          subtitle={overdueOrders > 0 ? (
+            <span className="inline-flex items-center gap-1 font-medium text-rose-600">
+              <AlertCircle size={12} /> {overdueOrders} ta muddati o'tgan
+            </span>
+          ) : undefined}
+        />
       </div>
 
       {/* Employee KPI / Samaradorlik */}

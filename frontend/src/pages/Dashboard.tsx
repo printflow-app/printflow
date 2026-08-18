@@ -670,10 +670,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   data-tour-group={group.label.toLowerCase()}
                   data-tour-open={isOpen ? '1' : '0'}
                   onClick={() => toggleGroup(group.label)}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium uppercase tracking-wider transition-colors duration-150 ${
+                  className={`flex items-center justify-between px-3 py-2 rounded-control text-xs font-semibold transition-colors duration-120 ${
                     containsActive
                       ? 'text-slate-800'
-                      : 'text-slate-400 hover:text-slate-600'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   <span className="flex items-center gap-2">
@@ -681,7 +681,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     <span>{group.label}</span>
                     {/* Group-level notification badge — collapsed bo'lganda ham ko'rinadi */}
                     {!isOpen && groupNotifications > 0 && (
-                      <span className="text-xs font-semibold px-1.5 py-px rounded-md bg-orange-500 text-white normal-case tracking-normal min-w-[18px] text-center">
+                      <span className="text-xs font-semibold px-1.5 py-px rounded-full bg-[color:var(--primary)] text-white min-w-[18px] text-center">
                         {groupNotifications > 99 ? '99+' : groupNotifications}
                       </span>
                     )}
@@ -701,18 +701,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     key={item.id}
                     data-tour-id={`nav-${item.id}`}
                     onClick={() => handleTabChange(item.id as any)}
-                    className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors duration-150 ${menyuBandi(activeTab) === item.id
+                    className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-control text-sm transition-colors duration-120 ${menyuBandi(activeTab) === item.id
                         ? 'bg-white text-slate-900 font-semibold border border-[color:var(--border)] shadow-sm'
                         : 'text-slate-600 font-medium hover:bg-slate-900/[0.04] hover:text-slate-900 border border-transparent'
                       }`}
                   >
-                    <item.icon size={16} strokeWidth={2} className={menyuBandi(activeTab) === item.id ? 'text-[color:var(--primary)]' : 'text-slate-400 group-hover:text-slate-600'} />
+                    <item.icon size={16} className={menyuBandi(activeTab) === item.id ? 'text-[color:var(--primary)]' : 'text-slate-400 group-hover:text-slate-600'} />
                     <p className="text-left flex-1 leading-tight tracking-tight truncate">{item.label}</p>
 
                     {/* Per-item notification badge — yangilik soni */}
                     {showBadge && (
                       <span
-                        className="text-xs font-semibold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-orange-500 text-white"
+                        className="text-xs font-semibold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-[color:var(--primary)] text-white"
                         title={`${itemCount} ta yangi`}
                       >
                         {itemCount > 99 ? '99+' : itemCount}
@@ -721,12 +721,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
                     <div
                       onClick={(e) => toggleTabLock(item.id, e)}
-                      className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors ${lockedTabs.has(item.id)
+                      className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors duration-120 ${lockedTabs.has(item.id)
                           ? 'bg-rose-500 text-white'
-                          : 'text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-600'
+                          : 'text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-600'
                         }`}
                     >
-                      {lockedTabs.has(item.id) ? <Lock size={10} strokeWidth={2.5} /> : <Unlock size={10} />}
+                      {lockedTabs.has(item.id) ? <Lock size={10} /> : <Unlock size={10} />}
                     </div>
                   </button>
                   );
@@ -767,7 +767,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               onClick={() => setShowLogoutConfirm(true)}
               className="btn-ghost flex-1 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
             >
-              <LogOut size={14} strokeWidth={2} /> Chiqish
+              <LogOut size={14} /> Chiqish
             </button>
           </div>
         </div>
@@ -851,7 +851,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       )}
 
       <main className="flex-1 flex flex-col h-[calc(100vh-3rem)] md:h-screen overflow-hidden">
-        <header className="hidden md:flex h-14 px-5 items-center justify-between border-b border-[color:var(--border)] bg-white z-10">
+        <header className="hidden md:flex h-14 px-5 items-center justify-between border-b border-[color:var(--border)] bg-white z-sticky">
           <h2 className="page-title flex items-center gap-2">
             {navItems.find(i => i.id === activeTab)?.label}
             {lockedTabs.has(activeTab) && <Lock size={14} className="text-rose-500" />}

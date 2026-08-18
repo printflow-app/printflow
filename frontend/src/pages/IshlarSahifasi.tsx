@@ -47,7 +47,7 @@ const IshlarSahifasi: React.FC<{
   const ikkalasiHam = kanbanKorish && vazifaKorish;
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-4 sm:space-y-6">
       {/* Tab qatori faqat ikkala bo'lim ham ochiq bo'lsa ko'rinadi */}
       {ikkalasiHam && (
         <Tabs<Bolim>

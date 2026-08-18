@@ -639,7 +639,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-card border border-slate-200">
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <BarChart2 size={20} className="text-[color:var(--primary)]" /> Hisobotlar & Tahlil
+            <BarChart3 size={20} className="text-[color:var(--primary)]" /> Hisobotlar & Tahlil
           </h2>
           <p className="t-caption mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
         </div>

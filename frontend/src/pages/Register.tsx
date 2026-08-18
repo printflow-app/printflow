@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Lock, User as UserIcon, Building2, Eye, EyeOff, Phone, Hash } from 'lucide-react';
+import { Lock, User as UserIcon, Building2, Eye, EyeOff, Phone, Hash, ChevronLeft } from 'lucide-react';
 import { authApi } from '../api';
 import { buildUser, User } from '../App';
 import logo from '../assets/logo.png';
@@ -98,38 +98,38 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
       {onBack && (
         <button
           onClick={onBack}
-          className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-white/80 backdrop-blur border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-sm transition-all"
+          className="btn-outline absolute top-6 left-6 z-fab"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+          <ChevronLeft size={16} />
           Bosh sahifa
         </button>
       )}
 
-      <div className="w-full max-w-lg relative z-10">
+      <div className="w-full max-w-lg relative z-sticky">
         <div className="text-center mb-8">
           <div className="relative w-20 h-20 mx-auto mb-4">
-            <div className="absolute inset-0 bg-[#FF6B00]/10 rounded-full blur-2xl" />
+            <div className="absolute inset-0 bg-primary-500/10 rounded-full blur-2xl" />
             <img src={logo} alt="PrintFlow" className="relative w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-800 mb-1 uppercase">
-            Print<span className="text-[#FF6B00]">Flow</span>
+          <h1 className="t-display mb-1">
+            Print<span className="text-[color:var(--primary)]">Flow</span>
           </h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em]">
+          <p className="text-sm font-medium text-slate-500">
             Yangi Workspace ochish
           </p>
         </div>
 
-        <div className="bg-white p-8 shadow-xl border border-slate-200 relative overflow-hidden rounded-xl">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-[#FF6B00]/5 rounded-full -mr-20 -mt-20" />
+        <div className="bg-white p-8 rounded-card border border-slate-200 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-primary-500/5 rounded-full -mr-20 -mt-20" />
 
           <form onSubmit={handleSubmit} className="space-y-4 relative" autoComplete="off">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <div>
+              <label className="form-label">
                 Tashkilot nomi
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                  <Building2 className="w-4 h-4" />
+                  <Building2 size={16} />
                 </div>
                 <input
                   required
@@ -137,18 +137,18 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                   value={tenantName}
                   onChange={(e) => setTenantName(e.target.value)}
                   placeholder="Ideal Print MCHJ"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none"
+                  className="input-minimal h-control-lg pl-11"
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <div>
+              <label className="form-label">
                 Workspace slug (URL identifikator)
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                  <Hash className="w-4 h-4" />
+                  <Hash size={16} />
                 </div>
                 <input
                   required
@@ -159,22 +159,22 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                     setWorkspaceSlug(e.target.value.toLowerCase());
                   }}
                   placeholder="ideal-print"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none"
+                  className="input-minimal h-control-lg pl-11"
                 />
               </div>
-              <p className="text-xs font-bold text-slate-400 mt-1">
+              <p className="text-hint mt-1">
                 Faqat kichik harf, raqam va tire. Login sahifada shu nomni kiritasiz.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="form-label">
                   Ism Familiya
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                    <UserIcon className="w-4 h-4" />
+                    <UserIcon size={16} />
                   </div>
                   <input
                     required
@@ -182,36 +182,36 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Sardor Karimov"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none"
+                    className="input-minimal h-control-lg pl-11"
                   />
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <div>
+                <label className="form-label">
                   Telefon (ixtiyoriy)
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                    <Phone className="w-4 h-4" />
+                    <Phone size={16} />
                   </div>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+998 90 ..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none"
+                    className="input-minimal h-control-lg pl-11"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <div>
+              <label className="form-label">
                 Admin Login
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                  <UserIcon className="w-4 h-4" />
+                  <UserIcon size={16} />
                 </div>
                 <input
                   required
@@ -219,18 +219,18 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                   value={login}
                   onChange={(e) => setLogin(e.target.value.toLowerCase())}
                   placeholder="admin"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none"
+                  className="input-minimal h-control-lg pl-11"
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <div>
+              <label className="form-label">
                 Parol
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-4 h-4" />
+                  <Lock size={16} />
                 </div>
                 <input
                   required
@@ -238,7 +238,7 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Kamida 8 ta belgi"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-11 py-3 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none"
+                  className="input-minimal h-control-lg pl-11 pr-11"
                 />
                 <button
                   type="button"
@@ -246,13 +246,13 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-700"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-lg px-4 py-3">
+              <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm font-medium rounded-card px-4 py-3">
                 {error}
               </div>
             )}
@@ -260,15 +260,15 @@ const Register: React.FC<RegisterProps> = ({ onRegistered, onBack, onSwitchToLog
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#FF6B00] hover:bg-[#e66000] disabled:bg-orange-300 disabled:cursor-not-allowed text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]"
+              className="btn-primary h-lg w-full"
             >
               {loading ? 'Yaratilmoqda...' : 'Workspace yaratish'}
             </button>
 
             {onSwitchToLogin && (
-              <p className="text-center text-xs font-bold text-slate-500 pt-2">
+              <p className="text-center text-sm font-medium text-slate-500 pt-2">
                 Allaqachon hisob bormi?{' '}
-                <button type="button" onClick={onSwitchToLogin} className="text-[#FF6B00] hover:underline">
+                <button type="button" onClick={onSwitchToLogin} className="text-[color:var(--primary)] hover:underline font-semibold">
                   Tizimga kirish
                 </button>
               </p>

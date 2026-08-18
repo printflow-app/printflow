@@ -51,7 +51,7 @@ const ScanAttendance: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         }
 
         const res = await attendanceApi.checkIn({ employeeId: currentUser.id, token, ...geo });
-        
+
         setStatus('success');
         if (res.data && res.data.checkOut) {
           setMessage("Siz muvaffaqiyatli ketdi (Check-out) deb belgilandingiz");
@@ -68,63 +68,71 @@ const ScanAttendance: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   }, [currentUser]);
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans">
-      <div className="bg-white max-w-sm w-full p-8 sm:p-10 rounded-3xl shadow-xl flex flex-col items-center text-center">
-        
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+      <div className="bg-white max-w-sm w-full p-8 sm:p-10 rounded-card border border-slate-200 shadow-sm flex flex-col items-center text-center">
+
         {status === 'loading' && (
           <div className="flex flex-col items-center py-4">
-            <Loader2 className="w-16 h-16 text-slate-500 animate-spin mb-6" />
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">Skaner tekshirilmoqda...</h2>
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mb-5">
+              <Loader2 size={20} className="animate-spin" />
+            </div>
+            <h2 className="page-title">Skaner tekshirilmoqda...</h2>
           </div>
         )}
 
         {status === 'success' && (
-          <div className="flex flex-col items-center w-full py-2 animate-in fade-in zoom-in duration-500">
-            <CheckCircle2 className="w-20 h-20 text-emerald-500 mb-6" />
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Davomat qayd etildi!</h2>
-            <p className="text-slate-500 font-medium mb-8 leading-relaxed max-w-[250px]">
+          <div className="flex flex-col items-center w-full py-2 animate-pop">
+            <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 mb-5">
+              <CheckCircle2 size={20} />
+            </div>
+            <h2 className="page-title mb-2">Davomat qayd etildi!</h2>
+            <p className="text-sm text-slate-500 mb-8 leading-relaxed max-w-[250px]">
               {message}
             </p>
-            
-            <button 
+
+            <button
               onClick={() => window.location.href = '/'}
-              className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2"
+              className="btn-primary h-lg w-full"
             >
               Asosiy sahifaga o'tish
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight size={18} />
             </button>
           </div>
         )}
 
         {status === 'not_logged_in' && (
-          <div className="flex flex-col items-center w-full py-2 animate-in fade-in zoom-in duration-500">
-            <AlertCircle className="w-20 h-20 text-rose-500 mb-6" />
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Iltimos, avval tizimga kiring</h2>
-            <p className="text-slate-500 font-medium mb-8 leading-relaxed max-w-[250px]">
+          <div className="flex flex-col items-center w-full py-2 animate-pop">
+            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 mb-5">
+              <AlertCircle size={20} />
+            </div>
+            <h2 className="page-title mb-2">Iltimos, avval tizimga kiring</h2>
+            <p className="text-sm text-slate-500 mb-8 leading-relaxed max-w-[250px]">
               {message}
             </p>
-            
-            <button 
+
+            <button
               onClick={() => window.location.href = '/'}
-              className="w-full py-4 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-2xl transition-colors shadow-md flex items-center justify-center gap-2 mb-3"
+              className="btn-primary h-lg w-full mb-3"
             >
               Tizimga kirish
-              <LogIn className="w-5 h-5" />
+              <LogIn size={18} />
             </button>
           </div>
         )}
 
         {status === 'error' && (
-          <div className="flex flex-col items-center w-full py-2 animate-in fade-in zoom-in duration-500">
-            <AlertCircle className="w-20 h-20 text-rose-500 mb-6" />
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Xatolik</h2>
-            <p className="text-slate-500 font-medium mb-8 leading-relaxed max-w-[250px]">
+          <div className="flex flex-col items-center w-full py-2 animate-pop">
+            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 mb-5">
+              <AlertCircle size={20} />
+            </div>
+            <h2 className="page-title mb-2">Xatolik</h2>
+            <p className="text-sm text-slate-500 mb-8 leading-relaxed max-w-[250px]">
               {message}
             </p>
-            
-            <button 
+
+            <button
               onClick={() => window.location.href = '/'}
-              className="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-2xl transition-colors flex items-center justify-center gap-2"
+              className="btn-outline h-lg w-full"
             >
               Asosiy sahifaga o'tish
             </button>

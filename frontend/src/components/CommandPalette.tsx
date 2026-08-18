@@ -125,7 +125,7 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden border border-slate-200"
+        className="bg-white w-full max-w-xl rounded-overlay shadow-2xl overflow-hidden border border-slate-200 animate-slide-up"
       >
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 h-14 border-b border-slate-100">
@@ -136,15 +136,15 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={agentEnabled ? "Sahifa qidirish yoki Girgitton'dan so'rash..." : 'Sahifa qidirish...'}
-            className="flex-1 bg-transparent outline-none text-base font-semibold text-slate-800 placeholder:text-slate-400"
+            className="flex-1 bg-transparent outline-none text-base font-medium text-slate-900 placeholder:text-slate-400"
           />
-          <kbd className="hidden sm:inline-block text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">ESC</kbd>
+          <kbd className="hidden sm:inline-block text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-md">ESC</kbd>
         </div>
 
         {/* Results */}
         <div className="max-h-[60vh] overflow-y-auto py-1">
           {rows.length === 0 ? (
-            <div className="py-8 text-center text-sm font-semibold text-slate-400">
+            <div className="py-8 text-center text-sm text-slate-500">
               "{query}" — hech narsa topilmadi
             </div>
           ) : (
@@ -160,18 +160,18 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
                       isActive ? 'bg-orange-50' : 'hover:bg-slate-50'
                     }`}
                   >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isActive ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white' : 'bg-orange-100 text-orange-600'
+                    <div className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 ${
+                      isActive ? 'bg-[color:var(--primary)] text-white' : 'bg-primary-100 text-primary-700'
                     }`}>
                       <Sparkles size={16} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-slate-800 truncate">
-                        Girgitton'dan so'rash: <span className="text-orange-600">"{row.text}"</span>
+                      <div className="text-sm font-semibold text-slate-900 truncate">
+                        Girgitton'dan so'rash: <span className="text-[color:var(--primary)]">"{row.text}"</span>
                       </div>
                       <div className="text-xs text-slate-500 truncate">Agent javob beradi yoki amalni bajaradi</div>
                     </div>
-                    {isActive && <ArrowRight size={14} className="text-orange-500" />}
+                    {isActive && <ArrowRight size={14} className="text-[color:var(--primary)]" />}
                   </button>
                 );
               }
@@ -186,16 +186,16 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
                     isActive ? 'bg-orange-50' : 'hover:bg-slate-50'
                   }`}
                 >
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    isActive ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-500'
+                  <div className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 ${
+                    isActive ? 'bg-[color:var(--primary)] text-white' : 'bg-slate-100 text-slate-500'
                   }`}>
                     <Icon size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-slate-800 truncate">{cmd.label}</div>
+                    <div className="text-sm font-semibold text-slate-900 truncate">{cmd.label}</div>
                     {cmd.hint && <div className="text-xs text-slate-500 truncate">{cmd.hint}</div>}
                   </div>
-                  {isActive && <ArrowRight size={14} className="text-orange-500" />}
+                  {isActive && <ArrowRight size={14} className="text-[color:var(--primary)]" />}
                 </button>
               );
             })
@@ -203,11 +203,11 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
         </div>
 
         {/* Footer hint */}
-        <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs font-semibold text-slate-400">
+        <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs font-medium text-slate-500">
           <span className="flex gap-3">
             <span>↑↓ navigatsiya</span>
             <span>Enter — tanlash</span>
-            {agentEnabled && <span className="text-orange-400">Yozing → agent</span>}
+            {agentEnabled && <span className="text-[color:var(--primary)]">Yozing → agent</span>}
           </span>
           <span>Ctrl/Cmd + K — ochish</span>
         </div>

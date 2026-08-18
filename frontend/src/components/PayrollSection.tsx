@@ -113,69 +113,69 @@ export const PayrollSection: React.FC<{
 
   return (
     <section className="space-y-4">
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white p-4 sm:p-5 rounded-card border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <Wallet className="text-emerald-500" size={24} /> Maosh (oylik hisob-kitob)
+          <h3 className="card-title flex items-center gap-2">
+            <Wallet className="text-emerald-500" size={20} /> Maosh (oylik hisob-kitob)
           </h3>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="t-caption mt-0.5">
             Fiksa + bonus − jarima − avans = berish kerak
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs font-bold text-slate-400 uppercase">Oy</label>
+          <label className="label-caps">Oy</label>
           <input
             type="month"
             value={period}
             onChange={(e) => { setPeriod(e.target.value); setEdits({}); }}
-            className="input-minimal w-auto h-control-sm text-sm font-bold"
+            className="input-minimal w-auto h-control-sm text-sm font-semibold"
           />
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto custom-scroll">
-          <table className="w-full text-left min-w-[900px]">
-            <thead className="bg-slate-50/80">
-              <tr className="border-b border-slate-100">
-                <th className="py-3 px-4 label-caps">Xodim</th>
-                <th className="py-3 px-3 label-caps text-right">Fiksa</th>
-                <th className="py-3 px-3 label-caps text-right">Bonus</th>
-                <th className="py-3 px-3 label-caps text-right">Jarima</th>
-                <th className="py-3 px-3 label-caps text-right">Sof maosh</th>
-                <th className="py-3 px-3 label-caps text-right">Avans (oy)</th>
-                <th className="py-3 px-3 label-caps text-right">Oldingi qarz</th>
-                <th className="py-3 px-3 label-caps text-right">Berish kerak</th>
-                <th className="py-3 px-3 label-caps text-center">Amal</th>
+          <table className="table-minimal md:min-w-[860px]">
+            <thead>
+              <tr>
+                <th>Xodim</th>
+                <th className="hidden md:table-cell text-right">Fiksa</th>
+                <th className="hidden md:table-cell text-right">Bonus</th>
+                <th className="hidden md:table-cell text-right">Jarima</th>
+                <th className="hidden md:table-cell text-right">Sof maosh</th>
+                <th className="hidden md:table-cell text-right">Avans (oy)</th>
+                <th className="hidden md:table-cell text-right">Oldingi qarz</th>
+                <th className="text-right">Berish kerak</th>
+                <th className="text-center">Amal</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {rows.map((row) => {
                 const paid = row.status === 'paid';
                 const busy = busyId === row.employeeId;
                 const toPay = liveToPay(row);
                 return (
                   <React.Fragment key={row.employeeId}>
-                  <tr className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-2.5 px-4">
+                  <tr>
+                    <td>
                       <div className="flex items-center gap-2">
                         {/* Sxema bo'yicha hisoblangan bo'lsa — tafsilotni ochish */}
                         {row.breakdown?.length ? (
                           <button
                             onClick={() => setOpenRow(openRow === row.employeeId ? null : row.employeeId)}
                             title="Hisob tafsiloti"
-                            className="w-5 h-5 rounded-md text-slate-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center flex-shrink-0"
+                            className="w-5 h-5 rounded-control text-slate-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center flex-shrink-0"
                           >
-                            {openRow === row.employeeId ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                            {openRow === row.employeeId ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           </button>
                         ) : (
                           <span className="w-5 flex-shrink-0" />
                         )}
                         <div>
-                          <p className="text-xs font-bold text-slate-800">{row.fullName}</p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs font-semibold text-slate-800">{row.fullName}</p>
+                          <p className="text-xs text-slate-500">
                             {row.roleName}
-                            {row.jonli && <span className="ml-1.5 text-orange-500 font-bold">· jonli hisob</span>}
+                            {row.jonli && <span className="ml-1.5 text-orange-500 font-semibold">· jonli hisob</span>}
                           </p>
                         </div>
                       </div>
@@ -186,7 +186,7 @@ export const PayrollSection: React.FC<{
                         keyingi ochilishda yo'qolardi. Tahrirlashga ruxsat
                         berish — ishlamaydigan tugmani ko'rsatish demak.
                         Tuzatish kerak bo'lsa sxemaning o'zi o'zgartiriladi. */}
-                    <td className="py-2.5 px-3 w-32">
+                    <td className="hidden md:table-cell w-32">
                       {paid || row.jonli ? (
                         <span
                           className="block text-right text-xs font-bold tabular-nums text-slate-600"
@@ -198,7 +198,7 @@ export const PayrollSection: React.FC<{
                         <CurrencyInput value={String(val(row, 'fixedSalary') || '')} onChange={(u) => setEdit(row.employeeId, 'fixedSalary', u || 0)} colorClass="text-slate-800" className="input-minimal h-9 text-xs text-right" />
                       )}
                     </td>
-                    <td className="py-2.5 px-3 w-32">
+                    <td className="hidden md:table-cell w-32">
                       {paid || row.jonli ? (
                         <span
                           className="block text-right text-xs font-bold tabular-nums text-emerald-600"
@@ -210,42 +210,42 @@ export const PayrollSection: React.FC<{
                         <CurrencyInput value={String(val(row, 'bonus') || '')} onChange={(u) => setEdit(row.employeeId, 'bonus', u || 0)} colorClass="text-emerald-600" className="input-minimal h-9 text-xs text-right" />
                       )}
                     </td>
-                    <td className="py-2.5 px-3 w-32">
+                    <td className="hidden md:table-cell w-32">
                       {paid ? (
                         <span className="block text-right text-xs font-bold tabular-nums text-rose-600">{row.penalty ? '−' + fmt(row.penalty) : '—'}</span>
                       ) : (
                         <CurrencyInput value={String(val(row, 'penalty') || '')} onChange={(u) => setEdit(row.employeeId, 'penalty', u || 0)} colorClass="text-rose-600" className="input-minimal h-9 text-xs text-right" />
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-xs font-bold tabular-nums text-slate-700">{fmt(liveNet(row))}</td>
-                    <td className="py-2.5 px-3 text-right text-xs font-bold tabular-nums text-orange-600">{row.advances ? '−' + fmt(row.advances) : '—'}</td>
-                    <td className="py-2.5 px-3 text-right text-xs font-bold tabular-nums text-rose-500">{row.prevDebt ? '−' + fmt(row.prevDebt) : '—'}</td>
-                    <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                    <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-slate-700">{fmt(liveNet(row))}</span></td>
+                    <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-orange-600">{row.advances ? '−' + fmt(row.advances) : '—'}</span></td>
+                    <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-rose-500">{row.prevDebt ? '−' + fmt(row.prevDebt) : '—'}</span></td>
+                    <td className="text-right whitespace-nowrap">
                       <span className={`text-sm font-bold tabular-nums ${toPay < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>{fmt(toPay)}</span>
-                      {toPay < 0 && <p className="text-[11px] font-bold text-rose-400">keyingi oyga qarz</p>}
+                      {toPay < 0 && <p className="text-xs font-medium text-rose-500">keyingi oyga qarz</p>}
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td>
                       <div className="flex items-center justify-center gap-1.5">
                         {paid ? (
                           <>
-                            <span className="text-[11px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md uppercase">To'langan</span>
+                            <span className="badge-success">To'langan</span>
                             {canManage && (
-                              <button onClick={() => handleRevert(row)} disabled={busy} title="Bekor qilish" className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors disabled:opacity-40">
-                                <RotateCcw size={14} />
+                              <button onClick={() => handleRevert(row)} disabled={busy} title="Bekor qilish" className="icon-btn-sm hover:text-rose-600 disabled:opacity-40">
+                                <RotateCcw size={16} />
                               </button>
                             )}
                           </>
                         ) : canManage ? (
                           <>
-                            <button onClick={() => handleSave(row)} disabled={busy} title="Saqlash" className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 flex items-center justify-center transition-colors disabled:opacity-40">
-                              <Save size={14} />
+                            <button onClick={() => handleSave(row)} disabled={busy} title="Saqlash" className="icon-btn-sm disabled:opacity-40">
+                              <Save size={16} />
                             </button>
                             <button onClick={() => handlePay(row)} disabled={busy} className="btn-success h-sm">
-                              <Check size={13} /> To'lash
+                              <Check size={12} /> To'lash
                             </button>
                           </>
                         ) : (
-                          <span className="text-[11px] font-bold text-slate-300 uppercase">qoralama</span>
+                          <span className="t-caption">qoralama</span>
                         )}
                       </div>
                     </td>
@@ -255,8 +255,8 @@ export const PayrollSection: React.FC<{
                       shart bajarilmagani uchun tushib qolgan. */}
                   {openRow === row.employeeId && row.breakdown?.length > 0 && (
                     <tr className="bg-slate-50/70">
-                      <td colSpan={9} className="px-4 py-3">
-                        <div className="max-w-3xl space-y-1.5">
+                      <td colSpan={9}>
+                        <div className="max-w-3xl space-y-1.5 py-1">
                           {row.breakdown.map((b: any) => (
                             <div key={b.id} className="flex items-center gap-3 text-xs">
                               <span className={`w-4 flex-shrink-0 font-bold ${b.skipped ? 'text-slate-300' : 'text-emerald-600'}`}>
@@ -275,17 +275,17 @@ export const PayrollSection: React.FC<{
                           ))}
 
                           {row.taklifJarima > 0 && !paid && canManage && (
-                            <div className="flex items-center gap-3 pt-2 mt-2 border-t border-slate-200">
-                              <span className="text-xs font-bold text-rose-700">
+                            <div className="flex flex-wrap items-center gap-3 pt-2 mt-2 border-t border-slate-200">
+                              <span className="text-xs font-semibold text-rose-700">
                                 Taklif qilingan jarima: {fmt(row.taklifJarima)} so'm
                               </span>
                               <button
                                 onClick={() => setEdit(row.employeeId, 'penalty', row.taklifJarima)}
-                                className="h-7 px-3 text-xs font-bold uppercase tracking-wider bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors"
+                                className="btn-danger h-sm"
                               >
                                 Qabul qilish
                               </button>
-                              <span className="text-xs font-medium text-slate-400">
+                              <span className="t-caption">
                                 yoki jarima ustuniga o'zingiz yozing
                               </span>
                             </div>
@@ -299,24 +299,24 @@ export const PayrollSection: React.FC<{
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center">
-                    <div className="flex flex-col items-center opacity-30">
-                      <TrendingDown size={36} className="mb-3" />
-                      <p className="font-bold uppercase text-xs">Xodimlar topilmadi</p>
+                  <td colSpan={9} className="text-center">
+                    <div className="flex flex-col items-center py-12 text-slate-400">
+                      <TrendingDown size={20} className="mb-3" />
+                      <p className="text-xs font-semibold">Xodimlar topilmadi</p>
                     </div>
                   </td>
                 </tr>
               )}
             </tbody>
             {rows.length > 0 && (
-              <tfoot className="bg-slate-50/80 border-t-2 border-slate-200">
+              <tfoot className="bg-slate-50 border-t border-slate-200">
                 <tr>
-                  <td className="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Jami</td>
-                  <td colSpan={3}></td>
-                  <td className="py-3 px-3 text-right text-xs font-bold tabular-nums text-slate-700">{fmt(totals.net)}</td>
-                  <td className="py-3 px-3 text-right text-xs font-bold tabular-nums text-orange-600">−{fmt(totals.adv)}</td>
-                  <td></td>
-                  <td className="py-3 px-3 text-right text-sm font-bold tabular-nums text-emerald-700">{fmt(totals.toPay)}</td>
+                  <td><span className="label-caps">Jami</span></td>
+                  <td colSpan={3} className="hidden md:table-cell"></td>
+                  <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-slate-700">{fmt(totals.net)}</span></td>
+                  <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-orange-600">−{fmt(totals.adv)}</span></td>
+                  <td className="hidden md:table-cell"></td>
+                  <td className="text-right"><span className="text-sm font-bold tabular-nums text-emerald-700">{fmt(totals.toPay)}</span></td>
                   <td></td>
                 </tr>
               </tfoot>

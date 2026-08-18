@@ -7,6 +7,7 @@ import { branchesApi, billingApi, departmentsApi } from '../api';
 import { useBranches, useEmployees, useInvalidate } from '../hooks/queries';
 import { useQuery } from '@tanstack/react-query';
 import { SkeletonCardGrid } from '../components/Skeleton';
+import { Badge } from '../components/ui';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 
@@ -99,25 +100,25 @@ const BranchDepartments: React.FC<{ branchId: string; canManage: boolean }> = ({
       <button
         type="button"
         onClick={toggleOpen}
-        className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-colors"
+        className="w-full flex items-center justify-between label-caps hover:text-slate-700 transition-colors"
       >
         <span className="flex items-center gap-1.5">
           <Layers size={12} />
-          Bo'limlar {loaded && <span className="text-slate-400 normal-case tracking-normal font-bold">({items.length})</span>}
+          Bo'limlar {loaded && <span className="text-slate-400 normal-case tracking-normal">({items.length})</span>}
         </span>
-        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
 
       {open && (
         <div className="mt-3 space-y-2">
-          {loading && <p className="text-xs text-slate-400">Yuklanmoqda...</p>}
+          {loading && <p className="t-caption">Yuklanmoqda...</p>}
 
           {loaded && items.length === 0 && !loading && (
-            <p className="text-xs text-slate-400 italic">Bo'lim qo'shilmagan</p>
+            <p className="t-caption">Bo'lim qo'shilmagan</p>
           )}
 
           {items.map((d) => (
-            <div key={d.id} className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5">
+            <div key={d.id} className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-control px-2.5 py-1.5">
               {editingId === d.id ? (
                 <>
                   <input
@@ -125,18 +126,18 @@ const BranchDepartments: React.FC<{ branchId: string; canManage: boolean }> = ({
                     onChange={(e) => setEditName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEdit(d.id); if (e.key === 'Escape') cancelEdit(); }}
                     autoFocus
-                    className="flex-1 bg-white border border-slate-200 rounded-md px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                    className="input-minimal flex-1 h-control-sm text-xs"
                   />
-                  <button onClick={() => handleSaveEdit(d.id)} className="w-7 h-7 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-600 flex items-center justify-center"><Save size={12} /></button>
-                  <button onClick={cancelEdit} className="w-7 h-7 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"><X size={12} /></button>
+                  <button onClick={() => handleSaveEdit(d.id)} className="icon-btn-sm text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="Saqlash"><Save size={12} /></button>
+                  <button onClick={cancelEdit} className="icon-btn-sm"><X size={12} /></button>
                 </>
               ) : (
                 <>
-                  <span className="flex-1 text-xs font-bold text-slate-700">{d.name}</span>
+                  <span className="flex-1 text-xs font-semibold text-slate-700">{d.name}</span>
                   {canManage && (
                     <>
-                      <button onClick={() => startEdit(d)} className="w-7 h-7 rounded-md hover:bg-slate-200 text-slate-500 flex items-center justify-center"><Edit3 size={12} /></button>
-                      <button onClick={() => setConfirmDel(d)} className="w-7 h-7 rounded-md hover:bg-rose-100 text-rose-500 flex items-center justify-center"><Trash2 size={12} /></button>
+                      <button onClick={() => startEdit(d)} className="icon-btn-sm"><Edit3 size={12} /></button>
+                      <button onClick={() => setConfirmDel(d)} className="icon-btn-sm hover:text-rose-600 hover:bg-rose-50"><Trash2 size={12} /></button>
                     </>
                   )}
                 </>
@@ -145,20 +146,20 @@ const BranchDepartments: React.FC<{ branchId: string; canManage: boolean }> = ({
           ))}
 
           {canManage && (
-            <form onSubmit={handleCreate} className="flex gap-2 pt-1">
+            <form onSubmit={handleCreate} className="flex flex-wrap gap-2 pt-1">
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Yangi bo'lim..."
                 disabled={creating}
-                className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none disabled:opacity-50"
+                className="input-minimal flex-1 h-control-sm text-xs disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={creating || !newName.trim()}
-                className="h-8 px-3 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-1"
+                className="btn-outline h-sm"
               >
-                <Plus size={12} /> Qo'shish
+                <Plus size={16} /> Qo'shish
               </button>
             </form>
           )}
@@ -168,15 +169,15 @@ const BranchDepartments: React.FC<{ branchId: string; canManage: boolean }> = ({
       {confirmDel && (
         <Modal isOpen={!!confirmDel} onClose={() => setConfirmDel(null)} title="Bo'limni o'chirish" type="danger">
           <div className="space-y-4">
-            <p className="text-sm font-bold text-slate-600">
+            <p className="text-sm text-slate-700">
               <strong className="text-slate-900">{confirmDel.name}</strong> bo'limi o'chirilsinmi?
             </p>
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="t-caption leading-relaxed">
               Bu bo'limga biriktirilgan buyurtmalar va tranzaksiyalar yo'qolmaydi — faqat bo'lim tegi olib tashlanadi. Hisobotlarda ular "Bo'limsiz" deb ko'rinadi.
             </p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDel(null)} className="flex-1 h-11 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-widest">Bekor</button>
-              <button onClick={handleDelete} className="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold uppercase text-xs tracking-widest">Ha, o'chirilsin</button>
+            <div className="flex gap-2.5">
+              <button onClick={() => setConfirmDel(null)} className="btn-outline flex-1">Bekor</button>
+              <button onClick={handleDelete} className="btn-danger-solid flex-1">Ha, o'chirilsin</button>
             </div>
           </div>
         </Modal>
@@ -250,13 +251,13 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         {maxBranches > 0 && (
-          <span className={`text-xs font-bold px-3 py-1.5 rounded-xl ${branches.length >= maxBranches ? 'bg-rose-50 text-rose-600' : 'bg-orange-50 text-orange-600'}`}>
+          <Badge variant={branches.length >= maxBranches ? 'danger' : 'brand'} showDot={false}>
             {totalCount} / {maxBranches + 1 /* +1 = main branch */} filial
-          </span>
+          </Badge>
         )}
-        {!maxBranches && <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500">{totalCount} ta filial</span>}
+        {!maxBranches && <Badge variant="neutral" showDot={false}>{totalCount} ta filial</Badge>}
         {canManage && (() => {
           const atLimit = maxBranches > 0 && branches.length >= maxBranches;
           return (
@@ -264,10 +265,10 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               data-tour-id="filial-add"
               disabled={atLimit}
               onClick={() => !atLimit && openCreate()}
-              className={`btn-primary h-control ${atLimit ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className="btn-primary"
               title={atLimit ? `Limit to'ldi: ${maxBranches} ta qo'shimcha filial` : ''}
             >
-              <Plus size={15} strokeWidth={2.5} />
+              <Plus size={16} />
               {atLimit ? `Limit to'ldi (${branches.length}/${maxBranches})` : 'Yangi filial'}
             </button>
           );
@@ -348,7 +349,7 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
               {hasData && (
                 <div className="bg-rose-50 border border-rose-200 rounded-card p-3 space-y-2">
-                  <p className="text-xs font-semibold text-rose-700 flex items-center gap-1.5"><AlertTriangle size={13} strokeWidth={2.5}/> Bu filialda mavjud:</p>
+                  <p className="text-xs font-semibold text-rose-700 flex items-center gap-1.5"><AlertTriangle size={12}/> Bu filialda mavjud:</p>
                   <ul className="text-xs text-rose-800 space-y-1 list-disc pl-4">
                     {empCount > 0 && <li>{empCount} ta xodim</li>}
                     {taskCount > 0 && <li>{taskCount} ta buyurtma</li>}

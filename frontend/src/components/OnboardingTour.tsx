@@ -417,7 +417,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
     return (
       <div className="fixed inset-0 z-tour bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div
-          className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+          className="bg-white rounded-overlay shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up"
           style={{ animation: 'pf-tour-slide-in 0.3s ease-out' }}
         >
           <div className="px-7 pt-7 pb-5">
@@ -433,14 +433,14 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
             {current.kind === 'welcome' ? (
               <button
                 onClick={advance}
-                className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl shadow-md shadow-orange-500/30 transition"
+                className="btn-primary"
               >
                 Boshlash →
               </button>
             ) : (
               <button
                 onClick={finish}
-                className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl shadow-md shadow-orange-500/30 transition"
+                className="btn-primary"
               >
                 Tugatish
               </button>
@@ -479,12 +479,12 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
 
         <div className="px-5 pt-4 pb-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">
+            <span className="label-caps text-primary-700">
               Qadam {currentActionIndex} / {totalActionSteps}
             </span>
             <button
               onClick={() => setConfirmClose(true)}
-              className="text-xs font-bold text-slate-400 hover:text-slate-700 uppercase tracking-widest transition"
+              className="btn-ghost h-sm"
             >
               Yopish
             </button>
@@ -509,7 +509,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
           {current.kind === 'manual' && (
             <button
               onClick={advance}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg shadow-md shadow-orange-500/30 transition"
+              className="btn-primary h-sm"
             >
               Davom →
             </button>
@@ -529,7 +529,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
           onClick={() => setConfirmClose(false)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+            className="bg-white rounded-overlay shadow-2xl max-w-md w-full p-6 animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-slate-900 mb-2">

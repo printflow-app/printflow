@@ -54,7 +54,7 @@ export function ImageUpload({ value, onChange, size = 'md', label }: Props) {
   return (
     <div>
       {label && (
-        <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">
+        <label className="form-label">
           {label}
         </label>
       )}
@@ -63,7 +63,7 @@ export function ImageUpload({ value, onChange, size = 'md', label }: Props) {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className={`${SIZES[size]} relative rounded-xl border-2 border-dashed border-slate-200 hover:border-orange-300 hover:bg-orange-50/30 flex items-center justify-center overflow-hidden transition-colors group flex-shrink-0`}
+          className={`${SIZES[size]} relative rounded-xl border-2 border-dashed border-slate-200 hover:border-primary-300 hover:bg-primary-50/30 flex items-center justify-center overflow-hidden transition-colors group flex-shrink-0`}
         >
           {busy ? (
             <Loader2 size={20} className="text-orange-500 animate-spin" />
@@ -82,7 +82,7 @@ export function ImageUpload({ value, onChange, size = 'md', label }: Props) {
           ) : (
             <div className="flex flex-col items-center gap-1 text-slate-400">
               <ImagePlus size={20} />
-              <span className="text-[11px] font-bold uppercase tracking-widest">Rasm</span>
+              <span className="t-caption">Rasm</span>
             </div>
           )}
         </button>
