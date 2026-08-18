@@ -33,7 +33,16 @@ import { FinanceService } from '../finance/finance.service';
 //  - Har qaror AgentAction'ga yoziladi (audit)
 // =============================================
 
-const MODEL = 'claude-haiku-4-5';
+const MODEL = 'claude-sonnet-5';
+
+// Avtonom qarorlar JSON qaytaradi va darhol JSON.parse qilinadi.
+// Sonnet 5 da fikrlash DEFAULT YOQIQ — agar o'chirilmasa, model javob
+// byudjetini fikrlashga sarflab, JSON'ni chala qoldirishi va parse'ni
+// yiqitishi mumkin. Bu yerda o'ylash kerak emas: qaror mezonlari
+// prompt'da aniq berilgan. Shu bilan birga har kunlik cron arzon qoladi.
+const JSON_MODE = {
+  anthropic: { thinking: { type: 'disabled' as const } },
+} as const;
 
 export interface ResolverDecision {
   /** Model tanlagan amal (siyosatda ruxsat berilganlardan). */
@@ -195,7 +204,7 @@ export class AutonomousResolverService {
           "Qoida umumiy bo'lsa (masalan \"dizayn ishini ustaga berma\") — lavozimga qarab ajrat.\n" +
           'Javob FAQAT JSON: {"taqiqlangan_idlar":["..."],"sabab":"qisqa izoh"}',
         prompt: `QOIDALAR:\n${rules.trim()}\n\nXODIMLAR:\n${JSON.stringify(roster)}`,
-        temperature: 0,
+        providerOptions: JSON_MODE,
         stopWhen: stepCountIs(1),
       });
       const raw = (res.text || '').trim();
@@ -336,7 +345,7 @@ Endi qaror chiqar.`;
         model: this.anthropic(MODEL),
         system,
         prompt: user,
-        temperature: 0,
+        providerOptions: JSON_MODE,
         stopWhen: stepCountIs(1),
       });
 

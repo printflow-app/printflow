@@ -19,6 +19,9 @@ import Vazifalar from './Vazifalar';
 // bo'lmagan sahifaga olib boradigan tugma chiqmasligi kerak.
 // =============================================
 
+import Tabs from '../components/ui/Tabs';
+import { Kanban, CheckSquare } from 'lucide-react';
+
 type Bolim = 'kanban' | 'vazifalar';
 
 const IshlarSahifasi: React.FC<{
@@ -44,24 +47,17 @@ const IshlarSahifasi: React.FC<{
   const ikkalasiHam = kanbanKorish && vazifaKorish;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Tab qatori faqat ikkala bo'lim ham ochiq bo'lsa ko'rinadi —
-          bitta tanlovli "tanlov" paneli chalg'itadi. */}
+    <div className="space-y-4 sm:space-y-5">
+      {/* Tab qatori faqat ikkala bo'lim ham ochiq bo'lsa ko'rinadi */}
       {ikkalasiHam && (
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-          <button
-            onClick={() => onBolim('kanban')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${joriy === 'kanban' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Xizmatlar (Kanban)
-          </button>
-          <button
-            onClick={() => onBolim('vazifalar')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${joriy === 'vazifalar' ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Jamoa vazifalari
-          </button>
-        </div>
+        <Tabs<Bolim>
+          tabs={[
+            { id: 'kanban', label: 'Xizmatlar (Kanban)', icon: Kanban },
+            { id: 'vazifalar', label: 'Jamoa vazifalari', icon: CheckSquare },
+          ]}
+          activeTab={joriy}
+          onChange={onBolim}
+        />
       )}
 
       {joriy === 'kanban' && kanbanKorish && (

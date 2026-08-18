@@ -21,11 +21,18 @@ import {
   normalizeQuestion,
   KbDecision,
 } from './knowledge/guide-kb';
+import { xotiraBlokini } from './agent-memory.util';
 
-// claude-haiku-4-5 narxi — $/1M token (Anthropic, 2026-07 holatiga ko'ra).
-// O'zgarsa shu ikki qiymatni yangilash kifoya.
-const HAIKU_PRICE_PER_M_INPUT = 1.0;
-const HAIKU_PRICE_PER_M_OUTPUT = 5.0;
+// Chat agentining modeli. Haiku 4.5 dan Sonnet 5 ga o'tildi: Haiku reja
+// tuza olmasdi va tool zanjirini bog'lay olmasdi — u chat uchun mo'ljallangan,
+// agentlik uchun emas. Sonnet 5 agentik ishda Opus'ga yaqin, narxi esa yarmi.
+const CHAT_MODEL = 'claude-sonnet-5';
+
+// Sonnet 5 narxi — $/1M token. Hozir kirish (intro) narxi amal qiladi:
+// $2/$10, 2026-08-31 gacha. Shundan keyin $3/$15 ga ko'tariladi —
+// o'sha kuni shu ikki qiymatni yangilash kerak.
+const MODEL_PRICE_PER_M_INPUT = 2.0;
+const MODEL_PRICE_PER_M_OUTPUT = 10.0;
 
 // Prompt caching koeffitsientlari (Anthropic): keshdan o'qish 0.1x,
 // keshga yozish 5 daqiqalik TTL'da 1.25x, 1 soatlikda 2x.
@@ -311,7 +318,12 @@ export class AiService {
    * AiUsageDaily satriga qo'shadi. Fire-and-forget: xato bo'lsa faqat log
    * yoziladi, foydalanuvchi javobiga ta'sir qilmaydi.
    */
-  private async recordCost(
+  /**
+   * Sarflangan pulni ($) qaytaradi — fon topshiriqlari uni har topshiriq
+   * uchun alohida yig'ib boradi (AgentJob.narxUsd). Chat oqimi bu qiymatni
+   * ishlatmaydi va `void` bilan chaqiraveradi.
+   */
+  async recordCost(
     tenantId: string,
     usage:
       | {
@@ -324,8 +336,8 @@ export class AiService {
           };
         }
       | undefined,
-  ): Promise<void> {
-    if (!usage) return;
+  ): Promise<number> {
+    if (!usage) return 0;
     const inputTokens = usage.inputTokens ?? 0;
     const outputTokens = usage.outputTokens ?? 0;
 
@@ -338,11 +350,13 @@ export class AiService {
     const plainInput = d?.noCacheTokens ?? Math.max(0, inputTokens - cacheRead - cacheWrite);
 
     const inputCost =
-      (plainInput / 1_000_000) * HAIKU_PRICE_PER_M_INPUT +
-      (cacheRead / 1_000_000) * HAIKU_PRICE_PER_M_INPUT * CACHE_READ_MULTIPLIER +
-      (cacheWrite / 1_000_000) * HAIKU_PRICE_PER_M_INPUT * CACHE_WRITE_MULTIPLIER;
+      (plainInput / 1_000_000) * MODEL_PRICE_PER_M_INPUT +
+      (cacheRead / 1_000_000) * MODEL_PRICE_PER_M_INPUT * CACHE_READ_MULTIPLIER +
+      (cacheWrite / 1_000_000) * MODEL_PRICE_PER_M_INPUT * CACHE_WRITE_MULTIPLIER;
 
-    const costUsd = inputCost + (outputTokens / 1_000_000) * HAIKU_PRICE_PER_M_OUTPUT;
+    // Fikrlash tokenlari ham CHIQISH tokeni sifatida hisoblanadi — adaptiv
+    // thinking yoqilgani uchun bu qism endi sezilarli og'irroq.
+    const costUsd = inputCost + (outputTokens / 1_000_000) * MODEL_PRICE_PER_M_OUTPUT;
 
     this.logger.debug(
       `AI usage: yangi=${plainInput} keshdan=${cacheRead} keshga=${cacheWrite} chiqish=${outputTokens} narx=$${costUsd.toFixed(6)}`,
@@ -361,6 +375,7 @@ export class AiService {
     } catch (err) {
       this.logger.error('AI cost yozishda xato:', err);
     }
+    return costUsd;
   }
 
   /**
@@ -399,6 +414,42 @@ export class AiService {
   async confirmAction(tenantId: string, userId: string, actionId: string) {
     const ctx = await this.buildToolContext(tenantId, userId);
     return executeConfirmedAction(ctx, actionId);
+  }
+
+  /**
+   * Agent xotirasi — foydalanuvchi AI nimani "bilib olgan"ini ko'rishi uchun.
+   *
+   * Nega bu kerak: xotira agentning javoblariga jimgina ta'sir qiladi.
+   * Ko'rinmasa, noto'g'ri yozib qolingan bitta fakt oylab sabab topilmaydigan
+   * g'alati javoblar berardi. Ro'yxat — shu qora quti ochilgan holati.
+   */
+  async listMemories(tenantId: string, userId: string) {
+    return this.prisma.agentMemory.findMany({
+      where: {
+        tenantId,
+        // Boshqa xodimning shaxsiy sozlamasi ko'rsatilmaydi.
+        OR: [{ doira: 'tenant' }, { doira: 'user', userId }],
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true, doira: true, mavzu: true, matn: true,
+        manba: true, createdAt: true, updatedAt: true,
+      },
+    });
+  }
+
+  /** Xotirani o'chirish. Ko'ra oladigan yozuvni o'chira ham oladi. */
+  async deleteMemory(tenantId: string, userId: string, id: string) {
+    const res = await this.prisma.agentMemory.deleteMany({
+      where: {
+        id,
+        tenantId,
+        OR: [{ doira: 'tenant' }, { doira: 'user', userId }],
+      },
+    });
+    return res.count === 1
+      ? { success: true }
+      : { success: false, error: 'Xotira topilmadi' };
   }
 
   /** Pending amalni rad etish */
@@ -805,15 +856,21 @@ ISHLASH QOIDASI:
 2. Hammasi yetarli bo'lganda — qisqa xulosa bilan tasdiqlash so'ra: "Vizitka 3000 ta, Akmal Sotvoldiyev, 750 000 so'm, naqd, ertaga soat 15. Yarataymizmi?"
 3. Foydalanuvchi "ha", "yarataylik", "tasdiqlayman" yoki shunga o'xshash tasdiq bersa — DARHOL tool'ni chaqir, qaytadan so'rama.
 4. Tool ID'larni contextData'dan o'qib to'g'ri yubor. Xizmat yoki to'lov turi nomidan ID topish kerak.
-5. Tool muvaffaqiyatli ishlasa — "Tayyor, [displayId] buyurtma yaratildi" deb qisqa javob ber. Ortiqcha izoh berma.`;
+5. Tool muvaffaqiyatli ishlasa — "Tayyor, [displayId] buyurtma yaratildi" deb qisqa javob ber. Ortiqcha izoh berma.
+6. Foydalanuvchi DOIMIY qoida yoki afzallik aytsa ("bundan keyin doim...", "men hisobotni qisqa xohlayman"), yoki tashkilot haqida takrorlanadigan fakt bilib olsang — remember bilan yozib qo'y. O'zgaruvchan ma'lumotni (qarz, qoldiq, buyurtma holati) YOZMA: ular tool orqali olinadi.`;
 
       // B-blok — tenant ma'lumotlari. Ular ham keshlanadi, lekin ALOHIDA
       // nuqtada: xizmat yoki xodim o'zgarsa faqat shu blok qayta yoziladi,
       // A-blok esa keshda qolaveradi.
+      //
+      // Agent xotirasi ham shu blokda: u kamdan-kam o'zgaradi, lekin
+      // o'zgarganda A-blokni buzmasligi kerak. Bo'sh bo'lsa hech narsa
+      // qo'shilmaydi — keraksiz sarlavha ham token.
+      const xotira = await xotiraBlokini(this.prisma, tenantId, employeeId || '');
       const systemContext = `Bugungi sana: ${new Date().toLocaleDateString('uz-UZ')}.
 
 TIZIMDAGI MA'LUMOTLAR (contextData):
-${JSON.stringify(contextData)}`;
+${JSON.stringify(contextData)}${xotira ? `\n\n${xotira}` : ''}`;
 
       // C-blok — savolga bog'liq, har so'rovda boshqacha. Keshlanmaydi
       // (keshlansa har savolda yangi yozuv ochilib, foyda o'rniga zarar bo'lardi).
@@ -886,13 +943,29 @@ ${JSON.stringify(contextData)}`;
 
       // SDK v6: streamText is NOT awaited — it returns StreamTextResult synchronously
       const result = streamText({
-        model: this.anthropicClient('claude-haiku-4-5'),
+        model: this.anthropicClient(CHAT_MODEL),
         messages: [...systemMessages, ...coreMessages],
-        temperature: 0.2,
+        // DIQQAT: `temperature` YO'Q va bo'lishi ham mumkin emas.
+        // Sonnet 5 default'dan farqli sampling parametrini RAD etadi (400).
+        // Xulqni prompt orqali boshqaramiz, sampling orqali emas.
+        providerOptions: {
+          anthropic: {
+            // Adaptiv fikrlash: model qachon va qancha o'ylashni o'zi tanlaydi.
+            // 'summarized' — fikrlash xulosasi stream'ga tushadi, foydalanuvchi
+            // "AI o'ylayapti" jarayonini ko'radi (aks holda uzoq jimlik).
+            thinking: { type: 'adaptive' as const, display: 'summarized' as const },
+            // 'medium' ataylab: Sonnet 5 medium darajada oldingi avlodning
+            // 'high' darajasiga teng keladi, lekin token sezilarli kam ketadi.
+            // Byudjet erkinlashsa 'high' ga ko'tarish — bir so'z o'zgarishi.
+            effort: 'medium' as const,
+          },
+        },
         tools: buildAiSdkTools(toolCtx),
-        // Default stepCountIs(1) tool natijasidan keyin modelga so'z bermasdan
-        // to'xtatadi — model natijani ko'rib qisqa xulosa yozsin (kartaga qo'shimcha).
-        stopWhen: stepCountIs(4),
+        // Har qadam = alohida API chaqiruvi va o'sib boruvchi tool natijalari.
+        // 4 qadam agentga reja tuzishga imkon bermasdi (~2 tool chaqiruvi);
+        // 14 — "o'qi → o'yla → yana o'qi → bajar → tekshir" zanjiri sig'adigan,
+        // ammo bitta savol xarajatini portlatib yubormaydigan chegara.
+        stopWhen: stepCountIs(14),
         // Stream tugagach token/$ xarajatni bugungi kunga yozadi — javobni
         // sekinlashtirmaydi (fire-and-forget, xato bo'lsa faqat log).
         onFinish: ({ usage, text, steps }) => {

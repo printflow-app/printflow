@@ -3,7 +3,7 @@ import {
   Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
   FileText, AlertCircle, ClipboardList, Plus, Edit3,
   Building2, UserPlus, Mail, Briefcase, CheckCircle2, AlertTriangle, Download,
-  MapPin
+  MapPin, Users, Table, Map
 } from 'lucide-react';
 import { customersApi } from '../api';
 import { useCustomers, useInvalidate } from '../hooks/queries';
@@ -15,6 +15,11 @@ import { SkeletonTable } from '../components/Skeleton';
 import { toast } from 'react-toastify';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { exportMultiSheetXlsx } from '../utils/exportToXlsx';
+import StatCard from '../components/ui/StatCard';
+import Tabs from '../components/ui/Tabs';
+import Badge from '../components/ui/Badge';
+import EmptyState from '../components/ui/EmptyState';
+import PhoneInput from '../components/ui/PhoneInput';
 
 const formatCurrency = (amount: number | null | undefined) => {
   const val = typeof amount === 'number' ? amount : 0;
@@ -27,50 +32,39 @@ const formatDate = (dateStr: any) => {
   return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('uz-UZ');
 };
 
-// Qoldiq qarz. Buyurtma summalari kasrli bo'lgani uchun to'liq hisob-kitob
-// qilgan mijozda ham natija aniq 0 chiqmaydi (0.0000001 kabi). Chegarasiz
-// bunday mijoz "qarzdor" sanalib, ekranda "0" so'm qarz ko'rsatilardi —
-// holati esa "Yopilgan" bo'lishi kerak edi.
 const MIN_DEBT = 1;
 const debtOf = (c: any) => Number(c?.totalDebt || 0) - Number(c?.totalPaid || 0);
 const hasDebt = (c: any) => debtOf(c) >= MIN_DEBT;
 
+type ViewType = 'all' | 'map';
+
 const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentUser, activeBranchId }) => {
-  const p = currentUser.permissions || {};
+  const p = currentUser?.permissions || {};
   const isAdmin =
-    currentUser.role?.name?.toLowerCase() === 'admin' ||
-    currentUser.login === 'admin';
+    currentUser?.role?.name?.toLowerCase() === 'admin' ||
+    currentUser?.login === 'admin';
   const canAdd             = p.canAddCustomer || p.canManageCustomers || isAdmin;
   const canEdit            = p.canEditCustomer || p.canManageCustomers || isAdmin;
   const canDelete          = p.canDeleteCustomer || p.canManageCustomers || isAdmin;
   const canManageContacts  = p.canManageCustomers || isAdmin;
 
-  // RQ — cache'lanadi, mutatsiyalardan keyin invalidate.customers() chaqiraman.
-  // includeDetails=false: list payload faqat asosiy ma'lumotlar (totalDebt/Paid + contacts).
-  // Tasks va transactions har bir mijoz yoyilganda /customers/:id/details orqali yuklanadi.
+  // RQ — cache'lanadi
   const { data: customers = [], isLoading } = useCustomers(activeBranchId, false);
   const invalidate = useInvalidate();
   const [searchTerm, setSearchTerm] = useState('');
-  // Saralash: 'recent' (updatedAt bo'yicha, default) | 'debt' (eng ko'p qarz) |
-  // 'paid' (eng ko'p to'lagan) | 'name' (alfavit).
   const [sortBy, setSortBy] = useState<'recent' | 'debt' | 'paid' | 'name'>('recent');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Lazy-loaded per-customer details (tasks + transactions) keyed by customer.id
   const [detailsCache, setDetailsCache] = useState<Record<string, { tasks: any[]; transactions: any[] } | 'loading'>>({});
-  const [activeView, setActiveView] = useState<'all' | 'map'>('all');
+  const [activeView, setActiveView] = useState<ViewType>('all');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Add / Edit customer modal
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  // `joy` — xaritadagi nuqta. Manzil matni bo'lib, nuqtasi yo'q holat
-  // normal: manzil har doim ham xaritada topilavermaydi.
   const [custForm, setCustForm] = useState<{
     id: string; name: string; phone: string; companyInfo: string;
     address: string; joy: { lat: number; lng: number } | null;
   }>({ id: '', name: '', phone: '', companyInfo: '', address: '', joy: null });
-  // Oyna ikki bosqichli: 1 — mijoz ma'lumoti, 2 — vakillar. Bitta uzun
-  // formaga sig'dirilsa xarita bilan birga skroll paydo bo'lardi.
   const [formStep, setFormStep] = useState<1 | 2>(1);
 
   // Contacts management
@@ -78,9 +72,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
   const [isContactsLoading, setIsContactsLoading] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', phone: '', role: '', email: '' });
   const [isAddingContact, setIsAddingContact] = useState(false);
-  // Tahrirlanayotgan vakil. null bo'lsa forma "yangi qo'shish" rejimida.
-  // Ilgari vakilni faqat qo'shish va o'chirish mumkin edi: bitta harfi
-  // xato yozilsa ham o'chirib, qaytadan kiritishga to'g'ri kelardi.
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
 
   // Order history modal
@@ -97,7 +88,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     setTimeout(() => setStatusMsg(null), 3000);
   };
 
-  // fetchData() shim — RQ invalidate, avtomatik refetch
   const fetchData = async (_silent = false) => { invalidate.customers(); };
 
   useAutoRefresh(() => fetchData(true), {
@@ -112,24 +102,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       (c.companyInfo || '').toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortBy === 'debt') {
-        // Qoldiq qarz (totalDebt - totalPaid) bo'yicha kamayish tartibida.
-        return debtOf(b) - debtOf(a);
-      }
+      if (sortBy === 'debt') return debtOf(b) - debtOf(a);
       if (sortBy === 'paid') return Number(b.totalPaid) - Number(a.totalPaid);
       if (sortBy === 'name') return a.name.localeCompare(b.name);
-      return 0; // 'recent' — backend updatedAt desc tartibini saqlaymiz
+      return 0;
     });
 
-  /**
-   * EKSPORT — ikki varaq.
-   *
-   * "Mijozlar" — har mijoz bitta qator (moliyaviy yakun).
-   * "Xizmatlar" — har buyurtma bitta qator: kimga qanday xizmat
-   *   ko'rsatilgan va qancha summaga. Bu ma'lumot mijozlar ro'yxatida
-   *   yo'q (kanban payload'i og'ir bo'lmasligi uchun qaytarilmaydi),
-   *   shuning uchun eksport paytida alohida so'rov bilan olinadi.
-   */
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
@@ -145,16 +123,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         const res = await customersApi.getServiceRows(activeBranchId);
         xizmatlar = res.data || [];
       } catch {
-        // Xizmatlar olinmasa ham mijozlar varag'i chiqaveradi — eksport
-        // butunlay to'xtab qolgandan ko'ra qismi bo'lgani ma'qul.
         toast.warn("Xizmatlar ro'yxati olinmadi — faqat mijozlar chiqarildi");
       }
 
-      // Faqat ekrandagi (filtrlangan) mijozlarning xizmatlari.
       const korinadiganIds = new Set(rows.map((c: any) => c.id));
       const xizmatQatorlari = xizmatlar.filter((t: any) => korinadiganIds.has(t.customer?.id));
 
-      // Mijoz bo'yicha yakun — "Mijozlar" varag'idagi ustunlar uchun.
       const yakun = new Map<string, { soni: number; summa: number; nomlar: string[] }>();
       for (const t of xizmatQatorlari) {
         const id = t.customer?.id;
@@ -175,16 +149,8 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             sheetName: 'Mijozlar',
             rows,
             columns: [
-              // MIJOZ = TASHKILOT, odamlar esa uning vakillari. Ilgari bu
-              // yerda "Kompaniya / Info" ustuni `companyInfo` ni chiqarardi —
-              // u endi INN/izoh maydoni va deyarli hamma joyda bo'sh, ya'ni
-              // ustun nomi ham, mazmuni ham noto'g'ri edi.
               { header: 'Kompaniya', accessor: (c: any) => c.name || '' },
               { header: 'Telefon', accessor: (c: any) => c.phone || '' },
-              // Vakillar va ularning raqamlari — HAR BIRI ALOHIDA QATORDA,
-              // shunda ism va telefon yonma-yon turadi. Vergul bilan
-              // yozilsa, telefoni yo'q vakil ro'yxatni siljitib yuborardi
-              // va kimning raqami kimniki ekani chalkashardi.
               {
                 header: 'Vakillar',
                 accessor: (c: any) => (c.contacts || [])
@@ -198,15 +164,15 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                   .join('\n'),
               },
               { header: 'Xizmatlar soni', accessor: (c: any) => yakun.get(c.id)?.soni ?? 0 },
-              { header: "Ko'rsatilgan xizmatlar", accessor: (c: any) => (yakun.get(c.id)?.nomlar || []).join(', ') },
-              { header: 'Xizmatlar summasi (UZS)', accessor: (c: any) => Math.round(yakun.get(c.id)?.summa ?? 0) },
-              { header: 'Jami qarzdorlik (UZS)', accessor: (c: any) => Number(c.totalDebt || 0) },
-              { header: "Jami to'langan (UZS)", accessor: (c: any) => Number(c.totalPaid || 0) },
-              { header: 'Qoldiq qarz (UZS)', accessor: (c: any) => (hasDebt(c) ? Math.round(debtOf(c)) : 0) },
-              // INN va shunga o'xshash qo'shimchalar — oxirida, chunki ular
-              // ko'pincha bo'sh va asosiy ustunlarni surib qo'yardi.
-              { header: "Qo'shimcha ma'lumot", accessor: (c: any) => c.companyInfo || '' },
-              { header: 'Yaratilgan', accessor: (c: any) => formatDate(c.createdAt) },
+              { header: 'Umumiy summa', accessor: (c: any) => c.totalDebt || 0 },
+              { header: "To'langan", accessor: (c: any) => c.totalPaid || 0 },
+              { header: 'Qoldiq qarz', accessor: (c: any) => debtOf(c) },
+              {
+                header: 'Holati',
+                accessor: (c: any) => (hasDebt(c) ? 'Qarzdor' : 'Yopilgan'),
+              },
+              { header: 'Manzil', accessor: (c: any) => c.address || '' },
+              { header: "Qo'shimcha info", accessor: (c: any) => c.companyInfo || '' },
             ],
           },
           {
@@ -214,59 +180,67 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             rows: xizmatQatorlari,
             columns: [
               { header: 'Mijoz', accessor: (t: any) => t.customer?.name || '' },
-              { header: 'Telefon', accessor: (t: any) => t.customer?.phone || '' },
-              { header: 'Buyurtma ID', accessor: (t: any) => t.displayId || '' },
-              { header: 'Buyurtma', accessor: (t: any) => t.orderName || '' },
-              { header: 'Xizmat', accessor: (t: any) => t.service?.name || t.title || '' },
-              { header: 'Tafsilot', accessor: (t: any) => t.title || '' },
-              { header: 'Miqdor', accessor: (t: any) => Number(t.quantity || 0) },
-              { header: 'Summa (UZS)', accessor: (t: any) => Number(t.totalAmount || 0) },
-              { header: 'Qoldiq (UZS)', accessor: (t: any) => Number(t.remainingAmount || 0) },
-              { header: 'Bosqich', accessor: (t: any) => (t.isArchived ? 'Arxiv' : (t.column?.title || '')) },
+              { header: 'Mijoz telefoni', accessor: (t: any) => t.customer?.phone || '' },
+              {
+                header: 'Vakil',
+                accessor: (t: any) =>
+                  t.customerContact
+                    ? (t.customerContact.role
+                        ? `${t.customerContact.name} (${t.customerContact.role})`
+                        : t.customerContact.name)
+                    : '',
+              },
+              { header: 'Buyurtma nomi', accessor: (t: any) => t.orderName || t.title || '' },
+              { header: 'Xizmat turi', accessor: (t: any) => t.service?.name || '' },
+              { header: 'Bosqich', accessor: (t: any) => t.column?.title || '' },
               { header: 'Sana', accessor: (t: any) => formatDate(t.createdAt) },
+              { header: 'Summa', accessor: (t: any) => t.totalAmount || 0 },
+              { header: 'Zakolat', accessor: (t: any) => t.depositAmount || 0 },
+              { header: 'Qoldiq', accessor: (t: any) => t.remainingAmount || 0 },
             ],
           },
         ],
       });
-      toast.success(`${rows.length} ta mijoz, ${xizmatQatorlari.length} ta xizmat eksport qilindi`);
+      toast.success("Excel fayl yuklab olindi");
+    } catch {
+      toast.error("Eksport qilishda xatolik");
     } finally {
       setIsExporting(false);
     }
   };
 
-  // =============================================
-  // Customer CRUD
-  // =============================================
   const openAdd = () => {
-    setCustForm({ id: '', name: '', phone: '', companyInfo: '', address: '', joy: null });
     setIsEditing(false);
+    setCustForm({ id: '', name: '', phone: '', companyInfo: '', address: '', joy: null });
     setFormStep(1);
     setContacts([]);
+    setContactForm({ name: '', phone: '', role: '', email: '' });
+    setEditingContactId(null);
     setIsFormOpen(true);
   };
 
-  const openEdit = (c: any, e: React.MouseEvent) => {
+  const openEdit = async (c: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    setCustForm({
-      id: c.id, name: c.name, phone: c.phone || '', companyInfo: c.companyInfo || '',
-      address: c.address || '',
-      joy: typeof c.latitude === 'number' && typeof c.longitude === 'number'
-        ? { lat: c.latitude, lng: c.longitude }
-        : null,
-    });
     setIsEditing(true);
+    const joy = (typeof c.latitude === 'number' && typeof c.longitude === 'number')
+      ? { lat: c.latitude, lng: c.longitude }
+      : null;
+    setCustForm({
+      id: c.id,
+      name: c.name,
+      phone: c.phone || '',
+      companyInfo: c.companyInfo || '',
+      address: c.address || '',
+      joy,
+    });
     setFormStep(1);
-    setContacts([]);
+    setContactForm({ name: '', phone: '', role: '', email: '' });
+    setEditingContactId(null);
     setIsFormOpen(true);
-  };
 
-  /** Ikkinchi bosqichga o'tish — saqlamasdan (tahrirlashda mumkin). */
-  const openVakillar = async () => {
-    if (!custForm.id) return;
-    setFormStep(2);
     setIsContactsLoading(true);
     try {
-      const res = await customersApi.getContacts(custForm.id);
+      const res = await customersApi.getContacts(c.id);
       setContacts(res.data || []);
     } catch {
       setContacts([]);
@@ -275,46 +249,52 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     }
   };
 
+  const openVakillar = async () => {
+    if (!custForm.id) return;
+    setFormStep(2);
+    setContactForm({ name: '', phone: '', role: '', email: '' });
+    setEditingContactId(null);
+    if (contacts.length === 0) {
+      setIsContactsLoading(true);
+      try {
+        const res = await customersApi.getContacts(custForm.id);
+        setContacts(res.data || []);
+      } catch {
+        setContacts([]);
+      } finally {
+        setIsContactsLoading(false);
+      }
+    }
+  };
+
   const handleSubmitCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!custForm.name.trim()) return;
     try {
-      const payload = {
+      const data = {
         name: custForm.name,
-        phone: custForm.phone,
-        companyInfo: custForm.companyInfo,
-        address: custForm.address.trim() || null,
-        // Nuqta olib tashlansa null yuboriladi — undefined bo'lsa
-        // backend maydonni umuman yangilamas va eski nuqta qolib ketardi.
-        latitude: custForm.joy ? custForm.joy.lat : null,
-        longitude: custForm.joy ? custForm.joy.lng : null,
+        phone: custForm.phone || undefined,
+        companyInfo: custForm.companyInfo || undefined,
+        address: custForm.address || undefined,
+        latitude: custForm.joy?.lat ?? null,
+        longitude: custForm.joy?.lng ?? null,
       };
-
-      // BIRINCHI BOSQICH SAQLANADI, LEKIN OYNA YOPILMAYDI.
-      //
-      // Vakil qo'shish uchun mijozning id'si kerak (kontakt shu id'ga
-      // biriktiriladi), ya'ni yangi mijozda ikkinchi bosqich mijoz
-      // yaratilgunicha ishlay olmaydi. Shuning uchun "davom" bosilganda
-      // avval saqlaymiz va id'ni olamiz.
-      let saqlangan: any = null;
+      let id = custForm.id;
       if (isEditing) {
-        const res = await customersApi.update(custForm.id, payload);
-        saqlangan = res?.data || { id: custForm.id, ...payload };
+        await customersApi.update(id, data);
         showStatus('success', "Mijoz yangilandi!");
       } else {
-        const res = await customersApi.create(payload);
-        saqlangan = res?.data;
-        showStatus('success', "Yangi mijoz qo'shildi!");
+        const res = await customersApi.create(data);
+        id = res.data?.id;
+        setCustForm(f => ({ ...f, id }));
+        setIsEditing(true);
+        showStatus('success', "Mijoz qo'shildi!");
       }
       fetchData(true);
 
-      const id = saqlangan?.id || custForm.id;
-      if (!id) { setIsFormOpen(false); return; }
-
-      // Ikkinchi bosqichga o'tamiz va vakillarni yuklaymiz.
-      setCustForm(f => ({ ...f, id }));
-      setIsEditing(true);
       setFormStep(2);
+      setContactForm({ name: '', phone: '', role: '', email: '' });
+      setEditingContactId(null);
       setIsContactsLoading(true);
       try {
         const res = await customersApi.getContacts(id);
@@ -329,7 +309,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     }
   };
 
-  /** Oynani yopib, holatni tozalaydi — ikkala bosqich uchun ham. */
   const closeCustomerModal = () => {
     setIsFormOpen(false);
     setFormStep(1);
@@ -350,20 +329,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     }
   };
 
-  // =============================================
-  // Contacts
-  // =============================================
-  // Vakillarga alohida kirish tugmasi yo'q — qalamcha mijoz oynasini
-  // ochadi, vakillar esa uning 2-bosqichida (`openVakillar`).
-
-  // MIJOZ ID'SI YAGONA MANBADAN — `custForm.id`.
-  //
-  // Ilgari bu yer `contactsCustomer` ga tayanardi. Oyna ikki bosqichga
-  // birlashtirilgandan keyin ikkita holat paydo bo'ldi va ular ajralib
-  // qolishi mumkin edi: 2-tabga o'tish `custForm.id` ni ishlatadi,
-  // qo'shish esa `contactsCustomer` ni — u null bo'lsa tugma jimgina
-  // hech narsa qilmasdi.
-  /** Vakil qatoridagi qalamcha — ma'lumotini yuqoridagi formaga oladi. */
   const startEditContact = (ct: any) => {
     setEditingContactId(ct.id);
     setContactForm({
@@ -377,7 +342,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     setContactForm({ name: '', phone: '', role: '', email: '' });
   };
 
-  /** Bitta forma ikki ish uchun: yangi vakil qo'shish va mavjudini saqlash. */
   const handleSaveContact = async () => {
     if (!custForm.id || !contactForm.name.trim()) return;
     setIsAddingContact(true);
@@ -398,7 +362,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       setEditingContactId(null);
       const res = await customersApi.getContacts(custForm.id);
       setContacts(res.data || []);
-      fetchData(true); // jadvaldagi vakillar ro'yxati ham yangilansin
+      fetchData(true);
       showStatus('success', tahrir ? "Vakil yangilandi!" : "Vakil qo'shildi!");
     } catch (e: any) {
       showStatus('error', e?.response?.data?.message || (tahrir ? "Saqlashda xato!" : "Vakil qo'shishda xato!"));
@@ -419,9 +383,6 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     }
   };
 
-  // =============================================
-  // Order History
-  // =============================================
   const openOrderHistory = async (customer: any) => {
     setOrderHistoryModal({ isOpen: true, customer, orders: [] });
     setOrderHistoryLoading(true);
@@ -459,59 +420,45 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     const b = debtOf(c);
     return b >= MIN_DEBT ? s + b : s;
   }, 0);
-  // Hisobi yopilgan mijozlar: qarzi qolmagan (ortiqcha to'lov "haqdorlik" sifatida ko'rsatilmaydi).
   const totalSettled = customers.filter(c => !hasDebt(c)).length;
 
   if (isLoading) return <SkeletonTable rows={8} cols={6} />;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-12">
       {statusMsg && (
-        <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMsg.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-          {statusMsg.type === 'success' ? <CheckCircle2 size={20}/> : <AlertTriangle size={20}/>}
-          <span className="font-bold text-sm">{statusMsg.text}</span>
+        <div className={`fixed top-6 right-6 z-[200] p-4 rounded-card shadow-lg flex items-center gap-3 animate-slide-up ${statusMsg.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
+          {statusMsg.type === 'success' ? <CheckCircle2 size={18}/> : <AlertTriangle size={18}/>}
+          <span className="font-semibold text-sm">{statusMsg.text}</span>
         </div>
       )}
 
-      {/* KO'RINISH TABLARI — Xodimlar sahifasidagi bilan bir xil uslub.
-          Sarlavha kartasining ichida emas, ustida turadi: u yerda ular
-          qidiruv bilan bir qatorga siqilib, ko'rinish almashganda joyi
-          sakrab turardi. */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveView('all')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeView === 'all' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Jadval
-        </button>
-        <button
-          onClick={() => setActiveView('map')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeView === 'map' ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Xarita
-        </button>
-      </div>
+      {/* Tabs Switcher */}
+      <Tabs<ViewType>
+        tabs={[
+          { id: 'all', label: 'Jadval', icon: Table, count: customers.length },
+          { id: 'map', label: 'Xarita', icon: Map },
+        ]}
+        activeTab={activeView}
+        onChange={setActiveView}
+      />
 
       {/* Header */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+      <div className="bg-white p-4 sm:p-5 rounded-card border border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
-          <h2 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight">Mijozlar Bazasi</h2>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+            <Users size={20} className="text-[color:var(--primary)]" /> Mijozlar bazasi
+          </h2>
+          <p className="t-caption mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
           {activeView === 'all' && (
             <>
-              {/* Qidiruv va saralash — tizimning umumiy input uslubi
-                  (`input-minimal`/`select-minimal`): oq fon, bir xil
-                  balandlik va apelsin fokus halqasi. Ilgari bular kulrang
-                  fon va ichki soya bilan edi — o'chirilgan maydonga
-                  o'xshab turardi va sahifadagi boshqa hech bir maydonga
-                  mos kelmasdi. */}
-              <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15}/>
+              <div className="relative flex-1 sm:w-64 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14}/>
                 <input
                   type="text"
-                  placeholder="Qidirish (ism, tel, kompaniya)..."
+                  placeholder="Qidirish (ism, tel)..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   className="input-minimal pl-9"
@@ -520,7 +467,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               <select
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value as typeof sortBy)}
-                className="select-minimal w-auto min-w-[170px] cursor-pointer"
+                className="select-minimal w-auto cursor-pointer"
                 title="Saralash"
               >
                 <option value="recent">Oxirgi faollik</option>
@@ -530,16 +477,11 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               </select>
             </>
           )}
-          {/* Tugmalar tizimning `btn-outline`/`btn-primary` uslubida —
-              qidiruv va saralash bilan bir xil balandlik va radius.
-              Ilgari ular qo'lda yozilgan h-10 + UPPERCASE edi; PRODUCT.md
-              esa katta harfli tugmani taqiqlaydi va balandlik ham
-              maydonlarnikiga mos kelmasdi. */}
           {(isAdmin || p.canExportCustomers) && (
             <button
               onClick={handleExport}
               disabled={isExporting}
-              className="btn-outline"
+              className="btn-outline h-control"
               title="Mijozlar va ularga ko'rsatilgan xizmatlarni Excel'ga eksport qilish"
             >
               <Download size={14}/> {isExporting ? 'Tayyorlanmoqda...' : 'Eksport'}
@@ -549,7 +491,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             <button
               data-tour-id="mijoz-add"
               onClick={openAdd}
-              className="btn-primary w-full sm:w-auto"
+              className="btn-primary h-control w-full sm:w-auto"
             >
               <Plus size={15} strokeWidth={2.5}/> Mijoz qo'shish
             </button>
@@ -558,29 +500,14 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[11px] font-bold text-slate-400 uppercase mb-1 tracking-widest">Jami Mijozlar</p>
-          <h4 className="text-lg font-bold text-slate-800">{customers.length}</h4>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[11px] font-bold text-rose-400 uppercase mb-1 tracking-widest">Qarzdorlar</p>
-          <h4 className="text-lg font-bold text-rose-600">{totalDebtors}</h4>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[11px] font-bold text-rose-400 uppercase mb-1 tracking-widest">Umumiy Qarzlar</p>
-          <h4 className="text-lg font-bold text-rose-600 truncate">{formatCurrency(totalDebtAmount)}</h4>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm hover:shadow-md transition-all">
-          <p className="text-[11px] font-bold text-emerald-400 uppercase mb-1 tracking-widest">Hisobi yopilgan</p>
-          <h4 className="text-lg font-bold text-emerald-600">{totalSettled}</h4>
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        <StatCard label="Jami mijozlar" value={customers.length} icon={Users} tone="neutral" />
+        <StatCard label="Qarzdorlar" value={totalDebtors} icon={AlertCircle} tone={totalDebtors > 0 ? 'warning' : 'neutral'} />
+        <StatCard label="Umumiy qarzlar" value={formatCurrency(totalDebtAmount)} icon={TrendingDown} tone={totalDebtAmount > 0 ? 'danger' : 'neutral'} />
+        <StatCard label="Hisobi yopilgan" value={totalSettled} icon={CheckCircle2} tone="success" />
       </div>
 
-      {/* XARITA — manzili belgilangan mijozlar nuqta bo'lib chiqadi.
-          Nuqtasi yo'q mijozlar xaritada ko'rinmaydi, shuning uchun
-          nechtasi tushib qolgani ochiq yoziladi — aks holda "mijozlarim
-          yo'qolib qoldi" degan taassurot paydo bo'lardi. */}
+      {/* XARITA */}
       {activeView === 'map' && (() => {
         const nuqtalar = (customers as any[])
           .filter((c) => typeof c.latitude === 'number' && typeof c.longitude === 'number')
@@ -597,29 +524,25 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
 
         return (
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <p className="t-caption font-semibold text-slate-600">
                 Xaritada {nuqtalar.length} ta mijoz
               </p>
               {belgilanmagan > 0 && (
-                <p className="text-xs font-semibold text-amber-600">
+                <p className="text-xs font-medium text-amber-700">
                   {belgilanmagan} ta mijozning joyi belgilanmagan — kartasini tahrirlab xaritadan belgilang
                 </p>
               )}
             </div>
             {nuqtalar.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-                <MapPin size={32} className="mx-auto mb-3 text-slate-300" />
-                <p className="text-sm font-bold text-slate-600">Hali birorta mijozning joyi belgilanmagan</p>
-                <p className="text-xs text-slate-400 mt-1.5 max-w-sm mx-auto">
-                  Mijozni tahrirlash oynasida manzilni yozing va xaritadan uning joyini bosing.
-                </p>
-              </div>
+              <EmptyState
+                icon={MapPin}
+                title="Hali birorta mijozning joyi belgilanmagan"
+                description="Mijozni tahrirlash oynasida manzilni yozing va xaritadan uning joyini bosing."
+              />
             ) : (
               <MijozXarita
                 nuqtalar={nuqtalar}
-                // Nuqta bosilsa ro'yxatga qaytib, o'sha mijozni ochamiz —
-                // xaritada faqat qisqa ma'lumot bor, tafsilot ro'yxatda.
                 onTanlash={(id) => {
                   setActiveView('all');
                   if (expandedId !== id) toggleExpand(id);
@@ -632,43 +555,33 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
 
       {/* ALL CUSTOMERS TABLE */}
       {activeView === 'all' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            {/* min-w: ustunlar siqilib ikki qatorga tushmasligi uchun. Tor
-                  ekranda jadval o'ralmaydi, gorizontal aylanadi — raqamlar
-                  butun qatorda qoladi va o'qish osonroq. */}
-            <table className="w-full min-w-[900px] text-left">
-              <thead className="bg-slate-50/80">
-                <tr className="border-b border-slate-100">
-                  <th className="py-3 px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest w-8"></th>
-                  <th className="py-3 px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest">Mijoz</th>
-                  <th className="px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest">Telefon</th>
-                  <th className="px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest">Umumiy</th>
-                  <th className="px-5 text-[11px] uppercase font-bold text-emerald-500 tracking-widest">To'langan</th>
-                  <th className="px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest">Holat</th>
-                  <th className="px-5 text-[11px] uppercase font-bold text-slate-400 tracking-widest text-right pr-6">Harakat</th>
+            <table className="table-minimal min-w-[900px]">
+              <thead>
+                <tr>
+                  <th className="w-8"></th>
+                  <th>Mijoz</th>
+                  <th>Telefon</th>
+                  <th>Umumiy</th>
+                  <th>To'langan</th>
+                  <th>Holat</th>
+                  <th className="text-right pr-6">Amal</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {filteredCustomers.length === 0 ? (
-                  <tr><td colSpan={7} className="py-16 text-center">
+                  <tr><td colSpan={7} className="py-12 text-center">
                     {searchTerm ? (
-                      <p className="text-sm font-semibold text-slate-400">"{searchTerm}" — Mijoz topilmadi</p>
+                      <p className="text-sm font-medium text-slate-500">"{searchTerm}" — mijoz topilmadi</p>
                     ) : (
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-400">
-                          <UserPlus size={26} />
-                        </div>
-                        <div>
-                          <p className="text-base font-bold text-slate-800 mb-1">Hali mijoz qo'shilmagan</p>
-                          <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">Mijozlaringizni qo'shing — qarzlar, to'lovlar va buyurtmalar avtomatik kuzatiladi.</p>
-                        </div>
-                        {canAdd && (
-                          <button onClick={openAdd} className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-2">
-                            <Plus size={16} /> Birinchi mijozni qo'shish
-                          </button>
-                        )}
-                      </div>
+                      <EmptyState
+                        icon={UserPlus}
+                        title="Hali mijoz qo'shilmagan"
+                        description="Mijozlaringizni qo'shing — qarzlar, to'lovlar va buyurtmalar avtomatik kuzatiladi."
+                        actionLabel={canAdd ? "Birinchi mijozni qo'shish" : undefined}
+                        onAction={canAdd ? openAdd : undefined}
+                      />
                     )}
                   </td></tr>
                 ) : (
@@ -683,178 +596,134 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                     return (
                       <React.Fragment key={c.id}>
                         <tr
-                          className={`hover:bg-slate-50/50 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/70 border-b border-orange-50' : ''}`}
+                          className={`hover:bg-slate-50/70 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/80 border-b border-orange-100' : ''}`}
                           onClick={() => toggleExpand(c.id)}
                         >
-                          <td className="py-3 px-5">
-                            <button className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-orange-600 group-hover:text-white transition-all shadow-sm">
-                              {isExpanded ? <ChevronUp size={12} strokeWidth={3}/> : <ChevronDown size={12} strokeWidth={3}/>}
+                          <td>
+                            <button className="icon-btn-sm text-slate-400 group-hover:text-[color:var(--primary)]">
+                              {isExpanded ? <ChevronUp size={14} strokeWidth={2.5}/> : <ChevronDown size={14} strokeWidth={2.5}/>}
                             </button>
                           </td>
-                          <td className="py-3 px-5">
-                            <div className="font-bold text-slate-800 text-xs flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 group-hover:bg-slate-500 group-hover:text-white transition-all shadow-sm">{c.name.charAt(0)}</div>
+                          <td>
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-700 shrink-0">
+                                {c.name.charAt(0).toUpperCase()}
+                              </div>
                               <div className="min-w-0">
-                                <p>{c.name}</p>
-                                {/* VAKILLAR — brend nomining tagida. Ilgari ular faqat
-                                    alohida modalda edi: "bu mijoz bilan kim gaplashadi"
-                                    degan savolga javob olish uchun har safar modal
-                                    ochish kerak bo'lardi. */}
+                                <p className="font-semibold text-slate-800 text-sm">{c.name}</p>
                                 {contactCount > 0 && (
-                                  <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5 normal-case">
+                                  <p className="t-caption truncate">
                                     {(c.contacts || []).slice(0, 2).map((k: any) => k.name).join(', ')}
                                     {contactCount > 2 ? ` +${contactCount - 2}` : ''}
                                   </p>
                                 )}
                                 {c.companyInfo && (
-                                  <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-0.5 normal-case font-medium">
-                                    <Building2 size={8}/> {c.companyInfo}
+                                  <p className="t-caption flex items-center gap-1">
+                                    <Building2 size={10}/> {c.companyInfo}
                                   </p>
                                 )}
                               </div>
                             </div>
                           </td>
-                          <td className="px-5">
-                            <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Phone size={11} className="text-slate-400"/> {c.phone || '—'}</p>
+                          <td>
+                            <p className="text-xs font-medium text-slate-600 flex items-center gap-1.5 tabular-nums">
+                              <Phone size={12} className="text-slate-400"/> {c.phone || '—'}
+                            </p>
                           </td>
-                          <td className="px-5 font-bold text-xs text-slate-600">{formatCurrency(c.totalDebt)}</td>
-                          <td className="px-5 font-bold text-xs text-emerald-600">{formatCurrency(c.totalPaid)}</td>
-                          <td className="px-5">
-                            <span className={`px-2 py-1 rounded-lg text-[11px] font-bold border uppercase tracking-tight ${balance >= MIN_DEBT ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                              {balance >= MIN_DEBT ? formatCurrency(balance) : 'Yopilgan'}
-                            </span>
+                          <td className="font-medium text-xs text-slate-700 tabular-nums">{formatCurrency(c.totalDebt)}</td>
+                          <td className="font-semibold text-xs text-emerald-700 tabular-nums">{formatCurrency(c.totalPaid)}</td>
+                          <td>
+                            <Badge variant={balance >= MIN_DEBT ? 'danger' : 'success'} size="sm">
+                              {balance >= MIN_DEBT ? formatCurrency(balance) : 'YOPILGAN'}
+                            </Badge>
                           </td>
-                          <td className="px-5 text-right pr-6" onClick={e => e.stopPropagation()}>
-                            <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => openOrderHistory(c)} className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-400 hover:bg-orange-500 hover:text-white transition-all shadow-sm" title="Buyurtmalar tarixi">
-                                <ClipboardList size={13}/>
+                          <td className="text-right pr-6" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => openOrderHistory(c)} className="icon-btn-sm" title="Buyurtmalar tarixi">
+                                <ClipboardList size={14}/>
                               </button>
-                              {(canEdit || canDelete) && (
-                                <>
-                                  {/* Alohida "Vakillar" ikonkasi olib tashlandi:
-                                      u qalamcha bilan bir xil oynani ochardi,
-                                      faqat 2-bosqichdan. Ikkita ikonka bir ishni
-                                      qilishi chalkashtirardi — endi qalamcha
-                                      bosiladi, ichida "2. Vakillar" bosqichi bor. */}
-                                  {canEdit && (
-                                    <button onClick={e => openEdit(c, e)} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-500 hover:text-white transition-all shadow-sm" title="Tahrirlash va vakillar">
-                                      <Edit3 size={13}/>
-                                    </button>
-                                  )}
-                                  {canDelete && (
-                                    <button onClick={() => setConfirmModal({ isOpen: true, id: c.id, name: c.name })} className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
-                                      <Trash2 size={13}/>
-                                    </button>
-                                  )}
-                                </>
+                              {canEdit && (
+                                <button onClick={e => openEdit(c, e)} className="icon-btn-sm" title="Tahrirlash va vakillar">
+                                  <Edit3 size={14}/>
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button onClick={() => setConfirmModal({ isOpen: true, id: c.id, name: c.name })} className="icon-btn-sm hover:text-rose-600" title="O'chirish">
+                                  <Trash2 size={14}/>
+                                </button>
                               )}
                             </div>
                           </td>
                         </tr>
-
-                        {/* Expanded Row */}
                         {isExpanded && (
-                          <tr>
-                            <td colSpan={7} className="p-0">
-                              <div className="bg-slate-50/80 px-8 py-6 border-t border-slate-100 animate-fade-in">
+                          <tr className="bg-slate-50/50">
+                            <td colSpan={7} className="p-4 sm:p-5">
+                              <div className="space-y-4">
                                 {isLoadingDetails ? (
-                                  <div className="flex items-center justify-center py-12">
-                                    <LoadingSpinner />
-                                  </div>
+                                  <div className="flex justify-center py-6"><LoadingSpinner /></div>
                                 ) : (
-                                <>
-                                {/* VAKILLAR — mijozning ichida, to'liq ma'lumoti bilan.
-                                    Kim, qanday lavozimda va qaysi raqamdan — buni bilish
-                                    uchun modal ochish shart emas. */}
-                                {contactCount > 0 && (
-                                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm mb-6">
-                                    <h5 className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                      <UserPlus size={14}/> Vakillar ({contactCount})
-                                    </h5>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                                      {(c.contacts || []).map((k: any) => (
-                                        <div key={k.id} className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
-                                          <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">
-                                            {(k.name || '?').charAt(0)}
-                                          </div>
-                                          <div className="min-w-0">
-                                            <p className="text-xs font-bold text-slate-700 truncate">
-                                              {k.name}
-                                              {k.isPrimary && <span className="ml-1 text-[11px] font-bold text-slate-500 uppercase">asosiy</span>}
-                                            </p>
-                                            <p className="text-[11px] font-medium text-slate-400 truncate">
-                                              {[k.role, k.phone].filter(Boolean).join(' · ') || '—'}
-                                            </p>
-                                          </div>
+                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    {/* Buyurtmalar */}
+                                    <div className="bg-white rounded-card border border-slate-200 p-4">
+                                      <h5 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                                        <FileText size={14}/> Oxirgi buyurtmalar
+                                      </h5>
+                                      {tasks.length === 0 ? (
+                                        <p className="text-xs text-slate-400 py-4 text-center">Hech qanday buyurtma topilmadi</p>
+                                      ) : (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scroll">
+                                          {tasks.map((t: any) => (
+                                            <div key={t.id} className="flex items-center justify-between bg-slate-50 p-2.5 rounded-control border border-slate-100">
+                                              <div>
+                                                <p className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                                                  {t.title}
+                                                  {t.isArchived && (
+                                                    <span className="badge-neutral text-[10px]">Arxiv</span>
+                                                  )}
+                                                </p>
+                                                {t.service && (
+                                                  <p className="text-[11px] text-orange-700 font-medium mt-0.5">
+                                                    {t.service.name}
+                                                  </p>
+                                                )}
+                                                <p className="t-caption mt-0.5">{formatDate(t.createdAt)}</p>
+                                              </div>
+                                              <p className="text-xs font-semibold text-slate-800 tabular-nums">{formatCurrency(t.totalAmount)}</p>
+                                            </div>
+                                          ))}
                                         </div>
-                                      ))}
+                                      )}
+                                    </div>
+
+                                    {/* To'lovlar */}
+                                    <div className="bg-white rounded-card border border-slate-200 p-4">
+                                      <h5 className="text-xs font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
+                                        <TrendingUp size={14}/> To'lovlar tarixi
+                                      </h5>
+                                      {transactions.length === 0 ? (
+                                        <p className="text-xs text-slate-400 py-4 text-center">Hech qanday tranzaksiya topilmadi</p>
+                                      ) : (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scroll">
+                                          {transactions.map((tr: any) => (
+                                            <div key={tr.id} className="flex items-center justify-between bg-slate-50 p-2.5 rounded-control border border-slate-100">
+                                              <div className="flex items-center gap-2.5">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${tr.type === 'kirim' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                                  {tr.type === 'kirim' ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
+                                                </div>
+                                                <div>
+                                                  <p className="text-xs font-semibold text-slate-800">{tr.serviceType || tr.expenseReason || tr.type}</p>
+                                                  <p className="t-caption">{formatDate(tr.date)} • {tr.paymentType?.name || 'Naqd'}</p>
+                                                </div>
+                                              </div>
+                                              <span className={`text-xs font-semibold tabular-nums ${tr.type === 'kirim' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                                {tr.type === 'kirim' ? '+' : '-'}{formatCurrency(tr.amount)}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-                                )}
-
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                  {/* Buyurtmalar */}
-                                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                                    <h5 className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                      <FileText size={14}/> Buyurtmalar ({tasks.length})
-                                    </h5>
-                                    {tasks.length === 0 ? (
-                                      <p className="text-xs text-slate-400 font-bold py-4">Hech qanday buyurtma topilmadi</p>
-                                    ) : (
-                                      <div className="space-y-2 max-h-48 overflow-y-auto custom-scroll">
-                                        {tasks.map((t: any) => (
-                                          <div key={t.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                            <div>
-                                              <p className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                                {t.title}
-                                                {t.isArchived && (
-                                                  <span className="text-[11px] font-bold text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded uppercase tracking-wide">Arxiv</span>
-                                                )}
-                                              </p>
-                                              {t.service && (
-                                                <p className="text-[11px] text-orange-600 font-bold mt-0.5 uppercase tracking-wide bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100/50 inline-block">
-                                                  {t.service.name}
-                                                </p>
-                                              )}
-                                              <p className="text-xs text-slate-400 font-bold mt-0.5">{formatDate(t.createdAt)}</p>
-                                            </div>
-                                            <p className="text-xs font-bold text-slate-800">{formatCurrency(t.totalAmount)}</p>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* To'lovlar tarixi */}
-                                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                                    <h5 className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                      <TrendingUp size={14}/> To'lovlar Tarixi
-                                    </h5>
-                                    {transactions.length === 0 ? (
-                                      <p className="text-xs text-slate-400 font-bold py-4">Hech qanday tranzaksiya topilmadi</p>
-                                    ) : (
-                                      <div className="space-y-2 max-h-48 overflow-y-auto custom-scroll">
-                                        {transactions.map((tr: any) => (
-                                          <div key={tr.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                            <div className="flex items-center gap-3">
-                                              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${tr.type === 'kirim' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
-                                                {tr.type === 'kirim' ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
-                                              </div>
-                                              <div>
-                                                <p className="text-xs font-bold text-slate-700">{tr.serviceType || tr.expenseReason || tr.type}</p>
-                                                <p className="text-xs text-slate-400 font-bold">{formatDate(tr.date)} • {tr.paymentType?.name || 'Naqd'}</p>
-                                              </div>
-                                            </div>
-                                            <span className={`text-xs font-bold ${tr.type === 'kirim' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                              {tr.type === 'kirim' ? '+' : '-'}{formatCurrency(tr.amount)}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                </>
                                 )}
                               </div>
                             </td>
@@ -870,14 +739,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         </div>
       )}
 
-      {/* MODAL: MIJOZ — IKKI BOSQICH
-          1-bosqich: tashkilot ma'lumoti va xaritadagi joyi
-          2-bosqich: vakillar (kontaktlar)
-
-          Nega bo'lindi: hammasi bitta formada bo'lsa, xarita bilan
-          birga balandlik ekranga sig'may skroll paydo bo'lardi. Vakil
-          qo'shish esa mijozning id'sini talab qiladi — shuning uchun
-          yangi mijozda 2-bosqich faqat saqlangandan keyin ochiladi. */}
+      {/* MODAL: MIJOZ FORM */}
       <Modal
         isOpen={isFormOpen}
         onClose={closeCustomerModal}
@@ -886,12 +748,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           : `Vakillar — ${custForm.name}`}
         maxWidth="max-w-xl"
       >
-        {/* Bosqich ko'rsatkichi — qayerdaligi va nechta qadam borligi */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl mb-4">
+        {/* Bosqich ko'rsatkichi */}
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-card mb-4">
           <button
             type="button"
             onClick={() => setFormStep(1)}
-            className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${formStep === 1 ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`flex-1 py-1.5 rounded-control text-xs font-medium transition-colors ${formStep === 1 ? 'bg-white shadow-sm font-semibold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
           >
             1. Ma'lumot
           </button>
@@ -900,42 +762,37 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             onClick={openVakillar}
             disabled={!custForm.id}
             title={custForm.id ? undefined : "Avval mijozni saqlang"}
-            className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${formStep === 2 ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`flex-1 py-1.5 rounded-control text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${formStep === 2 ? 'bg-white shadow-sm font-semibold text-[color:var(--primary)]' : 'text-slate-500 hover:text-slate-700'}`}
           >
             2. Vakillar{contacts.length > 0 ? ` (${contacts.length})` : ''}
           </button>
         </div>
 
         {formStep === 1 ? (
-          <form onSubmit={handleSubmitCustomer} className="space-y-3">
-            {/* MIJOZ = TASHKILOT. Jadvalda tashkilot nomi turadi, odamlar
-                esa 2-bosqichda vakil bo'lib qo'shiladi. */}
+          <form onSubmit={handleSubmitCustomer} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">
-                <Building2 size={10} className="inline mr-1"/> Tashkilot nomi *
+              <label className="form-label">
+                <Building2 size={12} className="inline mr-1 text-slate-400"/> Tashkilot nomi *
               </label>
               <input
                 type="text" required autoFocus
                 value={custForm.name}
                 onChange={e => setCustForm(f => ({ ...f, name: e.target.value }))}
-                className="input-minimal font-semibold text-slate-800"
+                className="input-minimal font-medium text-slate-800"
                 placeholder="Masalan: Boburshox klinikasi"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Telefon</label>
-                <input
-                  type="text"
+                <label className="form-label">Telefon</label>
+                <PhoneInput
                   value={custForm.phone}
-                  onChange={e => setCustForm(f => ({ ...f, phone: e.target.value }))}
-                  className="input-minimal"
-                  placeholder="+998 90 ..."
+                  onChange={phone => setCustForm(f => ({ ...f, phone }))}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">Qo'shimcha</label>
+                <label className="form-label">Qo'shimcha info</label>
                 <input
                   type="text"
                   value={custForm.companyInfo}
@@ -947,8 +804,8 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 px-1">
-                <MapPin size={10} className="inline mr-1"/> Manzil
+              <label className="form-label">
+                <MapPin size={12} className="inline mr-1 text-slate-400"/> Manzil
               </label>
               <input
                 type="text"
@@ -963,12 +820,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               qiymat={custForm.joy}
               manzil={custForm.address}
               onChange={(joy) => setCustForm(f => ({ ...f, joy }))}
-              balandlik={190}
+              balandlik={180}
             />
 
-            <div className="flex gap-3 pt-3 border-t border-slate-100">
+            <div className="flex gap-2.5 pt-3 border-t border-slate-100">
               <button type="button" className="btn-outline flex-1" onClick={closeCustomerModal}>
-                Bekor
+                Bekor qilish
               </button>
               <button type="submit" className="btn-primary flex-[2]">
                 Saqlash va vakillar →
@@ -976,17 +833,14 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             </div>
           </form>
         ) : (
-          <div className="space-y-3">
-            {/* Yangi vakil — yoki tahrirlanayotgani (bitta forma, ikki ish).
-                Faqat vakillarni boshqarish huquqi bo'lganda ko'rinadi;
-                huquqsiz foydalanuvchi ro'yxatni ko'radi, o'zgartira olmaydi. */}
+          <div className="space-y-3.5">
             {canManageContacts && editingContactId && (
-              <div className="flex items-center justify-between gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-xl">
-                <p className="text-xs font-bold text-orange-700">Vakil tahrirlanmoqda</p>
+              <div className="flex items-center justify-between gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-control">
+                <p className="text-xs font-semibold text-orange-800">Vakil tahrirlanmoqda</p>
                 <button
                   type="button"
                   onClick={cancelEditContact}
-                  className="text-xs font-bold text-orange-600 hover:text-orange-800 px-2 py-0.5"
+                  className="text-xs font-medium text-orange-700 hover:text-orange-900"
                 >
                   Bekor qilish
                 </button>
@@ -994,20 +848,17 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             )}
             {canManageContacts && (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <input
                     type="text"
                     placeholder="Ism *"
                     value={contactForm.name}
                     onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))}
-                    className="input-minimal font-semibold"
+                    className="input-minimal font-medium"
                   />
-                  <input
-                    type="text"
-                    placeholder="Telefon"
+                  <PhoneInput
                     value={contactForm.phone}
-                    onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
-                    className="input-minimal"
+                    onChange={phone => setContactForm(f => ({ ...f, phone }))}
                   />
                   <input
                     type="text"
@@ -1037,38 +888,34 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               </>
             )}
 
-            {/* Ro'yxat — bu yerda skroll bor, chunki vakillar soni
-                oldindan noma'lum. Oynaning o'zi esa skrollanmaydi. */}
             <div className="border-t border-slate-100 pt-3">
               {isContactsLoading ? (
-                <div className="py-10 flex justify-center opacity-30">
-                  <div className="animate-spin w-6 h-6 border-2 border-orange-500 rounded-full border-t-transparent"/>
-                </div>
+                <div className="py-8 flex justify-center"><LoadingSpinner /></div>
               ) : contacts.length === 0 ? (
-                <div className="py-10 flex flex-col items-center justify-center text-slate-300">
-                  <UserPlus size={28} className="mb-2"/>
-                  <p className="text-xs font-bold uppercase tracking-widest">Vakillar yo'q</p>
-                  <p className="text-xs font-medium text-slate-400 mt-1">Bu tashkilot bilan kim gaplashadi?</p>
+                <div className="py-8 flex flex-col items-center justify-center text-slate-400">
+                  <UserPlus size={24} className="mb-1.5 opacity-40"/>
+                  <p className="text-xs font-semibold">Vakillar yo'q</p>
+                  <p className="t-caption mt-0.5">Bu tashkilot bilan kim gaplashadi?</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scroll pr-1">
                   {contacts.map((ct: any) => (
-                    <div key={ct.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100 shadow-sm group">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-slate-50 text-slate-500 flex items-center justify-center border border-slate-100 font-bold text-sm shrink-0">
+                    <div key={ct.id} className="flex items-center justify-between bg-white p-2.5 rounded-control border border-slate-200 group">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
                           {ct.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate">{ct.name}</p>
+                          <p className="text-xs font-semibold text-slate-800 truncate">{ct.name}</p>
                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             {ct.role && (
-                              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1"><Briefcase size={8}/> {ct.role}</span>
+                              <span className="t-caption flex items-center gap-1"><Briefcase size={9}/> {ct.role}</span>
                             )}
                             {ct.phone && (
-                              <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1"><Phone size={8}/> {ct.phone}</span>
+                              <span className="t-caption font-medium text-slate-600 flex items-center gap-1"><Phone size={9}/> {ct.phone}</span>
                             )}
                             {ct.email && (
-                              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 truncate"><Mail size={8}/> {ct.email}</span>
+                              <span className="t-caption flex items-center gap-1 truncate"><Mail size={9}/> {ct.email}</span>
                             )}
                           </div>
                         </div>
@@ -1076,17 +923,17 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                       <div className={`flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${canManageContacts ? '' : 'hidden'}`}>
                         <button
                           onClick={() => startEditContact(ct)}
-                          className="text-slate-300 hover:text-orange-500 transition-colors p-1"
+                          className="icon-btn-sm"
                           title="Vakilni tahrirlash"
                         >
-                          <Edit3 size={14}/>
+                          <Edit3 size={13}/>
                         </button>
                         <button
                           onClick={() => handleDeleteContact(ct.id)}
-                          className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                          className="icon-btn-sm hover:text-rose-600"
                           title="Vakilni o'chirish"
                         >
-                          <Trash2 size={14}/>
+                          <Trash2 size={13}/>
                         </button>
                       </div>
                     </div>
@@ -1095,7 +942,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
               )}
             </div>
 
-            <div className="flex gap-3 pt-3 border-t border-slate-100">
+            <div className="flex gap-2.5 pt-3 border-t border-slate-100">
               <button type="button" className="btn-outline flex-1" onClick={() => setFormStep(1)}>
                 ← Orqaga
               </button>
@@ -1111,42 +958,42 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       <Modal
         isOpen={orderHistoryModal.isOpen}
         onClose={() => setOrderHistoryModal({ isOpen: false, customer: null, orders: [] })}
-        title={`Buyurtmalar Tarixi — ${orderHistoryModal.customer?.name || ''}`}
+        title={`Buyurtmalar tarixi — ${orderHistoryModal.customer?.name || ''}`}
         maxWidth="max-w-2xl"
       >
         {orderHistoryLoading ? (
           <div className="flex justify-center py-12"><LoadingSpinner /></div>
         ) : orderHistoryModal.orders.length === 0 ? (
-          <div className="py-16 text-center text-slate-300 font-bold text-xs uppercase tracking-widest">Hech qanday buyurtma topilmadi</div>
+          <div className="py-12 text-center text-slate-400 font-medium text-xs">Hech qanday buyurtma topilmadi</div>
         ) : (
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scroll">
+          <div className="space-y-2.5 max-h-[60vh] overflow-y-auto custom-scroll">
             {orderHistoryModal.orders.map((order: any) => (
-              <div key={order.id} className="bg-slate-50 rounded-xl border border-slate-100 p-4">
+              <div key={order.id} className="bg-slate-50 rounded-control border border-slate-200 p-3.5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-800 truncate">{order.title}</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{order.title}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {order.service && (
-                        <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-lg border border-orange-100 uppercase">{order.service.name}</span>
+                        <span className="badge-primary">{order.service.name}</span>
                       )}
                       {order.column && (
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-lg uppercase">{order.column.title}</span>
+                        <span className="badge-neutral">{order.column.title}</span>
                       )}
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[11px] font-bold rounded-lg">{formatDate(order.createdAt)}</span>
+                      <span className="badge-neutral">{formatDate(order.createdAt)}</span>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-slate-800">{formatCurrency(order.totalAmount || 0)}</p>
+                    <p className="text-sm font-semibold text-slate-800 tabular-nums">{formatCurrency(order.totalAmount || 0)}</p>
                     {order.depositAmount > 0 && (
-                      <p className="text-xs font-bold text-emerald-500">Zakolat: {formatCurrency(order.depositAmount)}</p>
+                      <p className="text-xs font-semibold text-emerald-700 tabular-nums">Zakolat: {formatCurrency(order.depositAmount)}</p>
                     )}
                     {order.remainingAmount > 0 && (
-                      <p className="text-xs font-bold text-rose-500">Qoldiq: {formatCurrency(order.remainingAmount)}</p>
+                      <p className="text-xs font-semibold text-rose-700 tabular-nums">Qoldiq: {formatCurrency(order.remainingAmount)}</p>
                     )}
                   </div>
                 </div>
                 {order.note && (
-                  <p className="text-xs text-slate-400 font-medium mt-2 italic border-t border-slate-100 pt-2">{order.note}</p>
+                  <p className="t-caption mt-2 italic border-t border-slate-200 pt-1.5">{order.note}</p>
                 )}
               </div>
             ))}
@@ -1161,21 +1008,21 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         title="Mijozni o'chirish"
         type="danger"
       >
-        <div className="space-y-6">
-          <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-start gap-4">
-            <AlertCircle className="text-rose-500 mt-1" size={24}/>
+        <div className="space-y-4">
+          <div className="bg-rose-50 p-4 rounded-card border border-rose-200 flex items-start gap-3">
+            <AlertCircle className="text-rose-600 mt-0.5 shrink-0" size={20}/>
             <div>
-              <p className="text-sm font-bold text-rose-900 uppercase">Diqqat!</p>
-              <p className="text-xs font-bold text-rose-700 mt-1">
+              <p className="text-sm font-semibold text-rose-900">Diqqat!</p>
+              <p className="text-xs text-rose-700 mt-1">
                 Siz <strong>{confirmModal.name}</strong> mijozini o'chirmoqchisiz. Bu amalni ortga qaytarib bo'lmaydi!
               </p>
             </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}>
+          <div className="flex gap-2.5 pt-2">
+            <button type="button" className="btn-outline flex-1" onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}>
               Bekor qilish
             </button>
-            <button type="button" className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
+            <button type="button" className="btn-danger-solid flex-1" onClick={handleDelete}>
               Ha, o'chirilsin
             </button>
           </div>

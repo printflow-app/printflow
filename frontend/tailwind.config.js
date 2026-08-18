@@ -11,7 +11,19 @@ export default {
         foreground: "var(--foreground)",
         primary: {
           DEFAULT: "var(--primary)",
+          hover: "var(--primary-hover)",
+          active: "var(--primary-active)",
           foreground: "var(--primary-foreground)",
+          50: '#fff7ed',
+          100: '#ffedd5',
+          200: '#fed7aa',
+          300: '#fdba74',
+          400: '#fb923c',
+          500: '#f97316',
+          600: '#ea580c',
+          700: '#c2410c',
+          800: '#9a3412',
+          900: '#7c2d12',
         },
         card: {
           DEFAULT: "var(--card)",
@@ -25,53 +37,41 @@ export default {
           DEFAULT: "var(--muted)",
           foreground: "var(--muted-foreground)",
         },
-        // Ikkinchi neytral qatlam — sidebar/panel/toolbar fonlari
         surface2: "var(--surface-2)",
       },
       fontFamily: {
-        // Inter first — it's loaded as a webfont (index.html) so it renders
-        // identically and cleanly on every platform (Windows, Telegram, Android).
-        // -apple-system kept as a graceful fallback for genuine Apple devices.
-        // Inter is geometrically very close to SF, so the iOS feel is preserved.
         sans: [
           'Inter', '-apple-system', 'BlinkMacSystemFont',
           'SF Pro Text', 'Segoe UI', 'system-ui', 'sans-serif',
         ],
       },
       borderRadius: {
-        // Design tokens map to CSS variables → single source of truth.
-        sm: 'var(--radius-sm)',
-        md: 'var(--radius-md)',
-        lg: 'var(--radius-lg)',
-        xl: 'var(--radius-xl)',
-        // iOS uses generous, continuous-looking corners. Remapping the larger
-        // steps shifts every inline rounded-2xl / rounded-3xl toward that look
-        // without touching component markup.
-        '2xl': 'var(--radius-2xl)',
-        '3xl': 'var(--radius-3xl)',
+        control: '8px',
+        card: '12px',
+        overlay: '16px',
+        sm: '8px',
+        md: '8px',
+        lg: '12px',
+        xl: '12px',
+        '2xl': '16px',
+        '3xl': '20px',
+        full: '9999px',
       },
       boxShadow: {
-        // iOS shadows are soft, diffuse and low-opacity — almost lighting, not
-        // a drop shadow. Remapping the named scale tones down the heavier
-        // shadow-lg / shadow-xl / shadow-2xl usages app-wide.
-        // SOFT: soya "tushgan qora dog'" emas, yorug'lik. Rang ham sovuq
-        // ko'kdan iliq jigarrangga o'tkazildi — iliq oq fon ustida sovuq
-        // soya kir bo'lib ko'rinardi. Shaffoflik yana pasaytirildi:
-        // minimalizmda chuqurlikni soya emas, bo'shliq beradi.
-        sm: '0 1px 2px rgba(41, 37, 36, 0.03)',
-        DEFAULT: '0 1px 3px rgba(41, 37, 36, 0.04)',
-        md: '0 4px 16px rgba(41, 37, 36, 0.05)',
-        lg: '0 10px 30px rgba(41, 37, 36, 0.06)',
-        xl: '0 16px 44px rgba(41, 37, 36, 0.08)',
-        '2xl': '0 24px 60px rgba(41, 37, 36, 0.10)',
+        sm: '0 1px 2px rgba(41, 37, 36, 0.04)',
+        DEFAULT: '0 1px 3px rgba(41, 37, 36, 0.05)',
+        md: '0 4px 16px rgba(41, 37, 36, 0.06)',
+        lg: '0 10px 30px rgba(41, 37, 36, 0.08)',
+        xl: '0 16px 44px rgba(41, 37, 36, 0.10)',
+        '2xl': '0 24px 60px rgba(41, 37, 36, 0.12)',
       },
       height: {
-        // Control heights — match across all form elements.
-        'control-sm': 'var(--control-h-sm)',
-        'control':    'var(--control-h)',
-        'control-lg': 'var(--control-h-lg)',
+        'control-sm': '32px',
+        'control':    '36px',
+        'control-lg': '44px',
       },
     },
   },
   plugins: [],
 }
+

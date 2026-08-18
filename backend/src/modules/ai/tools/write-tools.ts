@@ -1,5 +1,7 @@
 import { z } from 'zod/v3';
 import { AgentToolDef, fmtSum } from './types';
+import { fonTopshiriqYarat } from '../agent-job.util';
+import { xotiraYoz, xotiraOchir, MAX_FAKT_UZUNLIGI } from '../agent-memory.util';
 
 // =============================================
 // YOZISH TOOL'LARI.
@@ -337,5 +339,115 @@ export const WRITE_TOOLS: AgentToolDef[] = [
       );
       return { success: true, kimga: employee.fullName };
     },
+  },
+  {
+    name: 'startJob',
+    description:
+      "UZOQ TOPSHIRIQNI FONGA UZATISH. Foydalanuvchi bir necha bosqichli, ko'p vaqt oladigan ish "
+      + "so'raganda ishlat — masalan \"barcha qarzdorlarga eslatma yubor va hisobot ber\", "
+      + "\"muddati o'tgan buyurtmalarni ko'rib chiq va mas'ullarga vazifa tayinla\". "
+      + "Topshiriq fonda bajariladi, natija Telegram'ga keladi. "
+      + "MUHIM: bitta savolga javob berish yoki bitta amalni bajarish uchun BUNI ISHLATMA — "
+      + "oddiy ishni o'zing shu yerda darhol qil. Bu faqat ko'p qadamli ish uchun.",
+    // Fon topshirig'i foydalanuvchi ruxsatlari bilan ishlaydi, ya'ni o'zi
+    // qo'shimcha huquq bermaydi. Shuning uchun alohida ruxsat talab qilinmaydi —
+    // agent fonda ham faqat chaqiruvchi qila oladigan ishni qiladi.
+    permissions: [],
+    // Tasdiq kartasi CHIQMAYDI. Topshiriqning o'zi hech narsani o'zgartirmaydi —
+    // u shunchaki navbatga qo'yiladi. Ichidagi xavfli amallar esa fonda
+    // bajarilayotganda odatdagidek tasdiq navbatiga tushadi.
+    requiresConfirm: false,
+    audit: true,
+    inputSchema: z.object({
+      topshiriq: z
+        .string()
+        .min(10)
+        .max(2000)
+        .describe(
+          "Agentga to'liq topshiriq — nima qilish kerakligi aniq va batafsil yozilsin. "
+          + "Fon agenti savol berolmaydi, shuning uchun kerakli tafsilotlarni shu yerga kirit.",
+        ),
+      sarlavha: z
+        .string()
+        .min(3)
+        .max(120)
+        .describe("Ro'yxatda ko'rinadigan qisqa nom, masalan \"Qarzdorlarga eslatma\""),
+    }),
+    summarize: (i) => `Fon topshirig'i: ${i.sarlavha}`,
+    execute: async (args, ctx) => {
+      const res = await fonTopshiriqYarat(
+        ctx.services.prisma,
+        ctx.tenantId,
+        ctx.userId,
+        args.topshiriq,
+        args.sarlavha,
+      );
+      if (!res.success) return res;
+      return {
+        ...res,
+        xabar:
+          "Topshiriq navbatga qo'yildi va fonda bajarila boshlaydi. "
+          + "Tayyor bo'lganda natija Telegram'ga keladi.",
+      };
+    },
+  },
+  {
+    name: 'remember',
+    description:
+      "Keyingi suhbatlarda kerak bo'ladigan faktni XOTIRAGA yozish. "
+      + "Ishlat: foydalanuvchi doimiy qoida yoki afzallik aytganda (\"hisobotni doim qisqa ber\"), "
+      + "yoki tashkilot haqida takrorlanadigan fakt bilib olganingda (\"Avlod Shifoxona odatda 30 kun kechikib to'laydi\"). "
+      + "ISHLATMA: tizimdan tool orqali olinadigan ma'lumot uchun (qarz, buyurtma, qoldiq — bular o'zgaradi va "
+      + "xotirada eskirib qoladi), yoki faqat shu suhbatga tegishli narsa uchun. "
+      + "Ayni mavzuda yozuv bo'lsa u yangilanadi, nusxa yaratilmaydi.",
+    // Xotira faqat agentning o'z xulqiga ta'sir qiladi — biznes ma'lumotini
+    // o'zgartirmaydi, pul harakati qilmaydi. Shuning uchun alohida ruxsat yo'q.
+    permissions: [],
+    requiresConfirm: false,
+    audit: true,
+    inputSchema: z.object({
+      mavzu: z
+        .string()
+        .min(2)
+        .max(80)
+        .describe("Qisqa sarlavha, masalan \"Avlod Shifoxona to'lov odati\" — takrorni aniqlash shu bo'yicha"),
+      matn: z
+        .string()
+        .min(3)
+        .max(MAX_FAKT_UZUNLIGI)
+        .describe("Faktning o'zi — bir-ikki jumla, aniq va o'zicha tushunarli"),
+      faqatMenga: z
+        .boolean()
+        .default(false)
+        .describe(
+          "true — bu shu foydalanuvchining shaxsiy sozlamasi (uslub, afzallik). "
+          + "false — butun tashkilotga tegishli fakt.",
+        ),
+    }),
+    summarize: (i) => `Xotiraga yozish: ${i.mavzu}`,
+    execute: async (args, ctx) =>
+      xotiraYoz(
+        ctx.services.prisma,
+        ctx.tenantId,
+        ctx.userId,
+        args.mavzu,
+        args.matn,
+        !!args.faqatMenga,
+      ),
+  },
+  {
+    name: 'forget',
+    description:
+      "Eskirgan yoki noto'g'ri faktni xotiradan o'chirish. Xotiradagi narsa endi to'g'ri "
+      + "kelmasa, avval shuni chaqir, keyin remember bilan yangisini yoz.",
+    permissions: [],
+    requiresConfirm: false,
+    audit: true,
+    inputSchema: z.object({
+      mavzu: z.string().min(2).max(80).describe("O'chiriladigan xotira mavzusi — xotirada ko'rsatilgani bilan bir xil"),
+    }),
+    summarize: (i) => `Xotiradan o'chirish: ${i.mavzu}`,
+    execute: async (args, ctx) =>
+      xotiraOchir(ctx.services.prisma, ctx.tenantId, ctx.userId, args.mavzu),
   },
 ];

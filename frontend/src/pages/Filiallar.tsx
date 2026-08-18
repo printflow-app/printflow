@@ -264,76 +264,73 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               data-tour-id="filial-add"
               disabled={atLimit}
               onClick={() => !atLimit && openCreate()}
-              className={`flex items-center gap-2 h-10 px-6 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg transition-all ${atLimit ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-orange-600 hover:bg-orange-700 text-white shadow-orange-500/20'}`}
-              title={atLimit ? `Limit to'ldi: ${maxBranches} ta qo'shimcha filial (tarifni yangilang)` : ''}
+              className={`btn-primary h-control ${atLimit ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={atLimit ? `Limit to'ldi: ${maxBranches} ta qo'shimcha filial` : ''}
             >
-              <Plus size={16} strokeWidth={3} />
+              <Plus size={15} strokeWidth={2.5} />
               {atLimit ? `Limit to'ldi (${branches.length}/${maxBranches})` : 'Yangi filial'}
             </button>
           );
         })()}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {branches.map((b) => {
           const manager = employees.find((e) => e.id === b.managerEmployeeId);
           return (
-            <div key={b.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 transition-all hover:shadow-md hover:border-orange-200">
+            <div key={b.id} className="bg-white rounded-card border border-slate-200 p-4 transition-all hover:border-orange-200">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-11 h-11 rounded-xl bg-orange-50 text-orange-600 border border-orange-100 flex items-center justify-center"><Building2 size={20} /></div>
+                <div className="w-10 h-10 rounded-control bg-orange-50 text-[color:var(--primary)] border border-orange-100 flex items-center justify-center"><Building2 size={18} /></div>
                 {canManage && (() => {
-                  // Keep "last branch" block — without any branch, employees/customers/services
-                  // have nowhere to belong. `hasData` block removed per request: deletion is now
-                  // ALWAYS allowed (with strong modal confirmation showing affected data).
                   const isLast = branches.length <= 1;
                   const delTitle = isLast ? "Oxirgi filial o'chirilmaydi" : "O'chirish";
                   return (
                     <div className="flex gap-1">
-                      <button onClick={() => openEdit(b)} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center"><Edit3 size={14} /></button>
+                      <button onClick={() => openEdit(b)} className="icon-btn-sm" title="Tahrirlash"><Edit3 size={13} /></button>
                       <button
                         onClick={() => !isLast && setConfirmDel(b)}
                         disabled={isLast}
                         title={delTitle}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLast ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-rose-50 hover:bg-rose-100 text-rose-600'}`}
-                      ><Trash2 size={14} /></button>
+                        className={`icon-btn-sm ${isLast ? 'text-slate-200 cursor-not-allowed' : 'hover:text-rose-600'}`}
+                      ><Trash2 size={13} /></button>
                     </div>
                   );
                 })()}
               </div>
-              <h3 className="text-base font-bold text-slate-800 tracking-tight mb-1">{b.name}</h3>
-              {b.address && <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5 mb-1"><MapPin size={12} /> {b.address}</p>}
-              {b.phone && <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5 mb-1"><Phone size={12} /> {b.phone}</p>}
-              {manager && <p className="text-xs font-bold text-slate-600 mt-2 pt-2 border-t border-slate-100">Mas'ul: <span className="text-slate-800 font-bold">{manager.fullName}</span></p>}
+              <h3 className="text-sm font-semibold text-slate-800 tracking-tight mb-1">{b.name}</h3>
+              {b.address && <p className="t-caption text-slate-500 flex items-center gap-1.5 mb-1"><MapPin size={12} /> {b.address}</p>}
+              {b.phone && <p className="t-caption text-slate-500 flex items-center gap-1.5 mb-1 tabular-nums"><Phone size={12} /> {b.phone}</p>}
+              {manager && <p className="t-caption text-slate-600 mt-2 pt-2 border-t border-slate-100">Mas'ul: <span className="text-slate-800 font-semibold">{manager.fullName}</span></p>}
               <BranchDepartments branchId={b.id} canManage={canManage} />
             </div>
           );
         })}
       </div>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Filialni tahrirlash' : 'Yangi filial'}>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Filialni tahrirlash' : 'Yangi filial'} maxWidth="max-w-md">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
-            <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Filial nomi *</label>
-            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none" placeholder="Toshkent filiali" />
+            <label className="form-label">Filial nomi *</label>
+            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-minimal w-full" placeholder="Toshkent filiali" />
           </div>
           <div>
-            <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Manzil</label>
-            <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none" placeholder="Chilonzor, 5-mavze" />
+            <label className="form-label">Manzil</label>
+            <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="input-minimal w-full" placeholder="Chilonzor, 5-mavze" />
           </div>
           <div>
-            <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Telefon</label>
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none" placeholder="+998 90 123 45 67" />
+            <label className="form-label">Telefon</label>
+            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-minimal w-full" placeholder="+998 90 123 45 67" />
           </div>
           <div>
-            <label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Mas'ul xodim</label>
-            <select value={form.managerEmployeeId} onChange={(e) => setForm({ ...form, managerEmployeeId: e.target.value })} className="select-minimal mt-1 font-bold">
+            <label className="form-label">Mas'ul xodim</label>
+            <select value={form.managerEmployeeId} onChange={(e) => setForm({ ...form, managerEmployeeId: e.target.value })} className="select-minimal w-full">
               <option value="">Tanlanmagan</option>
               {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
             </select>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 h-11 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-widest flex items-center justify-center gap-2"><X size={14} /> Bekor</button>
-            <button type="submit" className="flex-2 px-6 h-11 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"><Save size={14} /> {editing ? 'Yangilash' : 'Yaratish'}</button>
+          <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-outline flex-1">Bekor qilish</button>
+            <button type="submit" className="btn-primary flex-1">{editing ? 'Yangilash' : 'Yaratish'}</button>
           </div>
         </form>
       </Modal>
@@ -345,26 +342,26 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         return (
           <Modal isOpen={!!confirmDel} onClose={() => setConfirmDel(null)} title="Filialni o'chirish" type="danger">
             <div className="space-y-4">
-              <p className="text-sm font-bold text-slate-700">
+              <p className="text-sm text-slate-700">
                 <strong className="text-rose-700">{confirmDel.name}</strong> filiali butunlay o'chirilsinmi?
               </p>
 
               {hasData && (
-                <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 space-y-2">
-                  <p className="text-xs font-bold text-rose-700 uppercase tracking-widest flex items-center gap-1.5"><AlertTriangle size={12} strokeWidth={2.5}/> Bu filialda mavjud:</p>
-                  <ul className="text-xs font-bold text-rose-800 space-y-1 list-disc pl-4">
+                <div className="bg-rose-50 border border-rose-200 rounded-card p-3 space-y-2">
+                  <p className="text-xs font-semibold text-rose-700 flex items-center gap-1.5"><AlertTriangle size={13} strokeWidth={2.5}/> Bu filialda mavjud:</p>
+                  <ul className="text-xs text-rose-800 space-y-1 list-disc pl-4">
                     {empCount > 0 && <li>{empCount} ta xodim</li>}
                     {taskCount > 0 && <li>{taskCount} ta buyurtma</li>}
                   </ul>
-                  <p className="text-xs font-bold text-rose-600 leading-relaxed pt-1">
-                    Xodimlar va buyurtmalar yo'qolmaydi — faqat filial tegidan ajratiladi. Lekin xizmatlar va hamkorlar shu filialga MAJBURIY bog'langan bo'lsa, server o'chirib bo'lmadi deb javob qaytaradi — avval ularni boshqa filialga ko'chiring yoki o'chiring.
+                  <p className="t-caption text-rose-600 leading-relaxed pt-1">
+                    Xodimlar va buyurtmalar yo'qolmaydi — faqat filial tegidan ajratiladi.
                   </p>
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <button onClick={() => setConfirmDel(null)} className="flex-1 h-11 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-widest">Bekor</button>
-                <button onClick={handleDelete} className="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold uppercase text-xs tracking-widest">Ha, o'chirilsin</button>
+              <div className="flex gap-2.5">
+                <button onClick={() => setConfirmDel(null)} className="btn-outline flex-1">Bekor qilish</button>
+                <button onClick={handleDelete} className="btn-danger-solid flex-1">Ha, o'chirilsin</button>
               </div>
             </div>
           </Modal>
@@ -377,11 +374,11 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 const Filiallar: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   return (
     <div className="space-y-5 pb-20">
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
-        <h2 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-          <Building2 className="text-orange-600" size={22} /> Filiallar
+      <div className="bg-white p-4 sm:p-5 rounded-card border border-slate-200">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+          <Building2 className="text-[color:var(--primary)]" size={20} /> Filiallar
         </h2>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Multi-filial boshqaruvi</p>
+        <p className="t-caption mt-0.5">Multi-filial boshqaruvi</p>
       </div>
       <FiliallarTab currentUser={currentUser} />
     </div>

@@ -13,6 +13,9 @@ import { SkeletonTable, SkeletonStats } from '../components/Skeleton';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { exportToXlsx } from '../utils/exportToXlsx';
 import { toast } from 'react-toastify';
+import { StatCard } from '../components/ui/StatCard';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Badge } from '../components/ui/Badge';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('uz-UZ').format(amount).replace(/,/g, ' ') + " UZS";
@@ -537,11 +540,11 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
       {/* Kassa selektori + amallar */}
       {(cashBoxes.length > 0 || canManageCashBoxes) && (
-        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center gap-3">
+        <div className="bg-white p-3 sm:p-4 rounded-card border border-slate-200 flex flex-col lg:flex-row lg:items-center gap-3">
           <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-1 flex-1">
             <button
               onClick={() => setSelectedCashBoxId('')}
-              className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors border ${!selectedCashBoxId ? 'bg-[color:var(--primary)] text-white border-transparent shadow' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'}`}
+              className={`shrink-0 px-3 py-1.5 rounded-control text-xs font-medium transition-colors border ${!selectedCashBoxId ? 'bg-orange-600 text-white border-orange-600 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
             >
               Barcha kassalar
             </button>
@@ -552,19 +555,16 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   key={b.id}
                   onClick={() => setSelectedCashBoxId(b.id)}
                   title={b.assignedUserName ? `Mas'ul: ${b.assignedUserName}` : undefined}
-                  className={`shrink-0 px-3.5 py-2 rounded-xl text-left transition-colors border ${active ? 'bg-[color:var(--primary)] text-white border-transparent shadow' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-control text-left transition-colors border ${active ? 'bg-orange-600 text-white border-orange-600 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
                 >
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold whitespace-nowrap">{b.name}</span>
+                    <span className="text-xs font-medium whitespace-nowrap">{b.name}</span>
                     {b.type === 'main' && (
-                      <span className={`text-[11px] font-bold uppercase px-1.5 py-0.5 rounded ${active ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>asosiy</span>
+                      <span className={`text-[10px] font-semibold uppercase px-1 py-0.2 rounded-full ${active ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'}`}>asosiy</span>
                     )}
                   </div>
-                  {/* Bu — kassadagi HOZIRGI QOLDIQ (butun davr uchun), pastdagi
-                      kartalar esa tanlangan sana oralig'i uchun. Ikkalasi turli
-                      narsa; belgisiz ular bir-biriga zid ko'rinardi. */}
-                  <div className={`text-xs font-bold tabular-nums mt-0.5 ${active ? 'text-white/90' : ((b.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600')}`}>
-                    <span className={`text-[11px] font-bold uppercase mr-1 ${active ? 'text-white/60' : 'text-slate-400'}`}>qoldiq</span>
+                  <div className={`text-xs tabular-nums mt-0.5 ${active ? 'text-white/90 font-semibold' : ((b.balance || 0) >= 0 ? 'text-emerald-700 font-medium' : 'text-rose-700 font-medium')}`}>
+                    <span className={`text-[10px] font-semibold uppercase mr-1 ${active ? 'text-white/70' : 'text-slate-400'}`}>qoldiq:</span>
                     {formatCurrency(b.balance || 0)}
                   </div>
                 </button>
@@ -574,12 +574,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="flex gap-2 shrink-0">
             {canTransferCash && cashBoxes.length >= 2 && (
               <button data-tour-id="kassa-topshirish" onClick={openTransferModal} className="btn-outline h-sm">
-                <ArrowRightLeft size={14}/> Topshirish
+                <ArrowRightLeft size={14} strokeWidth={1.75} /> Topshirish
               </button>
             )}
             {canManageCashBoxes && (
               <button data-tour-id="kassa-yangi-kassa" onClick={() => setIsNewBoxModalOpen(true)} className="btn-outline h-sm">
-                <Plus size={14}/> Yangi kassa
+                <Plus size={14} strokeWidth={1.75} /> Yangi kassa
               </button>
             )}
           </div>
@@ -588,19 +588,19 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
       {/* Qabul qilinishi kutilayotgan topshirishlar */}
       {incomingTransfers.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-card p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><Inbox size={16}/></div>
+            <div className="p-2 bg-amber-100 text-amber-700 rounded-control"><Inbox size={16} strokeWidth={1.75} /></div>
             <div>
-              <h3 className="text-sm font-bold text-amber-900">Qabul qilinishi kutilmoqda</h3>
+              <h3 className="text-sm font-semibold text-amber-900">Qabul qilinishi kutilmoqda</h3>
               <p className="text-xs text-amber-700">Sizga topshirilgan pulni sanab, tasdiqlang</p>
             </div>
           </div>
           <div className="space-y-2">
             {incomingTransfers.map((t: any) => (
-              <div key={t.id} className="bg-white rounded-xl border border-amber-100 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div key={t.id} className="bg-white rounded-control border border-amber-200/80 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">
+                  <p className="text-sm font-semibold text-slate-800 truncate">
                     {t.fromCashBoxName || 'Kassa'} <span className="text-slate-400">→</span> {t.toCashBoxName || 'Kassa'}
                   </p>
                   <p className="text-xs text-slate-500 truncate">
@@ -609,12 +609,12 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-base font-bold text-emerald-600 tabular-nums mr-1">+{formatCurrency(t.amount)}</span>
+                  <span className="text-sm font-semibold text-emerald-600 tabular-nums mr-1">+{formatCurrency(t.amount)}</span>
                   <button onClick={() => handleAcceptTransfer(t.id)} disabled={respondingId === t.id} className="btn-success h-sm">
-                    <Check size={14}/> Qabul qildim
+                    <Check size={14} strokeWidth={1.75} /> Qabul qildim
                   </button>
                   <button onClick={() => handleRejectTransfer(t.id)} disabled={respondingId === t.id} className="btn-outline h-sm">
-                    <X size={14}/> Rad etish
+                    <X size={14} strokeWidth={1.75} /> Rad etish
                   </button>
                 </div>
               </div>
@@ -623,283 +623,241 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         </div>
       )}
 
-      {/* BO'LIMGA BIRIKTIRILMAGAN OGOHLANTIRISHI.
-          Bo'lim maydoni Kassa formasiga keyinroq qo'shilgani uchun eski
-          yozuvlarda u bo'sh. Ular hech qaysi bo'lim summasiga kirmaydi —
-          buni aytmasak, rahbar "bo'limda chiqim yo'q" deb noto'g'ri
-          xulosa qiladi. */}
+      {/* Bo'limga biriktirilmagan ogohlantirishi */}
       {departmentId && summary?.biriktirilmagan &&
        (summary.biriktirilmagan.kirim > 0 || summary.biriktirilmagan.chiqim > 0) && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50/60">
-          <div className="p-2 bg-amber-100 text-amber-600 rounded-lg flex-shrink-0"><AlertTriangle size={16} /></div>
+        <div className="flex items-start gap-3 p-4 rounded-card border border-amber-200 bg-amber-50/60">
+          <div className="p-2 bg-amber-100 text-amber-700 rounded-control flex-shrink-0"><AlertTriangle size={16} strokeWidth={1.75} /></div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-amber-800">Bu summalar bo'lim bo'yicha to'liq emas</p>
-            <p className="text-xs font-medium text-amber-700 mt-0.5 leading-relaxed">
+            <p className="text-sm font-semibold text-amber-900">Bu summalar bo'lim bo'yicha to'liq emas</p>
+            <p className="text-xs font-normal text-amber-800 mt-0.5 leading-relaxed">
               Hech qaysi bo'limga biriktirilmagan{' '}
               <b>{formatCurrency(summary.biriktirilmagan.kirim)}</b> kirim va{' '}
               <b>{formatCurrency(summary.biriktirilmagan.chiqim)}</b> chiqim bor — ular yuqoridagi
-              hisobga KIRMAGAN. Yozuvni tahrirlab bo'limini belgilasangiz, hisobotga qo'shiladi.
+              hisobga kirmagan. Yozuvni tahrirlab bo'limini belgilasangiz, hisobotga qo'shiladi.
             </p>
           </div>
         </div>
       )}
 
-      {/* Daily Summary Header */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="label-caps">Kirim {startDate === endDate ? `(${startDate})` : `(${startDate} → ${endDate})`}</span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><TrendingUp size={16}/></div>
-          </div>
-          <p className="text-xl font-bold text-emerald-600 tracking-tight">{formatCurrency(summary?.totalKirim || 0)}</p>
-          <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
-            {summary?.kirimBreakdown?.map((b: any, idx: number) => (
-              <div key={idx} className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">{b.name}</span>
-                <span className="text-emerald-500">+{formatCurrency(b.amount)}</span>
-              </div>
-            ))}
-            {!summary?.kirimBreakdown?.length && <p className="text-xs text-slate-400">Kirimlar yo'q</p>}
-          </div>
-        </div>
+      {/* 3 ta standart StatCard (Design System v1 Page 10) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        <StatCard
+          label={ownCashOnly ? "Mening balansim" : "Balans"}
+          value={formatCurrency(summary?.balance || 0)}
+          subtitle={
+            <span>
+              {startDate === endDate ? startDate : `${startDate} — ${endDate}`}
+              {(() => {
+                const tanlangan = cashBoxes.find(b => b.id === selectedCashBoxId);
+                return tanlangan ? ` · ${tanlangan.name} qoldig'i: ${formatCurrency(tanlangan.balance || 0)}` : '';
+              })()}
+            </span>
+          }
+          icon={Wallet}
+          tone={(summary?.balance || 0) >= 0 ? "brand" : "danger"}
+        />
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="label-caps">Chiqim {startDate === endDate ? `(${startDate})` : `(${startDate} → ${endDate})`}</span>
-            <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><TrendingDown size={16}/></div>
-          </div>
-          <p className="text-xl font-bold text-rose-600 tracking-tight">{formatCurrency(summary?.totalChiqim || 0)}</p>
-          <div className="mt-3 pt-3 border-t border-slate-100 space-y-1">
-            {summary?.chiqimBreakdown?.map((b: any, idx: number) => (
-              <div key={idx} className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">{b.name}</span>
-                <span className="text-rose-500">-{formatCurrency(b.amount)}</span>
-              </div>
-            ))}
-            {!summary?.chiqimBreakdown?.length && <p className="text-xs text-slate-400">Chiqimlar yo'q</p>}
-          </div>
-        </div>
+        <StatCard
+          label="Kirim"
+          value={formatCurrency(summary?.totalKirim || 0)}
+          subtitle={
+            summary?.kirimBreakdown?.length
+              ? summary.kirimBreakdown.map((b: any) => `${b.name}: ${formatCurrency(b.amount)}`).join(' · ')
+              : "Kirimlar yo'q"
+          }
+          icon={TrendingUp}
+          tone="success"
+        />
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="label-caps">Xarajat Yo'nalishlari</span>
-            <div className="p-2 bg-slate-50 text-slate-400 rounded-lg"><Wallet size={16}/></div>
-          </div>
-          <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scroll pr-1">
-            {summary?.expenseBreakdown?.map((b: any, idx: number) => (
-              <div key={idx} className="flex justify-between items-center text-xs">
-                <span className="text-slate-500">{b.name}</span>
-                <span className="text-slate-700">{formatCurrency(b.amount)}</span>
-              </div>
-            ))}
-            {!summary?.expenseBreakdown?.length && <p className="text-xs text-slate-400">Xarajatlar yo'q</p>}
-          </div>
-        </div>
-
-        {/* DAVR BALANSI — YUQORIDAGI "QOLDIQ" BILAN BIR NARSA EMAS.
-            Bu karta tanlangan sana oralig'idagi kirim − chiqim ni ko'rsatadi
-            va kassalararo o'tkazmani hisobga OLMAYDI (o'tkazma daromad ham,
-            xarajat ham emas — pul shunchaki bir kassadan ikkinchisiga
-            ko'chadi). Kassa tugmasidagi "qoldiq" esa butun davr uchun va
-            o'tkazma bilan birga — ya'ni kassada hozir turgan haqiqiy pul.
-            Ikkalasi turlicha bo'lishi normal; farqni tushuntirish uchun
-            tanlangan kassaning qoldig'i shu yerda yonma-yon chiqadi. */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center text-center">
-            <span className="label-caps mb-1">{ownCashOnly ? 'Mening balansim' : 'Davr balansi'}</span>
-            <p className={`text-2xl font-bold tracking-tighter ${(summary?.balance || 0) >= 0 ? 'text-slate-800' : 'text-rose-600'}`}>
-              {formatCurrency(summary?.balance || 0)}
-            </p>
-            <span className="mt-0.5 text-[11px] font-semibold text-slate-400">kirim − chiqim · o'tkazmasiz</span>
-            {ownCashOnly && (
-              <span className="mt-1 text-xs font-medium text-orange-600">Faqat o'zingiz kiritgan</span>
-            )}
-            <div className="mt-2 px-3 py-1 bg-slate-100 rounded-full">
-               <span className="text-xs font-medium text-slate-500">{startDate === endDate ? new Date(startDate).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) : `${startDate} → ${endDate}`}</span>
-            </div>
-            {(() => {
-              const tanlangan = cashBoxes.find(b => b.id === selectedCashBoxId);
-              if (!tanlangan) return null;
-              return (
-                <p className="mt-2.5 pt-2.5 border-t border-slate-100 w-full text-xs font-semibold text-slate-500">
-                  {tanlangan.name} qoldig'i:{' '}
-                  <span className={(tanlangan.balance || 0) >= 0 ? 'text-slate-800 font-bold' : 'text-rose-600 font-bold'}>
-                    {formatCurrency(tanlangan.balance || 0)}
-                  </span>
-                </p>
-              );
-            })()}
-        </div>
+        <StatCard
+          label="Chiqim"
+          value={formatCurrency(summary?.totalChiqim || 0)}
+          subtitle={
+            summary?.chiqimBreakdown?.length
+              ? summary.chiqimBreakdown.map((b: any) => `${b.name}: ${formatCurrency(b.amount)}`).join(' · ')
+              : "Bu davrda xarajat yo'q"
+          }
+          icon={TrendingDown}
+          tone="danger"
+        />
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row justify-between lg:items-center gap-4 bg-slate-50/30">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      {/* Amaliyotlar Jadvali va Toolbar */}
+      <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+        <div className="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col lg:flex-row justify-between lg:items-center gap-3 bg-slate-50/40">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div>
-              <h3 className="card-title flex items-center gap-2">
-                <Wallet size={16} className="text-[color:var(--primary)]" /> Kassa amaliyotlari
+              <h3 className="t-h3 flex items-center gap-2">
+                <Wallet size={16} strokeWidth={1.75} className="text-orange-600" /> Amaliyotlar
               </h3>
-              <p className="text-hint mt-0.5">Kunlik tranzaksiyalar tarixi</p>
+              <p className="t-caption mt-0.5">{meta?.totalCount ? `${meta.totalCount} ta yozuv` : `${transactions.length} ta yozuv`}</p>
             </div>
             
-            <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-control border border-slate-200">
                <input
                  type="date"
                  value={draftStart}
                  max={draftEnd}
                  onChange={(e) => setDraftStart(e.target.value)}
                  onKeyDown={(e) => { if (e.key === 'Enter') applyDateFilter(); }}
-                 className="text-xs font-medium text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
+                 className="text-xs font-medium text-slate-700 border-none focus:ring-0 cursor-pointer bg-transparent py-0.5"
                />
-               <span className="text-xs font-bold text-slate-400">→</span>
+               <span className="text-xs font-medium text-slate-400">—</span>
                <input
                  type="date"
                  value={draftEnd}
                  min={draftStart}
                  onChange={(e) => setDraftEnd(e.target.value)}
                  onKeyDown={(e) => { if (e.key === 'Enter') applyDateFilter(); }}
-                 className="text-xs font-medium text-slate-600 border-none focus:ring-0 cursor-pointer bg-transparent py-1"
+                 className="text-xs font-medium text-slate-700 border-none focus:ring-0 cursor-pointer bg-transparent py-0.5"
                />
                <button
                  onClick={applyDateFilter}
                  disabled={!draftDiffers}
                  title="Qidirish"
-                 className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${draftDiffers ? 'bg-orange-500 hover:bg-orange-600 text-white shadow' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+                 className={`w-6 h-6 flex items-center justify-center rounded-control transition-colors ${draftDiffers ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
                >
-                 <Search size={13} strokeWidth={2.5} />
+                 <Search size={13} strokeWidth={2} />
                </button>
                <button
                  onClick={() => { const t = new Date().toLocaleDateString('en-CA'); setDraftStart(t); setDraftEnd(t); setStartDate(t); setEndDate(t); setPage(1); }}
-                 className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-xs font-medium rounded-md transition-colors text-slate-600"
+                 className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-xs font-medium rounded-control transition-colors text-slate-600"
                >
                  Bugun
                </button>
             </div>
           </div>
-          {departments.length > 0 && (
-            <select
-              value={departmentId}
-              onChange={e => { setDepartmentId(e.target.value); setPage(1); }}
-              className="select-minimal h-control-sm w-auto text-xs"
-            >
-              <option value="">Barcha bo'limlar</option>
-              {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-          )}
-          {/* Hamkor filtri — hamkorlarga oid kirim/chiqimlarni ko'rish uchun */}
-          {(vendors as any[]).length > 0 && (
-            <select
-              value={vendorFilterId}
-              onChange={e => { setVendorFilterId(e.target.value); setPage(1); }}
-              className="select-minimal h-control-sm w-auto text-xs"
-              title="Ma'lum hamkorga oid kirim/chiqimlar"
-            >
-              <option value="">Barcha hamkorlar</option>
-              {(vendors as any[]).map((v: any) => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
-          )}
-          <div className="flex gap-2">
-             {(currentUser.role?.name?.toLowerCase() === 'admin' || p.canExportFinance) && (
-               <button
-                 onClick={handleExport}
-                 disabled={isExporting}
-                 className="btn-outline h-sm flex-1 sm:flex-none"
-                 title="Joriy oraliqdagi tranzaksiyalarni Excel'ga eksport qilish"
-               >
-                 <Download size={14}/> {isExporting ? 'Eksport...' : 'Eksport'}
-               </button>
-             )}
-             {p.canAddIncome && (
-               <button data-tour-id="kassa-kirim" onClick={openKirimModal} className="btn-success h-sm flex-1 sm:flex-none">
-                 <TrendingUp size={14}/> Kirim
-               </button>
-             )}
-             {p.canAddExpense && (
-               <button data-tour-id="kassa-chiqim" onClick={openChiqimModal} className="btn-danger h-sm flex-1 sm:flex-none">
-                 <TrendingDown size={14}/> Chiqim
-               </button>
-             )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            {departments.length > 0 && (
+              <select
+                value={departmentId}
+                onChange={e => { setDepartmentId(e.target.value); setPage(1); }}
+                className="select-minimal h-control-sm w-auto text-xs"
+              >
+                <option value="">Barcha bo'limlar</option>
+                {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            )}
+
+            {(vendors as any[]).length > 0 && (
+              <select
+                value={vendorFilterId}
+                onChange={e => { setVendorFilterId(e.target.value); setPage(1); }}
+                className="select-minimal h-control-sm w-auto text-xs"
+                title="Ma'lum hamkorga oid kirim/chiqimlar"
+              >
+                <option value="">Barcha hamkorlar</option>
+                {(vendors as any[]).map((v: any) => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+            )}
+
+            {(currentUser.role?.name?.toLowerCase() === 'admin' || p.canExportFinance) && (
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="btn-outline h-sm"
+                title="Tranzaksiyalarni Excel'ga eksport qilish"
+              >
+                <Download size={14} strokeWidth={1.75} /> {isExporting ? 'Eksport...' : 'Eksport'}
+              </button>
+            )}
+
+            {p.canAddIncome && (
+              <button data-tour-id="kassa-kirim" onClick={openKirimModal} className="btn-success h-sm">
+                <TrendingUp size={14} strokeWidth={1.75} /> Kirim
+              </button>
+            )}
+
+            {p.canAddExpense && (
+              <button data-tour-id="kassa-chiqim" onClick={openChiqimModal} className="btn-danger h-sm">
+                <TrendingDown size={14} strokeWidth={1.75} /> Chiqim
+              </button>
+            )}
           </div>
         </div>
 
         <div className="overflow-x-auto custom-scroll overflow-y-auto max-h-[55vh]">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-md">
-              <tr className="border-b border-slate-100">
-                <th className="py-3 px-5 label-caps w-12">Turi</th>
-                <th className="py-3 px-5 label-caps">Mijoz / Sabab</th>
-                <th className="py-3 px-5 label-caps text-right">Summa</th>
-                <th className="py-3 px-5 label-caps text-center hidden md:table-cell">To'lov</th>
-                <th className="py-3 px-5 label-caps text-right pr-6">Sana</th>
-                {canManageFinance && (
-                  <th className="py-3 px-3 label-caps text-center w-24">Amallar</th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {(transactions as any[]).map((t: any) => (
-                <tr key={t.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="py-3 px-5">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${t.type === 'kirim' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                        {t.type === 'kirim' ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
+          {transactions.length === 0 ? (
+            <div className="p-8">
+              <EmptyState
+                icon={Wallet}
+                title="Tanlangan davrda amaliyotlar yo'q"
+                description="Bu sana oralig'ida hech qanday kirim yoki chiqim qayd etilmagan."
+                action={p.canAddIncome ? { label: "Kirim qo'shish", onClick: openKirimModal, primary: true } : undefined}
+              />
+            </div>
+          ) : (
+            <table className="table-minimal">
+              <thead>
+                <tr>
+                  <th className="w-12 text-center">Turi</th>
+                  <th>Mijoz / Sabab</th>
+                  <th className="text-right">Summa</th>
+                  <th className="text-center hidden md:table-cell">To'lov</th>
+                  <th className="text-right pr-6">Sana</th>
+                  {canManageFinance && (
+                    <th className="text-center w-24">Amallar</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {(transactions as any[]).map((t: any) => (
+                  <tr key={t.id}>
+                    <td className="text-center">
+                      <div className={`w-6 h-6 mx-auto rounded-control flex items-center justify-center ${t.type === 'kirim' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                        {t.type === 'kirim' ? <TrendingUp size={13} strokeWidth={1.75} /> : <TrendingDown size={13} strokeWidth={1.75} />}
                       </div>
-                  </td>
-                  <td className="py-3 px-5">
-                      <p className="font-bold text-slate-800 text-xs tracking-tight">
+                    </td>
+                    <td>
+                      <p className="font-semibold text-slate-800 text-sm tracking-tight">
                         {t.type === 'kirim'
                           ? (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.customer?.name || t.customerName || t.serviceType || '—'))
                           : (t.vendor?.name ? `Hamkor: ${t.vendor.name}` : (t.employeeId && !p.canViewSalary) ? 'Xodim maoshi' : (t.expenseReason || (t.expenseType?.name + (t.employee?.fullName ? ' - ' + t.employee.fullName : ''))))}
                       </p>
-                      {t.vendor && <span className="text-xs font-medium text-slate-600 mt-0.5">{Array.isArray(t.vendor.roles) && t.vendor.roles.length ? t.vendor.roles.join(', ') : 'Hamkor'}</span>}
-                      {!t.vendor && t.expenseType && <span className="text-xs font-medium text-slate-400 mt-0.5">{t.expenseType.name}</span>}
-                  </td>
-                  <td className="py-3 px-5 text-right whitespace-nowrap">
-                      <span className={`font-bold text-xs tabular-nums ${t.type === 'kirim' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {t.vendor && <span className="text-xs text-slate-500 mt-0.5 block">{Array.isArray(t.vendor.roles) && t.vendor.roles.length ? t.vendor.roles.join(', ') : 'Hamkor'}</span>}
+                      {!t.vendor && t.expenseType && <span className="text-xs text-slate-400 mt-0.5 block">{t.expenseType.name}</span>}
+                    </td>
+                    <td className="text-right whitespace-nowrap">
+                      <span className={`font-semibold text-sm tabular-nums ${t.type === 'kirim' ? 'text-emerald-700' : 'text-rose-700'}`}>
                         {(t.type === 'chiqim' && t.employeeId && !p.canViewSalary) ? '***' : (t.type === 'kirim' ? '+' : '-') + formatCurrency(t.amount)}
                       </span>
-                  </td>
-                  <td className="py-3 px-5 text-center hidden md:table-cell">
-                      <span className="text-[11px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200/60 uppercase tracking-tighter">
-                        {t.paymentType?.name || '—'}
-                      </span>
-                  </td>
-                  <td className="py-3 px-5 text-right pr-6 whitespace-nowrap">
-                      <p className="text-xs font-bold text-slate-400 tabular-nums">{new Date(t.date).toLocaleDateString('uz-UZ')}</p>
-                      <p className="text-[11px] font-medium text-slate-300 mt-0.5 tabular-nums">{new Date(t.date).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p>
-                  </td>
-                  {canManageFinance && (
-                    <td className="py-3 px-3 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => openEditModal(t)}
-                          title="Tahrirlash"
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-                        >
-                          <Pencil size={13} strokeWidth={2.5} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(t)}
-                          title="O'chirish"
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        >
-                          <Trash2 size={13} strokeWidth={2.5} />
-                        </button>
-                      </div>
                     </td>
-                  )}
-                </tr>
-              ))}
-              {transactions.length === 0 && (
-                <tr>
-                   <td colSpan={canManageFinance ? 6 : 5} className="py-20 text-center">
-                     <div className="flex flex-col items-center justify-center opacity-30">
-                       <Wallet size={40} className="mb-4" />
-                       <p className="font-bold uppercase text-xs">Tanlangan davrda amaliyotlar yo'q</p>
-                     </div>
-                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <td className="text-center hidden md:table-cell">
+                      <Badge variant="neutral" showDot={false}>
+                        {t.paymentType?.name || '—'}
+                      </Badge>
+                    </td>
+                    <td className="text-right pr-6 whitespace-nowrap">
+                      <p className="text-xs font-medium text-slate-600 tabular-nums">{new Date(t.date).toLocaleDateString('uz-UZ')}</p>
+                      <p className="text-[11px] text-slate-400 tabular-nums">{new Date(t.date).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </td>
+                    {canManageFinance && (
+                      <td className="text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => openEditModal(t)}
+                            title="Tahrirlash"
+                            className="icon-btn-sm"
+                          >
+                            <Pencil size={14} strokeWidth={1.75} />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(t)}
+                            title="O'chirish"
+                            className="icon-btn-sm text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                          >
+                            <Trash2 size={14} strokeWidth={1.75} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Pagination Controls */}
@@ -935,15 +893,15 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         <form onSubmit={handleAddKirim} className="space-y-4">
           {vendors.length > 0 && (
-            <div className="flex bg-slate-100 p-1 rounded-2xl">
-              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: ''}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${!kirimForm.vendorId ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>MIJOZDAN</button>
-              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: '_', customerId: '', customerName: ''}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${kirimForm.vendorId ? 'bg-white shadow text-slate-600' : 'text-slate-400'}`}>HAMKORDAN</button>
+            <div className="flex bg-slate-100 p-1 rounded-card">
+              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: ''}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${!kirimForm.vendorId ? 'bg-white shadow-sm font-semibold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Mijozdan</button>
+              <button type="button" onClick={() => setKirimForm(f => ({...f, vendorId: '_', customerId: '', customerName: ''}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${kirimForm.vendorId ? 'bg-white shadow-sm font-semibold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Hamkordan</button>
             </div>
           )}
 
           {kirimForm.vendorId ? (
             <div className="animate-fade-in">
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
+              <label className="form-label">Hamkorni tanlang</label>
               <select required value={kirimForm.vendorId === '_' ? '' : kirimForm.vendorId} onChange={e => setKirimForm(f => ({...f, vendorId: e.target.value}))} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{Array.isArray(v.roles) && v.roles.length ? ` — ${v.roles.join(', ')}` : ''}</option>)}
@@ -951,7 +909,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Mijozni tanlang</label>
+              <label className="form-label">Mijozni tanlang</label>
               <SearchableSelect
                 options={customers.map(c => ({ id: c.id, label: c.name, subLabel: c.phone || 'Tel yo\'q', value: c }))}
                 value={kirimForm.customerId}
@@ -960,7 +918,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               />
               {!kirimForm.customerId && (
                 <div className="mt-2 animate-fade-in">
-                  <input type="text" value={kirimForm.customerName} onChange={e => setKirimForm(f => ({ ...f, customerName: e.target.value }))} className="input-minimal text-slate-700 font-bold" placeholder="Noma'lum mijoz ismi (ixtiyoriy)..."/>
+                  <input type="text" value={kirimForm.customerName} onChange={e => setKirimForm(f => ({ ...f, customerName: e.target.value }))} className="input-minimal" placeholder="Noma'lum mijoz ismi (ixtiyoriy)..."/>
                 </div>
               )}
             </div>
@@ -968,7 +926,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {!kirimForm.vendorId && customerTasks.length > 0 && (
             <div className="animate-fade-in">
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1 text-orange-500">Bog'liq buyurtma (qarzni shu task'ga belgilash)</label>
+              <label className="form-label text-orange-700 font-semibold">Bog'liq buyurtma (qarzni shu buyurtmaga belgilash)</label>
               <select
                 value={kirimForm.taskId}
                 onChange={e => {
@@ -978,13 +936,10 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     ...f,
                     taskId: selectedId,
                     serviceType: selectedTask ? (selectedTask.orderName || selectedTask.title) : '',
-                    // Buyurtmaning bo'limi allaqachon ma'lum — uni o'zi
-                    // qo'yamiz, foydalanuvchidan qayta so'ramaymiz. Ko'rinib
-                    // turadi va kerak bo'lsa o'zgartirsa bo'ladi.
                     departmentId: selectedTask?.departmentId || f.departmentId,
                   }));
                 }}
-                className="select-minimal h-11 font-bold text-orange-700"
+                className="select-minimal text-orange-700 font-medium"
               >
                 <option value="">— Buyurtmani tanlang (ixtiyoriy) —</option>
                 {customerTasks
@@ -999,45 +954,43 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           )}
 
           {!kirimForm.vendorId && hasDebt && (
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 space-y-3">
-              <p className="text-xs font-bold text-orange-900 flex items-center gap-2">
-                <AlertCircle size={14} className="text-orange-500" />
+            <div className="bg-orange-50 border border-orange-200 rounded-card p-3 space-y-2">
+              <p className="text-xs font-semibold text-orange-900 flex items-center gap-2">
+                <AlertCircle size={14} className="text-orange-600" />
                 Mijoz qarzi: <span className="font-bold">{formatCurrency(currentDebtAmount)}</span>
               </p>
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" checked={kirimForm.forExistingDebt} onChange={(e) => setKirimForm({...kirimForm, forExistingDebt: e.target.checked})} className="w-5 h-5 rounded-lg border-2 border-orange-300 text-orange-500 focus:ring-orange-200 transition-all cursor-pointer" />
-                <span className="text-xs font-bold text-orange-800">Qarzdorlikni qoplash uchun</span>
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={kirimForm.forExistingDebt} onChange={(e) => setKirimForm({...kirimForm, forExistingDebt: e.target.checked})} className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer" />
+                <span className="text-xs font-medium text-orange-800">Qarzdorlikni qoplash uchun</span>
               </label>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Xizmat Nomi / Izoh</label>
+            <label className="form-label">Xizmat nomi / izoh</label>
             <input type="text" required={!kirimForm.forExistingDebt} value={kirimForm.serviceType} onChange={(e) => setKirimForm({...kirimForm, serviceType: e.target.value})} className="input-minimal" placeholder={kirimForm.forExistingDebt ? "Qarz to'lovi" : "Masalan: Banner bosish..."} />
           </div>
           
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <label className="form-label">Summa</label>
             <CurrencyInput
               value={kirimForm.amount}
               onChange={(uzs) => setKirimForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
-              colorClass="text-emerald-600 focus:border-emerald-500"
+              colorClass="text-emerald-700"
             />
           </div>
           
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov Turi</label>
+            <label className="form-label">To'lov turi</label>
             <select required value={kirimForm.paymentTypeId} onChange={(e) => setKirimForm({...kirimForm, paymentTypeId: e.target.value})} className="select-minimal">
               <option value="">Tanlang...</option>
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
             </select>
           </div>
 
-          {/* KASSA — pul aynan qaysi kassaga tushishi.
-              Bitta kassa bo'lsa ko'rsatilmaydi: tanlov yo'q, o'zi qo'yiladi. */}
           {cashBoxes.length > 1 && (
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassaga</label>
+              <label className="form-label">Qaysi kassaga</label>
               <select required value={kirimForm.cashBoxId} onChange={(e) => setKirimForm({ ...kirimForm, cashBoxId: e.target.value })} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {cashBoxes.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1045,13 +998,9 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </div>
           )}
 
-          {/* BO'LIM — busiz yozuv hech qaysi bo'lim hisobotiga tushmaydi.
-              Ilgari bu maydon umuman yo'q edi: filtri bor edi, lekin yozadigan
-              joyi yo'q, shuning uchun bo'lim tanlanganda hisobot kam summa
-              ko'rsatardi. */}
           {departments.length > 0 && (
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Bo'lim</label>
+              <label className="form-label">Bo'lim</label>
               <select value={kirimForm.departmentId} onChange={(e) => setKirimForm({ ...kirimForm, departmentId: e.target.value })} className="select-minimal">
                 <option value="">Bo'limsiz</option>
                 {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -1061,16 +1010,15 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {canSetDate && (
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Sana (qaysi kunga)</label>
+              <label className="form-label">Sana (qaysi kunga)</label>
               <input type="date" value={kirimForm.date} onChange={(e) => setKirimForm(f => ({ ...f, date: e.target.value }))} className="input-minimal" />
             </div>
           )}
 
-
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={closeKirimModal} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
-            <button type="submit" disabled={isSubmitting} className="flex-1 btn-success h-11 shadow-emerald-500/20">
-              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : (editingTx ? "SAQLASH" : "TASDIQLASH")}
+          <div className="flex gap-2.5 pt-3">
+            <button type="button" onClick={closeKirimModal} className="flex-1 btn-outline">Bekor qilish</button>
+            <button type="submit" disabled={isSubmitting} className="flex-1 btn-primary">
+              {isSubmitting ? <div className="spinner mx-auto"></div> : (editingTx ? "Saqlash" : "Tasdiqlash")}
             </button>
           </div>
         </form>
@@ -1084,15 +1032,15 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         type="danger"
       >
         <form onSubmit={handleAddChiqim} className="space-y-4">
-          <div className="flex bg-slate-100 p-1 rounded-2xl mb-2">
-            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: false, isVendorExpense: false}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense ? 'bg-white shadow text-slate-800' : 'text-slate-400'}`}>UMUMIY</button>
-            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true, isVendorExpense: false}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow text-orange-600' : 'text-slate-400'}`}>HODIM</button>
-            {vendors.length > 0 && <button type="button" onClick={() => setChiqimForm(f => ({...f, isVendorExpense: true, isEmployeeExpense: false}))} className={`flex-1 py-2 text-xs font-bold uppercase rounded-xl transition-colors ${chiqimForm.isVendorExpense ? 'bg-white shadow text-slate-600' : 'text-slate-400'}`}>HAMKOR</button>}
+          <div className="flex bg-slate-100 p-1 rounded-card mb-2">
+            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: false, isVendorExpense: false}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense ? 'bg-white shadow-sm font-semibold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Umumiy</button>
+            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true, isVendorExpense: false}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow-sm font-semibold text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}>Xodim</button>
+            {vendors.length > 0 && <button type="button" onClick={() => setChiqimForm(f => ({...f, isVendorExpense: true, isEmployeeExpense: false}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${chiqimForm.isVendorExpense ? 'bg-white shadow-sm font-semibold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Hamkor</button>}
           </div>
 
           {!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense && (
             <div className="animate-fade-in">
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Xarajat Turi</label>
+              <label className="form-label">Xarajat turi</label>
               <select required value={chiqimForm.expenseTypeId} onChange={(e) => setChiqimForm({...chiqimForm, expenseTypeId: e.target.value})} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {expenseTypes.map(et => <option key={et.id} value={et.id}>{et.name}</option>)}
@@ -1102,31 +1050,31 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           {chiqimForm.isEmployeeExpense && (
             <div className="animate-fade-in space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Hodimni tanlang</label>
+                <label className="form-label">Xodimni tanlang</label>
                 <SearchableSelect
                   options={employees.map(e => ({ id: e.id, label: e.fullName, subLabel: e.role?.name || 'Xodim', value: e }))}
                   value={chiqimForm.employeeId}
                   onChange={(id) => setChiqimForm(f => ({ ...f, employeeId: id }))}
-                  placeholder="Hodim qidirish..."
+                  placeholder="Xodim qidirish..."
                 />
               </div>
-              <label className="flex items-start gap-3 cursor-pointer bg-orange-50 border border-orange-200 rounded-2xl p-3">
+              <label className="flex items-start gap-2.5 cursor-pointer bg-orange-50 border border-orange-200 rounded-card p-3">
                 <input
                   type="checkbox"
                   checked={chiqimForm.isSalaryAdvance}
                   onChange={(e) => setChiqimForm(f => ({ ...f, isSalaryAdvance: e.target.checked }))}
-                  className="w-5 h-5 rounded-lg border-2 border-orange-300 text-orange-500 focus:ring-orange-200 mt-0.5 cursor-pointer"
+                  className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 mt-0.5 cursor-pointer"
                 />
-                <span className="text-xs font-bold text-orange-800">
+                <span className="text-xs font-medium text-orange-900">
                   Bu avans (oylikdan ushlanadi)
-                  <span className="block text-xs font-medium text-orange-500 mt-0.5">Belgilansa — oy oxirida maoshdan avtomatik ayiriladi. Belgilanmasa — oddiy xarajat qoplash (maoshga tegmaydi).</span>
+                  <span className="block text-xs font-normal text-orange-700 mt-0.5">Belgilansa — oy oxirida maoshdan avtomatik ayiriladi. Belgilanmasa — oddiy xarajat qoplash (maoshga tegmaydi).</span>
                 </span>
               </label>
             </div>
           )}
           {chiqimForm.isVendorExpense && (
             <div className="animate-fade-in">
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Hamkorni tanlang</label>
+              <label className="form-label">Hamkorni tanlang</label>
               <select required value={chiqimForm.vendorId} onChange={e => setChiqimForm(f => ({...f, vendorId: e.target.value}))} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.name}{Array.isArray(v.roles) && v.roles.length ? ` — ${v.roles.join(', ')}` : ''}</option>)}
@@ -1135,34 +1083,30 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           )}
 
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Xarajat Sababi (Ixtiyoriy)</label>
+            <label className="form-label">Xarajat sababi (ixtiyoriy)</label>
             <input type="text" value={chiqimForm.expenseReason} onChange={(e) => setChiqimForm({...chiqimForm, expenseReason: e.target.value})} className="input-minimal" placeholder="Masalan: Kommunal to'lov, Material..." />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <label className="form-label">Summa</label>
             <CurrencyInput
               value={chiqimForm.amount}
               onChange={(uzs) => setChiqimForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
-              colorClass="text-rose-600 focus:border-rose-500"
+              colorClass="text-rose-700"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov Turi</label>
+            <label className="form-label">To'lov turi</label>
             <select required value={chiqimForm.paymentTypeId} onChange={(e) => setChiqimForm({...chiqimForm, paymentTypeId: e.target.value})} className="select-minimal">
               <option value="">Tanlang...</option>
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
             </select>
           </div>
 
-          {/* BO'LIM — chiqimlarda bu ayniqsa muhim edi: birorta chiqim
-              buyurtmaga bog'lanmagani uchun bo'lim tanlanganda hisobot
-              CHIQIMNI DOIM 0 ko'rsatardi. */}
-          {/* KASSA — pul aynan qaysi kassadan chiqishi. */}
           {cashBoxes.length > 1 && (
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassadan</label>
+              <label className="form-label">Qaysi kassadan</label>
               <select required value={chiqimForm.cashBoxId} onChange={(e) => setChiqimForm({ ...chiqimForm, cashBoxId: e.target.value })} className="select-minimal">
                 <option value="">Tanlang...</option>
                 {cashBoxes.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1172,7 +1116,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {departments.length > 0 && (
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Bo'lim</label>
+              <label className="form-label">Bo'lim</label>
               <select value={chiqimForm.departmentId} onChange={(e) => setChiqimForm({ ...chiqimForm, departmentId: e.target.value })} className="select-minimal">
                 <option value="">Bo'limsiz</option>
                 {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -1182,16 +1126,15 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {canSetDate && (
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Sana (qaysi kunga)</label>
+              <label className="form-label">Sana (qaysi kunga)</label>
               <input type="date" value={chiqimForm.date} onChange={(e) => setChiqimForm(f => ({ ...f, date: e.target.value }))} className="input-minimal" />
             </div>
           )}
 
-
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={closeChiqimModal} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
-            <button type="submit" disabled={isSubmitting} className="flex-1 btn-danger h-11 shadow-rose-500/20">
-              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : (editingTx ? "SAQLASH" : "TASDIQLASH")}
+          <div className="flex gap-2.5 pt-3">
+            <button type="button" onClick={closeChiqimModal} className="flex-1 btn-outline">Bekor qilish</button>
+            <button type="submit" disabled={isSubmitting} className="flex-1 btn-danger-solid">
+              {isSubmitting ? <div className="spinner mx-auto"></div> : (editingTx ? "Saqlash" : "Tasdiqlash")}
             </button>
           </div>
         </form>
@@ -1206,39 +1149,39 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         {deleteTarget && (
           <div className="space-y-4">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 leading-relaxed">
               Quyidagi {deleteTarget.type === 'kirim' ? 'kirim' : 'chiqim'} tranzaksiyasi o'chiriladi va u qilgan barcha o'zgarishlar (mijoz to'lovi, xodimga berilgan summa, buyurtma qoldig'i) qaytariladi. Bu amalni qaytarib bo'lmaydi.
             </p>
-            <div className={`p-4 rounded-2xl border ${deleteTarget.type === 'kirim' ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+            <div className={`p-4 rounded-card border ${deleteTarget.type === 'kirim' ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
               <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Summa</span>
-                <span className={`font-bold text-lg ${deleteTarget.type === 'kirim' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                <span className="text-xs font-medium text-slate-500">Summa</span>
+                <span className={`font-semibold text-lg tabular-nums ${deleteTarget.type === 'kirim' ? 'text-emerald-700' : 'text-rose-700'}`}>
                   {(deleteTarget.type === 'kirim' ? '+' : '-') + formatCurrency(deleteTarget.amount)}
                 </span>
               </div>
-              <p className="text-xs font-medium text-slate-700 truncate">
+              <p className="text-sm font-semibold text-slate-800 truncate">
                 {deleteTarget.vendor?.name
                   ? `Hamkor: ${deleteTarget.vendor.name}`
                   : (deleteTarget.customer?.name || deleteTarget.customerName || deleteTarget.serviceType || deleteTarget.expenseReason || deleteTarget.expenseType?.name || '—')}
               </p>
-              <p className="text-xs font-medium text-slate-400 mt-1">{new Date(deleteTarget.date).toLocaleString('uz-UZ')}</p>
+              <p className="text-xs text-slate-500 mt-1">{new Date(deleteTarget.date).toLocaleString('uz-UZ')}</p>
             </div>
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
                 disabled={isDeleting}
-                className="flex-1 btn-outline h-11"
+                className="flex-1 btn-outline"
               >
-                BEKOR QILISH
+                Bekor qilish
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 btn-danger h-11 shadow-rose-500/20"
+                className="flex-1 btn-danger-solid"
               >
-                {isDeleting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : "O'CHIRISH"}
+                {isDeleting ? <div className="spinner mx-auto"></div> : "O'chirish"}
               </button>
             </div>
           </div>
@@ -1254,14 +1197,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         <form onSubmit={handleTransfer} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassadan</label>
+            <label className="form-label">Qaysi kassadan</label>
             <select required value={transferForm.fromCashBoxId} onChange={e => setTransferForm(f => ({ ...f, fromCashBoxId: e.target.value }))} className="select-minimal">
               <option value="">Tanlang...</option>
               {cashBoxes.map((b: any) => <option key={b.id} value={b.id}>{b.name} — {formatCurrency(b.balance || 0)}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Qaysi kassaga</label>
+            <label className="form-label">Qaysi kassaga</label>
             <select required value={transferForm.toCashBoxId} onChange={e => setTransferForm(f => ({ ...f, toCashBoxId: e.target.value }))} className="select-minimal">
               <option value="">Tanlang...</option>
               {cashBoxes.filter((b: any) => b.id !== transferForm.fromCashBoxId).map((b: any) => (
@@ -1270,32 +1213,32 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Summa</label>
+            <label className="form-label">Summa</label>
             <CurrencyInput
               value={transferForm.amount}
               onChange={(uzs) => setTransferForm(f => ({ ...f, amount: uzs ? String(uzs) : '' }))}
-              colorClass="text-slate-800 focus:border-[color:var(--primary)]"
+              colorClass="text-slate-800"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">To'lov turi (ixtiyoriy)</label>
+            <label className="form-label">To'lov turi (ixtiyoriy)</label>
             <select value={transferForm.paymentTypeId} onChange={e => setTransferForm(f => ({ ...f, paymentTypeId: e.target.value }))} className="select-minimal">
               <option value="">Tanlang...</option>
               {paymentTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Izoh (ixtiyoriy)</label>
+            <label className="form-label">Izoh (ixtiyoriy)</label>
             <input type="text" value={transferForm.note} onChange={e => setTransferForm(f => ({ ...f, note: e.target.value }))} className="input-minimal" placeholder="Masalan: Kunlik tushum" />
           </div>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 flex items-start gap-2">
+          <div className="bg-slate-50 border border-slate-200 rounded-card p-3 text-xs text-slate-500 flex items-start gap-2">
             <AlertCircle size={14} className="text-slate-400 mt-0.5 shrink-0" />
             <span>Topshirilgach pul sizning kassangizdan chiqim bo'ladi. Qabul qiluvchi tasdiqlaganda uning kassasiga kirim bo'ladi.</span>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setIsTransferModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
-            <button type="submit" disabled={isSubmitting} className="flex-1 btn-primary h-11">
-              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : 'TOPSHIRISH'}
+          <div className="flex gap-2.5 pt-2">
+            <button type="button" onClick={() => setIsTransferModalOpen(false)} className="flex-1 btn-outline">Bekor qilish</button>
+            <button type="submit" disabled={isSubmitting} className="flex-1 btn-primary">
+              {isSubmitting ? <div className="spinner mx-auto"></div> : 'Topshirish'}
             </button>
           </div>
         </form>
@@ -1310,11 +1253,11 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         <form onSubmit={handleCreateBox} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Kassa nomi</label>
+            <label className="form-label">Kassa nomi</label>
             <input type="text" required value={newBoxForm.name} onChange={e => setNewBoxForm(f => ({ ...f, name: e.target.value }))} className="input-minimal" placeholder="Masalan: Kassir kassasi, Moliyachi kassasi..." />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5 px-1">Mas'ul xodim (ixtiyoriy)</label>
+            <label className="form-label">Mas'ul xodim (ixtiyoriy)</label>
             <SearchableSelect
               options={employees.map(e => ({ id: e.id, label: e.fullName, subLabel: e.role?.name || 'Xodim', value: e }))}
               value={newBoxForm.assignedUserId}
@@ -1323,10 +1266,10 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             />
             <p className="text-xs text-slate-400 mt-1.5 px-1">Biriktirilgan xodim (agar "Boshqa kassalarni ko'rish" ruxsati bo'lmasa) faqat shu kassani ko'radi.</p>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setIsNewBoxModalOpen(false)} className="flex-1 btn-outline h-11">BEKOR QILISH</button>
-            <button type="submit" disabled={isSubmitting} className="flex-1 btn-primary h-11">
-              {isSubmitting ? <div className="spinner mx-auto" style={{ width: 16, height: 16, borderWidth: 2 }}></div> : 'YARATISH'}
+          <div className="flex gap-2.5 pt-2">
+            <button type="button" onClick={() => setIsNewBoxModalOpen(false)} className="flex-1 btn-outline">Bekor qilish</button>
+            <button type="submit" disabled={isSubmitting} className="flex-1 btn-primary">
+              {isSubmitting ? <div className="spinner mx-auto"></div> : 'Yaratish'}
             </button>
           </div>
         </form>

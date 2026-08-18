@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  X, Send, Sparkles, Bot, User, CheckCircle2,
+  X, Send, Sparkles, Bot, CheckCircle2,
   Loader2, Package, Zap, ShieldCheck,
   Plus, Settings, Mic, MicOff, AlertTriangle,
-  ArrowUpRight, Wallet, UserSquare2, ClipboardList, PackageOpen, ShieldAlert
+  ArrowUpRight, Wallet, UserSquare2, ClipboardList, PackageOpen, ShieldAlert,
+  Brain, ChevronRight, Maximize2, Minimize2
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -58,6 +59,55 @@ const CYR_TO_LAT_MAP: Record<string, string> = {
 const cyrToLat = (text: string): string =>
   text.replace(/[Ѐ-ӿ]/g, (ch) => CYR_TO_LAT_MAP[ch] ?? ch);
 
+// =============================================
+// FIKRLASH BLOKI — model javob berishdan oldin nima o'ylaganini ko'rsatadi.
+//
+// Nega ko'rsatamiz: fikrlashni yashirish PULNI TEJAMAYDI — model baribir
+// o'ylaydi va o'sha tokenlar baribir hisoblanadi. Ya'ni ko'rsatish tekin.
+// Yashirilganda esa foydalanuvchi uzoq jimlikni ko'radi va tizim qotib
+// qolgandek tuyuladi; ochiq bo'lsa agent qanday xulosa chiqarayotgani
+// ko'rinib turadi.
+//
+// Oqim davomida o'zi ochiladi, tugagach yopiladi — asosiysi javob, fikrlash
+// esa ixtiyoriy tafsilot. Foydalanuvchi bir marta bossa, uning tanlovi
+// ustun turadi (`qolda`).
+// =============================================
+const ReasoningBlock: React.FC<{ text: string; streaming: boolean }> = ({ text, streaming }) => {
+  const [qolda, setQolda] = useState<boolean | null>(null);
+  const ochiq = qolda ?? streaming;
+
+  return (
+    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setQolda(!ochiq)}
+        aria-expanded={ochiq}
+        className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left hover:bg-slate-100/70 transition-colors"
+      >
+        <Brain
+          size={13}
+          strokeWidth={2.5}
+          className={`flex-shrink-0 text-slate-400 ${streaming ? 'animate-pulse' : ''}`}
+        />
+        <span className="text-xs font-medium text-slate-500">
+          {streaming ? "O'ylayapti…" : 'Fikrlash'}
+        </span>
+        <ChevronRight
+          size={13}
+          strokeWidth={2.5}
+          className={`ml-auto flex-shrink-0 text-slate-400 transition-transform duration-200 ${ochiq ? 'rotate-90' : ''}`}
+        />
+      </button>
+
+      {ochiq && (
+        <div className="px-3.5 pb-3 text-xs leading-[1.65] font-medium text-slate-600 whitespace-pre-wrap">
+          {text}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Build chat URL the same way as the main axios client (api/index.ts):
 // - dev: '/api/ai/chat' (Vite proxy → localhost:4000)
 // - prod: '<VITE_API_URL>/api/ai/chat' (Railway backend)
@@ -91,8 +141,8 @@ const SuccessBadge: React.FC<{ text: string }> = ({ text }) => (
         <ShieldCheck size={18} strokeWidth={2.5} />
       </div>
       <div>
-         <p className="text-[12px] font-bold uppercase tracking-widest leading-none">Muvaffaqiyatli</p>
-         <p className="text-[11px] font-bold text-emerald-600/80 mt-0.5">{text}</p>
+         <p className="text-xs font-bold uppercase tracking-widest leading-none">Muvaffaqiyatli</p>
+         <p className="text-xs font-bold text-emerald-600/80 mt-0.5">{text}</p>
       </div>
     </div>
   </div>
@@ -106,8 +156,8 @@ const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; childr
           <Icon size={20} strokeWidth={2.5} />
         </div>
         <div>
-          <p className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">{subtitle}</p>
-          <p className="text-[14px] font-bold text-slate-900 tracking-tight">{title}</p>
+          <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">{subtitle}</p>
+          <p className="text-sm font-bold text-slate-900 tracking-tight">{title}</p>
         </div>
       </div>
     </div>
@@ -115,7 +165,7 @@ const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; childr
       {children}
       <button
         onClick={onConfirm}
-        className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[13px] font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
+        className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
       >
         <CheckCircle2 size={16} strokeWidth={2.5} />
         Tasdiqlash
@@ -143,13 +193,13 @@ const DataCard: React.FC<{
       <div className="w-7 h-7 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
         <Icon size={14} strokeWidth={2.5} />
       </div>
-      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</p>
     </div>
     <div className="px-4 py-2">{children}</div>
     {onOpen && (
       <button
         onClick={onOpen}
-        className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-100 text-[11px] font-bold text-orange-600 uppercase tracking-widest hover:bg-orange-50 transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-100 text-xs font-bold text-orange-600 uppercase tracking-widest hover:bg-orange-50 transition-colors"
       >
         {openLabel || "Bo'limni ochish"} <ArrowUpRight size={12} strokeWidth={2.5} />
       </button>
@@ -163,16 +213,16 @@ const DataRow: React.FC<{ primary: string; secondary?: string | null; value: str
 }) => (
   <div className="flex items-center justify-between gap-3 py-2 border-b border-slate-50 last:border-0">
     <div className="min-w-0 flex-1">
-      <p className="text-[13px] font-bold text-slate-800 truncate">{primary}</p>
-      {secondary && <p className="text-[11px] font-semibold text-slate-400 truncate mt-0.5">{secondary}</p>}
+      <p className="text-sm font-bold text-slate-800 truncate">{primary}</p>
+      {secondary && <p className="text-xs font-semibold text-slate-400 truncate mt-0.5">{secondary}</p>}
     </div>
-    <p className={`text-[13px] font-bold whitespace-nowrap ${valueClass || 'text-slate-700'}`}>{value}</p>
+    <p className={`text-sm font-bold whitespace-nowrap ${valueClass || 'text-slate-700'}`}>{value}</p>
   </div>
 );
 
 const MoreRows: React.FC<{ count: number }> = ({ count }) =>
   count > 0 ? (
-    <p className="py-2 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+    <p className="py-2 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
       + yana {count} ta
     </p>
   ) : null;
@@ -182,16 +232,16 @@ const FinanceSummaryCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data
   <DataCard title={`Moliya — oxirgi ${data.davr_kun} kun`} icon={Wallet} onOpen={onOpen} openLabel="Kassani ochish">
     <div className="grid grid-cols-3 gap-2 py-2">
       <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
-        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
-        <p className="text-[13px] font-bold text-slate-900 mt-1">{fm(data.kirim)}</p>
+        <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
+        <p className="text-sm font-bold text-slate-900 mt-1">{fm(data.kirim)}</p>
       </div>
       <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 text-center">
-        <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
-        <p className="text-[13px] font-bold text-slate-900 mt-1">{fm(data.chiqim)}</p>
+        <p className="text-[11px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
+        <p className="text-sm font-bold text-slate-900 mt-1">{fm(data.chiqim)}</p>
       </div>
       <div className="p-3 rounded-2xl bg-slate-900 text-center">
-        <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
-        <p className="text-[13px] font-bold text-white mt-1">{fm(data.balans)}</p>
+        <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
+        <p className="text-sm font-bold text-white mt-1">{fm(data.balans)}</p>
       </div>
     </div>
   </DataCard>
@@ -214,8 +264,8 @@ const CustomersCard: React.FC<{ title: string; items: any[]; total?: number; onO
     <MoreRows count={items.length - 6} />
     {typeof total === 'number' && total > 0 && (
       <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
-        <p className="text-[13px] font-bold text-rose-600">{fm(total)} so'm</p>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
+        <p className="text-sm font-bold text-rose-600">{fm(total)} so'm</p>
       </div>
     )}
   </DataCard>
@@ -260,31 +310,31 @@ const DebtorsReportCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data,
       <div key={d.id} className="py-2 border-b border-slate-50 last:border-0">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[13px] font-bold text-slate-800 truncate">{d.name}</p>
+            <p className="text-sm font-bold text-slate-800 truncate">{d.name}</p>
             {d.eng_eski_qarz_kun !== null && (
-              <p className="text-[11px] font-semibold text-slate-400">{d.eng_eski_qarz_kun} kundan beri</p>
+              <p className="text-xs font-semibold text-slate-400">{d.eng_eski_qarz_kun} kundan beri</p>
             )}
           </div>
-          <p className="text-[13px] font-bold text-rose-600 whitespace-nowrap">{fm(d.totalDebt)} so'm</p>
+          <p className="text-sm font-bold text-rose-600 whitespace-nowrap">{fm(d.totalDebt)} so'm</p>
         </div>
         {(d.buyurtmalar || []).slice(0, 4).map((b: any, idx: number) => (
           <div key={idx} className="flex items-center justify-between gap-2 pl-3 mt-1">
-            <p className="text-[12px] text-slate-500 truncate">
+            <p className="text-xs text-slate-500 truncate">
               {b.displayId ? `${b.displayId} · ` : ''}{b.nom}
               <span className="text-slate-400"> · {b.necha_kun} kun</span>
             </p>
-            <p className="text-[12px] font-semibold text-rose-500 whitespace-nowrap">{fm(b.qoldiq)}</p>
+            <p className="text-xs font-semibold text-rose-500 whitespace-nowrap">{fm(b.qoldiq)}</p>
           </div>
         ))}
         {(d.buyurtmalar || []).length > 4 && (
-          <p className="pl-3 mt-1 text-[11px] font-semibold text-slate-400">+ yana {d.buyurtmalar.length - 4} ta buyurtma</p>
+          <p className="pl-3 mt-1 text-xs font-semibold text-slate-400">+ yana {d.buyurtmalar.length - 4} ta buyurtma</p>
         )}
       </div>
     ))}
     <MoreRows count={(data.qarzdorlar || []).length - 5} />
     <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
-      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
-      <p className="text-[13px] font-bold text-rose-600">{fm(data.jami_qarz)} so'm</p>
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
+      <p className="text-sm font-bold text-rose-600">{fm(data.jami_qarz)} so'm</p>
     </div>
   </DataCard>
 );
@@ -307,7 +357,7 @@ const VendorsReportCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data,
     ))}
     <MoreRows count={(data.hamkorlar || []).length - 6} />
     {(data.biz_qarzmiz_jami > 0 || data.ular_qarz_jami > 0) && (
-      <div className="flex items-center justify-between py-2.5 border-t border-slate-100 text-[12px] font-bold">
+      <div className="flex items-center justify-between py-2.5 border-t border-slate-100 text-xs font-bold">
         <span className="text-rose-600">Biz qarzmiz: {fm(data.biz_qarzmiz_jami)}</span>
         <span className="text-emerald-600">Ular qarz: {fm(data.ular_qarz_jami)}</span>
       </div>
@@ -366,18 +416,18 @@ const RiskInsightsPanel: React.FC<{
               <ShieldAlert size={15} strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`text-[12px] font-bold ${tone.title}`}>{r.title}</p>
-              <p className={`text-[12px] font-semibold ${tone.text} mt-0.5 leading-snug`}>{r.message}</p>
+              <p className={`text-xs font-bold ${tone.title}`}>{r.title}</p>
+              <p className={`text-xs font-semibold ${tone.text} mt-0.5 leading-snug`}>{r.message}</p>
               <div className="flex items-center gap-2 mt-2.5">
                 <button
                   onClick={() => onResolve(`Xavf: ${r.message} Buni qanday hal qilishni maslahat bera olasizmi, kerak bo'lsa o'zing bajar.`)}
-                  className={`h-7 px-3 text-[11px] font-bold uppercase tracking-wider ${tone.btn} ${tone.btnHover} text-white rounded-lg transition-colors`}
+                  className={`h-7 px-3 text-xs font-bold uppercase tracking-wider ${tone.btn} ${tone.btnHover} text-white rounded-lg transition-colors`}
                 >
                   Bartaraf etish
                 </button>
                 <button
                   onClick={() => onDismiss(r.id)}
-                  className={`h-7 px-3 text-[11px] font-bold uppercase tracking-wider ${tone.dismiss} ${tone.dismissHover} rounded-lg transition-colors`}
+                  className={`h-7 px-3 text-xs font-bold uppercase tracking-wider ${tone.dismiss} ${tone.dismissHover} rounded-lg transition-colors`}
                 >
                   E'tiborsiz qoldirish
                 </button>
@@ -386,6 +436,159 @@ const RiskInsightsPanel: React.FC<{
           </div>
         );
       })}
+    </div>
+  );
+};
+
+// =============================================
+// FON TOPSHIRIQLARI PANELI (Faza 3).
+//
+// Topshiriq daqiqalar davom etadi, shuning uchun foydalanuvchiga IKKI narsa
+// kerak: (1) ish qotib qolmaganiga ishonch — jonli progress, (2) tayyor
+// natijani o'qish joyi. Telegram xabari yetarli emas: hamma ham Telegram'ini
+// ulamagan va chat oynasida turgan odam u yerga qarab o'tirmaydi.
+//
+// Faol topshiriq bo'lsa panel o'zi ochiladi va ko'zga tashlanadi; hammasi
+// tugagach kichik yig'ma satrga aylanadi va chatni band qilmaydi.
+// =============================================
+
+const JOB_STATUS: Record<string, { yorliq: string; nuqta: string; matn: string; ramka: string; fon: string }> = {
+  queued:    { yorliq: 'Navbatda',  nuqta: 'bg-slate-400',                matn: 'text-slate-600',   ramka: 'border-slate-200',   fon: 'bg-slate-50' },
+  running:   { yorliq: 'Bajarilyapti', nuqta: 'bg-orange-500 animate-pulse', matn: 'text-orange-700',  ramka: 'border-orange-200',  fon: 'bg-orange-50/70' },
+  done:      { yorliq: 'Tayyor',    nuqta: 'bg-emerald-500',              matn: 'text-emerald-700', ramka: 'border-emerald-200', fon: 'bg-emerald-50/60' },
+  failed:    { yorliq: 'Xatolik',   nuqta: 'bg-rose-500',                 matn: 'text-rose-700',    ramka: 'border-rose-200',    fon: 'bg-rose-50/60' },
+  cancelled: { yorliq: 'Bekor qilindi', nuqta: 'bg-slate-300',            matn: 'text-slate-500',   ramka: 'border-slate-200',   fon: 'bg-slate-50' },
+};
+
+const JobCard: React.FC<{ job: any; onCancel: (id: string) => void }> = ({ job, onCancel }) => {
+  const [ochiq, setOchiq] = useState(false);
+  const st = JOB_STATUS[job.status] || JOB_STATUS.queued;
+  const qadamlar: any[] = Array.isArray(job.progress) ? job.progress : [];
+  const faol = job.status === 'queued' || job.status === 'running';
+
+  // Bajarilayotgan topshiriqda oxirgi qadam sarlavha tagida ko'rinib turadi —
+  // kartani ochmasdan ham "hozir nima bo'lyapti" bilinadi.
+  const oxirgi = qadamlar.length ? qadamlar[qadamlar.length - 1]?.matn : null;
+
+  return (
+    <div className={`rounded-2xl border ${st.ramka} ${st.fon} overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+      <button
+        type="button"
+        onClick={() => setOchiq(o => !o)}
+        aria-expanded={ochiq}
+        className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left hover:bg-black/[0.02] transition-colors"
+      >
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${st.nuqta}`} />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-slate-800 leading-snug">{job.sarlavha}</p>
+          <p className={`text-xs font-medium mt-1 ${st.matn}`}>
+            {st.yorliq}
+            {job.status === 'done' && job.qadamlar > 0 && ` · ${job.qadamlar} qadam`}
+          </p>
+          {faol && oxirgi && (
+            <p className="text-xs font-semibold text-slate-500 mt-1 leading-snug truncate">{oxirgi}</p>
+          )}
+        </div>
+        <ChevronRight
+          size={14}
+          strokeWidth={2.5}
+          className={`flex-shrink-0 mt-1 text-slate-400 transition-transform duration-200 ${ochiq ? 'rotate-90' : ''}`}
+        />
+      </button>
+
+      {ochiq && (
+        <div className="px-3.5 pb-3 space-y-2.5">
+          <div>
+            <p className="text-xs font-medium text-slate-400 mb-1">Topshiriq</p>
+            <p className="text-xs font-semibold text-slate-600 leading-snug whitespace-pre-wrap">
+              {job.topshiriq || job.sarlavha}
+            </p>
+          </div>
+
+          {qadamlar.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-slate-400 mb-1">Bosqichlar</p>
+              <div className="space-y-1">
+                {qadamlar.map((q, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="w-1 h-1 rounded-full bg-slate-300 flex-shrink-0 mt-[7px]" />
+                    <p className="text-xs font-semibold text-slate-600 leading-snug">{q.matn}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {job.natija && (
+            <div>
+              <p className="text-xs font-medium text-slate-400 mb-1">Natija</p>
+              <p className="text-xs font-semibold text-slate-700 leading-[1.6] whitespace-pre-wrap">
+                {cyrToLat(stripMarkdown(job.natija))}
+              </p>
+            </div>
+          )}
+
+          {job.error && (
+            <div>
+              <p className="text-xs font-medium text-rose-400 mb-1">Xatolik</p>
+              <p className="text-xs font-semibold text-rose-600 leading-snug">{job.error}</p>
+            </div>
+          )}
+
+          {/* Bekor qilish faqat navbatdagi topshiriqda: boshlangan ishni yarim
+              yo'lda to'xtatish uni nomuvofiq holatda qoldirardi. */}
+          {job.status === 'queued' && (
+            <button
+              onClick={() => onCancel(job.id)}
+              className="h-7 px-3 text-xs font-bold uppercase tracking-wider bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-colors"
+            >
+              Bekor qilish
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FonTopshiriqlarPanel: React.FC<{
+  jobs: any[];
+  onCancel: (id: string) => void;
+}> = ({ jobs, onCancel }) => {
+  const [tarixOchiq, setTarixOchiq] = useState(false);
+  if (!jobs.length) return null;
+
+  const faol = jobs.filter(j => j.status === 'queued' || j.status === 'running');
+  const tugagan = jobs.filter(j => j.status !== 'queued' && j.status !== 'running');
+
+  return (
+    <div className="px-4 pt-3 flex-shrink-0 space-y-2">
+      {faol.map(j => <JobCard key={j.id} job={j} onCancel={onCancel} />)}
+
+      {tugagan.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setTarixOchiq(o => !o)}
+            className="w-full flex items-center gap-2 px-1 py-1 text-left group"
+          >
+            <ClipboardList size={12} strokeWidth={2.5} className="text-slate-400" />
+            <span className="text-xs font-medium text-slate-400 group-hover:text-slate-600 transition-colors">
+              {tugagan.length} ta yakunlangan topshiriq
+            </span>
+            <ChevronRight
+              size={12}
+              strokeWidth={2.5}
+              className={`ml-auto text-slate-400 transition-transform duration-200 ${tarixOchiq ? 'rotate-90' : ''}`}
+            />
+          </button>
+          {tarixOchiq && (
+            <div className="space-y-2">
+              {tugagan.map(j => <JobCard key={j.id} job={j} onCancel={onCancel} />)}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
@@ -408,8 +611,8 @@ const BriefingPanel: React.FC<{ briefing: any; onAsk: (text: string) => void }> 
       }`}>
         <Icon size={13} strokeWidth={2.5} />
       </div>
-      <p className="flex-1 text-[13px] font-bold text-slate-700 min-w-0 truncate">{text}</p>
-      <p className={`text-[13px] font-bold whitespace-nowrap ${tone === 'rose' ? 'text-rose-600' : 'text-slate-700'}`}>{value}</p>
+      <p className="flex-1 text-sm font-bold text-slate-700 min-w-0 truncate">{text}</p>
+      <p className={`text-sm font-bold whitespace-nowrap ${tone === 'rose' ? 'text-rose-600' : 'text-slate-700'}`}>{value}</p>
     </button>
   );
 
@@ -420,30 +623,30 @@ const BriefingPanel: React.FC<{ briefing: any; onAsk: (text: string) => void }> 
           <Sparkles size={14} strokeWidth={2.5} />
         </div>
         <div>
-          <p className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Bugungi brifing</p>
-          <p className="text-[11px] font-semibold text-slate-400">{new Date(b.sana).toLocaleDateString('uz-UZ')}</p>
+          <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">Bugungi brifing</p>
+          <p className="text-xs font-semibold text-slate-400">{new Date(b.sana).toLocaleDateString('uz-UZ')}</p>
         </div>
       </div>
 
       {/* Bugungi kassa — stat tile qatori */}
       <div className="grid grid-cols-3 gap-2 px-4 pt-3">
         <div className="p-2.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
-          <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
-          <p className="text-[13px] font-bold text-slate-900 mt-0.5">{fm(b.moliya.kirim)}</p>
+          <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
+          <p className="text-sm font-bold text-slate-900 mt-0.5">{fm(b.moliya.kirim)}</p>
         </div>
         <div className="p-2.5 rounded-2xl bg-rose-50 border border-rose-100 text-center">
-          <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
-          <p className="text-[13px] font-bold text-slate-900 mt-0.5">{fm(b.moliya.chiqim)}</p>
+          <p className="text-[11px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
+          <p className="text-sm font-bold text-slate-900 mt-0.5">{fm(b.moliya.chiqim)}</p>
         </div>
         <div className="p-2.5 rounded-2xl bg-slate-900 text-center">
-          <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
-          <p className="text-[13px] font-bold text-white mt-0.5">{fm(b.moliya.balans)}</p>
+          <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
+          <p className="text-sm font-bold text-white mt-0.5">{fm(b.moliya.balans)}</p>
         </div>
       </div>
 
       <div className="px-2 py-2">
         {allClear ? (
-          <p className="py-4 text-center text-[12px] font-bold text-emerald-600 uppercase tracking-widest">
+          <p className="py-4 text-center text-xs font-bold text-emerald-600 uppercase tracking-widest">
             ✅ Hammasi joyida
           </p>
         ) : (
@@ -509,7 +712,7 @@ const PendingActionCard: React.FC<{
 
   if (state === 'rejected') {
     return (
-      <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-500 text-[12px] font-bold uppercase tracking-widest">
+      <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-500 text-xs font-bold uppercase tracking-widest">
         Bekor qilindi — {summary}
       </div>
     );
@@ -522,19 +725,19 @@ const PendingActionCard: React.FC<{
           <ShieldCheck size={18} strokeWidth={2.5} />
         </div>
         <div>
-          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Tasdiqlash kerak</p>
-          <p className="text-[13px] font-bold text-slate-900 tracking-tight">{summary}</p>
+          <p className="text-[11px] font-bold text-amber-600 uppercase tracking-widest">Tasdiqlash kerak</p>
+          <p className="text-sm font-bold text-slate-900 tracking-tight">{summary}</p>
         </div>
       </div>
       <div className="p-4">
         {state === 'failed' && (
-          <p className="mb-3 text-[12px] font-bold text-rose-600">{error}</p>
+          <p className="mb-3 text-xs font-bold text-rose-600">{error}</p>
         )}
         <div className="flex gap-2">
           <button
             onClick={() => run('confirm')}
             disabled={state === 'busy'}
-            className="flex-1 h-11 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-[12px] font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
+            className="flex-1 h-11 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
           >
             {state === 'busy' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} strokeWidth={2.5} />}
             Tasdiqlash
@@ -542,7 +745,7 @@ const PendingActionCard: React.FC<{
           <button
             onClick={() => run('reject')}
             disabled={state === 'busy'}
-            className="h-11 px-4 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 text-[12px] font-bold uppercase tracking-widest rounded-2xl transition-all active:scale-[0.98]"
+            className="h-11 px-4 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 text-xs font-bold uppercase tracking-widest rounded-2xl transition-all active:scale-[0.98]"
           >
             Bekor
           </button>
@@ -579,10 +782,53 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
   }, []);
+
+  // KENGAYTIRILGAN REJIM — panel butun ekranni egallaydi.
+  //
+  // Nega kerak: agent endi ko'p bandli hisobot, fikrlash bloki va fon
+  // topshiriqlari kabi uzun natijalar beradi. 400px ustunda ular siqilib,
+  // har jumla to'rt qatorga bo'linadi. Kengaytirilganda matn o'qish uchun
+  // qulay ustunga (~68ch) yig'iladi — ekran kengaygani bilan satr
+  // cho'zilib ketmaydi.
+  //
+  // Tanlov localStorage'da saqlanadi: kim uzun ish qilsa, har safar qayta
+  // bosmasligi kerak.
+  const [kengaytirilgan, setKengaytirilgan] = useState(() => {
+    try {
+      return localStorage.getItem('pf_ai_kengaytirilgan') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const kengaytirishniAlmashtir = useCallback(() => {
+    setKengaytirilgan((v) => {
+      const yangi = !v;
+      try {
+        localStorage.setItem('pf_ai_kengaytirilgan', yangi ? '1' : '0');
+      } catch { /* private rejimda localStorage yo'q — rejim baribir ishlaydi */ }
+      return yangi;
+    });
+  }, []);
+
+  // Kengaytirilgan rejimda Esc panelni yopmaydi, avval oddiy holatga qaytaradi:
+  // to'liq ekrandan to'g'ridan-to'g'ri yopilish kutilmagan sakrash bo'lardi.
+  useEffect(() => {
+    if (!isOpen) return;
+    const on = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (kengaytirilgan) kengaytirishniAlmashtir();
+      else onClose();
+    };
+    window.addEventListener('keydown', on);
+    return () => window.removeEventListener('keydown', on);
+  }, [isOpen, kengaytirilgan, kengaytirishniAlmashtir, onClose]);
   const [input, setInput] = useState('');
   const [usage, setUsage] = useState<Usage | null>(null);
   const [briefing, setBriefing] = useState<any>(null);
   const [risks, setRisks] = useState<any[]>([]);
+  // Fon topshiriqlari (Faza 3) — odatda ularni chat agenti `startJob` orqali
+  // yaratadi, shuning uchun ro'yxat javob tugagach ham yangilanadi.
+  const [jobs, setJobs] = useState<any[]>([]);
   const [limitError, setLimitError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [micPermissionDenied, setMicPermissionDenied] = useState(false);
@@ -616,6 +862,13 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
     } catch { /* silent */ }
   }, []);
 
+  const fetchJobs = useCallback(async () => {
+    try {
+      const r = await aiApi.listJobs(20);
+      setJobs(r.data || []);
+    } catch { /* silent — topshiriqlar ro'yxati chatni to'sib qo'ymasin */ }
+  }, []);
+
   const { messages, sendMessage, status, addToolResult } = useChat({
     transport: chatTransport,
     onFinish: ({ message }) => {
@@ -643,6 +896,20 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
 
   const isLoading = status === 'submitted' || status === 'streaming';
 
+  // Javob tugagach topshiriqlarni yangilaymiz: agent shu javob ichida
+  // `startJob` chaqirgan bo'lishi mumkin, va yangi topshiriq darhol
+  // ko'rinishi kerak — foydalanuvchi panelni qayta ochib o'tirmasin.
+  //
+  // Ref orqali FAQAT "yuklanayotgan → bo'sh" o'tishida ishlaydi. Shartsiz
+  // qoldirilsa panel ochilishida ham bir marta ortiqcha so'rov ketardi
+  // (ochilish effekti allaqachon fetchJobs chaqiradi).
+  const oldingiLoading = useRef(false);
+  useEffect(() => {
+    const tugadi = oldingiLoading.current && !isLoading;
+    oldingiLoading.current = isLoading;
+    if (isOpen && tugadi) void fetchJobs();
+  }, [isOpen, isLoading, fetchJobs]);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -658,8 +925,29 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
       aiApi.getBriefing().then(r => setBriefing(r.data)).catch(() => setBriefing(null));
       // Xavf kartalari — Buyurtma x Davomat korrelyatsiyasi, LLM'siz
       aiApi.getRisks().then(r => setRisks(r.data || [])).catch(() => setRisks([]));
+      fetchJobs();
     }
-  }, [isOpen, fetchUsage]);
+  }, [isOpen, fetchUsage, fetchJobs]);
+
+  // Faol topshiriq bo'lsa ro'yxatni yangilab turamiz. Poll faqat shu holatda
+  // ishlaydi: hamma topshiriq tugagan bo'lsa yangilanadigan narsa yo'q va
+  // bekorga so'rov yubormaymiz. Panel yopiq bo'lsa ham to'xtaydi.
+  //
+  // Bog'liqlik `jobs` massivi emas, BOOLEAN: har fetch yangi massiv qaytaradi,
+  // shuning uchun massivga bog'lansa effekt har safar qayta ishga tushib
+  // intervalni nolga qaytarardi.
+  const faolTopshiriqBor = jobs.some(j => j.status === 'queued' || j.status === 'running');
+  useEffect(() => {
+    if (!isOpen || !faolTopshiriqBor) return;
+    const t = setInterval(fetchJobs, 5000);
+    return () => clearInterval(t);
+  }, [isOpen, faolTopshiriqBor, fetchJobs]);
+
+  const cancelJob = useCallback((id: string) => {
+    // Optimistik: karta darhol o'zgaradi, so'ng server holati bilan sinxronlanadi.
+    setJobs(prev => prev.map(j => (j.id === id ? { ...j, status: 'cancelled' } : j)));
+    aiApi.cancelJob(id).catch(() => {}).finally(() => { void fetchJobs(); });
+  }, [fetchJobs]);
 
   const dismissRisk = useCallback((id: string) => {
     setRisks(prev => prev.filter(r => r.id !== id));
@@ -832,45 +1120,68 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           olardi: 1366px noutbukda kontentga ~716px qolib, jadvallar ikki
           qatorga tushib ketardi. Yonma-yon turish faqat haqiqatan joy
           bo'lganda (1536px+) mantiqiy. */}
-      {!isDocked && (
+      {!isDocked && !kengaytirilgan && (
         <div
           onClick={onClose}
           className="fixed inset-0 z-[65] bg-slate-900/20 backdrop-blur-[2px] 2xl:hidden"
         />
       )}
-      <aside className="fixed inset-y-0 right-0 z-[70] w-full max-w-[440px] 2xl:static 2xl:z-auto 2xl:max-w-none 2xl:w-[400px] 2xl:shrink-0 2xl:h-screen bg-white border-l border-[color:var(--border)] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] 2xl:shadow-none flex flex-col animate-in slide-in-from-right duration-300 ease-out">
+      <aside
+        className={
+          kengaytirilgan
+            // Kengaytirilgan: butun ekran. Yon chegara ham, soya ham keraksiz —
+            // panel ostida ko'rinadigan narsa qolmaydi.
+            ? 'fixed inset-0 z-[70] bg-white flex flex-col animate-in fade-in duration-200'
+            : 'fixed inset-y-0 right-0 z-[70] w-full max-w-[440px] 2xl:static 2xl:z-auto 2xl:max-w-none 2xl:w-[400px] 2xl:shrink-0 2xl:h-screen bg-white border-l border-[color:var(--border)] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] 2xl:shadow-none flex flex-col animate-in slide-in-from-right duration-300 ease-out'
+        }
+      >
 
-        {/* Header */}
-        <div className="relative flex items-center gap-3 px-4 py-4 border-b border-slate-100 bg-white/80 backdrop-blur-md flex-shrink-0">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-xl shadow-orange-500/30">
-              <Sparkles size={22} className="text-white" strokeWidth={2.5} />
-            </div>
+        {/* Header — gradient/soya bezagi olib tashlandi (DESIGN.md: rang holat
+            uchun, bezak uchun emas). Belgi bitta to'q sariq kvadrat: brend bor,
+            ko'z-ko'z qilish yo'q. */}
+        <div className={`flex items-center gap-3 border-b border-[color:var(--border)] bg-white flex-shrink-0 px-4 py-3 ${kengaytirilgan ? 'md:px-8' : ''}`}>
+          <div className="w-9 h-9 rounded-xl bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
+            <Sparkles size={17} className="text-white" strokeWidth={2.5} />
           </div>
+
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2 uppercase">
+            <h2 className="card-title flex items-center gap-2">
               Girgitton
               {isListening && (
-                <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[10px] rounded-md shadow-sm animate-pulse">Eshityapman</span>
+                <span className="badge-danger animate-pulse">Eshityapman</span>
               )}
             </h2>
             {usage && (
-              <p className={`text-[11px] font-bold uppercase tracking-widest mt-1 ${
-                quotaExhausted ? 'text-rose-500' : quotaLow ? 'text-amber-500' : 'text-emerald-500'
+              <p className={`text-xs font-medium mt-0.5 ${
+                quotaExhausted ? 'text-rose-600' : quotaLow ? 'text-amber-600' : 'text-slate-500'
               }`}>
                 {daily && !daily.unlimited && daily.limit > 0
-                  ? `${daily.used} / ${daily.limit} xabar — bugun`
+                  ? `${daily.used} / ${daily.limit} xabar, bugun`
                   : usage.unlimited
                   ? 'Cheksiz xabarlar'
-                  : `${usage.used} / ${usage.limit} xabar — 30 kun davri`}
+                  : `${usage.used} / ${usage.limit} xabar, 30 kun davri`}
                 {!!usage.extraCredits && usage.extraCredits > 0 && (
-                  <span className="text-orange-500"> · +{usage.extraCredits} qo'shimcha</span>
+                  <span className="text-[color:var(--primary)]"> · +{usage.extraCredits} qo'shimcha</span>
                 )}
               </p>
             )}
           </div>
-          <button onClick={onClose} className="ml-auto w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition-all">
-            <X size={20} />
+
+          <button
+            onClick={kengaytirishniAlmashtir}
+            title={kengaytirilgan ? 'Kichraytirish' : "To'liq ekran"}
+            aria-label={kengaytirilgan ? 'Kichraytirish' : "To'liq ekran"}
+            className="icon-btn text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+          >
+            {kengaytirilgan ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+          </button>
+          <button
+            onClick={onClose}
+            title="Yopish"
+            aria-label="Yopish"
+            className="icon-btn text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+          >
+            <X size={18} />
           </button>
         </div>
 
@@ -904,9 +1215,9 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           <div className="mx-4 mt-3 p-3 rounded-2xl border border-rose-200 bg-rose-50 flex items-start gap-2 flex-shrink-0">
             <AlertTriangle size={16} className="text-rose-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-bold text-rose-700">AI limit tugadi</p>
-              <p className="text-[11px] font-bold text-rose-600 mt-0.5 leading-snug">{limitError}</p>
-              <a href="/dashboard/billing" className="text-[11px] font-bold text-orange-600 underline mt-1 inline-block">Qo'shimcha so'rov paketi sotib olish →</a>
+              <p className="text-xs font-bold text-rose-700">AI limit tugadi</p>
+              <p className="text-xs font-bold text-rose-600 mt-0.5 leading-snug">{limitError}</p>
+              <a href="/dashboard/billing" className="text-xs font-bold text-orange-600 underline mt-1 inline-block">Qo'shimcha so'rov paketi sotib olish →</a>
             </div>
             <button onClick={() => setLimitError(null)} className="text-rose-400 hover:text-rose-600">
               <X size={14} />
@@ -914,8 +1225,16 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           </div>
         )}
 
-        {/* Chat window */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 scroll-smooth custom-scroll bg-slate-50/30">
+        {/* Fon topshiriqlari — chat oqimidan tashqarida turadi, chunki ular
+            suhbat xabari emas: topshiriq javob berilgandan keyin ham davom
+            etadi va lentaning tepasiga surilib ketmasligi kerak. */}
+        <FonTopshiriqlarPanel jobs={jobs} onCancel={cancelJob} />
+
+        {/* Chat window. Kengaytirilgan rejimda matn butun ekran bo'ylab
+            cho'zilmaydi: uzun satr o'qishni qiyinlashtiradi, shuning uchun
+            kontent ~72ch ustunga yig'iladi va markazda turadi. */}
+        <div className="flex-1 overflow-y-auto scroll-smooth custom-scroll bg-[color:var(--background)]">
+          <div className={`px-4 py-4 space-y-5 ${kengaytirilgan ? 'mx-auto w-full max-w-[72ch] md:px-8 md:py-8' : ''}`}>
           {messages.length === 0 && (
             briefing ? (
               <>
@@ -923,9 +1242,11 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                 <BriefingPanel briefing={briefing} onAsk={submitText} />
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-40">
-                <Bot size={48} className="text-slate-300" />
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Qanday yordam bera olaman?</p>
+              <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <Bot size={20} className="text-slate-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-500">Qanday yordam bera olaman?</p>
               </div>
             )
           )}
@@ -946,6 +1267,15 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
               p.type === 'dynamic-tool' || p.type.startsWith('tool-')
             ) as any[];
 
+            // Adaptiv fikrlash xulosasi (backend `sendReasoning` ni default
+            // yoqiq holda yuboradi). Bir necha bo'lakka bo'linib kelishi
+            // mumkin — qadamlar orasida ham o'ylaydi, shuning uchun birlashtiramiz.
+            const reasoningParts = msg.parts.filter(p => p.type === 'reasoning') as any[];
+            const reasoningText = cyrToLat(stripMarkdown(
+              reasoningParts.map(p => p.text || '').join('\n\n')
+            )).trim();
+            const reasoningStreaming = reasoningParts.some(p => p.state === 'streaming');
+
             // Dashboard'dagi xavf kartasidan kelgan xabar — foydalanuvchi uni
             // yozmagan, shuning uchun "Siz" pufagi sifatida emas, neytral
             // kontekst kartasi ko'rinishida chiziladi.
@@ -957,10 +1287,10 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       <ShieldAlert size={14} strokeWidth={2.5} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700/70 mb-0.5">
+                      <p className="text-xs font-medium text-amber-700 mb-0.5">
                         Dashboard'dan xavf
                       </p>
-                      <p className="text-[13px] font-semibold text-amber-900 leading-snug">
+                      <p className="text-sm font-medium text-amber-900 leading-snug">
                         {stripRiskPrefix(rawText)}
                       </p>
                     </div>
@@ -969,23 +1299,48 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
               );
             }
 
-            return (
-              <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
-                <div className={`w-9 h-9 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-md ${
-                  msg.role === 'user' ? 'bg-slate-900 text-white' : 'bg-gradient-to-br from-orange-500 to-orange-600 text-white'
-                }`}>
-                  {msg.role === 'user' ? <User size={16} strokeWidth={2.5} /> : <Bot size={16} strokeWidth={2.5} />}
-                </div>
+            // FOYDALANUVCHI xabari — o'ngda, yopiq pufak. Qisqa va u kim
+            // yozganini bildiradi.
+            //
+            // AGENT javobi — PUFAK EMAS, hujjat. Ilgari u to'yingan to'q sariq
+            // gradient ustida oq yarim qalin matn edi: bir jumlaga chidasa
+            // bo'lardi, lekin agent endi ko'p bandli hisobot yozadi va bunday
+            // blokni o'qib bo'lmasdi. Bu DESIGN.md ning 4-tamoyilini ham
+            // buzardi: to'q sariq = amal va holat rangi, bezak emas.
+            //
+            // Endi javob oddiy matn: neytral fon, normal og'irlik, keng
+            // qatorlar orasi. To'q sariq faqat belgida qoldi.
+            const foydalanuvchi = msg.role === 'user';
 
-                <div className={`max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
-                  {textContent && (
-                    <div className={`px-5 py-4 rounded-[26px] text-[13px] leading-[1.6] font-semibold shadow-sm whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'bg-white border border-slate-200 text-slate-800 rounded-tr-sm'
-                        : 'bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-tl-sm'
-                    }`}>
-                      {textContent}
+            return (
+              <div
+                key={msg.id}
+                className={`flex flex-col gap-2 ${foydalanuvchi ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+              >
+                {!foydalanuvchi && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
+                      <Bot size={13} className="text-white" strokeWidth={2.5} />
                     </div>
+                    <span className="text-xs font-medium text-slate-500">Girgitton</span>
+                  </div>
+                )}
+
+                <div className={`flex flex-col gap-2 ${foydalanuvchi ? 'items-end max-w-[85%]' : 'items-start w-full'}`}>
+                  {!foydalanuvchi && reasoningText && (
+                    <ReasoningBlock text={reasoningText} streaming={reasoningStreaming} />
+                  )}
+
+                  {textContent && (
+                    foydalanuvchi ? (
+                      <div className="px-4 py-2.5 rounded-xl rounded-tr-sm bg-white border border-[color:var(--border)] text-sm leading-[1.6] font-medium text-slate-800 whitespace-pre-wrap">
+                        {textContent}
+                      </div>
+                    ) : (
+                      <div className="text-sm leading-[1.75] font-normal text-slate-800 whitespace-pre-wrap">
+                        {textContent}
+                      </div>
+                    )
                   )}
 
                   {toolParts.map((part: any) => {
@@ -1009,7 +1364,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       }
                       if (out?.success === false) {
                         return (
-                          <div key={toolCallId} className="mt-3 rounded-2xl border border-rose-100 bg-rose-50/60 p-3.5 text-[12px] font-bold text-rose-600">
+                          <div key={toolCallId} className="mt-3 rounded-2xl border border-rose-100 bg-rose-50/60 p-3.5 text-xs font-bold text-rose-600">
                             {out.error || 'Amal bajarilmadi'}
                           </div>
                         );
@@ -1064,17 +1419,17 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Buyurtmani Tasdiqlash" subtitle="Yangi Buyurtma" icon={Package} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nomi</p>
-                                 <p className="text-[13px] font-bold text-slate-800">{args?.orderName}</p>
+                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Nomi</p>
+                                 <p className="text-sm font-bold text-slate-800">{args?.orderName}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Miqdor</p>
-                                    <p className="text-[13px] font-bold text-slate-800">{args?.quantity}</p>
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Miqdor</p>
+                                    <p className="text-sm font-bold text-slate-800">{args?.quantity}</p>
                                  </div>
                                  <div className="p-3 rounded-2xl bg-slate-900 text-white text-center">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Jami</p>
-                                    <p className="text-[13px] font-bold">{args?.totalAmount?.toLocaleString()} UZS</p>
+                                    <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Jami</p>
+                                    <p className="text-sm font-bold">{args?.totalAmount?.toLocaleString()} UZS</p>
                                  </div>
                               </div>
                            </div>
@@ -1087,12 +1442,12 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Xizmatni Tasdiqlash" subtitle="Yangi Xizmat" icon={Plus} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Xizmat nomi</p>
-                                 <p className="text-[13px] font-bold text-slate-800">{args?.name}</p>
+                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Xizmat nomi</p>
+                                 <p className="text-sm font-bold text-slate-800">{args?.name}</p>
                               </div>
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Narxi / Birlik</p>
-                                 <p className="text-[13px] font-bold text-slate-800">{args?.basePrice?.toLocaleString()} UZS / {args?.unit}</p>
+                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Narxi / Birlik</p>
+                                 <p className="text-sm font-bold text-slate-800">{args?.basePrice?.toLocaleString()} UZS / {args?.unit}</p>
                               </div>
                            </div>
                         </CardWrapper>
@@ -1104,17 +1459,17 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                         <CardWrapper key={toolCallId} title="Optsiya Tasdiqlash" subtitle="Yangi Optsiya" icon={Settings} onConfirm={onConfirm}>
                            <div className="space-y-3">
                               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Xizmat va Optsiya</p>
-                                 <p className="text-[13px] font-bold text-slate-800">{args?.targetServiceName} - {args?.optionName}</p>
+                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Xizmat va Optsiya</p>
+                                 <p className="text-sm font-bold text-slate-800">{args?.targetServiceName} - {args?.optionName}</p>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Eski narx</p>
-                                    <p className="text-[13px] font-bold text-slate-400 line-through">{args?.oldPrice?.toLocaleString()}</p>
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Eski narx</p>
+                                    <p className="text-sm font-bold text-slate-400 line-through">{args?.oldPrice?.toLocaleString()}</p>
                                  </div>
                                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
-                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Yangi narx</p>
-                                    <p className="text-[13px] font-bold text-emerald-700">{args?.newPrice?.toLocaleString()}</p>
+                                    <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">Yangi narx</p>
+                                    <p className="text-sm font-bold text-emerald-700">{args?.newPrice?.toLocaleString()}</p>
                                   </div>
                               </div>
                            </div>
@@ -1124,47 +1479,57 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
 
                     return null;
                   })}
-
-                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-2">{msg.role === 'user' ? 'Siz' : 'Assistant'}</span>
                 </div>
               </div>
             );
           })}
 
+          {/* "Siz" / "Assistant" yorliqlari olib tashlandi: agent javobi
+              yuqorida nomlangan, foydalanuvchi xabari esa o'ngda va pufakda —
+              kim yozgani allaqachon ko'rinib turibdi. */}
+
           {isLoading && messages[messages.length - 1]?.role === 'user' && (
-            <div className="flex gap-4">
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg"><Bot size={16} className="text-white" strokeWidth={2.5} /></div>
-              <div className="px-6 py-4 rounded-3xl rounded-tl-sm bg-orange-400 text-white flex items-center gap-2">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-[12px] font-bold uppercase tracking-widest">O'ylayapman...</span>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
+                <Loader2 size={13} className="text-white animate-spin" />
               </div>
+              <span className="text-xs font-medium text-slate-500">O'ylayapti…</span>
             </div>
           )}
           <div ref={chatEndRef} />
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex-shrink-0 p-4 bg-white border-t border-slate-100">
+        {/* Footer. Kengaytirilgan rejimda yozish maydoni ham xabarlar bilan
+            bir ustunda turadi — aks holda u ekran bo'ylab cho'zilib, matn
+            ustunidan ajralib qolardi. */}
+        <div className="flex-shrink-0 bg-white border-t border-[color:var(--border)]">
+          <div className={`p-4 ${kengaytirilgan ? 'mx-auto w-full max-w-[72ch] md:px-8' : ''}`}>
           {messages.length === 0 && (
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-4">
               {STARTER_SUGGESTIONS.map((suggestion, i) => (
-                <button key={i} onClick={() => setInput(suggestion)} className="flex items-center gap-2 px-4 py-2 text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl hover:border-orange-500 hover:text-orange-600 transition-all uppercase tracking-tight group">
-                  <Zap size={10} className="text-orange-400" /> {suggestion}
+                <button
+                  key={i}
+                  onClick={() => setInput(suggestion)}
+                  className="flex items-center gap-1.5 px-3 h-8 text-xs font-medium bg-white text-slate-600 border border-[color:var(--border)] rounded-lg hover:border-[color:var(--primary)] hover:text-[color:var(--primary)] active:scale-[0.98] transition-all duration-150"
+                >
+                  <Zap size={12} className="text-slate-400" /> {suggestion}
                 </button>
               ))}
             </div>
           )}
 
-          <form onSubmit={handleFormSubmit} className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-orange-600 rounded-[32px] blur opacity-0 group-focus-within:opacity-10 transition duration-500" />
-            <div className="relative flex items-end gap-3 bg-slate-50 border border-slate-200 rounded-[28px] p-2 pl-6 focus-within:bg-white focus-within:border-orange-500 transition-all duration-300">
+          {/* Dekorativ gradient blur olib tashlandi: fokus holati chegara va
+              ring bilan ko'rsatiladi, xuddi tizimdagi boshqa inputlar kabi. */}
+          <form onSubmit={handleFormSubmit}>
+            <div className="flex items-end gap-2 bg-white border border-[color:var(--border)] rounded-xl p-1.5 pl-4 focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-orange-500/15 transition-all duration-150">
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={isListening ? 'Eshityapman...' : 'Xabar yozing...'}
                 rows={1}
-                className="flex-1 bg-transparent resize-none text-[14px] text-slate-800 placeholder:text-slate-400 font-semibold focus:outline-none py-3 min-h-[44px] max-h-[150px]"
+                className="flex-1 bg-transparent resize-none text-sm leading-[1.6] text-slate-800 placeholder:text-slate-400 font-normal focus:outline-none py-2.5 min-h-[40px] max-h-[150px]"
                 onInput={(e) => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 150) + 'px'; }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFormSubmit(e as any); } }}
                 disabled={isLoading || quotaExhausted}
@@ -1175,27 +1540,31 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                   onClick={toggleListening}
                   disabled={isLoading || quotaExhausted || micPermissionDenied}
                   title={isListening ? "Yozishni to'xtatish" : "Ovozli yozishni boshlash"}
-                  className={`w-11 h-11 flex-shrink-0 rounded-2xl flex items-center justify-center transition-all active:scale-90 mb-0.5 ${
+                  className={`w-9 h-9 flex-shrink-0 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-[0.96] ${
                     isListening
-                      ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-xl shadow-rose-500/25 animate-pulse'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-40'
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40'
                   }`}
                 >
-                  {isListening ? <Mic size={18} strokeWidth={2.5} /> : <MicOff size={18} strokeWidth={2.5} />}
+                  {isListening ? <Mic size={17} strokeWidth={2.5} /> : <MicOff size={17} strokeWidth={2.5} />}
                 </button>
               )}
-              <button type="submit" disabled={!input.trim() || isLoading || quotaExhausted} className="w-11 h-11 flex-shrink-0 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:bg-slate-200 text-white flex items-center justify-center transition-all shadow-xl shadow-orange-500/25 active:scale-90 mb-0.5">
+              <button type="submit" disabled={!input.trim() || isLoading || quotaExhausted} className="w-9 h-9 flex-shrink-0 rounded-lg bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] disabled:bg-slate-200 text-white flex items-center justify-center transition-all duration-150 active:scale-[0.96]">
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} strokeWidth={2.5} />}
               </button>
             </div>
           </form>
 
-          <div className="flex items-center justify-between mt-4 px-2">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${isListening ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
+          {/* Holat satri. "Girgitton AI" imzosi olib tashlandi — nom
+              headerda allaqachon turibdi, takrori shunchaki shovqin. */}
+          <div className="flex items-center gap-1.5 mt-2.5 px-1">
+            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+              isListening ? 'bg-rose-500 animate-pulse' : micPermissionDenied ? 'bg-slate-300' : 'bg-emerald-500'
+            }`} />
+            <span className="text-xs font-normal text-slate-400">
               {isListening ? 'Ovoz yozilmoqda' : micPermissionDenied ? "Mikrofon ruxsati yo'q" : 'Tayyor'}
-            </div>
-            <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">Girgitton AI</p>
+            </span>
+          </div>
           </div>
         </div>
       </aside>

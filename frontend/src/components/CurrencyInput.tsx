@@ -46,9 +46,9 @@ interface CurrencyInputProps {
 const CurrencyInput: React.FC<CurrencyInputProps> = ({
   value,
   onChange,
-  className = 'input-minimal h-12 text-lg font-bold',
+  className = 'input-minimal text-right font-semibold tabular-nums',
   placeholder = '0',
-  colorClass = 'text-slate-800',
+  colorClass = 'text-slate-900',
 }) => {
   const [currency, setCurrency] = useState<Currency>('UZS');
   const [rates, setRates] = useState<Rates>(loadRates);

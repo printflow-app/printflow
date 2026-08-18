@@ -431,10 +431,10 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5 px-1">Bir nechta tanlash mumkin. Faqat yorliq — pul yo'nalishini cheklamaydi.</p>
           </div>
-          <div className="flex gap-3 pt-2 border-t border-slate-100">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl uppercase font-bold text-xs tracking-widest" onClick={() => setIsFormOpen(false)}>BEKOR</button>
-            <button type="submit" className="h-12 flex-[2] bg-orange-600 text-white rounded-2xl uppercase font-bold text-xs tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
-              {isEditing ? 'YANGILASH' : "QO'SHISH"}
+          <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" className="btn-outline flex-1" onClick={() => setIsFormOpen(false)}>Bekor qilish</button>
+            <button type="submit" className="btn-primary flex-[2]">
+              {isEditing ? 'Yangilash' : "Qo'shish"}
             </button>
           </div>
         </form>
@@ -528,9 +528,9 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       </label>
                     )}
                     <div className="flex gap-2 pt-1">
-                      <button type="button" onClick={() => setLedgerForm(f => ({ ...f, open: false }))} className="btn-outline h-11 flex-1 rounded-xl uppercase font-bold text-xs tracking-widest">BEKOR</button>
-                      <button type="submit" disabled={isLedgerSubmitting} className={`h-11 flex-[2] text-white rounded-xl uppercase font-bold text-xs tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-50 ${ledgerForm.direction === 'we_owe' ? 'bg-rose-600 shadow-rose-500/20' : 'bg-emerald-600 shadow-emerald-500/20'}`}>
-                        {isLedgerSubmitting ? '...' : 'SAQLASH'}
+                      <button type="button" onClick={() => setLedgerForm(f => ({ ...f, open: false }))} className="btn-outline flex-1">Bekor qilish</button>
+                      <button type="submit" disabled={isLedgerSubmitting} className={`flex-[2] btn-primary disabled:opacity-50`}>
+                        {isLedgerSubmitting ? '...' : 'Saqlash'}
                       </button>
                     </div>
                   </form>
@@ -624,9 +624,9 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setConfirmId(null)}>BEKOR</button>
-            <button className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all" onClick={handleDelete}>
-              HA, O'CHIRILSIN
+            <button className="btn-outline flex-1" onClick={() => setConfirmId(null)}>Bekor qilish</button>
+            <button className="btn-danger-solid flex-1" onClick={handleDelete}>
+              Ha, o'chirilsin
             </button>
           </div>
         </div>

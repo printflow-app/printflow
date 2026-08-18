@@ -2667,23 +2667,23 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             )}
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-slate-100 items-end justify-end">
+          <div className="flex gap-2.5 pt-4 border-t border-slate-100 items-center justify-end">
             <button
               type="button"
               disabled={uploadProgress !== null}
-              className="btn-outline h-14 flex-1 rounded-2xl font-bold uppercase tracking-widest text-xs px-8 disabled:opacity-50"
+              className="btn-outline flex-1"
               onClick={() => setIsMoveTaskModalOpen(false)}
             >
-              BEKOR
+              Bekor qilish
             </button>
             <button
               type="submit"
               disabled={uploadProgress !== null}
-              className="btn-primary h-14 flex-[2] rounded-2xl font-bold uppercase tracking-widest text-xs shadow-slate-500/20 px-10 disabled:opacity-60"
+              className="btn-primary flex-[2]"
             >
               {uploadProgress !== null
-                ? `YUKLANMOQDA... ${uploadProgress}%`
-                : "O'ZGARTIRISHNI SAQLASH"}
+                ? `Yuklanmoqda... ${uploadProgress}%`
+                : "O'zgarishni saqlash"}
             </button>
           </div>
         </form>

@@ -636,19 +636,18 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
     <div className="space-y-5 pb-20">
 
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-card border border-slate-200">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <BarChart3 className="text-orange-600" size={22} /> Hisobotlar & Tahlil
-          </h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+            <BarChart2 size={20} className="text-[color:var(--primary)]" /> Hisobotlar & Tahlil
+          </h2>
+          <p className="t-caption mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
         </div>
-        <div className="flex gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2">
           {(isAdmin || p.canExportReports) && (
             <button
-              data-tour-id="hisobot-export"
               onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
+              className="btn-outline h-control"
               title="Tahliliy ma'lumotlarni Excel'ga eksport qilish"
             >
               <Download size={14} /> Eksport
@@ -656,12 +655,11 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           )}
           <button
             onClick={() => {
-              // Force refetch all report queries
               [dashStatsQuery, growthQuery, servicesQuery, dynamicsDailyQuery, dynamicsMonthlyQuery,
                paymentStatsQuery, expenseQuery, vendorsQuery, allTasksQuery, velocityQuery, kpiQuery]
                 .forEach(q => q.refetch());
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-all shadow-sm"
+            className="btn-outline h-control"
           >
             <RefreshCw size={14} /> Yangilash
           </button>
@@ -669,33 +667,31 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+      <div className="bg-white border border-slate-200 rounded-card p-3.5 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5 t-caption font-semibold">
           <Calendar size={14} /> Davr:
         </div>
-        <div className="flex bg-slate-100 p-0.5 rounded-lg shadow-inner">
+        <div className="flex bg-slate-100 p-0.5 rounded-control">
           {(['month', '3month', '6month', 'year', 'custom'] as DatePreset[]).map((pr) => (
             <button key={pr} onClick={() => setPreset(pr)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${preset === pr ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-800'}`}>
+              className={`px-3 py-1.5 text-xs rounded-control transition-all ${preset === pr ? 'bg-white shadow-sm font-semibold text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>
               {pr === 'month' ? 'Bu oy' : pr === '3month' ? '3 oy' : pr === '6month' ? '6 oy' : pr === 'year' ? 'Bu yil' : 'Boshqa'}
             </button>
           ))}
         </div>
         {preset === 'custom' && (
           <div className="flex items-center gap-2">
-            <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="text-xs font-bold border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-orange-400" />
-            <span className="text-slate-400 font-bold text-xs">—</span>
-            <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="text-xs font-bold border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none focus:border-orange-400" />
+            <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="input-minimal text-xs py-1" />
+            <span className="text-slate-400 text-xs">—</span>
+            <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="input-minimal text-xs py-1" />
           </div>
         )}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
-          {/* Branch selector intentionally removed — Navbar is the single source of truth.
-              Reports show data for whichever branch is active in the navbar. */}
           {branchId && departments.length > 0 && (
             <>
               <div className="relative">
                 <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
-                  className="select-minimal h-9 text-xs font-bold">
+                  className="select-minimal text-xs">
                   <option value="">Barcha bo'limlar</option>
                   {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
@@ -703,10 +699,10 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               <button
                 type="button"
                 onClick={() => setGroupByDept(v => !v)}
-                className={`px-3 py-1.5 text-xs font-bold border rounded-lg transition-colors ${
+                className={`btn-outline h-control text-xs ${
                   groupByDept
-                    ? 'bg-[#FF6B00] text-white border-[#FF6B00]'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-orange-400'
+                    ? 'border-[color:var(--primary)] text-[color:var(--primary)] bg-orange-50'
+                    : ''
                 }`}
                 title="Bo'limlar bo'yicha guruhlash"
               >
@@ -719,7 +715,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
       {/* ── O'sish ko'rsatkichlari + Sof Foyda ── */}
       {canViewGrowthCards && growth && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <GrowthCard label="Bu oy daromad" value={growth.revenue.current} previous={growth.revenue.previous}
             growth={growth.revenue.growth} icon={<DollarSign size={18} />} format={fmtFull} />
           <GrowthCard label="Yangi mijozlar" value={growth.newCustomers.current} previous={growth.newCustomers.previous}
@@ -727,28 +723,28 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           <GrowthCard label="Bajarilgan buyurtmalar" value={growth.completedTasks.current} previous={growth.completedTasks.previous}
             growth={growth.completedTasks.growth} icon={<ShoppingBag size={18} />} format={n => String(n)} />
           {dashStats && (
-            <div className="bg-white rounded-2xl border border-rose-100 p-5 shadow-sm flex flex-col gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
+            <div className="bg-white rounded-card border border-slate-200 p-4 flex flex-col gap-2">
+              <div className="w-9 h-9 rounded-control bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
                 <TrendingDown size={18} />
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Jami Chiqim</p>
-                <h3 className="text-xl font-bold text-slate-900 tracking-tight">{fmtFull(dashStats.totalChiqim)}</h3>
+                <p className="t-caption mb-0.5">Jami chiqim</p>
+                <h3 className="text-xl font-semibold text-slate-900 tracking-tight tabular-nums">{fmtFull(dashStats.totalChiqim)}</h3>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* ── Sof Foyda (growth bilan birga yoki alohida) ── */}
+      {/* ── Sof Foyda ── */}
       {canViewGrowthCards && dashStats && (
-        <div className="bg-slate-900 rounded-2xl p-5 shadow-lg flex items-center justify-between">
+        <div className="bg-slate-900 rounded-card p-4 sm:p-5 flex items-center justify-between text-white">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Sof Foyda (Davr)</p>
-            <h3 className="text-2xl font-bold text-white tracking-tight">{fmtFull(dashStats.balance)}</h3>
+            <p className="text-xs text-slate-400 mb-0.5">Sof foyda (tanlangan davr)</p>
+            <h3 className="text-2xl font-bold tracking-tight tabular-nums">{fmtFull(dashStats.balance)}</h3>
           </div>
-          <div className="w-12 h-12 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center">
-            <Wallet size={22} className="text-orange-400" />
+          <div className="w-11 h-11 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center">
+            <Wallet size={20} className="text-orange-400" />
           </div>
         </div>
       )}

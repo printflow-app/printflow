@@ -1047,24 +1047,24 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 })}
               </div>
             </div>
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="btn-outline flex-1 h-12 rounded-xl text-xs uppercase font-bold tracking-widest">Bekor</button>
-              <button type="submit" className="btn-primary flex-1 h-12 rounded-xl text-xs uppercase font-bold tracking-widest bg-orange-600 border-none shadow-orange-200">Saqlash</button>
+            <div className="flex gap-2.5 pt-2">
+              <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="btn-outline flex-1">Bekor qilish</button>
+              <button type="submit" className="btn-primary flex-1">Saqlash</button>
             </div>
           </form>
         </Modal>
       )}
 
       {/* MODAL: MANUAL ENTRY */}
-      <Modal isOpen={showManualModal} onClose={() => setShowManualModal(false)} title="Qo'lda Davomat Kiritish" maxWidth="max-w-md">
-        <form onSubmit={handleManualSave} className="space-y-4">
+      <Modal isOpen={showManualModal} onClose={() => setShowManualModal(false)} title="Qo'lda davomat kiritish" maxWidth="max-w-md">
+        <form onSubmit={handleManualSave} className="space-y-3.5">
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Xodim</label>
+            <label className="form-label">Xodim</label>
             <select
               required
               value={manualForm.employeeId}
               onChange={e => setManualForm(f => ({ ...f, employeeId: e.target.value }))}
-              className="select-minimal text-sm font-bold"
+              className="select-minimal text-sm font-medium"
             >
               <option value="">— Xodimni tanlang —</option>
               {employees.map(emp => (
@@ -1073,47 +1073,47 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             </select>
           </div>
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Sana</label>
+            <label className="form-label">Sana</label>
             <input
               type="date"
               required
               value={manualForm.date}
               onChange={e => setManualForm(f => ({ ...f, date: e.target.value }))}
-              className="input-minimal text-sm font-bold"
+              className="input-minimal text-sm"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold text-emerald-600 uppercase mb-1.5 px-1 flex items-center gap-1">
-                <LogIn size={10} /> Keldi vaqti
+              <label className="form-label text-emerald-700 flex items-center gap-1">
+                <LogIn size={11} /> Keldi vaqti
               </label>
               <input
                 type="time"
                 value={manualForm.checkIn}
                 onChange={e => setManualForm(f => ({ ...f, checkIn: e.target.value }))}
-                className="input-minimal text-sm font-bold text-center"
+                className="input-minimal text-sm text-center"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1.5 px-1 flex items-center gap-1">
-                <LogOut size={10} /> Ketti vaqti
+              <label className="form-label text-slate-700 flex items-center gap-1">
+                <LogOut size={11} /> Ketdi vaqti
               </label>
               <input
                 type="time"
                 value={manualForm.checkOut}
                 onChange={e => setManualForm(f => ({ ...f, checkOut: e.target.value }))}
-                className="input-minimal text-sm font-bold text-center"
+                className="input-minimal text-sm text-center"
               />
             </div>
           </div>
-          <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
-            <p className="text-[11px] font-bold text-amber-700 uppercase tracking-wide">
+          <div className="bg-amber-50 border border-amber-200 rounded-card px-3 py-2.5">
+            <p className="text-xs text-amber-800 font-medium">
               Faqat qurilmasi yo'q yoki texnik muammo yuz bergan xodimlar uchun. Barcha tahrirlar log'da saqlanadi.
             </p>
           </div>
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={() => setShowManualModal(false)} className="btn-outline h-11 flex-1 rounded-xl font-bold uppercase text-[11px] tracking-widest">Bekor</button>
-            <button type="submit" disabled={manualLoading} className="h-11 flex-1 rounded-xl font-bold uppercase text-[11px] tracking-widest bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white shadow-md transition-all">
+          <div className="flex gap-2.5 pt-1">
+            <button type="button" onClick={() => setShowManualModal(false)} className="btn-outline flex-1">Bekor qilish</button>
+            <button type="submit" disabled={manualLoading} className="btn-primary flex-1">
               {manualLoading ? 'Saqlanmoqda...' : 'Saqlash'}
             </button>
           </div>
@@ -1122,20 +1122,20 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
       {/* MODAL: REJECT OVERTIME */}
       <Modal isOpen={!!rejectingRequest} onClose={() => setRejectingRequest(null)} title="So'rovni rad etish">
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           {rejectingRequest && (
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-              <p className="text-xs font-bold text-slate-700 uppercase">{rejectingRequest.employee.fullName}</p>
+            <div className="bg-slate-50 p-3 rounded-card border border-slate-200">
+              <p className="text-xs font-semibold text-slate-800">{rejectingRequest.employee.fullName}</p>
               <p className="text-xs text-slate-500 mt-1">{rejectingRequest.message}</p>
             </div>
           )}
           <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5 px-1">Sabab (ixtiyoriy)</label>
+            <label className="form-label">Sabab (ixtiyoriy)</label>
             <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="input-minimal min-h-[80px] text-xs" placeholder="Nima uchun rad etmoqchisiz..." />
           </div>
-          <div className="flex gap-2 pt-2">
-            <button onClick={() => setRejectingRequest(null)} className="btn-outline h-11 flex-1 rounded-xl font-bold uppercase text-[11px] tracking-widest">Bekor</button>
-            <button onClick={handleRejectOvertime} className="h-11 flex-1 rounded-xl font-bold uppercase text-[11px] tracking-widest bg-rose-500 hover:bg-rose-600 text-white shadow-md">Rad etish</button>
+          <div className="flex gap-2.5 pt-2">
+            <button onClick={() => setRejectingRequest(null)} className="btn-outline flex-1">Bekor qilish</button>
+            <button onClick={handleRejectOvertime} className="btn-danger-solid flex-1">Rad etish</button>
           </div>
         </div>
       </Modal>

@@ -132,6 +132,95 @@ model AgentAction {
 }
 
 // =============================================
+// AgentJob — FON TOPSHIRIG'I (Faza 3, AaaS transformatsiya).
+//
+// AgentAction'dan farqi: AgentAction bu BITTA amal (bitta tool chaqiruvi).
+// AgentJob esa BUTUN TOPSHIRIQ — agent uni o'zi bosqichlarga bo'lib, ko'p
+// tool chaqirib, daqiqalar davomida bajaradi. Chat javobi 30 soniyada
+// tugashi kerak; topshiriq esa tugamasligi mumkin, shuning uchun u
+// HTTP so'rovidan ajratilib, cron runner'da aylanadi.
+//
+// Bajarish davomida yaratilgan har amal odatdagidek AgentAction'ga
+// yoziladi — audit yo'li o'zgarmaydi. Tasdiq talab qiladigan amallar
+// pending bo'lib qoladi va rahbar keyin ko'rib chiqadi (fon rejimida
+// karta ko'rsatib bo'lmaydi — so'raydigan odam ekran oldida yo'q).
+// =============================================
+model AgentJob {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Kim nomidan bajariladi. Topshiriq AYNAN SHU xodim ruxsatlari bilan
+  // ishlaydi — fon rejimi hech qachon ruxsat darajasini oshirmaydi.
+  userId String
+
+  topshiriq String // foydalanuvchi bergan matn (o'zgarmaydi)
+  sarlavha  String // ro'yxatda ko'rinadigan qisqa nom
+
+  // queued → running → done | failed | cancelled
+  status String @default("queued")
+
+  // Runner qadam-baqadam to'ldiradi: [{ vaqt, matn }] — foydalanuvchi
+  // topshiriq qotib qolmaganini ko'rib turishi uchun.
+  progress Json?
+
+  natija String? // yakuniy hisobot (odam o'qiydigan matn)
+  error  String? // failed bo'lsa sabab
+
+  qadamlar Int   @default(0) // sarflangan agentik qadamlar
+  narxUsd  Float @default(0) // shu topshiriq uchun ketgan pul
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Runner navbatdagi ishni shu indeks bo'yicha oladi.
+  @@index([status, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([userId, status])
+}
+
+// =============================================
+// AgentMemory — AGENT XOTIRASI (Faza 2, AaaS transformatsiya).
+//
+// Muammo: agent har suhbatda noldan boshlaydi. Kecha aytilgan narsani
+// ertaga qayta aytish kerak bo'ladi — bu yordamchini emas, qidiruv
+// oynasini eslatadi.
+//
+// Xotira SYSTEM PROMPT'GA QUYILADI, tool orqali qidirilmaydi. Sabab pul:
+// `recall` tool'i har savolda qo'shimcha API chaqiruvi degani. Prompt'ga
+// quyilgan blok esa keshdan 0.1x narxda o'qiladi va agent uni "eslash"
+// uchun hech narsa qilmaydi — shunchaki biladi.
+//
+// Shu sababli hajm QAT'IY cheklangan (agent-memory.util.ts): xotira har
+// so'rovda to'lanadigan token, cheksiz o'ssa har savol qimmatlashaverardi.
+// =============================================
+model AgentMemory {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // 'tenant' — butun tashkilotga tegishli fakt ("Avlod Shifoxona 30 kun kechikadi").
+  // 'user'   — faqat shu xodimning shaxsiy sozlamasi ("hisobotni qisqa ber").
+  doira  String  @default("tenant")
+  userId String? // doira='user' bo'lganda kimniki
+
+  mavzu String // qisqa sarlavha — takrorni aniqlash shu bo'yicha ishlaydi
+  matn  String // faktning o'zi
+
+  manba String @default("chat") // chat | job | qolda
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Chegaradan oshganda eng eskisi o'chiriladi — shuning uchun sana bo'yicha indeks.
+  @@index([tenantId, doira, updatedAt])
+  @@index([tenantId, userId])
+}
+
+// =============================================
 // AiInsight — proaktiv xavf-aniqlash kartalari (Faza 4, AaaS dashboard).
 // AgentAction'dan farqi: bu KUZATUV (ko'rsatish uchun), amal EMAS. LLM'siz,
 // deterministik xizmat (risk-detection.service.ts) tomonidan yoziladi/
@@ -270,6 +359,8 @@ model Tenant {
   aiAnswerCache       AiAnswerCache[]
   aiExtraCredits      Int                 @default(0) // Sotib olingan qo'shimcha AI so'rov zaxirasi
   agentActions        AgentAction[]
+  agentJobs           AgentJob[]
+  agentMemories       AgentMemory[]
   aiInsights          AiInsight[]
   cashBoxes           CashBox[]
   cashTransfers       CashTransfer[]

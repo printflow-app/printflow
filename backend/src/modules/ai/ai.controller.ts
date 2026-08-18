@@ -17,6 +17,7 @@ import { BriefingService } from './briefing.service';
 import { RequireFeature } from '../../common/decorators/feature.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { RiskDetectionService } from './risk-detection.service';
+import { AgentJobService } from './agent-job.service';
 
 // SDK v6: UIMessage format sent by DefaultChatTransport
 interface UIMessagePart {
@@ -48,7 +49,80 @@ export class AiController {
     private readonly aiService: AiService,
     private readonly briefingService: BriefingService,
     private readonly riskDetectionService: RiskDetectionService,
+    private readonly agentJobService: AgentJobService,
   ) {}
+
+  // =============================================
+  // FON TOPSHIRIQLARI (Faza 3) — uzoq davom etadigan ishlar.
+  // Odatda topshiriqni chat agenti `startJob` tool'i orqali yaratadi; bu
+  // endpointlar uni kuzatish va boshqarish uchun. `POST /ai/jobs` esa
+  // foydalanuvchi chatdan o'tmasdan to'g'ridan-to'g'ri topshiriq berishi
+  // uchun — model chaqirilmaydi, ya'ni xabar limitidan hisoblanmaydi.
+  // =============================================
+
+  // =============================================
+  // AGENT XOTIRASI (Faza 2) — agent nimani "bilib olgan"ini ko'rish va
+  // kerak bo'lsa o'chirish. Yozishni agent o'zi `remember` tool'i orqali
+  // qiladi; bu endpointlar nazorat uchun.
+  // =============================================
+
+  @Get('memories')
+  async listMemories(@Req() req: any) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.aiService.listMemories(tenantId, sub);
+  }
+
+  @Post('memories/:id/delete')
+  @HttpCode(HttpStatus.OK)
+  async deleteMemory(@Req() req: any, @Param('id') id: string) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.aiService.deleteMemory(tenantId, sub, id);
+  }
+
+  @Post('jobs')
+  @HttpCode(HttpStatus.OK)
+  async createJob(
+    @Req() req: any,
+    @Body() body: { topshiriq?: string; sarlavha?: string },
+  ) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+
+    const topshiriq = (body?.topshiriq || '').trim();
+    if (topshiriq.length < 10) {
+      return { success: false, error: "Topshiriq juda qisqa — nima qilish kerakligini yozing" };
+    }
+    return this.agentJobService.yarat(
+      tenantId,
+      sub,
+      topshiriq,
+      (body?.sarlavha || '').trim() || topshiriq,
+    );
+  }
+
+  @Get('jobs')
+  async listJobs(@Req() req: any, @Query('limit') limit?: string) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.agentJobService.royxat(tenantId, sub, limit ? Number(limit) : 20);
+  }
+
+  @Get('jobs/:id')
+  async getJob(@Req() req: any, @Param('id') id: string) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.agentJobService.bitta(tenantId, sub, id);
+  }
+
+  @Post('jobs/:id/cancel')
+  @HttpCode(HttpStatus.OK)
+  async cancelJob(@Req() req: any, @Param('id') id: string) {
+    const { tenantId, sub } = req.user || {};
+    if (!tenantId || !sub) throw new UnauthorizedException();
+    return this.agentJobService.bekorQil(tenantId, sub, id);
+  }
 
   @Get('usage')
   async usage(@Req() req: any) {

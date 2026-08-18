@@ -671,6 +671,17 @@ export const aiApi = {
 
   // Agent statistikasi — davr bo'yicha bajarilgan ishlar (Faza 5)
   getAgentStats: () => api.get('/ai/agent-stats'),
+
+  // Fon topshiriqlari (Faza 3) — uzoq davom etadigan ishlar. Odatda ularni
+  // chat agenti `startJob` tool'i orqali yaratadi; bular kuzatish uchun.
+  listJobs: (limit = 20) => api.get('/ai/jobs', { params: { limit } }),
+  getJob: (id: string) => api.get(`/ai/jobs/${id}`),
+  cancelJob: (id: string) => api.post(`/ai/jobs/${id}/cancel`),
+
+  // Agent xotirasi (Faza 2) — agent nimani bilib olganini ko'rish/o'chirish.
+  // Yozishni agent o'zi `remember` tool'i orqali qiladi.
+  listMemories: () => api.get('/ai/memories'),
+  deleteMemory: (id: string) => api.post(`/ai/memories/${id}/delete`),
 };
 
 // Bosh sahifa — bitta so'rovda kirim/chiqim + buyurtmalar + davomat holati.

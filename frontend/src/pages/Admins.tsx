@@ -262,31 +262,30 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
                         </button>
                      </div>
                   </div>
-               </div>
-               <div className="pt-4">
-                  <button type="button" className="btn-primary w-full h-12 font-bold tracking-widest uppercase bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 rounded-xl" onClick={handleCloseModal}>Tushunarli, Yopish</button>
+                             <div className="pt-2">
+                  <button type="button" className="btn-primary w-full" onClick={handleCloseModal}>Tushunarli, yopish</button>
                </div>
             </div>
           ) : (
-            <form onSubmit={handleAddEmployee} className="space-y-5">
+            <form onSubmit={handleAddEmployee} className="space-y-3.5">
                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">F.I.SH</label>
+                  <label className="form-label">F.I.SH</label>
                   <input type="text" required value={newEmployee.fullName} onChange={(e) => setNewEmployee({...newEmployee, fullName: e.target.value})} className="input-minimal w-full" placeholder="Ism Familiya" />
                </div>
                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Telefon</label>
+                  <label className="form-label">Telefon</label>
                   <input type="text" value={newEmployee.phone} onChange={(e) => setNewEmployee({...newEmployee, phone: e.target.value})} className="input-minimal w-full" placeholder="+998 90 123 45 67" />
                </div>
                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Lavozimi</label>
-                  <select required value={newEmployee.roleId} onChange={(e) => setNewEmployee({...newEmployee, roleId: e.target.value})} className="select-minimal font-bold w-full">
+                  <label className="form-label">Lavozimi</label>
+                  <select required value={newEmployee.roleId} onChange={(e) => setNewEmployee({...newEmployee, roleId: e.target.value})} className="select-minimal w-full">
                      <option value="">Tanlang...</option>
                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                </div>
-               <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
-                 <button type="button" className="btn-outline h-12 px-6 flex-1 rounded-xl text-xs font-bold uppercase" onClick={handleCloseModal}>Bekor qilish</button>
-                 <button type="submit" className="btn-primary h-12 px-10 font-bold flex-1 rounded-xl text-xs uppercase shadow-lg shadow-orange-500/20 bg-orange-500 text-white hover:bg-orange-600">SAQLASH</button>
+               <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                 <button type="button" className="btn-outline flex-1" onClick={handleCloseModal}>Bekor qilish</button>
+                 <button type="submit" className="btn-primary flex-1">Saqlash</button>
                </div>
             </form>
           )}
@@ -296,32 +295,32 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
       <Modal
         isOpen={isCredentialsModalOpen && !!selectedEmp}
         onClose={() => setIsCredentialsModalOpen(false)}
-        title="Kirish Ma'lumotlari"
+        title="Kirish ma'lumotlari"
         maxWidth="max-w-sm"
       >
           {selectedEmp && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Foydalanuvchi</p>
-                <p className="font-bold text-slate-800">{selectedEmp.fullName}</p>
+            <div className="space-y-3.5 animate-fade-in">
+              <div className="bg-slate-50 p-3.5 rounded-card border border-slate-200">
+                <p className="t-caption mb-0.5">Foydalanuvchi</p>
+                <p className="font-semibold text-slate-800 text-sm">{selectedEmp.fullName}</p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
-                <p className="font-mono font-bold text-slate-800 select-all tracking-wider">{selectedEmp.login}</p>
+              <div className="bg-slate-50 p-3.5 rounded-card border border-slate-200">
+                <p className="t-caption mb-0.5">Login</p>
+                <p className="font-mono font-semibold text-slate-800 text-sm select-all">{selectedEmp.login}</p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
-                <div className="relative">
+              <div className="bg-slate-50 p-3.5 rounded-card border border-slate-200">
+                <p className="t-caption mb-0.5">Parol</p>
+                <div className="relative flex items-center">
                   <input 
                     type={showSelectedPass ? "text" : "password"} 
                     readOnly 
                     value={selectedEmp.password} 
-                    className="w-full font-mono font-bold text-orange-600 bg-transparent select-all tracking-wider outline-none" 
+                    className="w-full font-mono font-semibold text-orange-700 bg-transparent text-sm select-all outline-none" 
                   />
                   <button 
                     type="button" 
                     onClick={() => setShowSelectedPass(!showSelectedPass)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-600 transition-colors"
+                    className="icon-btn-sm"
                   >
                     {showSelectedPass ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -329,9 +328,9 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
               </div>
               <button 
                 onClick={() => handleRegeneratePassword(selectedEmp.id)}
-                className="btn-outline w-full mt-6 h-12 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest rounded-xl"
+                className="btn-outline w-full mt-2"
               >
-                <RefreshCw size={14} /> YANGI PAROL GENERATSIYA QILISH
+                <RefreshCw size={14} /> Yangi parol generatsiya qilish
               </button>
             </div>
           )}
@@ -344,15 +343,15 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
           onClose={() => setConfirmModal(null)}
           title={confirmModal.title}
         >
-          <div className="space-y-6">
-            <p className="text-sm font-bold text-slate-600">{confirmModal.message}</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmModal(null)} className="flex-1 btn-outline h-12">BEKOR QILISH</button>
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">{confirmModal.message}</p>
+            <div className="flex gap-2.5">
+              <button onClick={() => setConfirmModal(null)} className="flex-1 btn-outline">Bekor qilish</button>
               <button 
                 onClick={confirmModal.onConfirm} 
-                className="flex-1 btn-primary bg-orange-600 text-white h-12 rounded-xl font-bold uppercase tracking-widest hover:bg-orange-700 shadow-lg shadow-orange-500/20"
+                className="flex-1 btn-danger-solid"
               >
-                TASDIQLASH
+                Tasdiqlash
               </button>
             </div>
           </div>

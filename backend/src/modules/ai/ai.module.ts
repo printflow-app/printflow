@@ -5,6 +5,7 @@ import { BriefingService } from './briefing.service';
 import { AutonomousService } from './autonomous.service';
 import { RiskDetectionService } from './risk-detection.service';
 import { AutonomousResolverService } from './autonomous-resolver.service';
+import { AgentJobService } from './agent-job.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { FinanceModule } from '../finance/finance.module';
@@ -13,7 +14,14 @@ import { SettingsModule } from '../settings/settings.module';
 @Module({
   imports: [PrismaModule, TasksModule, FinanceModule, SettingsModule],
   controllers: [AiController],
-  providers: [AiService, BriefingService, AutonomousService, RiskDetectionService, AutonomousResolverService],
-  exports: [AiService],
+  providers: [
+    AiService,
+    BriefingService,
+    AutonomousService,
+    RiskDetectionService,
+    AutonomousResolverService,
+    AgentJobService,
+  ],
+  exports: [AiService, AgentJobService],
 })
 export class AiModule {}
