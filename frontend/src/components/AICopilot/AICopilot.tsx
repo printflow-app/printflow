@@ -1109,7 +1109,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
   return (
     <>
       {/* Mobil fon — telefonda joy yo'q, shuning uchun overlay bo'lib qoladi */}
-      <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm md:hidden animate-in fade-in duration-300" onClick={onClose} />
+      <div className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm md:hidden animate-fade-in" onClick={onClose} />
 
       {/* Desktopda panel LAYOUT ICHIDA turadi (md:static) — sahifa ustiga
           chiqmaydi, balki kontentni qisqartiradi va yonma-yon turadi.
@@ -1123,7 +1123,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
       {!isDocked && !kengaytirilgan && (
         <div
           onClick={onClose}
-          className="fixed inset-0 z-[65] bg-slate-900/20 backdrop-blur-[2px] 2xl:hidden"
+          className="fixed inset-0 z-overlay bg-slate-900/20 backdrop-blur-[2px] 2xl:hidden"
         />
       )}
       <aside
@@ -1131,8 +1131,8 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           kengaytirilgan
             // Kengaytirilgan: butun ekran. Yon chegara ham, soya ham keraksiz —
             // panel ostida ko'rinadigan narsa qolmaydi.
-            ? 'fixed inset-0 z-[70] bg-white flex flex-col animate-in fade-in duration-200'
-            : 'fixed inset-y-0 right-0 z-[70] w-full max-w-[440px] 2xl:static 2xl:z-auto 2xl:max-w-none 2xl:w-[400px] 2xl:shrink-0 2xl:h-screen bg-white border-l border-[color:var(--border)] shadow-[-20px_0_50px_rgba(0,0,0,0.15)] 2xl:shadow-none flex flex-col animate-in slide-in-from-right duration-300 ease-out'
+            ? 'fixed inset-0 z-overlay bg-white flex flex-col animate-fade-in'
+            : 'fixed inset-y-0 right-0 z-overlay w-full max-w-[440px] 2xl:static 2xl:z-auto 2xl:max-w-none 2xl:w-[400px] 2xl:shrink-0 2xl:h-screen bg-white border-l border-[color:var(--border)] shadow-xl 2xl:shadow-none flex flex-col animate-drawer-in'
         }
       >
 

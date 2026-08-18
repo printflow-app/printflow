@@ -364,63 +364,32 @@ const App: React.FC = () => {
 
   if (loading && !isAlwaysPublic) {
     return (
-      <div className="min-h-screen bg-[#fafbfc] flex flex-col items-center justify-center p-6 overflow-hidden relative font-sans text-slate-900">
-        {/* Soft background glows for aesthetics */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#FF6B00]/5 rounded-full blur-[80px] pointer-events-none animate-pulse" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-slate-500/5 rounded-full blur-[60px] pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col items-center">
-          {/* Logo container - modern, rounded-2xl square box instead of circle */}
-          <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
-            {/* Elegant glowing background */}
-            <div className="absolute -inset-1.5 bg-gradient-to-tr from-[#FF6B00] via-amber-500 to-orange-400 rounded-2xl blur opacity-25 animate-cardGlow" />
-            
-            {/* Main logo card keeping original proportions */}
-            <div className="absolute inset-0 bg-white rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center p-4">
-              <img src={logo} alt="PrintFlow" className="w-16 h-16 object-contain animate-logoScale" />
-            </div>
+      <div className="min-h-screen bg-[color:var(--background)] flex flex-col items-center justify-center p-6 font-sans text-slate-900">
+        <div className="flex flex-col items-center">
+          <div className="w-24 h-24 mb-8 bg-white rounded-overlay border border-[color:var(--border)] shadow-sm flex items-center justify-center p-4">
+            <img src={logo} alt="PrintFlow" className="w-16 h-16 object-contain" />
           </div>
 
-          {/* Branding with modern gradient/weight balance */}
-          <h1 className="text-3xl font-black tracking-tight mb-2 select-none uppercase">
-            <span className="text-slate-800">Print</span>
-            <span className="text-[#FF6B00]">Flow</span>
+          <h1 className="text-2xl font-semibold tracking-tight mb-3 select-none">
+            <span className="text-slate-900">Print</span>
+            <span className="text-[color:var(--primary)]">Flow</span>
           </h1>
 
-          {/* Elegant Loading bar */}
-          <div className="w-40 h-1 bg-slate-100 rounded-full overflow-hidden mb-4 relative border border-slate-200/50">
-            <div className="h-full bg-gradient-to-r from-[#FF6B00] via-orange-500 to-amber-500 rounded-full absolute top-0 left-0 w-1/3 animate-loadingBar" />
+          <div className="w-40 h-1 bg-slate-200 rounded-full overflow-hidden mb-4 relative">
+            <div className="h-full bg-[color:var(--primary)] rounded-full absolute top-0 left-0 w-1/3 animate-loadingBar" />
           </div>
 
-          {/* Muted loading text */}
-          <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">
-            Tizimga kirilmoqda...
-          </p>
+          <p className="text-sm text-slate-500">Tizimga kirilmoqda...</p>
         </div>
 
-        {/* CSS Keyframes for custom animations */}
         <style>{`
           @keyframes slideProgress {
             0% { left: -35%; width: 35%; }
             50% { width: 45%; }
             100% { left: 100%; width: 35%; }
           }
-          @keyframes logoScale {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.06); }
-          }
-          @keyframes cardGlow {
-            0%, 100% { opacity: 0.2; transform: scale(1); }
-            50% { opacity: 0.45; transform: scale(1.03); }
-          }
           .animate-loadingBar {
             animation: slideProgress 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-          }
-          .animate-logoScale {
-            animation: logoScale 2s ease-in-out infinite;
-          }
-          .animate-cardGlow {
-            animation: cardGlow 2s ease-in-out infinite;
           }
         `}</style>
       </div>
@@ -430,53 +399,53 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-orange-100">
       {showOnboarding && (
-        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
-            <div className="bg-black p-6 text-white">
-              <h2 className="text-xl font-bold uppercase tracking-tight">Ma'lumotlarni <span className="text-[#FF6B00]">Tahrirlang</span></h2>
-              <p className="text-xs uppercase font-bold text-slate-400 tracking-widest mt-1">Xavfsizlik va sozlash uchun barcha maydonlarni to'ldiring</p>
+        <div className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-overlay shadow-2xl overflow-hidden border border-slate-200 animate-slide-up">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h2 className="text-base font-semibold text-slate-900 tracking-tight">Ma'lumotlarni tahrirlang</h2>
+              <p className="text-sm text-slate-500 mt-0.5">Xavfsizlik va sozlash uchun barcha maydonlarni to'ldiring</p>
             </div>
             <form onSubmit={handleOnboardingSubmit} className="p-6 space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold uppercase text-slate-500">Tashkilot / Workspace Nomi</label>
-                <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+              <div>
+                <label className="form-label">Tashkilot / workspace nomi</label>
+                <input required className="input-minimal"
                   value={onboardingForm.tenantName} onChange={e => setOnboardingForm({...onboardingForm, tenantName: e.target.value})} placeholder="Ideal Print MCHJ" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase text-slate-500">Ism Familiyangiz</label>
-                  <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Ism familiyangiz</label>
+                  <input required className="input-minimal"
                     value={onboardingForm.fullName} onChange={e => setOnboardingForm({...onboardingForm, fullName: e.target.value})} placeholder="Sardor Karimov" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase text-slate-500">Telefon Raqamingiz</label>
-                  <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+                <div>
+                  <label className="form-label">Telefon raqamingiz</label>
+                  <input required type="tel" inputMode="tel" className="input-minimal"
                     value={onboardingForm.phone} onChange={e => setOnboardingForm({...onboardingForm, phone: e.target.value})} placeholder="+998 90 123 45 67" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase text-slate-500">Yangi Login</label>
-                  <input required className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Yangi login</label>
+                  <input required className="input-minimal"
                     value={onboardingForm.login} onChange={e => setOnboardingForm({...onboardingForm, login: e.target.value})} placeholder="admin_new" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase text-slate-500">Yangi Parol (ixtiyoriy)</label>
-                  <input className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-[#FF6B00]/20 focus:border-[#FF6B00] outline-none" 
+                <div>
+                  <label className="form-label">Yangi parol (ixtiyoriy)</label>
+                  <input className="input-minimal"
                     type="password" value={onboardingForm.password} onChange={e => setOnboardingForm({...onboardingForm, password: e.target.value})} placeholder="********" />
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p className="text-xs font-bold text-slate-500 leading-relaxed uppercase">
-                  <span className="text-[#FF6B00]">Diqqat:</span> Ushbu ma'lumotlar tizimga kirish va xavfsizlik uchun ishlatiladi. Saqlagandan so'ng siz dashboardga yo'naltirilasiz.
+              <div className="bg-slate-50 p-4 rounded-card border border-slate-200">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  <span className="font-semibold text-[color:var(--primary)]">Diqqat:</span> Ushbu ma'lumotlar tizimga kirish va xavfsizlik uchun ishlatiladi. Saqlagandan so'ng siz dashboardga yo'naltirilasiz.
                 </p>
               </div>
 
-              <button type="submit" className="w-full bg-[#FF6B00] hover:bg-[#e66000] text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]">
-                Saqlash va Boshlash
+              <button type="submit" className="btn-primary h-lg w-full">
+                Saqlash va boshlash
               </button>
             </form>
           </div>

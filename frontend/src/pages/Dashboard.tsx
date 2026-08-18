@@ -585,10 +585,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   return (
     <div className="h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900 font-sans relative overflow-hidden">
 
-      <header className="md:hidden h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between sticky top-0 z-40">
+      <header className="md:hidden h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between sticky top-0 z-nav">
         <div className="flex items-center gap-2">
           <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
-          <h1 className="text-base font-semibold text-slate-900 tracking-tight">Print<span className="text-[#FF6B00]">Flow</span></h1>
+          <h1 className="text-base font-semibold text-slate-900 tracking-tight">Print<span className="text-[color:var(--primary)]">Flow</span></h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={handleManualLock} className="w-9 h-9 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg">
@@ -597,10 +597,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           {aiCopilotEnabled && (
             <button
               onClick={() => setIsAICopilotOpen(true)}
-              className="w-9 h-9 flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-lg shadow-md shadow-orange-500/30 hover:from-orange-500 hover:to-orange-700 transition-all"
+              className="w-9 h-9 flex items-center justify-center bg-[color:var(--primary)] text-white rounded-control hover:bg-[color:var(--primary-hover)] transition-colors duration-120"
               title="AI Yordamchi"
             >
-              <Sparkles size={16} strokeWidth={2.2} />
+              <Sparkles size={16} />
             </button>
           )}
           <button
@@ -613,10 +613,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       </header>
 
       {isSidebarOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-nav md:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      <aside className={`fixed md:static inset-y-0 left-0 w-72 bg-surface2 border-r border-[color:var(--border)] flex flex-col transition-transform duration-300 z-40 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`fixed md:static inset-y-0 left-0 w-72 bg-surface2 border-r border-[color:var(--border)] flex flex-col transition-transform duration-300 z-nav ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="h-14 hidden md:flex items-center justify-between px-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
@@ -775,8 +775,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
       {/* Logout confirmation modal */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden">
+        <div className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-overlay shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-slide-up">
             <div className="p-6 text-center">
               <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <LogOut size={24} className="text-rose-500" strokeWidth={2.5} />
@@ -929,7 +929,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 relative custom-scroll">
           {lockedTabs.has(activeTab) ? (
-            <div className="absolute inset-0 z-[50] flex items-center justify-center p-8 overflow-hidden">
+            <div className="absolute inset-0 z-overlay flex items-center justify-center p-8 overflow-hidden">
               {/* Content is blurred behind */}
               <div className="absolute inset-0 backdrop-blur-[40px] bg-slate-50/40 z-0"></div>
 
@@ -1011,10 +1011,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           {!isAICopilotOpen && (
             <button
               onClick={() => setIsAICopilotOpen(true)}
-              className="fixed bottom-6 right-6 z-30 w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-2xl shadow-xl shadow-orange-500/40 flex items-center justify-center hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 hidden md:flex"
+              className="fixed bottom-6 right-6 z-fab w-14 h-14 bg-[color:var(--primary)] text-white rounded-full shadow-lg items-center justify-center hover:bg-[color:var(--primary-hover)] active:scale-95 transition-all duration-120 hidden md:flex"
               title="PrintFlow AI Yordamchi (Xizmatlar)"
             >
-              <Sparkles size={24} strokeWidth={2.2} />
+              <Sparkles size={24} />
             </button>
           )}
         </>

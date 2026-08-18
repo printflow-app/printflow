@@ -177,7 +177,7 @@ export const PriceListModal: React.FC<Props> = ({
   // qoplama oralig'ini buzmasligi uchun. 100dvh — mobile URL bar bilan to'g'ri ishlash.
   return createPortal(
     <div
-      className="fixed top-0 left-0 right-0 bottom-0 z-[1000] bg-slate-900/70 backdrop-blur-md flex items-stretch sm:items-center justify-center p-0 sm:p-4"
+      className="fixed top-0 left-0 right-0 bottom-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-stretch sm:items-center justify-center p-0 sm:p-4"
       style={{ height: '100dvh', width: '100vw' }}
     >
       <div className="relative bg-slate-100 w-full max-w-6xl rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-screen sm:max-h-[95vh] animate-slide-up">

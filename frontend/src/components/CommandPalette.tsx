@@ -121,7 +121,7 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
   return (
     <div
       onClick={() => setOpen(false)}
-      className="fixed inset-0 z-[300] bg-slate-900/50 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4"
+      className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}

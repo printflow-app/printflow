@@ -69,7 +69,7 @@ export const ReleaseTour: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-overlay flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Sarlavha */}
         <div className="px-6 pt-6 pb-4 flex items-start gap-3 border-b border-slate-100">

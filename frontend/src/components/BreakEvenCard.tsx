@@ -174,8 +174,8 @@ const BreakEvenCard: React.FC = () => {
 
       {/* ── XARAJAT TAHRIRLASH ────────────────────────────────────── */}
       {editing && (
-        <div className="fixed inset-0 z-[80] bg-slate-900/40 flex items-center justify-center p-4" onClick={() => setEditing(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[88vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditing(false)}>
+          <div className="bg-white rounded-overlay w-full max-w-5xl max-h-[88vh] flex flex-col shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <p className="text-sm font-bold text-slate-800">Xarajatlar</p>
               <button onClick={() => setEditing(false)} className="text-slate-300 hover:text-slate-600"><X size={18} /></button>

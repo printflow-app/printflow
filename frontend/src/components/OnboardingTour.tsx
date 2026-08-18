@@ -415,7 +415,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
   // -------------------- Welcome & Done — markaziy modal --------------------
   if (current.kind === 'welcome' || current.kind === 'done') {
     return (
-      <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-tour bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div
           className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
           style={{ animation: 'pf-tour-slide-in 0.3s ease-out' }}
@@ -460,7 +460,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
   return (
     <>
       <div
-        className="fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+        className="fixed z-tour bg-white rounded-overlay shadow-2xl border border-slate-200 overflow-hidden"
         style={{
           top: pos.top,
           left: pos.left,
@@ -525,7 +525,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
       {/* Close confirmation modal */}
       {confirmClose && (
         <div
-          className="fixed inset-0 z-[10000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-tour bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setConfirmClose(false)}
         >
           <div

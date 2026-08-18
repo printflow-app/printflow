@@ -163,7 +163,7 @@ export function PageTour({ tab, onClose }: Props) {
 
   return (
     <div
-      className="fixed z-[9999] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+      className="fixed z-tour bg-white rounded-overlay shadow-2xl border border-slate-200 overflow-hidden"
       style={{
         top: joylashuv.top,
         left: joylashuv.left,

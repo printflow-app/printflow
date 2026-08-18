@@ -60,13 +60,13 @@ const Modal: React.FC<ModalProps> = ({
 
   const overlay = (
     <div
-      className={`fixed top-0 left-0 right-0 bottom-0 z-[1000] flex ${
+      className={`fixed top-0 left-0 right-0 bottom-0 z-overlay flex ${
         drawer ? 'justify-end' : 'items-center justify-center p-4 overflow-y-auto'
       }`}
       style={{ height: '100dvh', width: '100vw' }}
     >
       <div
-        className="fixed top-0 left-0 right-0 bottom-0 bg-slate-900/70 backdrop-blur-md animate-fade-in"
+        className="fixed top-0 left-0 right-0 bottom-0 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
         style={{ height: '100dvh', width: '100vw' }}
         onClick={onClose}
       />
@@ -75,8 +75,8 @@ const Modal: React.FC<ModalProps> = ({
           drawer
             // Panel: o'ng chetga yopishadi, balandligi to'liq ekran. Faqat chap
             // burchaklari yumaloq — o'ng chet ekran qirrasi bilan tutashadi.
-            ? `relative bg-white shadow-2xl w-full ${maxWidth} h-full rounded-none sm:rounded-l-2xl overflow-hidden animate-drawer-in border-l border-slate-100 flex flex-col z-10`
-            : `relative bg-white rounded-xl shadow-2xl w-full ${maxWidth} overflow-hidden animate-slide-up border border-slate-100 flex flex-col max-h-[95vh] sm:max-h-[90vh] z-10`
+            ? `relative bg-white shadow-2xl w-full ${maxWidth} h-full rounded-none sm:rounded-l-overlay overflow-hidden animate-drawer-in border-l border-slate-100 flex flex-col z-10`
+            : `relative bg-white rounded-overlay shadow-2xl w-full ${maxWidth} overflow-hidden animate-slide-up border border-slate-100 flex flex-col max-h-[95vh] sm:max-h-[90vh] z-10`
         }
       >
         <div className={`px-4 sm:px-5 py-3.5 border-b border-slate-100 flex justify-between items-center ${typeConfig[type].bg}`}>

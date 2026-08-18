@@ -144,7 +144,7 @@ export function OnboardingWizard({ tenantId, branchId, onComplete }: Props) {
   );
 
   return (
-    <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-tour bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white relative">

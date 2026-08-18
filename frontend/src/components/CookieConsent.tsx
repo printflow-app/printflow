@@ -40,7 +40,7 @@ const CookieConsent: React.FC = () => {
 
   return (
     <div
-      className="fixed z-[9999] w-full max-w-[560px] px-4 left-1/2 -translate-x-1/2 bottom-[80px] md:bottom-6"
+      className="fixed z-toast w-full max-w-[560px] px-4 left-1/2 -translate-x-1/2 bottom-[80px] md:bottom-6"
       style={{
         animation: leaving ? 'slideDown 0.4s ease forwards' : 'slideUp 0.4s ease',
       }}

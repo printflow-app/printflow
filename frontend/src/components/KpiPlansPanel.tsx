@@ -242,8 +242,8 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
 
       {/* Create modal */}
       {showModal && (
-        <div className="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-white w-full max-w-md rounded-overlay shadow-2xl overflow-hidden animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
                 <Target size={15} className="text-orange-500" /> Yangi KPI rejasi

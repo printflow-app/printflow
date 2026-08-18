@@ -132,7 +132,7 @@ const MijozXarita: React.FC<{
         style={{ height: balandlik }}
         className="w-full rounded-2xl border border-slate-200 overflow-hidden z-0"
       />
-      <div className="absolute bottom-3 left-3 z-[400] flex items-center gap-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+      <div className="absolute bottom-3 left-3 z-[400] flex items-center gap-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-control border border-slate-200 shadow-sm">
         <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-600" /> Qarzdor
         </span>

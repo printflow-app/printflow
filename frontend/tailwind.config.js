@@ -83,6 +83,7 @@ export default {
         sticky: '10',
         fab: '20',
         dropdown: '30',
+        nav: '40',
         overlay: '50',
         toast: '60',
         tour: '70',
