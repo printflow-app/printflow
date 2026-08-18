@@ -77,30 +77,28 @@ const ReasoningBlock: React.FC<{ text: string; streaming: boolean }> = ({ text, 
   const ochiq = qolda ?? streaming;
 
   return (
-    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 overflow-hidden">
+    <div className="w-full rounded-card border border-slate-200 bg-slate-50 overflow-hidden">
       <button
         type="button"
         onClick={() => setQolda(!ochiq)}
         aria-expanded={ochiq}
-        className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left hover:bg-slate-100/70 transition-colors"
+        className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left hover:bg-slate-100 transition-colors duration-120"
       >
         <Brain
-          size={13}
-          strokeWidth={2.5}
-          className={`flex-shrink-0 text-slate-400 ${streaming ? 'animate-pulse' : ''}`}
+          size={16}
+          className={`flex-shrink-0 text-slate-500 ${streaming ? 'animate-pulse' : ''}`}
         />
-        <span className="text-xs font-medium text-slate-500">
+        <span className="t-label">
           {streaming ? "O'ylayapti…" : 'Fikrlash'}
         </span>
         <ChevronRight
-          size={13}
-          strokeWidth={2.5}
-          className={`ml-auto flex-shrink-0 text-slate-400 transition-transform duration-200 ${ochiq ? 'rotate-90' : ''}`}
+          size={16}
+          className={`ml-auto flex-shrink-0 text-slate-500 transition-transform duration-180 ${ochiq ? 'rotate-90' : ''}`}
         />
       </button>
 
       {ochiq && (
-        <div className="px-3.5 pb-3 text-xs leading-[1.65] font-medium text-slate-600 whitespace-pre-wrap">
+        <div className="px-3.5 pb-3 text-xs leading-[1.65] text-slate-600 whitespace-pre-wrap">
           {text}
         </div>
       )}
@@ -135,39 +133,36 @@ const chatTransport = new DefaultChatTransport({
 // ── UI Components ──────────────────────────────────────────────────
 
 const SuccessBadge: React.FC<{ text: string }> = ({ text }) => (
-  <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+  <div className="mt-3 rounded-card border border-emerald-200 bg-emerald-50 p-4 animate-slide-up">
     <div className="flex items-center gap-3 text-emerald-700">
-      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-        <ShieldCheck size={18} strokeWidth={2.5} />
+      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+        <ShieldCheck size={18} />
       </div>
-      <div>
-         <p className="text-xs font-bold uppercase tracking-widest leading-none">Muvaffaqiyatli</p>
-         <p className="text-xs font-bold text-emerald-600/80 mt-0.5">{text}</p>
+      <div className="min-w-0">
+         <p className="text-sm font-semibold leading-none">Muvaffaqiyatli</p>
+         <p className="text-xs text-emerald-600 mt-1">{text}</p>
       </div>
     </div>
   </div>
 );
 
 const CardWrapper: React.FC<{ title: string; subtitle: string; icon: any; children: React.ReactNode; onConfirm: () => void }> = ({ title, subtitle, icon: Icon, children, onConfirm }) => (
-  <div className="mt-3 rounded-[32px] border border-slate-200 bg-white shadow-2xl shadow-slate-200/50 overflow-hidden animate-in fade-in zoom-in-95 duration-500">
-    <div className="flex items-center justify-between px-6 py-5 bg-slate-50/50 border-b border-slate-100">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600">
-          <Icon size={20} strokeWidth={2.5} />
+  <div className="mt-3 rounded-overlay border border-slate-200 bg-white overflow-hidden animate-pop">
+    <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-9 h-9 rounded-control bg-primary-50 flex items-center justify-center text-[color:var(--primary)] flex-shrink-0">
+          <Icon size={18} />
         </div>
-        <div>
-          <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">{subtitle}</p>
-          <p className="text-sm font-bold text-slate-900 tracking-tight">{title}</p>
+        <div className="min-w-0">
+          <p className="label-caps text-[color:var(--primary)]">{subtitle}</p>
+          <p className="t-h3 truncate">{title}</p>
         </div>
       </div>
     </div>
-    <div className="p-6 space-y-4">
+    <div className="p-4 space-y-4">
       {children}
-      <button
-        onClick={onConfirm}
-        className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
-      >
-        <CheckCircle2 size={16} strokeWidth={2.5} />
+      <button onClick={onConfirm} className="btn-success w-full h-lg">
+        <CheckCircle2 size={16} />
         Tasdiqlash
       </button>
     </div>
@@ -188,20 +183,20 @@ const DataCard: React.FC<{
   onOpen?: () => void;
   openLabel?: string;
 }> = ({ title, icon: Icon, children, onOpen, openLabel }) => (
-  <div className="mt-3 w-full rounded-[24px] border border-slate-200 bg-white shadow-lg shadow-slate-200/40 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-    <div className="flex items-center gap-2.5 px-4 py-3 bg-slate-50/60 border-b border-slate-100">
-      <div className="w-7 h-7 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
-        <Icon size={14} strokeWidth={2.5} />
+  <div className="mt-3 w-full rounded-card border border-slate-200 bg-white overflow-hidden animate-pop">
+    <div className="flex items-center gap-2.5 px-4 py-3 bg-slate-50 border-b border-slate-200">
+      <div className="w-7 h-7 rounded-control bg-primary-50 flex items-center justify-center text-[color:var(--primary)] flex-shrink-0">
+        <Icon size={16} />
       </div>
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+      <p className="label-caps truncate">{title}</p>
     </div>
     <div className="px-4 py-2">{children}</div>
     {onOpen && (
       <button
         onClick={onOpen}
-        className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-100 text-xs font-bold text-orange-600 uppercase tracking-widest hover:bg-orange-50 transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 border-t border-slate-200 text-xs font-medium text-[color:var(--primary)] hover:bg-primary-50 transition-colors duration-120"
       >
-        {openLabel || "Bo'limni ochish"} <ArrowUpRight size={12} strokeWidth={2.5} />
+        {openLabel || "Bo'limni ochish"} <ArrowUpRight size={16} />
       </button>
     )}
   </div>
@@ -211,18 +206,18 @@ const DataCard: React.FC<{
 const DataRow: React.FC<{ primary: string; secondary?: string | null; value: string; valueClass?: string }> = ({
   primary, secondary, value, valueClass,
 }) => (
-  <div className="flex items-center justify-between gap-3 py-2 border-b border-slate-50 last:border-0">
+  <div className="flex items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-0">
     <div className="min-w-0 flex-1">
-      <p className="text-sm font-bold text-slate-800 truncate">{primary}</p>
-      {secondary && <p className="text-xs font-semibold text-slate-400 truncate mt-0.5">{secondary}</p>}
+      <p className="t-body-md truncate">{primary}</p>
+      {secondary && <p className="t-caption truncate mt-0.5">{secondary}</p>}
     </div>
-    <p className={`text-sm font-bold whitespace-nowrap ${valueClass || 'text-slate-700'}`}>{value}</p>
+    <p className={`text-sm font-semibold whitespace-nowrap tabular-nums ${valueClass || 'text-slate-700'}`}>{value}</p>
   </div>
 );
 
 const MoreRows: React.FC<{ count: number }> = ({ count }) =>
   count > 0 ? (
-    <p className="py-2 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+    <p className="py-2 text-center t-caption">
       + yana {count} ta
     </p>
   ) : null;
@@ -230,18 +225,18 @@ const MoreRows: React.FC<{ count: number }> = ({ count }) =>
 // getFinanceSummary → stat tile qatori (kirim/chiqim/balans)
 const FinanceSummaryCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data, onOpen }) => (
   <DataCard title={`Moliya — oxirgi ${data.davr_kun} kun`} icon={Wallet} onOpen={onOpen} openLabel="Kassani ochish">
-    <div className="grid grid-cols-3 gap-2 py-2">
-      <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
-        <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
-        <p className="text-sm font-bold text-slate-900 mt-1">{fm(data.kirim)}</p>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 py-2">
+      <div className="p-3 rounded-card bg-emerald-50 border border-emerald-200 text-center">
+        <p className="label-caps text-emerald-600">Kirim</p>
+        <p className="text-sm font-semibold text-slate-900 mt-1 tabular-nums">{fm(data.kirim)}</p>
       </div>
-      <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 text-center">
-        <p className="text-[11px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
-        <p className="text-sm font-bold text-slate-900 mt-1">{fm(data.chiqim)}</p>
+      <div className="p-3 rounded-card bg-rose-50 border border-rose-200 text-center">
+        <p className="label-caps text-rose-600">Chiqim</p>
+        <p className="text-sm font-semibold text-slate-900 mt-1 tabular-nums">{fm(data.chiqim)}</p>
       </div>
-      <div className="p-3 rounded-2xl bg-slate-900 text-center">
-        <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
-        <p className="text-sm font-bold text-white mt-1">{fm(data.balans)}</p>
+      <div className="p-3 rounded-card bg-slate-50 border border-slate-200 text-center">
+        <p className="label-caps">Balans</p>
+        <p className="text-sm font-semibold text-slate-900 mt-1 tabular-nums">{fm(data.balans)}</p>
       </div>
     </div>
   </DataCard>
@@ -263,9 +258,9 @@ const CustomersCard: React.FC<{ title: string; items: any[]; total?: number; onO
     ))}
     <MoreRows count={items.length - 6} />
     {typeof total === 'number' && total > 0 && (
-      <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
-        <p className="text-sm font-bold text-rose-600">{fm(total)} so'm</p>
+      <div className="flex items-center justify-between py-2.5 border-t border-slate-200">
+        <p className="label-caps">Jami qarz</p>
+        <p className="text-sm font-semibold text-rose-600 tabular-nums">{fm(total)} so'm</p>
       </div>
     )}
   </DataCard>
@@ -307,34 +302,34 @@ const ColumnsCard: React.FC<{ items: any[]; onOpen?: () => void }> = ({ items, o
 const DebtorsReportCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data, onOpen }) => (
   <DataCard title={`Qarzdorlar hisoboti — ${data.soni} ta mijoz`} icon={UserSquare2} onOpen={onOpen} openLabel="Mijozlarni ochish">
     {(data.qarzdorlar || []).slice(0, 5).map((d: any) => (
-      <div key={d.id} className="py-2 border-b border-slate-50 last:border-0">
+      <div key={d.id} className="py-2 border-b border-slate-100 last:border-0">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-800 truncate">{d.name}</p>
+            <p className="t-body-md truncate">{d.name}</p>
             {d.eng_eski_qarz_kun !== null && (
-              <p className="text-xs font-semibold text-slate-400">{d.eng_eski_qarz_kun} kundan beri</p>
+              <p className="t-caption">{d.eng_eski_qarz_kun} kundan beri</p>
             )}
           </div>
-          <p className="text-sm font-bold text-rose-600 whitespace-nowrap">{fm(d.totalDebt)} so'm</p>
+          <p className="text-sm font-semibold text-rose-600 whitespace-nowrap tabular-nums">{fm(d.totalDebt)} so'm</p>
         </div>
         {(d.buyurtmalar || []).slice(0, 4).map((b: any, idx: number) => (
           <div key={idx} className="flex items-center justify-between gap-2 pl-3 mt-1">
             <p className="text-xs text-slate-500 truncate">
               {b.displayId ? `${b.displayId} · ` : ''}{b.nom}
-              <span className="text-slate-400"> · {b.necha_kun} kun</span>
+              <span className="text-slate-500"> · {b.necha_kun} kun</span>
             </p>
-            <p className="text-xs font-semibold text-rose-500 whitespace-nowrap">{fm(b.qoldiq)}</p>
+            <p className="text-xs font-medium text-rose-600 whitespace-nowrap tabular-nums">{fm(b.qoldiq)}</p>
           </div>
         ))}
         {(d.buyurtmalar || []).length > 4 && (
-          <p className="pl-3 mt-1 text-xs font-semibold text-slate-400">+ yana {d.buyurtmalar.length - 4} ta buyurtma</p>
+          <p className="pl-3 mt-1 t-caption">+ yana {d.buyurtmalar.length - 4} ta buyurtma</p>
         )}
       </div>
     ))}
     <MoreRows count={(data.qarzdorlar || []).length - 5} />
-    <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Jami qarz</p>
-      <p className="text-sm font-bold text-rose-600">{fm(data.jami_qarz)} so'm</p>
+    <div className="flex items-center justify-between py-2.5 border-t border-slate-200">
+      <p className="label-caps">Jami qarz</p>
+      <p className="text-sm font-semibold text-rose-600 tabular-nums">{fm(data.jami_qarz)} so'm</p>
     </div>
   </DataCard>
 );

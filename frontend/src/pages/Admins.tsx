@@ -119,9 +119,9 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
   if (isLoading) return <SkeletonTable rows={4} cols={4} />;
 
   return (
-    <div className="space-y-6 animate-fade-in relative">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in relative">
       {/* Tab switcher */}
-      <div className="flex gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto no-scrollbar">
+      <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-card border border-slate-200/50 max-w-full overflow-x-auto no-scrollbar">
         {[
           { id: 'admins', label: "Ma'murlar", icon: ShieldCheck },
           { id: 'branches', label: 'Filiallar', icon: Building2 },
@@ -130,13 +130,13 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
             key={tab.id}
             data-tour-id={`admin-tab-${tab.id}`}
             onClick={() => setActiveAdminTab(tab.id as any)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
+            className={`inline-flex items-center gap-2 px-4 py-2 h-[34px] rounded-control text-sm font-medium transition-all duration-120 whitespace-nowrap ${
               activeAdminTab === tab.id
-                ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/20'
-                : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                ? 'bg-white text-slate-900 shadow-sm font-semibold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             }`}
           >
-            <tab.icon size={15} /> {tab.label}
+            <tab.icon size={16} className={activeAdminTab === tab.id ? 'text-orange-600' : 'text-slate-500'} /> {tab.label}
           </button>
         ))}
       </div>
@@ -147,73 +147,73 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
         </React.Suspense>
       )}
 
-      {activeAdminTab === 'admins' && <div className="space-y-6 animate-fade-in">
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+      {activeAdminTab === 'admins' && <div className="space-y-4 sm:space-y-6 animate-fade-in">
+        <div className="bg-white p-4 sm:p-5 rounded-card border border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <div>
-            <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-              <ShieldCheck className="text-orange-600" size={22} /> Tizim Ma'murlari
+            <h3 className="card-title flex items-center gap-2">
+              <ShieldCheck className="text-[color:var(--primary)]" size={20} /> Tizim Ma'murlari
             </h3>
-            <p className="text-[11px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Asoschilar va raxbarlar uchun maxsus saxifa</p>
+            <p className="t-caption mt-0.5">Asoschilar va raxbarlar uchun maxsus saxifa</p>
           </div>
           {(isAdmin || p.canManageAdmins) && (
-             <button className="w-full sm:w-auto flex items-center justify-center gap-2 h-10 px-6 bg-orange-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all" onClick={() => { setGeneratedCredentials(null); setShowGenPass(false); setIsEmployeeModalOpen(true); }}>
-               <UserPlus size={16} strokeWidth={2.5} /> Yangi Ma'mur Qo'shish
+             <button className="btn-primary w-full sm:w-auto" onClick={() => { setGeneratedCredentials(null); setShowGenPass(false); setIsEmployeeModalOpen(true); }}>
+               <UserPlus size={16} /> Yangi Ma'mur Qo'shish
              </button>
           )}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-               <thead className="bg-slate-50/80">
-                <tr className="border-b border-slate-100">
-                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 py-3 px-5">F.I.SH & Aloqa</th>
-                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 px-5">Lavozimi</th>
-                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 px-5">Login</th>
-                  <th className="text-[11px] uppercase tracking-widest font-bold text-slate-400 text-right pr-6 px-5">Harakat</th>
+            <table className="table-minimal">
+               <thead>
+                <tr>
+                  <th>F.I.SH & Aloqa</th>
+                  <th className="hidden md:table-cell">Lavozimi</th>
+                  <th>Login</th>
+                  <th className="text-right">Harakat</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {employees.map(emp => (
-                  <tr key={emp.id} className="hover:bg-slate-50/40 transition-colors group">
-                    <td className="py-3 px-5">
-                      <p className="font-bold text-slate-800 text-xs lowercase first-letter:uppercase tracking-tight">{emp.fullName}</p>
-                      <p className="text-xs font-bold text-slate-500 mt-0.5">{emp.phone}</p>
+                  <tr key={emp.id} className="group">
+                    <td>
+                      <p className="font-semibold text-slate-800 lowercase first-letter:uppercase">{emp.fullName}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{emp.phone}</p>
                     </td>
-                    <td className="px-5">
-                      <span className="bg-orange-50 text-orange-700 text-[11px] font-bold px-2 py-1 rounded-lg border border-orange-100 uppercase tracking-tight">
+                    <td className="hidden md:table-cell">
+                      <span className="badge-primary">
                         {emp.role?.name || '—'}
                       </span>
                     </td>
-                    <td className="px-5 font-mono font-bold text-xs text-slate-500">
+                    <td className="font-mono text-slate-600">
                       <div className="flex items-center gap-1.5">
                         {emp.login}
                         {isAdmin && (
-                          <button onClick={() => openCredentialsModal(emp)} className="text-slate-300 hover:text-slate-500 transition-colors p-1" title="Ma'lumotlarni ko'rish">
-                            <Eye size={12} strokeWidth={2.5} />
+                          <button onClick={() => openCredentialsModal(emp)} className="text-slate-400 hover:text-slate-600 transition-colors p-1" title="Ma'lumotlarni ko'rish">
+                            <Eye size={12} />
                           </button>
                         )}
                       </div>
                     </td>
-                    <td className="text-right pr-6">
-                      <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="text-right">
+                      <div className="flex justify-end gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         {isAdmin && (
-                          <button onClick={() => handleRegeneratePassword(emp.id)} className="w-7 h-7 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 flex items-center justify-center border border-transparent hover:border-amber-100 shadow-sm" title="Parolni yangilash">
-                            <RefreshCw size={12} strokeWidth={3} />
+                          <button onClick={() => handleRegeneratePassword(emp.id)} className="w-8 h-8 rounded-control text-slate-500 hover:text-amber-600 hover:bg-amber-50 flex items-center justify-center transition-colors" title="Parolni yangilash">
+                            <RefreshCw size={12} />
                           </button>
                         )}
                         {(isAdmin || p.canManageAdmins) && (
-                          <button 
-                            onClick={() => handleDeleteEmployee(emp.id)} 
+                          <button
+                            onClick={() => handleDeleteEmployee(emp.id)}
                             disabled={emp.login === 'admin'}
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center border border-transparent transition-all shadow-sm ${
-                              emp.login === 'admin' 
-                                ? 'text-slate-200 cursor-not-allowed' 
-                                : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-100'
-                            }`} 
+                            className={`w-8 h-8 rounded-control flex items-center justify-center transition-colors ${
+                              emp.login === 'admin'
+                                ? 'text-slate-300 cursor-not-allowed'
+                                : 'text-slate-500 hover:text-rose-600 hover:bg-rose-50'
+                            }`}
                             title={emp.login === 'admin' ? "Asosiy adminni o'chirib bo'lmaydi" : "O'chirish"}
                           >
-                            <Trash2 size={12} strokeWidth={3} />
+                            <Trash2 size={12} />
                           </button>
                         )}
                       </div>
@@ -235,30 +235,30 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
       >
           {generatedCredentials ? (
             <div className="space-y-6 text-center animate-fade-in">
-               <div className="w-16 h-16 bg-emerald-100 text-emerald-500 flex items-center justify-center rounded-2xl mx-auto mb-4">
-                  <UserPlus size={32} />
+               <div className="w-16 h-16 bg-emerald-50 text-emerald-600 flex items-center justify-center rounded-card mx-auto mb-4">
+                  <UserPlus size={20} />
                </div>
-               <p className="text-sm font-bold text-slate-600 mb-6">Ma'mur tizimga kirishi uchun quyidagi ma'lumotlarni siri saqlagan holda unga taqdim eting:</p>
-               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-left space-y-4">
+               <p className="t-body text-slate-600 mb-6">Ma'mur tizimga kirishi uchun quyidagi ma'lumotlarni siri saqlagan holda unga taqdim eting:</p>
+               <div className="bg-slate-50 p-5 rounded-card border border-slate-200 text-left space-y-4">
                   <div>
-                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Login</p>
-                     <p className="font-mono text-lg font-bold text-slate-800 bg-white p-2 rounded-lg border border-slate-200 select-all tracking-wider">{generatedCredentials.login}</p>
+                     <p className="label-caps mb-1">Login</p>
+                     <p className="font-mono text-base font-semibold text-slate-800 bg-white p-2 rounded-control border border-slate-200 select-all">{generatedCredentials.login}</p>
                   </div>
                   <div>
-                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Parol</p>
+                     <p className="label-caps mb-1">Parol</p>
                      <div className="relative">
-                        <input 
-                           type={showGenPass ? "text" : "password"} 
-                           readOnly 
-                           value={generatedCredentials.password} 
-                           className="w-full font-mono text-lg font-bold text-orange-600 bg-white p-2 pr-12 rounded-lg border border-slate-200 select-all tracking-wider outline-none" 
+                        <input
+                           type={showGenPass ? "text" : "password"}
+                           readOnly
+                           value={generatedCredentials.password}
+                           className="w-full font-mono text-base font-semibold text-[color:var(--primary)] bg-white p-2 pr-12 rounded-control border border-slate-200 select-all outline-none"
                         />
-                        <button 
-                           type="button" 
+                        <button
+                           type="button"
                            onClick={() => setShowGenPass(!showGenPass)}
-                           className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-600 transition-colors"
+                           className="absolute right-2 top-1/2 -translate-y-1/2 icon-btn-sm"
                         >
-                           {showGenPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                           {showGenPass ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                      </div>
                   </div>
@@ -316,7 +316,7 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
                     type={showSelectedPass ? "text" : "password"} 
                     readOnly 
                     value={selectedEmp.password} 
-                    className="w-full font-mono font-semibold text-orange-700 bg-transparent text-sm select-all outline-none" 
+                    className="w-full font-mono font-semibold text-[color:var(--primary)] bg-transparent text-sm select-all outline-none"
                   />
                   <button 
                     type="button" 
@@ -331,7 +331,7 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
                 onClick={() => handleRegeneratePassword(selectedEmp.id)}
                 className="btn-outline w-full mt-2"
               >
-                <RefreshCw size={14} /> Yangi parol generatsiya qilish
+                <RefreshCw size={16} /> Yangi parol generatsiya qilish
               </button>
             </div>
           )}
@@ -345,7 +345,7 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
           title={confirmModal.title}
         >
           <div className="space-y-4">
-            <p className="text-sm text-slate-600">{confirmModal.message}</p>
+            <p className="t-body">{confirmModal.message}</p>
             <div className="flex gap-2.5">
               <button onClick={() => setConfirmModal(null)} className="flex-1 btn-outline">Bekor qilish</button>
               <button 

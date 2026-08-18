@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Wallet, Plus, Trash2, Edit3, User } from 'lucide-react';
 import { cashBoxApi } from '../api';
 import { useEmployees } from '../hooks/queries';
+import { Badge, EmptyState } from './ui';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('uz-UZ').format(n || 0).replace(/,/g, ' ') + ' UZS';
@@ -87,62 +88,59 @@ export const CashBoxManagerSection: React.FC<{
 
   return (
     <section className="space-y-4">
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-        <h3 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-          <Wallet className="text-emerald-500" size={24} /> Kassalar
+      <div className="bg-white p-4 rounded-card border border-slate-200">
+        <h3 className="t-h2 flex items-center gap-2">
+          <Wallet className="text-emerald-600" size={20} /> Kassalar
         </h3>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+        <p className="t-caption mt-1">
           Kassir / moliyachi kassalari, mas'ul xodim va balans
         </p>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm">
-        <form onSubmit={handleCreate} className="flex flex-col md:flex-row gap-3 mb-6 pb-6 border-b border-slate-100">
+      <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-6">
+        <form onSubmit={handleCreate} className="flex flex-col md:flex-row flex-wrap gap-2 mb-5 pb-5 border-b border-slate-100">
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="flex-1 h-12 text-base font-bold bg-slate-50 border-2 border-slate-50 rounded-xl px-5 outline-none focus:bg-white focus:border-emerald-500 transition-all placeholder:text-slate-300 shadow-inner"
+            className="input-minimal flex-1 md:min-w-[220px]"
             placeholder="Kassa nomi (Kassir kassasi, Moliyachi kassasi...)"
           />
           <select
             value={assignedUserId}
             onChange={(e) => setAssignedUserId(e.target.value)}
-            className="h-12 md:w-64 bg-slate-50 border-2 border-slate-50 rounded-xl px-4 outline-none focus:bg-white focus:border-emerald-500 text-sm font-bold text-slate-600"
+            className="select-minimal md:w-64"
           >
             <option value="">Mas'ulsiz</option>
             {(employees as any[]).map((e: any) => (
               <option key={e.id} value={e.id}>{e.fullName}</option>
             ))}
           </select>
-          <button
-            type="submit"
-            className="h-12 px-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-[0.1em] rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 active:scale-95"
-          >
-            <Plus size={18} strokeWidth={3} /> QO'SHISH
+          <button type="submit" className="btn-primary">
+            <Plus size={16} /> QO'SHISH
           </button>
         </form>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {boxes.map((b: any) => {
             const editing = editingId === b.id;
             return (
               <div
                 key={b.id}
-                className={`p-5 rounded-2xl border-2 transition-all group ${editing ? 'bg-white border-emerald-500 shadow-lg' : 'bg-slate-50/50 border-transparent hover:bg-white hover:border-emerald-200 hover:shadow-md'}`}
+                className={`group p-4 rounded-card border transition-colors duration-120 ${editing ? 'bg-primary-50 border-primary-300' : 'bg-white border-slate-200 hover:border-slate-300'}`}
               >
                 {editing ? (
-                  <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-2">
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="w-full h-10 text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 outline-none focus:border-emerald-500"
+                      className="input-minimal"
                     />
                     <select
                       value={editAssignee}
                       onChange={(e) => setEditAssignee(e.target.value)}
-                      className="w-full h-10 text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 outline-none focus:border-emerald-500"
+                      className="select-minimal"
                     >
                       <option value="">Mas'ulsiz</option>
                       {(employees as any[]).map((e: any) => (
@@ -150,36 +148,36 @@ export const CashBoxManagerSection: React.FC<{
                       ))}
                     </select>
                     <div className="flex gap-2">
-                      <button onClick={() => saveEdit(b.id)} className="flex-1 h-8 bg-emerald-500 text-white text-xs font-bold rounded-md hover:bg-emerald-600">SAQLASH</button>
-                      <button onClick={() => setEditingId(null)} className="flex-1 h-8 bg-slate-100 text-slate-500 text-xs font-bold rounded-md hover:bg-slate-200">BEKOR</button>
+                      <button onClick={() => saveEdit(b.id)} className="btn-primary h-sm flex-1">SAQLASH</button>
+                      <button onClick={() => setEditingId(null)} className="btn-outline h-sm flex-1">BEKOR</button>
                     </div>
                   </div>
                 ) : (
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-bold text-slate-800 truncate">{b.name}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="t-h3 truncate">{b.name}</span>
                           {b.type === 'main' && (
-                            <span className="text-[11px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-500">asosiy</span>
+                            <Badge variant="neutral" showDot={false}>asosiy</Badge>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                          <User size={11} /> {b.assignedUserName || employeeName(b.assignedUserId) || "Mas'ulsiz"}
+                        <p className="t-caption mt-1 flex items-center gap-1">
+                          <User size={12} /> {b.assignedUserName || employeeName(b.assignedUserId) || "Mas'ulsiz"}
                         </p>
                       </div>
-                      <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button onClick={() => startEdit(b)} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 border border-slate-100 flex items-center justify-center">
-                          <Edit3 size={14} />
+                      <div className="flex gap-1 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-120">
+                        <button onClick={() => startEdit(b)} className="icon-btn-sm hover:text-emerald-600 hover:bg-emerald-50">
+                          <Edit3 size={16} />
                         </button>
                         {b.type !== 'main' && (
-                          <button onClick={() => handleDelete(b)} className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 border border-slate-100 flex items-center justify-center">
-                            <Trash2 size={14} />
+                          <button onClick={() => handleDelete(b)} className="icon-btn-sm hover:text-rose-600 hover:bg-rose-50">
+                            <Trash2 size={16} />
                           </button>
                         )}
                       </div>
                     </div>
-                    <p className={`mt-3 text-lg font-bold tabular-nums ${(b.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <p className={`mt-3 text-base font-semibold tabular-nums ${(b.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {fmt(b.balance || 0)}
                     </p>
                   </div>
@@ -188,9 +186,8 @@ export const CashBoxManagerSection: React.FC<{
             );
           })}
           {boxes.length === 0 && (
-            <div className="col-span-full py-16 text-center border-4 border-dashed border-slate-100 rounded-[2rem]">
-              <Wallet size={40} className="mx-auto text-slate-200 mb-4" />
-              <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">Hozircha kassalar yo'q</p>
+            <div className="col-span-full">
+              <EmptyState icon={Wallet} title="Hozircha kassalar yo'q" />
             </div>
           )}
         </div>

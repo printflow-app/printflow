@@ -40,12 +40,12 @@ const fmt = (n: number) => {
 };
 
 const ScoreDelta = ({ current, previous }: { current: number; previous: number | null }) => {
-  if (previous === null || previous === undefined) return <span className="text-[11px] font-bold text-slate-300">—</span>;
+  if (previous === null || previous === undefined) return <span className="text-xs font-medium text-slate-400">—</span>;
   const diff = current - previous;
-  if (Math.abs(diff) < 2) return <span className="flex items-center gap-0.5 text-[11px] font-bold text-slate-400"><Minus size={9} />0</span>;
+  if (Math.abs(diff) < 2) return <span className="flex items-center justify-end gap-0.5 text-xs font-semibold text-slate-500"><Minus size={12} />0</span>;
   return diff > 0
-    ? <span className="flex items-center gap-0.5 text-[11px] font-bold text-emerald-600"><TrendingUp size={9} />+{diff}</span>
-    : <span className="flex items-center gap-0.5 text-[11px] font-bold text-rose-500"><TrendingDown size={9} />{diff}</span>;
+    ? <span className="flex items-center justify-end gap-0.5 text-xs font-semibold text-emerald-600"><TrendingUp size={12} />+{diff}</span>
+    : <span className="flex items-center justify-end gap-0.5 text-xs font-semibold text-rose-600"><TrendingDown size={12} />{diff}</span>;
 };
 
 const EmployeePerformanceTable: React.FC<Props> = ({ rows, velocity, prevRows, title, showTrend, showBar }) => {
@@ -53,35 +53,35 @@ const EmployeePerformanceTable: React.FC<Props> = ({ rows, velocity, prevRows, t
   const getPrevScore = (empId: string) => prevRows?.find(r => r.employeeId === empId)?.velocityScore ?? null;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+    <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+      <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <Award size={18} className="text-orange-500" /> {title}
+          <h3 className="card-title flex items-center gap-2">
+            <Award size={18} className="text-[color:var(--primary)]" /> {title}
           </h3>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+          <p className="t-caption mt-0.5">
             Bajarilgan buyurtmalar, muddatga rioya va daromad ulushi
           </p>
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+        <table className="table-minimal">
+          <thead>
             <tr>
-              <th className="text-left p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">#</th>
-              <th className="text-left p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Xodim</th>
-              <th className="text-right p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Bajarilgan</th>
-              <th className="text-right p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Jarayonda</th>
-              <th className="text-right p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Muddatga rioya</th>
-              <th className="text-right p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Avg vaqt</th>
-              <th className="text-right p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Daromad</th>
-              <th className="text-right p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Score</th>
-              {showTrend && <th className="text-right p-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Trend</th>}
+              <th className="text-left">#</th>
+              <th className="text-left">Xodim</th>
+              <th className="text-right">Bajarilgan</th>
+              <th className="text-right hidden md:table-cell">Jarayonda</th>
+              <th className="text-right hidden md:table-cell">Muddatga rioya</th>
+              <th className="text-right hidden lg:table-cell">Avg vaqt</th>
+              <th className="text-right hidden md:table-cell">Daromad</th>
+              <th className="text-right">Score</th>
+              {showTrend && <th className="text-right hidden md:table-cell">Trend</th>}
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={showTrend ? 9 : 8} className="p-8 text-center text-slate-400 font-bold text-xs uppercase">Ma'lumot yo'q</td></tr>
+              <tr><td colSpan={showTrend ? 9 : 8} className="p-8 text-center text-slate-500">Ma'lumot yo'q</td></tr>
             )}
             {rows.map((r, i) => {
               const vel = getVelocityData(r.employeeId);
@@ -90,35 +90,35 @@ const EmployeePerformanceTable: React.FC<Props> = ({ rows, velocity, prevRows, t
               const barPct = Math.round((r.velocityScore / (rows[0]?.velocityScore || 1)) * 100);
 
               return (
-                <tr key={r.employeeId} className={`border-t border-slate-100 hover:bg-orange-50/20 transition-colors ${i < 3 ? 'bg-orange-50/10' : ''}`}>
-                  <td className="p-3 font-bold text-slate-500 text-xs">{i + 1}</td>
-                  <td className="p-3">
-                    <div className="font-bold text-slate-800">{r.fullName}</div>
-                    <div className="text-xs text-slate-400 font-bold">{r.roleName || '—'}</div>
+                <tr key={r.employeeId} className={i < 3 ? 'bg-primary-50/50' : ''}>
+                  <td className="text-slate-500 tabular-nums">{i + 1}</td>
+                  <td>
+                    <div className="font-semibold text-slate-800">{r.fullName}</div>
+                    <div className="text-xs text-slate-500">{r.roleName || '—'}</div>
                   </td>
-                  <td className="p-3 text-right font-bold text-emerald-600">{r.completedTasks}</td>
-                  <td className="p-3 text-right font-bold text-amber-500">{r.pendingTasks}</td>
-                  <td className="p-3 text-right">
+                  <td className="text-right tabular-nums font-semibold text-emerald-600">{r.completedTasks}</td>
+                  <td className="text-right tabular-nums font-semibold text-amber-600 hidden md:table-cell">{r.pendingTasks}</td>
+                  <td className="text-right hidden md:table-cell">
                     {vel?.deadlineMeetRate != null
-                      ? <span className={`font-bold text-xs ${vel.deadlineMeetRate >= 80 ? 'text-emerald-600' : vel.deadlineMeetRate >= 50 ? 'text-amber-600' : 'text-rose-500'}`}>{vel.deadlineMeetRate}%</span>
-                      : <span className="text-slate-300 font-bold text-xs">—</span>}
+                      ? <span className={`font-semibold tabular-nums ${vel.deadlineMeetRate >= 80 ? 'text-emerald-600' : vel.deadlineMeetRate >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>{vel.deadlineMeetRate}%</span>
+                      : <span className="text-slate-400">—</span>}
                   </td>
-                  <td className="p-3 text-right font-bold text-slate-600">{avgHours != null ? `${avgHours}h` : '—'}</td>
-                  <td className="p-3 text-right font-bold text-slate-700 tabular-nums text-xs whitespace-nowrap">
+                  <td className="text-right tabular-nums text-slate-600 hidden lg:table-cell">{avgHours != null ? `${avgHours}h` : '—'}</td>
+                  <td className="text-right font-semibold text-slate-700 tabular-nums whitespace-nowrap hidden md:table-cell">
                     {vel ? fmt(vel.totalRevenue) : '—'}
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       {showBar && (
                         <div className="hidden md:block w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${barPct}%` }} />
+                          <div className="h-full bg-[color:var(--primary)] rounded-full transition-all" style={{ width: `${barPct}%` }} />
                         </div>
                       )}
-                      <span className="inline-block px-2.5 py-1 bg-orange-100 text-orange-700 rounded-md font-bold text-xs min-w-[36px] text-center">{r.velocityScore}</span>
+                      <span className="badge-primary tabular-nums min-w-[36px] justify-center">{r.velocityScore}</span>
                     </div>
                   </td>
                   {showTrend && (
-                    <td className="p-3 text-right">
+                    <td className="text-right hidden md:table-cell">
                       <ScoreDelta current={r.velocityScore} previous={prevScore} />
                     </td>
                   )}

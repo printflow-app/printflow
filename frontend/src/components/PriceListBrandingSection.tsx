@@ -177,82 +177,81 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
   return (
     <section className="space-y-4">
       {/* Sarlavha */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-card border border-slate-200">
         <div>
-          <h3 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <Palette className="text-orange-600" size={22} /> Narx Ro'yxati Brandingi
+          <h3 className="t-h2 flex items-center gap-2">
+            <Palette className="text-[color:var(--primary)]" size={20} /> Narx Ro'yxati Brandingi
           </h3>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+          <p className="t-caption mt-1">
             Mijozga ko'rinadigan narxlar varaqasi — ranglar, logo, sarlavha
           </p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <button
             onClick={resetDefaults}
             disabled={saving}
-            className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-orange-300 text-slate-700 h-10 px-4 text-xs font-bold uppercase tracking-widest rounded-xl transition-all disabled:opacity-50"
+            className="btn-outline"
             title="Ranglarni asl holatiga qaytarish"
           >
-            <RefreshCcw size={14} /> Default
+            <RefreshCcw size={16} /> Default
           </button>
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10 px-6 text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 transition-all disabled:opacity-50"
+            className="btn-primary"
           >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             {saving ? 'Saqlanyapti...' : 'Saqlash'}
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-12 flex justify-center">
-          <Loader2 size={28} className="text-orange-500 animate-spin" />
+        <div className="bg-white rounded-card border border-slate-200 p-12 flex justify-center">
+          <Loader2 size={20} className="text-[color:var(--primary)] animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* CHAP: sozlamalar formasi */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-6">
+          <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-6 space-y-6">
             {/* Logo */}
             <div>
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                <ImageIcon size={14} /> Logotip
+              <h4 className="t-h3 mb-3 flex items-center gap-2">
+                <ImageIcon size={16} /> Logotip
               </h4>
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="w-20 h-20 rounded-card border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {branding.logoBase64 ? (
                     <img src={branding.logoBase64} alt="logo" className="w-full h-full object-contain p-1" />
                   ) : (
-                    <ImageIcon size={24} className="text-slate-300" />
+                    <ImageIcon size={20} className="text-slate-400" />
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <label className="inline-flex items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 text-orange-700 h-9 px-4 text-xs font-bold uppercase tracking-widest rounded-lg cursor-pointer transition-all">
-                    Rasm tanlash
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  {branding.logoBase64 && (
-                    <button
-                      onClick={removeLogo}
-                      className="ml-2 inline-flex items-center justify-center h-9 px-3 text-xs font-bold uppercase tracking-widest rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 transition-all"
-                    >
-                      O'chirish
-                    </button>
-                  )}
-                  <p className="text-xs text-slate-400 mt-2">PNG/JPG. Maks 300 KB. Kichik logoda yaxshi ko'rinadi.</p>
+                <div className="flex-1 min-w-[180px]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="btn-outline h-sm cursor-pointer">
+                      Rasm tanlash
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {branding.logoBase64 && (
+                      <button onClick={removeLogo} className="btn-danger h-sm">
+                        O'chirish
+                      </button>
+                    )}
+                  </div>
+                  <p className="t-caption mt-2">PNG/JPG. Maks 300 KB. Kichik logoda yaxshi ko'rinadi.</p>
                 </div>
               </div>
             </div>
 
             {/* Matnlar */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Matnlar</h4>
+              <h4 className="t-h3">Matnlar</h4>
               <TextField
                 label="Kompaniya nomi (bo'sh qoldirilsa tenant nomi ishlatiladi)"
                 placeholder="Masalan: Puff Print Studio"
@@ -293,27 +292,27 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
 
             {/* Ranglar */}
             <div>
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+              <h4 className="t-h3 mb-3">
                 Ranglar — har birini tanlang
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {COLOR_FIELDS.map(field => (
-                  <div key={field.key} className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:border-orange-200 hover:bg-orange-50/30 transition-all">
+                  <div key={field.key} className="flex items-start gap-3 p-3 rounded-control border border-slate-200 hover:border-primary-300 transition-colors duration-120">
                     <input
                       type="color"
                       value={(branding as any)[field.key] || DEFAULTS[field.key]}
                       onChange={e => updateColor(field.key, e.target.value)}
-                      className="w-12 h-12 rounded-lg border-2 border-slate-200 cursor-pointer flex-shrink-0"
+                      className="w-11 h-11 rounded-control border border-slate-200 cursor-pointer flex-shrink-0"
                       title={field.label}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight">{field.label}</p>
-                      <p className="text-xs text-slate-500 leading-snug mt-0.5">{field.description}</p>
+                      <p className="t-h3">{field.label}</p>
+                      <p className="t-caption leading-snug mt-0.5">{field.description}</p>
                       <input
                         type="text"
                         value={(branding as any)[field.key] || DEFAULTS[field.key]}
                         onChange={e => updateColor(field.key, e.target.value)}
-                        className="mt-1.5 h-7 px-2 w-28 text-xs font-mono font-bold uppercase border border-slate-200 rounded-md focus:outline-none focus:border-orange-400"
+                        className="input-minimal h-control-sm w-28 mt-1.5 text-xs font-mono uppercase"
                         spellCheck={false}
                       />
                     </div>
@@ -324,11 +323,11 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
           </div>
 
           {/* O'NG: live preview */}
-          <div className="bg-slate-100 rounded-3xl border border-slate-200 p-4 sm:p-6 sticky top-4 self-start max-h-[calc(100vh-6rem)] overflow-hidden">
-            <div className="flex items-center gap-2 mb-3 text-xs font-bold text-slate-500 uppercase tracking-widest">
-              <Eye size={14} /> Live preview
+          <div className="bg-slate-50 rounded-card border border-slate-200 p-4 lg:sticky lg:top-4 self-start max-h-[calc(100vh-6rem)] overflow-hidden">
+            <div className="label-caps flex items-center gap-2 mb-3">
+              <Eye size={16} /> Live preview
             </div>
-            <div className="overflow-auto custom-scroll bg-slate-200 rounded-2xl p-3" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
+            <div className="overflow-auto custom-scroll bg-slate-100 rounded-card p-3" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
               {previewData ? (
                 <div className="origin-top-left" style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: 'fit-content' }}>
                   <PriceListView data={previewData} />
@@ -339,7 +338,7 @@ export const PriceListBrandingSection: React.FC<Props> = ({ tenantSlug, activeBr
                 </div>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-2 text-center">
+            <p className="t-caption mt-2 text-center">
               Saqlagandan keyin mijozlar ushbu ko'rinishni ko'radi
             </p>
           </div>
@@ -357,7 +356,7 @@ const TextField: React.FC<{
   placeholder?: string;
 }> = ({ label, value, onChange, placeholder }) => (
   <div>
-    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+    <label className="form-label">
       {label}
     </label>
     <input
@@ -365,7 +364,7 @@ const TextField: React.FC<{
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full h-10 px-3 text-sm font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-orange-400 focus:bg-white transition-colors"
+      className="input-minimal"
     />
   </div>
 );

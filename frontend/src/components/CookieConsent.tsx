@@ -57,11 +57,11 @@ const CookieConsent: React.FC = () => {
       `}</style>
 
       <div style={{
-        background: '#0f172a',
-        borderRadius: 20,
+        background: '#ffffff',
+        borderRadius: 16,
         padding: '20px 24px',
-        boxShadow: '0 20px 60px -10px rgba(0,0,0,0.4)',
-        border: '1px solid rgba(255,107,0,0.2)',
+        boxShadow: '0 16px 44px rgba(41, 37, 36, 0.14)',
+        border: '1px solid var(--border)',
         display: 'flex',
         flexDirection: 'column',
         gap: 16,
@@ -69,21 +69,21 @@ const CookieConsent: React.FC = () => {
         {/* Top row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: 'rgba(255,107,0,0.15)',
+            width: 40, height: 40, borderRadius: 8,
+            background: 'var(--primary-glow)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, border: '1px solid rgba(255,107,0,0.3)',
+            flexShrink: 0,
           }}>
-            <Cookie size={20} color="#FF6B00" />
+            <Cookie size={20} color="var(--primary)" />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '0 0 2px' }}>
-              <p style={{ color: '#f1f5f9', fontWeight: 800, fontSize: '0.9rem', margin: 0, letterSpacing: '-0.3px' }}>
+              <p style={{ color: 'var(--foreground)', fontWeight: 600, fontSize: '0.9rem', margin: 0, letterSpacing: '-0.01em' }}>
                 Biz xavfsizlikni qadrlaymiz
               </p>
-              <ShieldCheck size={14} color="#FF6B00" />
+              <ShieldCheck size={14} color="var(--primary)" />
             </div>
-            <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: 0, lineHeight: 1.4 }}>
+            <p style={{ color: 'var(--muted-foreground)', fontSize: '0.8rem', margin: 0, lineHeight: 1.5 }}>
               Tizim ishlashi uchun cookie fayllaridan foydalanamiz.
             </p>
           </div>
@@ -94,29 +94,27 @@ const CookieConsent: React.FC = () => {
           <button
             onClick={decline}
             style={{
-              flex: 1, height: 42, borderRadius: 12, cursor: 'pointer',
-              background: 'rgba(255,255,255,0.06)', color: '#94a3b8',
-              border: '1px solid rgba(255,255,255,0.08)',
-              fontSize: '0.82rem', fontWeight: 700, letterSpacing: 0.5,
-              transition: 'all 0.2s',
+              flex: 1, height: 44, borderRadius: 8, cursor: 'pointer',
+              background: '#ffffff', color: 'var(--muted)',
+              border: '1px solid var(--border)',
+              fontSize: '0.875rem', fontWeight: 500,
+              transition: 'all 0.12s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+            onMouseEnter={e => (e.currentTarget.style.background = '#f5f2ee')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
           >
             Rad etish
           </button>
           <button
             onClick={accept}
             style={{
-              flex: 2, height: 42, borderRadius: 12, cursor: 'pointer',
-              background: '#FF6B00', color: '#fff',
-              border: 'none', fontSize: '0.82rem', fontWeight: 800,
-              letterSpacing: 0.5, textTransform: 'uppercase',
-              boxShadow: '0 4px 20px rgba(255,107,0,0.35)',
-              transition: 'all 0.2s',
+              flex: 2, height: 44, borderRadius: 8, cursor: 'pointer',
+              background: 'var(--primary)', color: '#fff',
+              border: 'none', fontSize: '0.875rem', fontWeight: 500,
+              transition: 'all 0.12s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#e85e00')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#FF6B00')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--primary-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--primary)')}
           >
             Qabul qilish
           </button>

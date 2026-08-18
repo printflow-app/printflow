@@ -152,17 +152,17 @@ const MijozTanlash: React.FC<{
       </label>
 
       {!tanlangan ? (
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="button"
             onClick={() => { setOchiq(true); }}
-            className="flex-1 h-12 flex items-center gap-2 bg-white border-2 border-[color:var(--border)] rounded-lg px-3 text-left hover:border-slate-300 transition-colors"
+            className="flex-1 min-w-0 h-control-lg flex items-center gap-2 bg-white border border-slate-200 rounded-control px-3 text-left hover:border-slate-300 transition-colors duration-120"
           >
-            <Search size={15} className="text-slate-400 shrink-0" />
-            <span className="flex-1 text-sm text-slate-400">
+            <Search size={16} className="text-slate-400 shrink-0" />
+            <span className="flex-1 min-w-0 truncate text-sm text-slate-400">
               Tashkilot yoki vakil ismini yozing...
             </span>
-            <ChevronDown size={15} className="text-slate-400 shrink-0" />
+            <ChevronDown size={16} className="text-slate-400 shrink-0" />
           </button>
           {/* Yangi tashkilot — qidiruvni ochmasdan ham ko'rinib turishi kerak.
               Avval bu imkoniyat faqat qidiruv natijalari ostida chiqardi va
@@ -170,9 +170,9 @@ const MijozTanlash: React.FC<{
           <button
             type="button"
             onClick={() => { onChange(bosh); setYangiRejim(true); setVakilQoshish(true); }}
-            className="h-12 px-3 shrink-0 flex items-center gap-1.5 bg-white border-2 border-dashed border-orange-300 rounded-lg text-xs font-bold text-orange-600 hover:bg-orange-50 transition-colors"
+            className="btn-outline h-control-lg shrink-0 border-dashed"
           >
-            <Plus size={14} /> Yangi tashkilot
+            <Plus size={16} /> Yangi tashkilot
           </button>
         </div>
       ) : (
@@ -188,14 +188,14 @@ const MijozTanlash: React.FC<{
         //
         // Endi har maydonning tepasida doimiy yorlig'i bor va ikki bo'lim
         // chiziq bilan ajratilgan.
-        <div className="w-full bg-white border-2 border-[color:var(--border)] rounded-lg overflow-hidden">
+        <div className="w-full bg-white border border-slate-200 rounded-card overflow-hidden">
           {/* ————— 1. TASHKILOT ————— */}
           <div className="px-3 pt-2.5 pb-3">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Building2 size={11} /> Tashkilot
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <span className="label-caps flex items-center gap-1.5">
+                <Building2 size={12} /> Tashkilot
                 {!qiymat.customerId && (
-                  <span className="text-[9px] text-orange-600 bg-orange-50 border border-orange-200 rounded px-1 py-0.5">
+                  <span className="badge-primary">
                     yangi
                   </span>
                 )}
@@ -204,12 +204,12 @@ const MijozTanlash: React.FC<{
                 <button
                   type="button"
                   onClick={() => { setOchiq(true); setQidiruv(''); }}
-                  className="text-[11px] font-bold text-slate-500 hover:text-slate-800 px-2 py-1"
+                  className="btn-ghost h-sm"
                 >
                   Boshqasini tanlash
                 </button>
-                <button type="button" onClick={tozala} title="Tozalash" className="icon-btn">
-                  <X size={14} />
+                <button type="button" onClick={tozala} title="Tozalash" className="icon-btn-sm">
+                  <X size={16} />
                 </button>
               </div>
             </div>
@@ -219,7 +219,7 @@ const MijozTanlash: React.FC<{
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="block">
-                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">Nomi</span>
+                  <span className="form-label">Nomi</span>
                   <input
                     autoFocus={!qiymat.customerName}
                     placeholder="Masalan: KIA"
@@ -229,7 +229,7 @@ const MijozTanlash: React.FC<{
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">
+                  <span className="form-label">
                     Telefoni <span className="font-normal text-slate-400">— ixtiyoriy</span>
                   </span>
                   <input
@@ -247,7 +247,7 @@ const MijozTanlash: React.FC<{
                 emas, odamning o'zidan keladi — soxta tashkilot nomi o'ylab
                 topish shart emasligini aytib qo'yamiz. */}
             {!qiymat.customerId && !qiymat.customerName.trim() && (
-              <p className="mt-1.5 text-[11px] text-slate-400 leading-snug">
+              <p className="mt-1.5 text-hint leading-snug">
                 Bo'sh qolsa — pastdagi vakil ismi mijoz bo'lib saqlanadi (jismoniy shaxs).
               </p>
             )}
@@ -255,16 +255,16 @@ const MijozTanlash: React.FC<{
 
           {/* ————— 2. VAKIL ————— */}
           <div className="px-3 pt-2.5 pb-3 border-t border-slate-100 bg-slate-50/70">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <User size={11} /> Vakil
-                <span className="normal-case font-medium text-slate-400">— kim buyurtma berdi</span>
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <span className="label-caps flex items-center gap-1.5">
+                <User size={12} /> Vakil
+                <span className="normal-case font-medium tracking-normal text-slate-400">— kim buyurtma berdi</span>
               </span>
               {(qiymat.contactId || yangiVakilRejimi) && (
                 <button
                   type="button"
                   onClick={vakilBekor}
-                  className="text-[11px] font-bold text-slate-400 hover:text-rose-600 px-2 py-1 shrink-0"
+                  className="btn-ghost h-sm hover:text-rose-600 shrink-0"
                 >
                   Olib tashlash
                 </button>
@@ -284,7 +284,7 @@ const MijozTanlash: React.FC<{
             ) : yangiVakilRejimi ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <label className="block">
-                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">Ismi</span>
+                  <span className="form-label">Ismi</span>
                   <input
                     autoFocus
                     placeholder="Masalan: Zafarbek"
@@ -294,7 +294,7 @@ const MijozTanlash: React.FC<{
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">Telefoni</span>
+                  <span className="form-label">Telefoni</span>
                   <input
                     inputMode="tel"
                     placeholder="+998 90 123 45 67"
@@ -304,7 +304,7 @@ const MijozTanlash: React.FC<{
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[11px] font-semibold text-slate-500 mb-1">
+                  <span className="form-label">
                     Lavozimi <span className="font-normal text-slate-400">— ixtiyoriy</span>
                   </span>
                   <input
@@ -323,18 +323,18 @@ const MijozTanlash: React.FC<{
                     key={v.id}
                     type="button"
                     onClick={() => vakilTanla(tanlanganMijoz!, v)}
-                    className="inline-flex items-center gap-1.5 bg-white border border-[color:var(--border)] rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-colors"
+                    className="btn-outline h-sm max-w-full"
                   >
-                    <User size={11} /> {v.name}
-                    {v.role && <span className="text-slate-400">· {v.role}</span>}
+                    <User size={16} /> <span className="truncate">{v.name}</span>
+                    {v.role && <span className="text-slate-400 truncate">· {v.role}</span>}
                   </button>
                 ))}
                 <button
                   type="button"
                   onClick={() => setVakilQoshish(true)}
-                  className="inline-flex items-center gap-1 bg-white border border-dashed border-orange-300 rounded-lg px-2.5 py-1 text-xs font-bold text-orange-600 hover:bg-orange-50 transition-colors"
+                  className="btn-outline h-sm border-dashed"
                 >
-                  <Plus size={11} /> Yangi vakil
+                  <Plus size={16} /> Yangi vakil
                 </button>
               </div>
             )}
@@ -343,9 +343,9 @@ const MijozTanlash: React.FC<{
       )}
 
       {ochiq && (
-        <div className="absolute z-[110] left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-slide-up">
+        <div className="absolute z-dropdown left-0 right-0 mt-1 bg-white rounded-overlay border border-slate-200 shadow-lg overflow-hidden animate-slide-up">
           <div className="relative border-b border-slate-100">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               autoFocus
               value={qidiruv}
@@ -362,10 +362,10 @@ const MijozTanlash: React.FC<{
             <button
               type="button"
               onClick={yangiTashkilot}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left border-b border-slate-100 bg-orange-50/40 hover:bg-orange-50 transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left border-b border-slate-100 bg-primary-50 hover:bg-primary-100 transition-colors duration-120"
             >
-              <Plus size={14} className="text-orange-500 shrink-0" />
-              <span className="text-sm font-semibold text-orange-600 truncate">
+              <Plus size={16} className="text-[color:var(--primary)] shrink-0" />
+              <span className="text-sm font-semibold text-primary-700 truncate">
                 {qidiruv.trim()
                   ? `«${qidiruv.trim()}» nomli yangi tashkilot`
                   : 'Yangi tashkilot qo\'shish'}

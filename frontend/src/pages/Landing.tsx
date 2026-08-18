@@ -103,7 +103,7 @@ function KanbanMockup() {
         {columns.map((col) => (
           <div key={col.title} className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: col.color }}>{col.title}</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: col.color }}>{col.title}</span>
               <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: col.color }}>{col.tasks.length}</span>
             </div>
             <div className="space-y-1.5">
@@ -136,7 +136,7 @@ function FinanceMockup() {
       <div className="p-4 border-b border-slate-100 flex items-center justify-between">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Yillik Daromad</p>
-          <p className="text-lg font-black text-slate-900 tracking-tight">142.5M UZS</p>
+          <p className="text-lg font-semibold text-slate-900 tracking-tight">142.5M UZS</p>
         </div>
         <div className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex items-center gap-1">
           <TrendingUp size={10} /> +24%
@@ -176,14 +176,14 @@ function AttendanceMockup() {
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="p-4 border-b border-slate-100 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+        <div className="w-2 h-2 rounded-full bg-[color:var(--primary)] animate-pulse" />
         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Bugungi Davomat</span>
       </div>
       <div className="p-3 space-y-2">
         {employees.map((emp, i) => (
           <div key={i} className="flex items-center gap-2">
             <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black flex-shrink-0"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0"
               style={{ background: `hsl(${i * 80 + 200}, 60%, 92%)`, color: `hsl(${i * 80 + 200}, 60%, 40%)` }}
             >
               {emp.name[0]}
@@ -200,7 +200,7 @@ function AttendanceMockup() {
                 ))}
               </div>
             </div>
-            <span className="text-[11px] font-black text-emerald-600 flex-shrink-0">
+            <span className="text-[11px] font-semibold text-emerald-600 flex-shrink-0">
               {emp.days.filter(Boolean).length}/10
             </span>
           </div>
@@ -341,8 +341,8 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
         <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 md:h-20 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5 flex-shrink-0">
             <img src={logo} alt="PrintFlow" className="h-8 w-auto" />
-            <span className="text-lg font-black tracking-tight text-slate-900">
-              Print<span className="text-orange-500">Flow</span>
+            <span className="text-lg font-semibold tracking-tight text-slate-900">
+              Print<span className="text-[color:var(--primary)]">Flow</span>
             </span>
           </a>
 
@@ -354,7 +354,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                 className="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors duration-200 relative group"
               >
                 {link.label}
-                <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-orange-500 rounded-full transition-all duration-300 group-hover:w-full" />
+                <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-[color:var(--primary)] rounded-full transition-all duration-300 group-hover:w-full" />
               </button>
             ))}
           </nav>
@@ -368,7 +368,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
             </button>
             <motion.button
               onClick={handleStartTrial}
-              className="h-9 px-5 text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-xl shadow-md shadow-orange-500/20 transition-all"
+              className="h-9 px-5 text-sm font-bold text-white bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] rounded-xl shadow-md transition-all"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
             >
@@ -404,7 +404,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                   <button onClick={onLoginClick} className="flex-1 h-10 text-sm font-bold border border-slate-200 rounded-xl text-slate-700">
                     Kirish
                   </button>
-                  <button onClick={handleStartTrial} className="flex-1 h-10 text-sm font-bold bg-orange-500 text-white rounded-xl shadow-md shadow-orange-500/20">
+                  <button onClick={handleStartTrial} className="flex-1 h-10 text-sm font-bold bg-[color:var(--primary)] text-white rounded-xl shadow-md">
                     Boshlash
                   </button>
                 </div>
@@ -426,11 +426,11 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-bold px-4 py-2 rounded-full mb-8 uppercase tracking-wider"
+            className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-8 uppercase tracking-wider"
           >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[color:var(--primary)] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[color:var(--primary)]" />
             </span>
             7 Kun Bepul Trial
           </motion.div>
@@ -467,7 +467,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
           >
             <motion.button
               onClick={handleStartTrial}
-              className="h-14 px-8 bg-orange-500 hover:bg-orange-600 text-white font-bold text-base rounded-2xl shadow-xl shadow-orange-500/30 flex items-center gap-2 transition-all"
+              className="h-14 px-8 bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] text-white font-bold text-base rounded-2xl shadow-xl flex items-center gap-2 transition-all"
               whileHover={{ scale: 1.04, y: -2 }}
               whileTap={{ scale: 0.97 }}
             >
@@ -508,7 +508,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
             whileInView="show"
             viewport={{ once: true, margin: '-80px' }}
           >
-            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
+            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
               <Sparkles size={12} /> Nima uchun PrintFlow?
             </motion.div>
             <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
@@ -552,7 +552,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               whileInView="show"
               viewport={{ once: true, margin: '-80px' }}
             >
-              <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[color:var(--primary)] text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
                 <CreditCard size={10} /> Moliya Moduli
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
@@ -566,7 +566,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                 {['Kunlik / haftalik / oylik dinamika grafiği', "To'lov turlari bo'yicha taqsimlash", 'Xarajat kategoriyalari tahlili', 'Mijozlar qarzi avtomatik hisoblanadi'].map((b, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm font-semibold text-slate-700">
                     <div className="w-5 h-5 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center flex-shrink-0">
-                      <Check size={11} className="text-orange-500" strokeWidth={3} />
+                      <Check size={11} className="text-[color:var(--primary)]" strokeWidth={3} />
                     </div>
                     {b}
                   </li>
@@ -676,7 +676,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               whileInView="show"
               viewport={{ once: true }}
             >
-              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 text-orange-500 text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
+              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-[color:var(--primary)]/10 border border-orange-500/30 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
                 <Zap size={12} /> Narxlar
               </motion.div>
               <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-black text-white tracking-tight mb-4">
@@ -693,7 +693,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               {/* Muddat — tanlov emas, ma'lumot: obuna faqat 12 oylik. */}
               <motion.div variants={fadeUp} className="inline-flex items-center bg-slate-900 border border-slate-800 px-5 py-2.5 rounded-xl gap-2.5">
                 <span className="text-sm font-bold text-white">12 Oylik obuna</span>
-                <span className="text-xs font-bold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-md">-10%</span>
+                <span className="text-xs font-bold text-[color:var(--primary)] bg-[color:var(--primary)]/10 px-2 py-0.5 rounded-md">-10%</span>
               </motion.div>
             </motion.div>
 
@@ -729,18 +729,18 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                     variants={fadeUp}
                     className={`pricing-card-pop relative rounded-2xl p-6 flex flex-col w-full sm:w-[340px] ${
                       plan.isPopular
-                        ? 'bg-orange-500 text-white shadow-2xl shadow-orange-500/30'
+                        ? 'bg-[color:var(--primary)] text-white shadow-2xl'
                         : 'bg-slate-900 border border-slate-800 text-white'
                     }`}
                   >
                     {plan.isPopular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-orange-500 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider shadow-md">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-[color:var(--primary)] text-xs font-semibold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-md">
                         ⭐ Eng Ommabop
                       </div>
                     )}
 
                     <div className="mb-5">
-                      <h3 className={`text-lg font-black mb-1 ${plan.isPopular ? 'text-white' : 'text-white'}`}>
+                      <h3 className={`text-lg font-semibold mb-1 ${plan.isPopular ? 'text-white' : 'text-white'}`}>
                         {plan.displayName}
                       </h3>
                       <p className={`text-sm ${plan.isPopular ? 'text-orange-100' : 'text-slate-400'}`}>
@@ -771,7 +771,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                                 : plan.isPopular ? 'bg-white/5' : 'bg-slate-800'
                             }`}>
                               {val
-                                ? <Check size={11} className={plan.isPopular ? 'text-white' : 'text-orange-500'} strokeWidth={3} />
+                                ? <Check size={11} className={plan.isPopular ? 'text-white' : 'text-[color:var(--primary)]'} strokeWidth={3} />
                                 : <div className="w-2 h-px bg-current opacity-30" />}
                             </div>
                             <span className={val
@@ -789,8 +789,8 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       onClick={() => scrollTo('contact')}
                       className={`w-full h-11 rounded-xl font-bold text-sm transition-all ${
                         plan.isPopular
-                          ? 'bg-white text-orange-500 hover:bg-orange-50'
-                          : 'bg-orange-500 text-white hover:bg-orange-600 shadow-lg shadow-orange-500/20'
+                          ? 'bg-white text-[color:var(--primary)] hover:bg-orange-50'
+                          : 'bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary-hover)] shadow-lg'
                       }`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.97 }}
@@ -809,7 +809,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
       {clientLogos.length > 0 && (
         <section className="py-16 bg-white border-y border-slate-100 overflow-hidden">
           <div className="max-w-7xl mx-auto px-5 md:px-8 text-center mb-10">
-            <p className="text-xs font-black text-slate-300 uppercase tracking-[0.3em]">Bizga ishongan bosmaxonalar</p>
+            <p className="text-xs font-semibold text-slate-300 uppercase tracking-[0.3em]">Bizga ishongan bosmaxonalar</p>
           </div>
           <div className="relative overflow-hidden">
             <div className="logo-track flex w-max">
@@ -839,12 +839,12 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               whileInView="show"
               viewport={{ once: true }}
             >
-              <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-600 text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-wider">
                 <Send size={12} /> Demo So'rov
               </div>
               <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-5 leading-tight">
                 Batafsil ma'lumot<br />
-                <span className="text-orange-500">olish uchun</span>
+                <span className="text-[color:var(--primary)]">olish uchun</span>
               </h2>
               <p className="text-slate-500 text-base leading-relaxed mb-8">
                 PrintFlow qanday ishlashini amalda ko'rish uchun hoziroq so'rov qoldiring. 24 soat ichida bog'lanamiz.
@@ -858,7 +858,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                   { icon: <ShieldCheck size={16} />, text: "Ma'lumotlar xavfsizligi kafolati" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 text-orange-500 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 text-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
                       {item.icon}
                     </div>
                     {item.text}
@@ -876,7 +876,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               viewport={{ once: true }}
             >
               <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200 p-8 md:p-10 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 rounded-t-3xl" />
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[color:var(--primary)] rounded-t-3xl" />
 
                 <AnimatePresence mode="wait">
                   {formStatus === 'success' ? (
@@ -891,14 +891,14 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       </div>
                       <h3 className="text-xl font-black text-slate-900 mb-2">So'rov Qabul Qilindi!</h3>
                       <p className="text-slate-500 text-sm mb-6">Tez orada siz bilan bog'lanamiz.</p>
-                      <button onClick={() => setFormStatus('idle')} className="h-11 px-6 bg-orange-500 text-white font-bold rounded-xl text-sm hover:bg-orange-600 transition-all">
+                      <button onClick={() => setFormStatus('idle')} className="h-11 px-6 bg-[color:var(--primary)] text-white font-bold rounded-xl text-sm hover:bg-orange-600 transition-all">
                         Yangi So'rov
                       </button>
                     </motion.div>
                   ) : (
                     <motion.form key="form" onSubmit={handleSubmit} className="space-y-4">
                       <div>
-                        <h3 className="text-lg font-black text-slate-900 mb-1">Demo So'rov Qoldiring</h3>
+                        <h3 className="text-lg font-semibold text-slate-900 mb-1">Demo So'rov Qoldiring</h3>
                         <p className="text-sm text-slate-400">Barcha maydonlarni to'ldiring</p>
                       </div>
 
@@ -979,7 +979,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       <motion.button
                         type="submit"
                         disabled={formStatus === 'loading'}
-                        className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+                        className="w-full h-12 bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] text-white font-bold text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all disabled:opacity-60"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.97 }}
                       >
@@ -1005,8 +1005,8 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
             <div>
               <a href="/" className="flex items-center gap-2.5 mb-3">
                 <img src={logo} alt="PrintFlow" className="h-7 w-auto" />
-                <span className="text-base font-black text-white">
-                  Print<span className="text-orange-500">Flow</span>
+                <span className="text-base font-semibold text-white">
+                  Print<span className="text-[color:var(--primary)]">Flow</span>
                 </span>
               </a>
               <p className="text-sm text-slate-500 max-w-xs">
@@ -1023,7 +1023,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                   {link.label}
                 </button>
               ))}
-              <button onClick={onLoginClick} className="text-sm font-semibold text-orange-500 hover:text-orange-400 transition-colors">
+              <button onClick={onLoginClick} className="text-sm font-semibold text-[color:var(--primary)] hover:text-orange-400 transition-colors">
                 Tizimga Kirish
               </button>
             </div>
@@ -1049,7 +1049,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
           <button
             key={item.id}
             onClick={() => scrollTo(item.id)}
-            className="flex-1 flex flex-col items-center py-3 gap-1 text-slate-400 hover:text-orange-500 transition-colors"
+            className="flex-1 flex flex-col items-center py-3 gap-1 text-slate-400 hover:text-[color:var(--primary)] transition-colors"
           >
             {item.icon}
             <span className="text-[11px] font-bold uppercase tracking-wide">{item.label}</span>

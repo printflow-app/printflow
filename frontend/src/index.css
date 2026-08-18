@@ -50,6 +50,16 @@
   --bg-surface: var(--card);
   --text-main: var(--foreground);
   --color-primary: var(--primary);
+
+  /* Landing sahifasi (legacy CSS) shu nomlarga tayanadi. Ilgari ular hech
+     qayerda e'lon qilinmagan edi — natijada .logo, .nav, .feature-card,
+     .footer ranglari meros/shaffof bo'lib qolardi. Endi brend tokenlariga
+     bog'landi: landing ham ilova bilan bir xil palitrada. */
+  --text: var(--foreground);
+  --text-muted: var(--muted-foreground);
+  --panel: var(--card);
+  --bg-secondary: var(--surface-2);
+  --primary-glow: rgba(234, 88, 12, 0.18);
 }
 
 /* Telefonda barmoq uchun controllar kattaroq (DESIGN-SYSTEM.md §12: 640px ostida 44px) */
@@ -701,9 +711,7 @@ body {
 }
 
 .hero h1 span {
-  background: linear-gradient(90deg, #FF6B00 0%, #FF983F 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary);
 }
 
 .hero p {

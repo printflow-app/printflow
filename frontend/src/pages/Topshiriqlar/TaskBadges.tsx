@@ -53,13 +53,11 @@ function IdPill({ id }: { id: string }) {
       type="button"
       onClick={nusxaOl}
       title={nusxalandi ? 'Nusxalandi' : 'ID dan nusxa olish'}
-      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-bold font-mono tracking-tight transition-colors ${
-        nusxalandi
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-          : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-300'
+      className={`font-mono transition-colors duration-120 ${
+        nusxalandi ? 'badge-success' : 'badge-primary hover:bg-orange-100'
       }`}
     >
-      {nusxalandi ? <Check size={10} strokeWidth={3} /> : <Copy size={10} className="opacity-70" />}
+      {nusxalandi ? <Check size={12} /> : <Copy size={12} className="opacity-70" />}
       {id}
     </button>
   );
@@ -71,13 +69,13 @@ export function TaskIdentityBadges({ task, vendor, isMyTask }: IdentityProps) {
     <div className="flex items-center gap-1 mb-1.5 -mt-0.5 flex-wrap">
       <IdPill id={task.displayId || `#${task.id.slice(-6).toUpperCase()}`} />
       {vendor && (
-        <span className="badge-neutral gap-1 text-amber-700 bg-amber-50">
-          <Handshake size={10} /> {vendor.name}
+        <span className="badge-warning">
+          <Handshake size={12} /> {vendor.name}
         </span>
       )}
       {isMyTask && (
-        <span className="badge-neutral gap-1 text-slate-700 bg-slate-50">
-          <Users size={10} /> Menda
+        <span className="badge-neutral">
+          <Users size={12} /> Menda
         </span>
       )}
     </div>
@@ -122,28 +120,28 @@ export function TaskDeadlineBadges({ task, activeBranchId, branches, bajarilgan 
   return (
     <div className="flex flex-wrap gap-1 mb-2">
       {isPastDeadline && (
-        <span className="badge-danger gap-1">
-          <AlertTriangle size={10} /> Muddat o'tdi
+        <span className="badge-danger">
+          <AlertTriangle size={12} /> Muddat o'tdi
         </span>
       )}
       {isDeadlineSoon && (
-        <span className="badge-primary gap-1">
-          <Clock size={10} /> {fmtDl(deadline!)}
+        <span className="badge-warning">
+          <Clock size={12} /> {fmtDl(deadline!)}
         </span>
       )}
       {!isPastDeadline && !isDeadlineSoon && deadline && (
-        <span className="badge-neutral gap-1">
-          <Clock size={10} /> {fmtDl(deadline)}
+        <span className="badge-neutral">
+          <Clock size={12} /> {fmtDl(deadline)}
         </span>
       )}
       {isOld && (
-        <span className="badge-primary gap-1">
-          <AlertTriangle size={10} /> {Math.floor(ageHours)} soat kutmoqda
+        <span className="badge-warning">
+          <AlertTriangle size={12} /> {Math.floor(ageHours)} soat kutmoqda
         </span>
       )}
       {crossBranch && (
-        <span className="badge-neutral gap-1">
-          <Building2 size={10} /> {crossBranch.name}
+        <span className="badge-neutral">
+          <Building2 size={12} /> {crossBranch.name}
         </span>
       )}
     </div>

@@ -42,16 +42,16 @@ const ScopeRow: React.FC<{ s: any; asosiy?: boolean }> = ({ s, asosiy }) => {
   return (
     <div className={asosiy ? '' : 'pt-3 mt-3 border-t border-slate-100'}>
       <div className="flex items-baseline justify-between mb-1.5">
-        <span className={`font-bold ${asosiy ? 'text-sm text-slate-800' : 'text-xs text-slate-600'}`}>
+        <span className={`font-semibold ${asosiy ? 'text-sm text-slate-800' : 'text-xs text-slate-600'}`}>
           {s.nom}
         </span>
-        <span className={`text-xs font-bold ${bosh ? 'text-slate-300' : done ? 'text-emerald-600' : 'text-slate-400'}`}>
+        <span className={`text-xs font-semibold ${bosh ? 'text-slate-400' : done ? 'text-emerald-600' : 'text-slate-500'}`}>
           {bosh ? "ma'lumot yo'q" : done ? 'nolga chiqdi' : `${pct}%`}
         </span>
       </div>
       <div className={`w-full bg-slate-100 rounded-full overflow-hidden ${asosiy ? 'h-3' : 'h-1.5'}`}>
         <div
-          className={`h-full rounded-full transition-all duration-700 ${done ? 'bg-emerald-500' : 'bg-orange-500'}`}
+          className={`h-full rounded-full transition-all duration-700 ${done ? 'bg-emerald-500' : 'bg-[color:var(--primary)]'}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -108,28 +108,28 @@ const BreakEvenCard: React.FC = () => {
     finally { setSaving(false); }
   };
 
-  if (isLoading) return <div className="bg-white rounded-2xl border border-slate-200 p-5 h-48 animate-pulse" />;
+  if (isLoading) return <div className="bg-white rounded-card border border-slate-200 p-5 h-48 animate-pulse" />;
   if (!data) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-lg ${data.umumiy?.nolga_chiqdi ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+          <div className={`p-2 rounded-control ${data.umumiy?.nolga_chiqdi ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-[color:var(--primary)]'}`}>
             <Target size={16} />
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-800">Zararsizlik nuqtasi</p>
-            <p className="text-xs font-semibold text-slate-400">
+            <p className="t-h3">Zararsizlik nuqtasi</p>
+            <p className="t-caption">
               {data.oy} · {data.rejim === 'manual' ? "qo'lda kiritilgan xarajat" : 'kassa xarajatlaridan'}
             </p>
           </div>
         </div>
         <button
           onClick={openEditor}
-          className="text-xs font-bold text-slate-400 hover:text-orange-600 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-orange-50 transition-colors"
+          className="btn-ghost h-sm"
         >
-          <Settings2 size={12} /> Xarajatlar
+          <Settings2 size={16} /> Xarajatlar
         </button>
       </div>
 
@@ -138,14 +138,14 @@ const BreakEvenCard: React.FC = () => {
       {/* Bo'limlar alohida — ularning moliyasi aralashmaydi */}
       {(data.bolimlar || []).map((b: any) => <ScopeRow key={b.id || 'yoq'} s={b} />)}
 
-      <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+      <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Doimiy</p>
-          <p className="text-xs font-bold text-slate-700">{fmt(data.umumiy?.doimiy_xarajat)}</p>
+          <p className="label-caps">Doimiy</p>
+          <p className="text-sm font-semibold text-slate-700 tabular-nums">{fmt(data.umumiy?.doimiy_xarajat)}</p>
         </div>
         <div>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Vaqti-vaqti bilan</p>
-          <p className="text-xs font-bold text-slate-700">{fmt(data.umumiy?.vaqtinchalik_ulush)}</p>
+          <p className="label-caps">Vaqti-vaqti bilan</p>
+          <p className="text-sm font-semibold text-slate-700 tabular-nums">{fmt(data.umumiy?.vaqtinchalik_ulush)}</p>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ const BreakEvenCard: React.FC = () => {
         const bor = (data.bolimlar || []).some((b: any) => b.id !== null);
         if (!bs || !bor || (bs.kerakli_qoplama === 0 && bs.tushum === 0)) return null;
         return (
-          <p className="mt-3 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-2.5 leading-relaxed">
+          <p className="mt-3 text-xs font-normal text-slate-500 bg-slate-50 border border-slate-100 rounded-card p-2.5 leading-relaxed">
             <b className="text-slate-700">"Bo'limsiz"</b> — bo'limi ko'rsatilmagan xarajat va
             tushum. Ular hech qaysi bo'lim hisobiga kirmaydi. Bo'limlar bo'yicha aniq
             taqsimot uchun Kassada kirim/chiqim kiritayotganda bo'limni tanlang, yoki
@@ -167,8 +167,8 @@ const BreakEvenCard: React.FC = () => {
       })()}
 
       {!data.malumot_yetarli && (
-        <p className="mt-3 text-xs font-semibold text-amber-600 flex items-start gap-1.5 leading-relaxed">
-          <AlertCircle size={11} className="mt-0.5 shrink-0" /> {data.izoh}
+        <p className="mt-3 text-xs font-medium text-amber-600 flex items-start gap-1.5 leading-relaxed">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" /> {data.izoh}
         </p>
       )}
 
@@ -177,8 +177,8 @@ const BreakEvenCard: React.FC = () => {
         <div className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditing(false)}>
           <div className="bg-white rounded-overlay w-full max-w-5xl max-h-[88vh] flex flex-col shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <p className="text-sm font-bold text-slate-800">Xarajatlar</p>
-              <button onClick={() => setEditing(false)} className="text-slate-300 hover:text-slate-600"><X size={18} /></button>
+              <p className="t-h3">Xarajatlar</p>
+              <button onClick={() => setEditing(false)} className="icon-btn-sm"><X size={18} /></button>
             </div>
 
             <div className="p-5 overflow-y-auto space-y-4">
@@ -190,10 +190,10 @@ const BreakEvenCard: React.FC = () => {
                 ]).map(m => (
                   <button
                     key={m.v} type="button" onClick={() => setRejim(m.v)}
-                    className={`text-left p-3 rounded-xl border transition-colors ${rejim === m.v ? 'border-orange-400 bg-orange-50/60' : 'border-slate-200 hover:bg-slate-50'}`}
+                    className={`text-left p-3 rounded-card border transition-colors duration-120 ${rejim === m.v ? 'border-primary-300 bg-primary-50' : 'border-slate-200 hover:bg-slate-50'}`}
                   >
-                    <p className={`text-sm font-bold ${rejim === m.v ? 'text-orange-700' : 'text-slate-700'}`}>{m.t}</p>
-                    <p className="text-xs font-semibold text-slate-400 mt-0.5 leading-relaxed">{m.d}</p>
+                    <p className={`text-sm font-semibold ${rejim === m.v ? 'text-primary-700' : 'text-slate-700'}`}>{m.t}</p>
+                    <p className="t-caption mt-0.5 leading-relaxed">{m.d}</p>
                   </button>
                 ))}
               </div>
@@ -201,23 +201,23 @@ const BreakEvenCard: React.FC = () => {
               {/* JADVAL — sarlavhali ustunlar bilan. Ilgari qatorlar
                   sarlavhasiz turardi va qaysi maydon nima ekani faqat
                   placeholder'dan bilinardi; to'ldirilgach u ham yo'qolardi. */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <div className="border border-slate-200 rounded-card overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50">
+                  <table className="table-minimal min-w-[720px]">
+                    <thead>
                       <tr>
-                        <th className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5">Xarajat nomi</th>
-                        <th className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5 text-right w-36">Summa</th>
-                        <th className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5 w-32">Qanchalik tez-tez</th>
-                        <th className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5 w-24 text-center">Necha oyda</th>
-                        <th className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2.5 w-40">Bo'lim</th>
+                        <th>Xarajat nomi</th>
+                        <th className="text-right w-36">Summa</th>
+                        <th className="w-32">Qanchalik tez-tez</th>
+                        <th className="w-24 text-center">Necha oyda</th>
+                        <th className="w-40">Bo'lim</th>
                         <th className="w-10" />
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody>
                       {rows.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="text-xs font-semibold text-slate-400 text-center py-8">
+                          <td colSpan={6} className="text-slate-500 text-center py-8">
                             Xarajat qo'shilmagan
                           </td>
                         </tr>
@@ -229,52 +229,52 @@ const BreakEvenCard: React.FC = () => {
                           ? Math.round((Number(r.summa) || 0) / Math.max(1, Number(r.oyda_bir) || 12))
                           : Number(r.summa) || 0;
                         return (
-                          <tr key={r.id} className="hover:bg-slate-50/60">
-                            <td className="px-3 py-2">
+                          <tr key={r.id}>
+                            <td>
                               <input
                                 value={r.nom} placeholder="Ijara, maosh, kommunal..."
                                 onChange={e => upd({ nom: e.target.value })}
-                                className="input-minimal h-9 text-xs w-full"
+                                className="input-minimal h-control-sm text-xs w-full"
                               />
                             </td>
-                            <td className="px-3 py-2">
+                            <td>
                               <input
                                 type="number" value={r.summa || ''} placeholder="0"
                                 onChange={e => upd({ summa: Number(e.target.value) })}
-                                className="input-minimal h-9 text-xs w-full text-right tabular-nums"
+                                className="input-minimal h-control-sm text-xs w-full text-right tabular-nums"
                               />
                               {r.tur === 'vaqtinchalik' && oylik > 0 && (
-                                <p className="text-[11px] font-bold text-orange-500 text-right mt-0.5">
+                                <p className="text-xs font-medium text-[color:var(--primary)] text-right mt-0.5 tabular-nums">
                                   = {fmt(oylik)}/oy
                                 </p>
                               )}
                             </td>
-                            <td className="px-3 py-2">
+                            <td>
                               <select
                                 value={r.tur}
                                 onChange={e => upd({ tur: e.target.value })}
-                                className="select-minimal h-9 text-xs w-full"
+                                className="select-minimal h-control-sm text-xs w-full"
                               >
                                 <option value="doimiy">Har oy</option>
                                 <option value="vaqtinchalik">Vaqti-vaqti</option>
                               </select>
                             </td>
-                            <td className="px-3 py-2 text-center">
+                            <td className="text-center">
                               {r.tur === 'vaqtinchalik' ? (
                                 <input
                                   type="number" min={1} value={r.oyda_bir || 12}
                                   onChange={e => upd({ oyda_bir: Number(e.target.value) })}
-                                  className="input-minimal h-9 text-xs w-full text-center"
+                                  className="input-minimal h-control-sm text-xs w-full text-center"
                                 />
                               ) : (
-                                <span className="text-xs font-bold text-slate-300">—</span>
+                                <span className="text-slate-400">—</span>
                               )}
                             </td>
-                            <td className="px-3 py-2">
+                            <td>
                               <select
                                 value={r.departmentId || ''}
                                 onChange={e => upd({ departmentId: e.target.value || null })}
-                                className="select-minimal h-9 text-xs w-full"
+                                className="select-minimal h-control-sm text-xs w-full"
                               >
                                 <option value="">Umumiy (barcha bo'lim)</option>
                                 {(departments as any[]).map((d: any) => (
@@ -282,12 +282,12 @@ const BreakEvenCard: React.FC = () => {
                                 ))}
                               </select>
                             </td>
-                            <td className="px-2 py-2 text-center">
+                            <td className="text-center">
                               <button
                                 onClick={() => setRows(rows.filter((_, j) => j !== i))}
-                                className="text-slate-300 hover:text-rose-500 transition-colors"
+                                className="text-slate-400 hover:text-rose-600 transition-colors"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={16} />
                               </button>
                             </td>
                           </tr>
@@ -298,19 +298,19 @@ const BreakEvenCard: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setRows([...rows, { id: uid(), nom: '', summa: 0, tur: 'doimiy', departmentId: null }])}
-                  className="w-full h-10 border-t border-slate-200 text-xs font-bold text-slate-500 hover:text-orange-600 hover:bg-orange-50/50 flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full h-10 border-t border-slate-200 text-sm font-medium text-slate-600 hover:text-[color:var(--primary)] hover:bg-primary-50 flex items-center justify-center gap-1.5 transition-colors duration-120"
                 >
-                  <Plus size={13} /> Xarajat qo'shish
+                  <Plus size={16} /> Xarajat qo'shish
                 </button>
               </div>
 
               {/* Jami — kiritilganlarning oylik yig'indisi */}
               {rows.length > 0 && (
-                <div className="flex justify-between items-baseline px-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <div className="flex flex-wrap gap-2 justify-between items-baseline px-1">
+                  <span className="label-caps">
                     Qo'lda kiritilganlar, oyiga
                   </span>
-                  <span className="text-sm font-bold text-slate-800 tabular-nums">
+                  <span className="text-sm font-semibold text-slate-800 tabular-nums">
                     {fmt(rows.reduce((s, r) => s + (r.tur === 'vaqtinchalik'
                       ? (Number(r.summa) || 0) / Math.max(1, Number(r.oyda_bir) || 12)
                       : Number(r.summa) || 0), 0))} so'm
@@ -318,14 +318,14 @@ const BreakEvenCard: React.FC = () => {
                 </div>
               )}
 
-              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+              <p className="t-caption leading-relaxed">
                 "Vaqti-vaqti" tanlansa, summa necha oyda bir marta bo'lishiga bo'linib,
                 har oyga taqsimlanadi. Aks holda u chiqqan oyda zarar, qolgan oylarda
                 soxta foyda ko'rinardi. Bo'lim tanlansa xarajat faqat o'sha bo'limning
                 nolga chiqishiga ta'sir qiladi.
               </p>
               {departments.length === 0 && (
-                <p className="text-xs font-semibold text-amber-600 leading-relaxed">
+                <p className="text-xs font-medium text-amber-600 leading-relaxed">
                   Bo'limlar hali yaratilmagan — Filiallar sahifasida qo'shsangiz,
                   xarajatlarni ular bo'yicha ajratish mumkin bo'ladi.
                 </p>
@@ -333,8 +333,8 @@ const BreakEvenCard: React.FC = () => {
             </div>
 
             <div className="flex gap-3 p-5 border-t border-slate-100">
-              <button onClick={() => setEditing(false)} className="btn-outline flex-1 h-11">BEKOR</button>
-              <button onClick={save} disabled={saving} className="btn-primary flex-1 h-11">
+              <button onClick={() => setEditing(false)} className="btn-outline flex-1">BEKOR</button>
+              <button onClick={save} disabled={saving} className="btn-primary flex-1">
                 {saving ? 'Saqlanmoqda...' : 'SAQLASH'}
               </button>
             </div>
