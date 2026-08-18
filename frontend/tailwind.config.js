@@ -37,6 +37,7 @@ export default {
           DEFAULT: "var(--muted)",
           foreground: "var(--muted-foreground)",
         },
+        subtle: "var(--subtle-foreground)",
         surface2: "var(--surface-2)",
       },
       fontFamily: {
@@ -69,6 +70,36 @@ export default {
         'control-sm': '32px',
         'control':    '36px',
         'control-lg': '44px',
+      },
+      transitionDuration: {
+        120: '120ms',
+        180: '180ms',
+      },
+      transitionTimingFunction: {
+        DEFAULT: 'cubic-bezier(.2, .8, .2, 1)',
+      },
+      /* Semantik z-shkala — o'zboshimcha z-[9999] taqiqlanadi */
+      zIndex: {
+        sticky: '10',
+        fab: '20',
+        dropdown: '30',
+        overlay: '50',
+        toast: '60',
+        tour: '70',
+      },
+      keyframes: {
+        'slide-up': {
+          from: { opacity: '0', transform: 'translateY(12px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        pop: {
+          from: { opacity: '0', transform: 'scale(.96)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        'slide-up': 'slide-up 180ms cubic-bezier(.2, .8, .2, 1)',
+        pop: 'pop 180ms cubic-bezier(.2, .8, .2, 1)',
       },
     },
   },

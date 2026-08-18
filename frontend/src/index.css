@@ -52,12 +52,12 @@
   --color-primary: var(--primary);
 }
 
-/* Telefonda barmoq uchun controllar kattaroq (WCAG tap target) */
+/* Telefonda barmoq uchun controllar kattaroq (DESIGN-SYSTEM.md §12: 640px ostida 44px) */
 @media (max-width: 640px) {
   :root {
-    --control-h-sm: 36px;
-    --control-h:    40px;
-    --control-h-lg: 48px;
+    --control-h-sm: 44px;
+    --control-h:    44px;
+    --control-h-lg: 44px;
   }
 }
 
@@ -127,6 +127,58 @@
 @keyframes skeleton-shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
+}
+
+/* CookieConsent shu nomlarga tayanadi */
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(16px); opacity: 0; }
+}
+
+/* Ingichka, iliq scrollbar — 18 faylda ishlatiladi, shu paytgacha define qilinmagan edi */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scroll::-webkit-scrollbar-track { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover { background: var(--subtle-foreground); }
+
+/* Scrollbar butunlay yashirin (tab-pill qatorlari uchun) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Lucide ikonkalar — spec §9: bitta qalinlik 1.75 (CSS SVG atributidan ustun) */
+.lucide { stroke-width: 1.75; }
+
+/* Spec §11: bir xil focus halqasi hamma joyda */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Spec §10: tizimda animatsiya o'chirilgan bo'lsa hurmat qilinadi */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer base {
