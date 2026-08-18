@@ -10,6 +10,7 @@ import {
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { aiApi } from '../../api';
+import { Badge } from '../ui';
 import { isRiskMessage, stripRiskPrefix } from '../../utils/riskPrompt';
 
 // =============================================
@@ -253,7 +254,7 @@ const CustomersCard: React.FC<{ title: string; items: any[]; total?: number; onO
         primary={c.name || c.ism}
         secondary={c.phone}
         value={(c.totalDebt ?? c.qarz) > 0 ? `${fm(c.totalDebt ?? c.qarz)} so'm` : '—'}
-        valueClass={(c.totalDebt ?? c.qarz) > 0 ? 'text-rose-600' : 'text-slate-400'}
+        valueClass={(c.totalDebt ?? c.qarz) > 0 ? 'text-rose-600' : 'text-slate-500'}
       />
     ))}
     <MoreRows count={items.length - 6} />
@@ -347,12 +348,12 @@ const VendorsReportCard: React.FC<{ data: any; onOpen?: () => void }> = ({ data,
           v.sotuv_jami > 0 ? `sotuv ${fm(v.sotuv_jami)}` : null,
         ].filter(Boolean).join(' · ') || null}
         value={v.balans === 0 ? 'Hisob toza' : `${fm(Math.abs(v.balans))} so'm`}
-        valueClass={v.balans > 0 ? 'text-rose-600' : v.balans < 0 ? 'text-emerald-600' : 'text-slate-400'}
+        valueClass={v.balans > 0 ? 'text-rose-600' : v.balans < 0 ? 'text-emerald-600' : 'text-slate-500'}
       />
     ))}
     <MoreRows count={(data.hamkorlar || []).length - 6} />
     {(data.biz_qarzmiz_jami > 0 || data.ular_qarz_jami > 0) && (
-      <div className="flex items-center justify-between py-2.5 border-t border-slate-100 text-xs font-bold">
+      <div className="flex flex-wrap items-center justify-between gap-2 py-2.5 border-t border-slate-200 text-xs font-medium tabular-nums">
         <span className="text-rose-600">Biz qarzmiz: {fm(data.biz_qarzmiz_jami)}</span>
         <span className="text-emerald-600">Ular qarz: {fm(data.ular_qarz_jami)}</span>
       </div>
@@ -389,10 +390,10 @@ const MaterialsCard: React.FC<{ title: string; items: any[]; onOpen?: () => void
 // Kanban x Mijozlar/Moliya va h.k. "Bartaraf etish" bosilganda xavf matni
 // chatga yuboriladi — AI kontekstga qarab tegishli tool'ni (reassignTask va
 // h.k.) taklif qiladi, [TASDIQ KARTASI] orqali bajariladi.
-const RISK_TONE: Record<string, { border: string; bg: string; icon: string; title: string; text: string; btn: string; btnHover: string; dismiss: string; dismissHover: string }> = {
-  critical: { border: 'border-rose-200', bg: 'bg-rose-50/60', icon: 'bg-rose-100 text-rose-600', title: 'text-rose-800', text: 'text-rose-700/90', btn: 'bg-rose-600', btnHover: 'hover:bg-rose-700', dismiss: 'text-rose-700', dismissHover: 'hover:bg-rose-100' },
-  warning: { border: 'border-amber-200', bg: 'bg-amber-50/60', icon: 'bg-amber-100 text-amber-600', title: 'text-amber-800', text: 'text-amber-700/90', btn: 'bg-amber-600', btnHover: 'hover:bg-amber-700', dismiss: 'text-amber-700', dismissHover: 'hover:bg-amber-100' },
-  info: { border: 'border-slate-200', bg: 'bg-slate-50', icon: 'bg-slate-100 text-slate-500', title: 'text-slate-700', text: 'text-slate-500', btn: 'bg-slate-700', btnHover: 'hover:bg-slate-800', dismiss: 'text-slate-500', dismissHover: 'hover:bg-slate-100' },
+const RISK_TONE: Record<string, { border: string; bg: string; icon: string; title: string; text: string; btn: string }> = {
+  critical: { border: 'border-rose-200', bg: 'bg-rose-50', icon: 'bg-rose-100 text-rose-600', title: 'text-rose-800', text: 'text-rose-700', btn: 'btn-danger' },
+  warning: { border: 'border-amber-200', bg: 'bg-amber-50', icon: 'bg-amber-100 text-amber-600', title: 'text-amber-800', text: 'text-amber-700', btn: 'btn-outline' },
+  info: { border: 'border-slate-200', bg: 'bg-slate-50', icon: 'bg-slate-100 text-slate-500', title: 'text-slate-700', text: 'text-slate-500', btn: 'btn-outline' },
 };
 
 const RiskInsightsPanel: React.FC<{
@@ -406,23 +407,23 @@ const RiskInsightsPanel: React.FC<{
       {risks.map((r) => {
         const tone = RISK_TONE[r.severity] || RISK_TONE.warning;
         return (
-          <div key={r.id} className={`rounded-2xl border ${tone.border} ${tone.bg} p-4 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-            <div className={`w-8 h-8 rounded-xl ${tone.icon} flex items-center justify-center flex-shrink-0`}>
-              <ShieldAlert size={15} strokeWidth={2.5} />
+          <div key={r.id} className={`rounded-card border ${tone.border} ${tone.bg} p-4 flex items-start gap-3 animate-slide-up`}>
+            <div className={`w-8 h-8 rounded-control ${tone.icon} flex items-center justify-center flex-shrink-0`}>
+              <ShieldAlert size={16} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`text-xs font-bold ${tone.title}`}>{r.title}</p>
-              <p className={`text-xs font-semibold ${tone.text} mt-0.5 leading-snug`}>{r.message}</p>
-              <div className="flex items-center gap-2 mt-2.5">
+              <p className={`text-sm font-semibold ${tone.title}`}>{r.title}</p>
+              <p className={`text-xs ${tone.text} mt-0.5 leading-snug`}>{r.message}</p>
+              <div className="flex flex-wrap items-center gap-2 mt-2.5">
                 <button
                   onClick={() => onResolve(`Xavf: ${r.message} Buni qanday hal qilishni maslahat bera olasizmi, kerak bo'lsa o'zing bajar.`)}
-                  className={`h-7 px-3 text-xs font-bold uppercase tracking-wider ${tone.btn} ${tone.btnHover} text-white rounded-lg transition-colors`}
+                  className={`${tone.btn} h-sm`}
                 >
                   Bartaraf etish
                 </button>
                 <button
                   onClick={() => onDismiss(r.id)}
-                  className={`h-7 px-3 text-xs font-bold uppercase tracking-wider ${tone.dismiss} ${tone.dismissHover} rounded-lg transition-colors`}
+                  className="btn-ghost h-sm"
                 >
                   E'tiborsiz qoldirish
                 </button>
@@ -449,9 +450,9 @@ const RiskInsightsPanel: React.FC<{
 
 const JOB_STATUS: Record<string, { yorliq: string; nuqta: string; matn: string; ramka: string; fon: string }> = {
   queued:    { yorliq: 'Navbatda',  nuqta: 'bg-slate-400',                matn: 'text-slate-600',   ramka: 'border-slate-200',   fon: 'bg-slate-50' },
-  running:   { yorliq: 'Bajarilyapti', nuqta: 'bg-orange-500 animate-pulse', matn: 'text-orange-700',  ramka: 'border-orange-200',  fon: 'bg-orange-50/70' },
-  done:      { yorliq: 'Tayyor',    nuqta: 'bg-emerald-500',              matn: 'text-emerald-700', ramka: 'border-emerald-200', fon: 'bg-emerald-50/60' },
-  failed:    { yorliq: 'Xatolik',   nuqta: 'bg-rose-500',                 matn: 'text-rose-700',    ramka: 'border-rose-200',    fon: 'bg-rose-50/60' },
+  running:   { yorliq: 'Bajarilyapti', nuqta: 'bg-[color:var(--primary)] animate-pulse', matn: 'text-primary-700', ramka: 'border-primary-200', fon: 'bg-primary-50' },
+  done:      { yorliq: 'Tayyor',    nuqta: 'bg-emerald-500',              matn: 'text-emerald-700', ramka: 'border-emerald-200', fon: 'bg-emerald-50' },
+  failed:    { yorliq: 'Xatolik',   nuqta: 'bg-rose-500',                 matn: 'text-rose-700',    ramka: 'border-rose-200',    fon: 'bg-rose-50' },
   cancelled: { yorliq: 'Bekor qilindi', nuqta: 'bg-slate-300',            matn: 'text-slate-500',   ramka: 'border-slate-200',   fon: 'bg-slate-50' },
 };
 
@@ -466,48 +467,47 @@ const JobCard: React.FC<{ job: any; onCancel: (id: string) => void }> = ({ job, 
   const oxirgi = qadamlar.length ? qadamlar[qadamlar.length - 1]?.matn : null;
 
   return (
-    <div className={`rounded-2xl border ${st.ramka} ${st.fon} overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+    <div className={`rounded-card border ${st.ramka} ${st.fon} overflow-hidden animate-slide-up`}>
       <button
         type="button"
         onClick={() => setOchiq(o => !o)}
         aria-expanded={ochiq}
-        className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left hover:bg-black/[0.02] transition-colors"
+        className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left hover:bg-black/[0.02] transition-colors duration-120"
       >
         <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${st.nuqta}`} />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-slate-800 leading-snug">{job.sarlavha}</p>
+          <p className="t-h3 leading-snug">{job.sarlavha}</p>
           <p className={`text-xs font-medium mt-1 ${st.matn}`}>
             {st.yorliq}
             {job.status === 'done' && job.qadamlar > 0 && ` · ${job.qadamlar} qadam`}
           </p>
           {faol && oxirgi && (
-            <p className="text-xs font-semibold text-slate-500 mt-1 leading-snug truncate">{oxirgi}</p>
+            <p className="t-caption mt-1 leading-snug truncate">{oxirgi}</p>
           )}
         </div>
         <ChevronRight
-          size={14}
-          strokeWidth={2.5}
-          className={`flex-shrink-0 mt-1 text-slate-400 transition-transform duration-200 ${ochiq ? 'rotate-90' : ''}`}
+          size={16}
+          className={`flex-shrink-0 mt-1 text-slate-500 transition-transform duration-180 ${ochiq ? 'rotate-90' : ''}`}
         />
       </button>
 
       {ochiq && (
         <div className="px-3.5 pb-3 space-y-2.5">
           <div>
-            <p className="text-xs font-medium text-slate-400 mb-1">Topshiriq</p>
-            <p className="text-xs font-semibold text-slate-600 leading-snug whitespace-pre-wrap">
+            <p className="label-caps mb-1">Topshiriq</p>
+            <p className="text-xs text-slate-600 leading-snug whitespace-pre-wrap">
               {job.topshiriq || job.sarlavha}
             </p>
           </div>
 
           {qadamlar.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-slate-400 mb-1">Bosqichlar</p>
+              <p className="label-caps mb-1">Bosqichlar</p>
               <div className="space-y-1">
                 {qadamlar.map((q, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="w-1 h-1 rounded-full bg-slate-300 flex-shrink-0 mt-[7px]" />
-                    <p className="text-xs font-semibold text-slate-600 leading-snug">{q.matn}</p>
+                    <p className="text-xs text-slate-600 leading-snug">{q.matn}</p>
                   </div>
                 ))}
               </div>
@@ -516,8 +516,8 @@ const JobCard: React.FC<{ job: any; onCancel: (id: string) => void }> = ({ job, 
 
           {job.natija && (
             <div>
-              <p className="text-xs font-medium text-slate-400 mb-1">Natija</p>
-              <p className="text-xs font-semibold text-slate-700 leading-[1.6] whitespace-pre-wrap">
+              <p className="label-caps mb-1">Natija</p>
+              <p className="text-xs text-slate-700 leading-[1.6] whitespace-pre-wrap">
                 {cyrToLat(stripMarkdown(job.natija))}
               </p>
             </div>
@@ -525,18 +525,15 @@ const JobCard: React.FC<{ job: any; onCancel: (id: string) => void }> = ({ job, 
 
           {job.error && (
             <div>
-              <p className="text-xs font-medium text-rose-400 mb-1">Xatolik</p>
-              <p className="text-xs font-semibold text-rose-600 leading-snug">{job.error}</p>
+              <p className="label-caps text-rose-500 mb-1">Xatolik</p>
+              <p className="text-xs font-medium text-rose-600 leading-snug">{job.error}</p>
             </div>
           )}
 
           {/* Bekor qilish faqat navbatdagi topshiriqda: boshlangan ishni yarim
               yo'lda to'xtatish uni nomuvofiq holatda qoldirardi. */}
           {job.status === 'queued' && (
-            <button
-              onClick={() => onCancel(job.id)}
-              className="h-7 px-3 text-xs font-bold uppercase tracking-wider bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-colors"
-            >
+            <button onClick={() => onCancel(job.id)} className="btn-outline h-sm">
               Bekor qilish
             </button>
           )}
@@ -567,14 +564,13 @@ const FonTopshiriqlarPanel: React.FC<{
             onClick={() => setTarixOchiq(o => !o)}
             className="w-full flex items-center gap-2 px-1 py-1 text-left group"
           >
-            <ClipboardList size={12} strokeWidth={2.5} className="text-slate-400" />
-            <span className="text-xs font-medium text-slate-400 group-hover:text-slate-600 transition-colors">
+            <ClipboardList size={16} className="text-slate-500 flex-shrink-0" />
+            <span className="t-caption group-hover:text-slate-700 transition-colors duration-120">
               {tugagan.length} ta yakunlangan topshiriq
             </span>
             <ChevronRight
-              size={12}
-              strokeWidth={2.5}
-              className={`ml-auto text-slate-400 transition-transform duration-200 ${tarixOchiq ? 'rotate-90' : ''}`}
+              size={16}
+              className={`ml-auto flex-shrink-0 text-slate-500 transition-transform duration-180 ${tarixOchiq ? 'rotate-90' : ''}`}
             />
           </button>
           {tarixOchiq && (
@@ -599,49 +595,49 @@ const BriefingPanel: React.FC<{ briefing: any; onAsk: (text: string) => void }> 
   }) => (
     <button
       onClick={() => onAsk(ask)}
-      className="w-full flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0 text-left hover:bg-slate-50 rounded-xl px-2 transition-colors"
+      className="w-full flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0 text-left hover:bg-slate-50 rounded-control px-2 transition-colors duration-120"
     >
-      <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
-        tone === 'rose' ? 'bg-rose-100 text-rose-500' : tone === 'amber' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'
+      <div className={`w-7 h-7 rounded-control flex items-center justify-center flex-shrink-0 ${
+        tone === 'rose' ? 'bg-rose-100 text-rose-600' : tone === 'amber' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'
       }`}>
-        <Icon size={13} strokeWidth={2.5} />
+        <Icon size={16} />
       </div>
-      <p className="flex-1 text-sm font-bold text-slate-700 min-w-0 truncate">{text}</p>
-      <p className={`text-sm font-bold whitespace-nowrap ${tone === 'rose' ? 'text-rose-600' : 'text-slate-700'}`}>{value}</p>
+      <p className="flex-1 t-body-md min-w-0 truncate">{text}</p>
+      <p className={`text-sm font-semibold whitespace-nowrap tabular-nums ${tone === 'rose' ? 'text-rose-600' : 'text-slate-700'}`}>{value}</p>
     </button>
   );
 
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white shadow-lg shadow-slate-200/40 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-2.5 px-4 py-3 bg-orange-50/60 border-b border-orange-100">
-        <div className="w-7 h-7 rounded-xl bg-orange-500 flex items-center justify-center text-white">
-          <Sparkles size={14} strokeWidth={2.5} />
+    <div className="rounded-card border border-slate-200 bg-white overflow-hidden animate-slide-up">
+      <div className="flex items-center gap-2.5 px-4 py-3 bg-primary-50 border-b border-primary-100">
+        <div className="w-7 h-7 rounded-control bg-[color:var(--primary)] flex items-center justify-center text-white flex-shrink-0">
+          <Sparkles size={16} />
         </div>
-        <div>
-          <p className="text-xs font-bold text-orange-600 uppercase tracking-widest">Bugungi brifing</p>
-          <p className="text-xs font-semibold text-slate-400">{new Date(b.sana).toLocaleDateString('uz-UZ')}</p>
+        <div className="min-w-0">
+          <p className="label-caps text-[color:var(--primary)]">Bugungi brifing</p>
+          <p className="t-caption">{new Date(b.sana).toLocaleDateString('uz-UZ')}</p>
         </div>
       </div>
 
       {/* Bugungi kassa — stat tile qatori */}
-      <div className="grid grid-cols-3 gap-2 px-4 pt-3">
-        <div className="p-2.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
-          <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">Kirim</p>
-          <p className="text-sm font-bold text-slate-900 mt-0.5">{fm(b.moliya.kirim)}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-4 pt-3">
+        <div className="p-2.5 rounded-card bg-emerald-50 border border-emerald-200 text-center">
+          <p className="label-caps text-emerald-600">Kirim</p>
+          <p className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums">{fm(b.moliya.kirim)}</p>
         </div>
-        <div className="p-2.5 rounded-2xl bg-rose-50 border border-rose-100 text-center">
-          <p className="text-[11px] font-bold text-rose-500 uppercase tracking-widest">Chiqim</p>
-          <p className="text-sm font-bold text-slate-900 mt-0.5">{fm(b.moliya.chiqim)}</p>
+        <div className="p-2.5 rounded-card bg-rose-50 border border-rose-200 text-center">
+          <p className="label-caps text-rose-600">Chiqim</p>
+          <p className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums">{fm(b.moliya.chiqim)}</p>
         </div>
-        <div className="p-2.5 rounded-2xl bg-slate-900 text-center">
-          <p className="text-[11px] font-bold text-white/50 uppercase tracking-widest">Balans</p>
-          <p className="text-sm font-bold text-white mt-0.5">{fm(b.moliya.balans)}</p>
+        <div className="p-2.5 rounded-card bg-slate-50 border border-slate-200 text-center">
+          <p className="label-caps">Balans</p>
+          <p className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums">{fm(b.moliya.balans)}</p>
         </div>
       </div>
 
       <div className="px-2 py-2">
         {allClear ? (
-          <p className="py-4 text-center text-xs font-bold text-emerald-600 uppercase tracking-widest">
+          <p className="py-4 text-center text-sm font-medium text-emerald-600">
             ✅ Hammasi joyida
           </p>
         ) : (
@@ -707,40 +703,40 @@ const PendingActionCard: React.FC<{
 
   if (state === 'rejected') {
     return (
-      <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-500 text-xs font-bold uppercase tracking-widest">
+      <div className="mt-3 rounded-card border border-slate-200 bg-slate-50 p-4 t-caption">
         Bekor qilindi — {summary}
       </div>
     );
   }
 
   return (
-    <div className="mt-3 rounded-[28px] border border-amber-200 bg-white shadow-xl shadow-amber-100/50 overflow-hidden animate-in fade-in zoom-in-95 duration-500">
-      <div className="flex items-center gap-3 px-5 py-4 bg-amber-50/60 border-b border-amber-100">
-        <div className="w-9 h-9 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
-          <ShieldCheck size={18} strokeWidth={2.5} />
+    <div className="mt-3 rounded-overlay border border-amber-200 bg-white overflow-hidden animate-pop">
+      <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border-b border-amber-200">
+        <div className="w-9 h-9 rounded-control bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+          <ShieldCheck size={18} />
         </div>
-        <div>
-          <p className="text-[11px] font-bold text-amber-600 uppercase tracking-widest">Tasdiqlash kerak</p>
-          <p className="text-sm font-bold text-slate-900 tracking-tight">{summary}</p>
+        <div className="min-w-0">
+          <p className="label-caps text-amber-600">Tasdiqlash kerak</p>
+          <p className="t-h3">{summary}</p>
         </div>
       </div>
       <div className="p-4">
         {state === 'failed' && (
-          <p className="mb-3 text-xs font-bold text-rose-600">{error}</p>
+          <p className="mb-3 text-xs font-medium text-rose-600">{error}</p>
         )}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => run('confirm')}
             disabled={state === 'busy'}
-            className="flex-1 h-11 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
+            className="btn-success flex-1"
           >
-            {state === 'busy' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} strokeWidth={2.5} />}
+            {state === 'busy' ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
             Tasdiqlash
           </button>
           <button
             onClick={() => run('reject')}
             disabled={state === 'busy'}
-            className="h-11 px-4 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 text-xs font-bold uppercase tracking-widest rounded-2xl transition-all active:scale-[0.98]"
+            className="btn-outline"
           >
             Bekor
           </button>
@@ -1135,19 +1131,19 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             uchun, bezak uchun emas). Belgi bitta to'q sariq kvadrat: brend bor,
             ko'z-ko'z qilish yo'q. */}
         <div className={`flex items-center gap-3 border-b border-[color:var(--border)] bg-white flex-shrink-0 px-4 py-3 ${kengaytirilgan ? 'md:px-8' : ''}`}>
-          <div className="w-9 h-9 rounded-xl bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
-            <Sparkles size={17} className="text-white" strokeWidth={2.5} />
+          <div className="w-9 h-9 rounded-control bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
+            <Sparkles size={18} className="text-white" />
           </div>
 
           <div className="flex-1 min-w-0">
             <h2 className="card-title flex items-center gap-2">
               Girgitton
               {isListening && (
-                <span className="badge-danger animate-pulse">Eshityapman</span>
+                <Badge variant="danger" className="animate-pulse">Eshityapman</Badge>
               )}
             </h2>
             {usage && (
-              <p className={`text-xs font-medium mt-0.5 ${
+              <p className={`text-xs mt-0.5 ${
                 quotaExhausted ? 'text-rose-600' : quotaLow ? 'text-amber-600' : 'text-slate-500'
               }`}>
                 {daily && !daily.unlimited && daily.limit > 0
@@ -1166,15 +1162,15 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             onClick={kengaytirishniAlmashtir}
             title={kengaytirilgan ? 'Kichraytirish' : "To'liq ekran"}
             aria-label={kengaytirilgan ? 'Kichraytirish' : "To'liq ekran"}
-            className="icon-btn text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+            className="icon-btn"
           >
-            {kengaytirilgan ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+            {kengaytirilgan ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
           </button>
           <button
             onClick={onClose}
             title="Yopish"
             aria-label="Yopish"
-            className="icon-btn text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+            className="icon-btn"
           >
             <X size={18} />
           </button>
@@ -1207,15 +1203,15 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
 
         {/* Limit reached banner */}
         {limitError && (
-          <div className="mx-4 mt-3 p-3 rounded-2xl border border-rose-200 bg-rose-50 flex items-start gap-2 flex-shrink-0">
+          <div className="mx-4 mt-3 p-3 rounded-card border border-rose-200 bg-rose-50 flex items-start gap-2 flex-shrink-0">
             <AlertTriangle size={16} className="text-rose-500 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-rose-700">AI limit tugadi</p>
-              <p className="text-xs font-bold text-rose-600 mt-0.5 leading-snug">{limitError}</p>
-              <a href="/dashboard/billing" className="text-xs font-bold text-orange-600 underline mt-1 inline-block">Qo'shimcha so'rov paketi sotib olish →</a>
+              <p className="text-sm font-semibold text-rose-700">AI limit tugadi</p>
+              <p className="text-xs text-rose-600 mt-0.5 leading-snug">{limitError}</p>
+              <a href="/dashboard/billing" className="text-xs font-medium text-[color:var(--primary)] underline mt-1 inline-block">Qo'shimcha so'rov paketi sotib olish →</a>
             </div>
-            <button onClick={() => setLimitError(null)} className="text-rose-400 hover:text-rose-600">
-              <X size={14} />
+            <button onClick={() => setLimitError(null)} aria-label="Yopish" className="icon-btn-sm text-rose-500 hover:bg-rose-100 hover:text-rose-700">
+              <X size={16} />
             </button>
           </div>
         )}
@@ -1238,10 +1234,10 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
               </>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <Bot size={20} className="text-slate-400" />
+                <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Bot size={20} className="text-slate-500" />
                 </div>
-                <p className="text-sm font-medium text-slate-500">Qanday yordam bera olaman?</p>
+                <p className="t-body-md text-slate-500">Qanday yordam bera olaman?</p>
               </div>
             )
           )}
@@ -1276,13 +1272,13 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             // kontekst kartasi ko'rinishida chiziladi.
             if (msg.role === 'user' && isRiskMessage(rawText)) {
               return (
-                <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
-                      <ShieldAlert size={14} strokeWidth={2.5} />
+                <div key={msg.id} className="animate-slide-up">
+                  <div className="rounded-card border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-control bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+                      <ShieldAlert size={16} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-amber-700 mb-0.5">
+                      <p className="text-xs text-amber-700 mb-0.5">
                         Dashboard'dan xavf
                       </p>
                       <p className="text-sm font-medium text-amber-900 leading-snug">
@@ -1310,14 +1306,14 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             return (
               <div
                 key={msg.id}
-                className={`flex flex-col gap-2 ${foydalanuvchi ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                className={`flex flex-col gap-2 ${foydalanuvchi ? 'items-end' : 'items-start'} animate-slide-up`}
               >
                 {!foydalanuvchi && (
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
-                      <Bot size={13} className="text-white" strokeWidth={2.5} />
+                    <div className="w-6 h-6 rounded-control bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
+                      <Bot size={16} className="text-white" />
                     </div>
-                    <span className="text-xs font-medium text-slate-500">Girgitton</span>
+                    <span className="t-label">Girgitton</span>
                   </div>
                 )}
 
@@ -1328,7 +1324,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
 
                   {textContent && (
                     foydalanuvchi ? (
-                      <div className="px-4 py-2.5 rounded-xl rounded-tr-sm bg-white border border-[color:var(--border)] text-sm leading-[1.6] font-medium text-slate-800 whitespace-pre-wrap">
+                      <div className="px-4 py-2.5 rounded-card rounded-tr-sm bg-primary-50 border border-primary-100 text-sm leading-[1.6] font-medium text-slate-800 whitespace-pre-wrap">
                         {textContent}
                       </div>
                     ) : (
@@ -1359,7 +1355,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       }
                       if (out?.success === false) {
                         return (
-                          <div key={toolCallId} className="mt-3 rounded-2xl border border-rose-100 bg-rose-50/60 p-3.5 text-xs font-bold text-rose-600">
+                          <div key={toolCallId} className="mt-3 rounded-card border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-600">
                             {out.error || 'Amal bajarilmadi'}
                           </div>
                         );
@@ -1413,18 +1409,18 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       return (
                         <CardWrapper key={toolCallId} title="Buyurtmani Tasdiqlash" subtitle="Yangi Buyurtma" icon={Package} onConfirm={onConfirm}>
                            <div className="space-y-3">
-                              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Nomi</p>
-                                 <p className="text-sm font-bold text-slate-800">{args?.orderName}</p>
+                              <div className="p-3.5 rounded-card bg-slate-50 border border-slate-200">
+                                 <p className="label-caps">Nomi</p>
+                                 <p className="t-body-md">{args?.orderName}</p>
                               </div>
-                              <div className="grid grid-cols-2 gap-3">
-                                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Miqdor</p>
-                                    <p className="text-sm font-bold text-slate-800">{args?.quantity}</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                 <div className="p-3 rounded-card bg-slate-50 border border-slate-200 text-center">
+                                    <p className="label-caps">Miqdor</p>
+                                    <p className="t-body-md tabular-nums">{args?.quantity}</p>
                                  </div>
-                                 <div className="p-3 rounded-2xl bg-slate-900 text-white text-center">
-                                    <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Jami</p>
-                                    <p className="text-sm font-bold">{args?.totalAmount?.toLocaleString()} UZS</p>
+                                 <div className="p-3 rounded-card bg-primary-50 border border-primary-100 text-center">
+                                    <p className="label-caps text-[color:var(--primary)]">Jami</p>
+                                    <p className="text-sm font-semibold text-slate-900 tabular-nums">{args?.totalAmount?.toLocaleString()} UZS</p>
                                  </div>
                               </div>
                            </div>
@@ -1436,13 +1432,13 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       return (
                         <CardWrapper key={toolCallId} title="Xizmatni Tasdiqlash" subtitle="Yangi Xizmat" icon={Plus} onConfirm={onConfirm}>
                            <div className="space-y-3">
-                              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Xizmat nomi</p>
-                                 <p className="text-sm font-bold text-slate-800">{args?.name}</p>
+                              <div className="p-3.5 rounded-card bg-slate-50 border border-slate-200">
+                                 <p className="label-caps">Xizmat nomi</p>
+                                 <p className="t-body-md">{args?.name}</p>
                               </div>
-                              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Narxi / Birlik</p>
-                                 <p className="text-sm font-bold text-slate-800">{args?.basePrice?.toLocaleString()} UZS / {args?.unit}</p>
+                              <div className="p-3.5 rounded-card bg-slate-50 border border-slate-200">
+                                 <p className="label-caps">Narxi / Birlik</p>
+                                 <p className="t-body-md tabular-nums">{args?.basePrice?.toLocaleString()} UZS / {args?.unit}</p>
                               </div>
                            </div>
                         </CardWrapper>
@@ -1453,18 +1449,18 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                       return (
                         <CardWrapper key={toolCallId} title="Optsiya Tasdiqlash" subtitle="Yangi Optsiya" icon={Settings} onConfirm={onConfirm}>
                            <div className="space-y-3">
-                              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Xizmat va Optsiya</p>
-                                 <p className="text-sm font-bold text-slate-800">{args?.targetServiceName} - {args?.optionName}</p>
+                              <div className="p-3.5 rounded-card bg-slate-50 border border-slate-200">
+                                 <p className="label-caps">Xizmat va Optsiya</p>
+                                 <p className="t-body-md">{args?.targetServiceName} - {args?.optionName}</p>
                               </div>
-                              <div className="grid grid-cols-2 gap-3">
-                                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Eski narx</p>
-                                    <p className="text-sm font-bold text-slate-400 line-through">{args?.oldPrice?.toLocaleString()}</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                 <div className="p-3 rounded-card bg-slate-50 border border-slate-200">
+                                    <p className="label-caps">Eski narx</p>
+                                    <p className="text-sm font-medium text-slate-500 line-through tabular-nums">{args?.oldPrice?.toLocaleString()}</p>
                                  </div>
-                                 <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
-                                    <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">Yangi narx</p>
-                                    <p className="text-sm font-bold text-emerald-700">{args?.newPrice?.toLocaleString()}</p>
+                                 <div className="p-3 rounded-card bg-emerald-50 border border-emerald-200">
+                                    <p className="label-caps text-emerald-600">Yangi narx</p>
+                                    <p className="text-sm font-semibold text-emerald-700 tabular-nums">{args?.newPrice?.toLocaleString()}</p>
                                   </div>
                               </div>
                            </div>
@@ -1485,10 +1481,10 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
 
           {isLoading && messages[messages.length - 1]?.role === 'user' && (
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
-                <Loader2 size={13} className="text-white animate-spin" />
+              <div className="w-6 h-6 rounded-control bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
+                <Loader2 size={16} className="text-white animate-spin" />
               </div>
-              <span className="text-xs font-medium text-slate-500">O'ylayapti…</span>
+              <span className="t-label">O'ylayapti…</span>
             </div>
           )}
           <div ref={chatEndRef} />
@@ -1506,9 +1502,9 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                 <button
                   key={i}
                   onClick={() => setInput(suggestion)}
-                  className="flex items-center gap-1.5 px-3 h-8 text-xs font-medium bg-white text-slate-600 border border-[color:var(--border)] rounded-lg hover:border-[color:var(--primary)] hover:text-[color:var(--primary)] active:scale-[0.98] transition-all duration-150"
+                  className="btn-outline h-sm"
                 >
-                  <Zap size={12} className="text-slate-400" /> {suggestion}
+                  <Zap size={12} className="text-slate-500" /> {suggestion}
                 </button>
               ))}
             </div>
@@ -1517,14 +1513,14 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           {/* Dekorativ gradient blur olib tashlandi: fokus holati chegara va
               ring bilan ko'rsatiladi, xuddi tizimdagi boshqa inputlar kabi. */}
           <form onSubmit={handleFormSubmit}>
-            <div className="flex items-end gap-2 bg-white border border-[color:var(--border)] rounded-xl p-1.5 pl-4 focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-orange-500/15 transition-all duration-150">
+            <div className="flex items-end gap-2 bg-white border border-slate-200 rounded-control p-1.5 pl-3 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 transition-all duration-120">
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={isListening ? 'Eshityapman...' : 'Xabar yozing...'}
                 rows={1}
-                className="flex-1 bg-transparent resize-none text-sm leading-[1.6] text-slate-800 placeholder:text-slate-400 font-normal focus:outline-none py-2.5 min-h-[40px] max-h-[150px]"
+                className="flex-1 bg-transparent resize-none text-sm font-normal leading-relaxed text-slate-900 placeholder-slate-400 focus:outline-none py-2 min-h-[40px] max-h-[150px]"
                 onInput={(e) => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 150) + 'px'; }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFormSubmit(e as any); } }}
                 disabled={isLoading || quotaExhausted}
@@ -1535,17 +1531,17 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
                   onClick={toggleListening}
                   disabled={isLoading || quotaExhausted || micPermissionDenied}
                   title={isListening ? "Yozishni to'xtatish" : "Ovozli yozishni boshlash"}
-                  className={`w-9 h-9 flex-shrink-0 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-[0.96] ${
+                  className={`icon-btn disabled:opacity-40 ${
                     isListening
-                      ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40'
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white hover:text-white animate-pulse'
+                      : ''
                   }`}
                 >
-                  {isListening ? <Mic size={17} strokeWidth={2.5} /> : <MicOff size={17} strokeWidth={2.5} />}
+                  {isListening ? <Mic size={18} /> : <MicOff size={18} />}
                 </button>
               )}
-              <button type="submit" disabled={!input.trim() || isLoading || quotaExhausted} className="w-9 h-9 flex-shrink-0 rounded-lg bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] disabled:bg-slate-200 text-white flex items-center justify-center transition-all duration-150 active:scale-[0.96]">
-                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} strokeWidth={2.5} />}
+              <button type="submit" disabled={!input.trim() || isLoading || quotaExhausted} aria-label="Yuborish" className="icon-btn bg-[color:var(--primary)] hover:bg-[color:var(--primary-hover)] text-white hover:text-white disabled:bg-slate-200">
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               </button>
             </div>
           </form>
@@ -1556,7 +1552,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
               isListening ? 'bg-rose-500 animate-pulse' : micPermissionDenied ? 'bg-slate-300' : 'bg-emerald-500'
             }`} />
-            <span className="text-xs font-normal text-slate-400">
+            <span className="t-caption">
               {isListening ? 'Ovoz yozilmoqda' : micPermissionDenied ? "Mikrofon ruxsati yo'q" : 'Tayyor'}
             </span>
           </div>

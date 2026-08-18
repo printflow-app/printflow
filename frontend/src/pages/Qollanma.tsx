@@ -5,6 +5,7 @@ import {
   Building2, ShieldCheck, BarChart3, QrCode, Bot, Command, Sparkles, Send, FileText, Wallet, Calculator,
   Info, AlertTriangle, Lightbulb, ClipboardList, Target,
 } from 'lucide-react';
+import { EmptyState } from '../components/ui';
 
 // =============================================
 // Qollanma — Notion uslubidagi yordam markazi
@@ -782,7 +783,7 @@ function highlightHtml(html: string, q: string): string {
   const re = new RegExp(`(>[^<]*?)(${escaped})`, 'gi');
   // Faqat tag tashqarisidagi (>...< oralig'idagi) matnda highlight qilamiz.
   return html.replace(re, (_, prefix, match) =>
-    `${prefix}<mark class="bg-orange-100 text-orange-900 rounded px-0.5">${match}</mark>`
+    `${prefix}<mark class="bg-primary-100 text-primary-900 rounded px-0.5">${match}</mark>`
   );
 }
 
@@ -804,7 +805,7 @@ function guideMatches(g: Guide, q: string): boolean {
 
 const CALLOUT_STYLE: Record<'info' | 'tip' | 'warn', { bg: string; border: string; icon: React.ComponentType<any>; iconColor: string }> = {
   info: { bg: 'bg-slate-50', border: 'border-slate-200', icon: Info, iconColor: 'text-slate-500' },
-  tip:  { bg: 'bg-orange-50/60', border: 'border-orange-200', icon: Lightbulb, iconColor: 'text-orange-600' },
+  tip:  { bg: 'bg-primary-50', border: 'border-primary-200', icon: Lightbulb, iconColor: 'text-[color:var(--primary)]' },
   warn: { bg: 'bg-amber-50', border: 'border-amber-200', icon: AlertTriangle, iconColor: 'text-amber-700' },
 };
 
@@ -823,7 +824,7 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
       <ol className="space-y-3 my-2">
         {block.items.map((html, i) => (
           <li key={i} className="flex gap-3 items-start">
-            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center mt-0.5">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[color:var(--primary)] text-white text-xs font-semibold flex items-center justify-center mt-0.5 tabular-nums">
               {i + 1}
             </span>
             <span
@@ -841,7 +842,7 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
       <ul className="space-y-2 my-2">
         {block.items.map((html, i) => (
           <li key={i} className="flex gap-3 items-start">
-            <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-orange-500 mt-3" />
+            <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[color:var(--primary)] mt-3" />
             <span
               className="text-base leading-7 text-slate-700 flex-1"
               dangerouslySetInnerHTML={{ __html: highlightHtml(html, search) }}
@@ -856,11 +857,11 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
     const cfg = CALLOUT_STYLE[block.tone];
     const Icon = cfg.icon;
     return (
-      <div className={`${cfg.bg} ${cfg.border} border rounded-xl p-4 flex gap-3 items-start`}>
+      <div className={`${cfg.bg} ${cfg.border} border rounded-card p-4 flex gap-3 items-start`}>
         <Icon size={18} className={`${cfg.iconColor} flex-shrink-0 mt-0.5`} />
         <div className="flex-1 min-w-0">
           {block.title && (
-            <p className="font-bold text-slate-800 text-sm mb-1">{block.title}</p>
+            <p className="t-h3 mb-1">{block.title}</p>
           )}
           <div
             className="text-sm leading-6 text-slate-700"
@@ -877,24 +878,24 @@ function RenderBlock({ block, search }: { block: Block; search: string }) {
         <div className="flex items-center gap-2">
           {block.combo.map((k, i) => (
             <React.Fragment key={i}>
-              {i > 0 && <span className="text-slate-300 font-bold">+</span>}
-              <kbd className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 shadow-sm">
+              {i > 0 && <span className="text-slate-400 font-medium">+</span>}
+              <kbd className="px-3 py-1.5 bg-white border border-slate-200 rounded-control text-sm font-semibold text-slate-700">
                 {k}
               </kbd>
             </React.Fragment>
           ))}
         </div>
-        {block.note && <p className="text-xs text-slate-400 font-medium">{block.note}</p>}
+        {block.note && <p className="t-caption">{block.note}</p>}
       </div>
     );
   }
 
   if (block.type === 'code') {
     return (
-      <div className="rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
+      <div className="rounded-card border border-slate-200 overflow-hidden divide-y divide-slate-100">
         {block.rows.map((row, i) => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/50 transition-colors">
-            <code className="font-mono text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded font-bold flex-shrink-0">
+          <div key={i} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 hover:bg-slate-50 transition-colors duration-120">
+            <code className="font-mono text-sm text-[color:var(--primary)] bg-primary-50 px-2 py-1 rounded font-medium flex-shrink-0">
               {row.cmd}
             </code>
             <span
@@ -1010,39 +1011,37 @@ export default function Qollanma() {
   // Sidebar — guruhlar bo'yicha
   const sidebarContent = (
     <>
-      <div className="px-5 pt-5 pb-4 border-b border-slate-100">
+      <div className="px-4 pt-4 pb-4 border-b border-slate-200">
         <div className="flex items-center gap-2.5 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-control bg-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
             <Book size={16} className="text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-slate-800 text-sm leading-tight">Qo'llanma</h2>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Yordam markazi</p>
+            <h2 className="t-h3">Qo'llanma</h2>
+            <p className="label-caps">Yordam markazi</p>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500"
+            aria-label="Yopish"
+            className="icon-btn-sm md:hidden"
           >
             <X size={16} />
           </button>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Qidir..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-orange-300 focus:ring-2 focus:ring-orange-100 transition-all"
+            className="input-minimal pl-9"
           />
         </div>
 
-        <button
-          onClick={restartTour}
-          className="w-full mt-3 flex items-center justify-center gap-2 h-9 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider transition-colors"
-        >
-          <PlayCircle size={13} /> Tour qaytadan
+        <button onClick={restartTour} className="btn-primary w-full mt-3">
+          <PlayCircle size={16} /> Tour qaytadan
         </button>
       </div>
 
@@ -1055,10 +1054,10 @@ export default function Qollanma() {
             <div key={cat.id} className="mb-1">
               <button
                 onClick={() => toggleCat(cat.id)}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-control label-caps hover:text-slate-700 hover:bg-slate-50 transition-colors duration-120"
               >
-                <span>{cat.label}</span>
-                <ChevronDown size={12} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <span className="truncate">{cat.label}</span>
+                <ChevronDown size={16} className={`flex-shrink-0 transition-transform duration-180 ${isOpen ? 'rotate-180' : ''}`} />
               </button>
               {isOpen && (
                 <div className="mt-0.5 space-y-0.5">
@@ -1066,19 +1065,19 @@ export default function Qollanma() {
                     <button
                       key={g.id}
                       onClick={() => { setActiveId(g.id); setSidebarOpen(false); }}
-                      className={`w-full flex items-center gap-2.5 pl-3 pr-2.5 py-2 rounded-lg text-left transition-colors ${
+                      className={`w-full flex items-center gap-2.5 pl-3 pr-2.5 py-2 rounded-control border text-left transition-colors duration-120 ${
                         activeId === g.id
-                          ? 'bg-orange-50 text-orange-700'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          ? 'bg-primary-50 border-primary-300 text-primary-700'
+                          : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                       }`}
                     >
-                      <span className={activeId === g.id ? 'text-orange-500' : 'text-slate-400'}>
+                      <span className={`flex-shrink-0 ${activeId === g.id ? 'text-[color:var(--primary)]' : 'text-slate-500'}`}>
                         {g.icon}
                       </span>
                       <span className="text-sm font-medium leading-tight flex-1 truncate">
                         {g.title}
                       </span>
-                      {activeId === g.id && <ChevronRight size={12} className="text-orange-400 flex-shrink-0" />}
+                      {activeId === g.id && <ChevronRight size={16} className="text-[color:var(--primary)] flex-shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -1089,8 +1088,8 @@ export default function Qollanma() {
 
         {filteredGuides.length === 0 && (
           <div className="text-center py-8 px-4">
-            <Search size={24} className="mx-auto text-slate-200 mb-2" />
-            <p className="text-xs font-bold text-slate-400">Hech narsa topilmadi</p>
+            <Search size={20} className="mx-auto text-slate-300 mb-2" />
+            <p className="t-caption">Hech narsa topilmadi</p>
           </div>
         )}
       </nav>
@@ -1098,21 +1097,21 @@ export default function Qollanma() {
   );
 
   return (
-    <div className="h-full bg-white text-slate-900 font-sans selection:bg-orange-100 flex rounded-2xl border border-slate-200 overflow-hidden">
+    <div className="h-full bg-white text-slate-900 font-sans selection:bg-primary-100 flex rounded-card border border-slate-200 overflow-hidden">
 
       {/* Sidebar — desktop sticky, mobile drawer */}
-      <aside className="hidden md:flex w-64 flex-shrink-0 border-r border-slate-100 bg-slate-50/30 flex-col">
+      <aside className="hidden md:flex w-64 flex-shrink-0 border-r border-slate-200 bg-slate-50/50 flex-col">
         {sidebarContent}
       </aside>
 
       {/* Mobile drawer */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-overlay md:hidden">
           <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white flex flex-col shadow-2xl">
+          <aside className="absolute left-0 top-0 bottom-0 w-[min(18rem,88vw)] bg-white flex flex-col shadow-xl animate-slide-left">
             {sidebarContent}
           </aside>
         </div>
@@ -1124,27 +1123,28 @@ export default function Qollanma() {
           ref={contentRef}
           className="flex-1 overflow-y-auto custom-scroll"
         >
-          <div className="max-w-3xl mx-auto px-6 md:px-10 py-8 md:py-12">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-10 py-6 sm:py-8 md:py-12">
 
             {/* Mobile open-sidebar + breadcrumb */}
-            <div className="flex items-center gap-3 mb-6 text-xs font-bold uppercase tracking-wider">
+            <div className="flex flex-wrap items-center gap-2 mb-6 t-caption">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="md:hidden w-8 h-8 rounded-lg border border-slate-200 hover:border-slate-300 flex items-center justify-center text-slate-500 mr-1"
+                aria-label="Bo'limlar"
+                className="md:hidden icon-btn-sm border border-slate-200 mr-1"
               >
-                <Menu size={14} />
+                <Menu size={16} />
               </button>
-              <span className="text-slate-400">Qo'llanma</span>
+              <span>Qo'llanma</span>
               {activeCategory && (
                 <>
-                  <ChevronRight size={11} className="text-slate-300" />
-                  <span className="text-slate-400">{activeCategory.label}</span>
+                  <ChevronRight size={12} className="text-slate-400 flex-shrink-0" />
+                  <span>{activeCategory.label}</span>
                 </>
               )}
               {activeGuide && (
                 <>
-                  <ChevronRight size={11} className="text-slate-300" />
-                  <span className="text-orange-600 truncate">{activeGuide.title}</span>
+                  <ChevronRight size={12} className="text-slate-400 flex-shrink-0" />
+                  <span className="text-[color:var(--primary)] truncate">{activeGuide.title}</span>
                 </>
               )}
             </div>
@@ -1153,7 +1153,7 @@ export default function Qollanma() {
               <>
                 <header className="mb-8">
                   <h1
-                    className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight mb-3"
+                    className="page-title text-xl sm:text-2xl leading-tight mb-3"
                     dangerouslySetInnerHTML={{ __html: highlightHtml(activeGuide.title, search) }}
                   />
                   <p
@@ -1162,11 +1162,11 @@ export default function Qollanma() {
                   />
                 </header>
 
-                <article className="space-y-10">
+                <article className="space-y-8 sm:space-y-10">
                   {activeGuide.sections.map(section => (
                     <section key={section.id} data-section-id={section.id}>
-                      <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-4 flex items-center gap-2">
-                        <span className="w-1 h-5 bg-orange-500 rounded-full" />
+                      <h2 className="t-h2 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-5 bg-[color:var(--primary)] rounded-full flex-shrink-0" />
                         <span dangerouslySetInnerHTML={{ __html: highlightHtml(section.title, search) }} />
                       </h2>
                       <div className="space-y-4 pl-3">
@@ -1179,60 +1179,61 @@ export default function Qollanma() {
                 </article>
 
                 {/* Prev/Next */}
-                <nav className="mt-16 pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <nav className="mt-12 sm:mt-16 pt-6 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-3">
                   {prevGuide ? (
                     <button
                       onClick={() => setActiveId(prevGuide.id)}
-                      className="group flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:border-orange-300 hover:bg-orange-50/40 transition-all text-left"
+                      className="group flex items-center gap-3 p-4 rounded-card border border-slate-200 hover:border-primary-300 hover:bg-primary-50 transition-colors duration-120 text-left"
                     >
-                      <ChevronLeft size={18} className="text-slate-400 group-hover:text-orange-500 flex-shrink-0" />
+                      <ChevronLeft size={18} className="text-slate-500 group-hover:text-[color:var(--primary)] flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Avvalgi</p>
-                        <p className="text-sm font-bold text-slate-700 group-hover:text-orange-700 truncate">{prevGuide.title}</p>
+                        <p className="label-caps mb-0.5">Avvalgi</p>
+                        <p className="t-h3 group-hover:text-primary-700 truncate">{prevGuide.title}</p>
                       </div>
                     </button>
                   ) : <div />}
                   {nextGuide ? (
                     <button
                       onClick={() => setActiveId(nextGuide.id)}
-                      className="group flex items-center justify-end gap-3 p-4 rounded-xl border border-slate-200 hover:border-orange-300 hover:bg-orange-50/40 transition-all text-right"
+                      className="group flex items-center justify-end gap-3 p-4 rounded-card border border-slate-200 hover:border-primary-300 hover:bg-primary-50 transition-colors duration-120 text-right"
                     >
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Keyingi</p>
-                        <p className="text-sm font-bold text-slate-700 group-hover:text-orange-700 truncate">{nextGuide.title}</p>
+                        <p className="label-caps mb-0.5">Keyingi</p>
+                        <p className="t-h3 group-hover:text-primary-700 truncate">{nextGuide.title}</p>
                       </div>
-                      <ChevronRight size={18} className="text-slate-400 group-hover:text-orange-500 flex-shrink-0" />
+                      <ChevronRight size={18} className="text-slate-500 group-hover:text-[color:var(--primary)] flex-shrink-0" />
                     </button>
                   ) : <div />}
                 </nav>
 
-                <footer className="mt-12 pt-6 border-t border-slate-100 text-xs text-slate-400">
+                <footer className="mt-12 pt-6 border-t border-slate-200 t-caption">
                   PrintFlow Docs &copy; {new Date().getFullYear()}
                 </footer>
               </>
             ) : (
-              <div className="text-center py-24">
-                <Search size={32} className="mx-auto text-slate-200 mb-3" />
-                <p className="text-sm font-bold text-slate-400">Mavzu topilmadi</p>
-              </div>
+              <EmptyState
+                icon={Search}
+                title="Mavzu topilmadi"
+                description="Qidiruv so'zini o'zgartirib ko'ring yoki chapdagi ro'yxatdan bo'lim tanlang."
+              />
             )}
           </div>
         </main>
 
         {/* TOC — sticky right, faqat lg+ */}
         {activeGuide && activeGuide.sections.length > 1 && (
-          <aside className="hidden lg:block w-56 flex-shrink-0 border-l border-slate-100 px-5 py-12">
+          <aside className="hidden lg:block w-56 flex-shrink-0 border-l border-slate-200 px-5 py-12">
             <div className="sticky top-12">
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Bu sahifada</p>
+              <p className="label-caps mb-3">Bu sahifada</p>
               <nav className="space-y-1">
                 {activeGuide.sections.map(s => (
                   <button
                     key={s.id}
                     onClick={() => goToSection(s.id)}
-                    className={`w-full text-left text-sm leading-snug py-1.5 pl-3 border-l-2 transition-colors ${
+                    className={`w-full text-left text-sm leading-snug py-1.5 pl-3 border-l-2 transition-colors duration-120 ${
                       activeSection === s.id
-                        ? 'border-orange-500 text-orange-700 font-bold'
-                        : 'border-slate-100 text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                        ? 'border-[color:var(--primary)] text-primary-700 font-semibold'
+                        : 'border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300'
                     }`}
                   >
                     {s.title}
