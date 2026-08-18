@@ -853,7 +853,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       <main className="flex-1 flex flex-col h-[calc(100vh-3rem)] md:h-screen overflow-hidden">
         <header className="hidden md:flex h-14 px-5 items-center justify-between border-b border-[color:var(--border)] bg-white z-sticky">
           <h2 className="page-title flex items-center gap-2">
-            {navItems.find(i => i.id === activeTab)?.label}
+            {/* `qollanma` va `billing` yon menyu guruhlarida yo'q (ular pastdagi
+                tugmalardan ochiladi), shuning uchun navItems'dan topilmaydi va
+                sarlavha bo'sh qolardi. */}
+            {navItems.find(i => i.id === activeTab)?.label
+              || ({ qollanma: "Qo'llanma", billing: 'Obuna va to\'lov' } as Record<string, string>)[activeTab]}
             {lockedTabs.has(activeTab) && <Lock size={14} className="text-rose-500" />}
           </h2>
 
