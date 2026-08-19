@@ -11,6 +11,7 @@ import { SkeletonCardGrid } from '../components/Skeleton';
 import { Search, Layers, Calculator, Save } from 'lucide-react';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { exportToXlsx } from '../utils/exportToXlsx';
+import { Badge, EmptyState, StatCard, Tabs, Toast } from '../components/ui';
 
 interface Material {
   id: string;
@@ -272,101 +273,68 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
   if (isLoading) return <SkeletonCardGrid count={6} />;
 
   return (
-    <div className="space-y-6 pb-16 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 pb-12 animate-fade-in">
       {/* Status notification */}
-      {statusMessage && (
-        <div className={`fixed top-6 right-6 z-[200] p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up ${statusMessage.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-          {statusMessage.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-          <span className="font-bold text-sm tracking-tight">{statusMessage.text}</span>
-        </div>
-      )}
+      {statusMessage && <Toast type={statusMessage.type}>{statusMessage.text}</Toast>}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
-        <div>
-          <h2 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <Package size={20} className="text-orange-500" /> Ombor Boshqaruvi
-          </h2>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-            Xomashyo va materiallar nazorati
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-card border border-slate-200">
+        <p className="t-caption">Xomashyo va materiallar nazorati</p>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           {(isAdmin || p.canExportInventory) && (
             <button
               onClick={handleExport}
-              className="flex items-center justify-center gap-2 h-10 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+              className="btn-outline flex-1 sm:flex-none"
               title={activeTab === 'materials' ? "Materiallarni Excel'ga eksport qilish" : "Harakatlar tarixini eksport qilish"}
             >
-              <Download size={13} strokeWidth={2.5}/> EKSPORT
+              <Download size={16} /> Eksport
             </button>
           )}
           {canAddItem && (
             <button
               data-tour-id="material-add"
               onClick={() => setIsAddMaterialOpen(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-10 px-5 bg-orange-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-700 transition-all"
+              className="btn-primary flex-1 sm:flex-none"
             >
-              <Plus size={16} strokeWidth={3} /> Material Qo'shish
+              <Plus size={16} /> Material Qo'shish
             </button>
           )}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        {[
-          { label: 'Jami Materiallar', value: materials.length, icon: Package, color: 'indigo', bg: 'bg-orange-50/50', border: 'border-orange-100', text: 'text-orange-600' },
-          { label: 'Faol (yetarli)', value: materials.filter(m => !isLow(m) && !isCritical(m)).length, icon: TrendingUp, color: 'orange', bg: 'bg-orange-50/50', border: 'border-orange-100', text: 'text-orange-600' },
-          { label: 'Band (Reserved)', value: materials.reduce((acc, m) => acc + (m.reservedStock > 0 ? 1 : 0), 0), icon: ArrowDownCircle, color: 'sky', bg: 'bg-slate-50/50', border: 'border-slate-100', text: 'text-slate-600' },
-          { label: 'Kam qolgan', value: lowCount, icon: TrendingDown, color: 'amber', bg: 'bg-amber-50/50', border: 'border-amber-100', text: 'text-amber-600' },
-        ].map(stat => (
-          <div key={stat.label} className={`${stat.bg} ${stat.border} border rounded-2xl p-4 flex items-center gap-3 transition-all hover:shadow-md`}>
-            <div className={`w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm ${stat.text} border ${stat.border}`}>
-              <stat.icon size={18} />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-slate-800 leading-none">{stat.value}</p>
-              <p className={`text-[11px] font-bold uppercase tracking-widest mt-1 ${stat.text}`}>{stat.label}</p>
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <StatCard label="Jami Materiallar" value={materials.length} icon={Package} tone="brand" />
+        <StatCard label="Faol (yetarli)" value={materials.filter(m => !isLow(m) && !isCritical(m)).length} icon={TrendingUp} tone="success" />
+        <StatCard label="Band (Reserved)" value={materials.reduce((acc, m) => acc + (m.reservedStock > 0 ? 1 : 0), 0)} icon={ArrowDownCircle} tone="neutral" />
+        <StatCard label="Kam qolgan" value={lowCount} icon={TrendingDown} tone="warning" />
       </div>
 
       {/* Tab switcher */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl w-fit">
-        <button
-          onClick={() => setActiveTab('materials')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'materials' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-        >
-          <BarChart2 size={14} /> Materiallar
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'history' ? 'bg-white shadow-sm text-slate-600' : 'text-slate-400 hover:text-slate-600'}`}
-        >
-          <History size={14} /> Harakatlar Tarixi
-        </button>
-      </div>
+      <Tabs<'materials' | 'history'>
+        tabs={[
+          { id: 'materials', label: 'Materiallar', icon: BarChart2 },
+          { id: 'history', label: 'Harakatlar tarixi', icon: History },
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
 
       {/* Materials List */}
       {activeTab === 'materials' && (
         <div className="space-y-3">
           {materials.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 py-16 flex flex-col items-center justify-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-400">
-                <Package size={28} />
-              </div>
-              <div className="text-center">
-                <p className="text-base font-bold text-slate-800 mb-1">Hali material yo'q</p>
-                <p className="text-sm text-slate-500 max-w-sm">Bosma uchun ishlatiladigan materiallarni (qog'oz, siyoh, plyonka...) qo'shing va qoldiqlarni avtomatik kuzating.</p>
-              </div>
-              {canAddItem && (
-                <button onClick={() => setIsAddMaterialOpen(true)} className="h-10 px-5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-sm flex items-center gap-2 mt-2">
-                  <Plus size={16} /> Birinchi materialni qo'shish
-                </button>
-              )}
-            </div>
+            <EmptyState
+              icon={Package}
+              title="Hali material yo'q"
+              description="Bosma uchun ishlatiladigan materiallarni (qog'oz, siyoh, plyonka...) qo'shing va qoldiqlarni avtomatik kuzating."
+              action={canAddItem ? {
+                label: "Birinchi materialni qo'shish",
+                onClick: () => setIsAddMaterialOpen(true),
+                icon: Plus,
+                primary: false,
+              } : undefined}
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
               {materials.map(mat => {
@@ -375,42 +343,42 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 return (
                   <div
                     key={mat.id}
-                    className={`bg-white rounded-3xl border-2 shadow-sm p-5 transition-all hover:shadow-md group ${
-                      isCrit ? 'border-rose-200 bg-rose-50/30' : isLowStock ? 'border-amber-200 bg-amber-50/20' : 'border-slate-100 hover:border-orange-200'
+                    className={`bg-white rounded-card border p-4 transition-colors duration-120 group ${
+                      isCrit ? 'border-rose-200' : isLowStock ? 'border-amber-200' : 'border-slate-200 hover:border-primary-200'
                     }`}
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm ${
-                          isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-orange-500'
+                    <div className="flex justify-between items-start gap-2 mb-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-control flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${
+                          isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-[color:var(--primary)]'
                         }`}>
                           {mat.name.charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-800 uppercase tracking-tight">{mat.name}</h4>
-                          <p className="text-xs font-bold text-slate-400 uppercase">{mat.unit}</p>
+                        <div className="min-w-0">
+                          <h4 className="t-h3 truncate">{mat.name}</h4>
+                          <p className="t-caption">{mat.unit}</p>
                         </div>
                       </div>
                       {canEditItem && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-0.5 flex-shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => openBOMModal(mat)}
-                            className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all"
+                            className="icon-btn-sm"
                             title="Sarf Sozlash (B.O.M)"
                           >
-                            <Layers size={13} />
+                            <Layers size={16} />
                           </button>
                           <button
                             onClick={() => { setSelectedMaterial(mat); setEditMaterialForm({ ...mat, currentStock: String(mat.currentStock), minStock: String(mat.minStock) }); setIsEditMaterialOpen(true); }}
-                            className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-500 hover:bg-slate-50 transition-all"
+                            className="icon-btn-sm"
                           >
-                            <Edit3 size={13} />
+                            <Edit3 size={16} />
                           </button>
                           <button
                             onClick={() => { setSelectedMaterial(mat); setIsConfirmOpen(true); }}
-                            className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                            className="icon-btn-sm hover:bg-rose-50 hover:text-rose-600"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       )}
@@ -419,27 +387,27 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     {/* Stock display */}
                     <div className="mb-4 space-y-3">
                       <div>
-                        <div className="flex justify-between items-end mb-1">
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">Omborda jami:</span>
+                        <div className="flex justify-between items-end gap-2 mb-1">
+                          <span className="label-caps">Omborda jami:</span>
                           {isCrit ? (
-                            <span className="text-[11px] font-bold bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-md animate-pulse">TUGAGAN!</span>
+                            <Badge variant="danger">Tugagan!</Badge>
                           ) : isLowStock ? (
-                            <span className="text-[11px] font-bold bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-md">MIN: {mat.minStock}</span>
+                            <Badge variant="warning">Min: {mat.minStock}</Badge>
                           ) : null}
                         </div>
-                        <p className={`text-xl font-bold tabular-nums ${isCrit ? 'text-rose-500' : isLowStock ? 'text-amber-500' : 'text-slate-800'}`}>
+                        <p className={`text-xl font-semibold tabular-nums ${isCrit ? 'text-rose-600' : isLowStock ? 'text-amber-600' : 'text-slate-900'}`}>
                           {formatStock(mat.currentStock, mat.unit)}
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
                         <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Band (Reserved):</p>
-                          <p className="text-sm font-bold text-slate-600 tabular-nums">{formatStock(mat.reservedStock || 0, mat.unit)}</p>
+                          <p className="label-caps mb-0.5">Band (Reserved):</p>
+                          <p className="text-sm font-semibold text-slate-700 tabular-nums">{formatStock(mat.reservedStock || 0, mat.unit)}</p>
                         </div>
                         <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Sotuvda mavjud:</p>
-                          <p className="text-sm font-bold text-orange-600 tabular-nums">
+                          <p className="label-caps mb-0.5">Sotuvda mavjud:</p>
+                          <p className="text-sm font-semibold text-primary-700 tabular-nums">
                             {formatStock(Math.max(0, mat.currentStock - (mat.reservedStock || 0)), mat.unit)}
                           </p>
                         </div>
@@ -449,7 +417,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                         <div className="pt-1">
                           <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
                              <div
-                               className={`h-full rounded-full transition-all ${isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-orange-500'}`}
+                               className={`h-full rounded-full transition-all ${isCrit ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-[color:var(--primary)]'}`}
                                style={{ width: `${Math.min(100, (mat.currentStock / (mat.minStock * 2)) * 100)}%` }}
                              />
                           </div>
@@ -459,29 +427,29 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
                     {/* Action buttons */}
                     {(canReceive || canUse || canWriteOff) && (
-                      <div className="flex gap-2 pt-3 border-t border-slate-100">
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100">
                         {canReceive && (
                           <button
                             onClick={() => openStockOp(mat, 'kirim')}
-                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-bold uppercase rounded-xl border border-orange-100 hover:border-orange-500 transition-all"
+                            className="btn-success h-sm flex-1"
                           >
-                            <ArrowUpCircle size={13} /> Kirim
+                            <ArrowUpCircle size={16} /> Kirim
                           </button>
                         )}
                         {canUse && (
                           <button
                             onClick={() => openStockOp(mat, 'chiqim')}
-                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-slate-50 hover:bg-slate-500 hover:text-white text-slate-600 text-xs font-bold uppercase rounded-xl border border-slate-100 hover:border-slate-500 transition-all"
+                            className="btn-outline h-sm flex-1"
                           >
-                            <ArrowDownCircle size={13} /> Chiqim
+                            <ArrowDownCircle size={16} /> Chiqim
                           </button>
                         )}
                         {canWriteOff && (
                           <button
                             onClick={() => openStockOp(mat, 'brak')}
-                            className="flex-1 flex items-center justify-center gap-1.5 h-9 bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 text-xs font-bold uppercase rounded-xl border border-rose-100 hover:border-rose-500 transition-all"
+                            className="btn-danger h-sm flex-1"
                           >
-                            <X size={13} /> Brak
+                            <X size={16} /> Brak
                           </button>
                         )}
                       </div>
@@ -496,130 +464,118 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
       {/* Movements History */}
       {activeTab === 'history' && (
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Sana</th>
-                  <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Material</th>
-                  <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tur</th>
-                  <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Miqdor</th>
-                  <th className="px-6 py-4 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Izoh</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movements.length === 0 ? (
+        movements.length === 0 ? (
+          <EmptyState icon={History} title="Harakatlar tarixi bo'sh" />
+        ) : (
+          <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="table-minimal">
+                <thead>
                   <tr>
-                    <td colSpan={5} className="py-20 text-center">
-                      <History size={40} className="mx-auto text-slate-200 mb-3" />
-                      <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">Harakatlar tarixi bo'sh</p>
-                    </td>
+                    <th className="hidden md:table-cell">Sana</th>
+                    <th>Material</th>
+                    <th>Tur</th>
+                    <th className="text-right">Miqdor</th>
+                    <th className="hidden md:table-cell">Izoh</th>
                   </tr>
-                ) : (
-                  movements.map(mv => (
-                    <tr key={mv.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 text-xs font-bold text-slate-400 tabular-nums whitespace-nowrap">
+                </thead>
+                <tbody>
+                  {movements.map(mv => (
+                    <tr key={mv.id}>
+                      <td className="hidden md:table-cell text-slate-500 tabular-nums whitespace-nowrap">
                         {new Date(mv.createdAt).toLocaleString('uz-UZ', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-bold text-slate-800 uppercase tracking-tight">{mv.material?.name || '—'}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl uppercase ${
-                          mv.type === 'kirim' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                          mv.type === 'chiqim' ? 'bg-slate-50 text-slate-600 border border-slate-100' :
-                          'bg-rose-50 text-rose-600 border border-rose-100'
-                        }`}>
-                          {mv.type === 'kirim' ? <ArrowUpCircle size={10} /> : mv.type === 'chiqim' ? <ArrowDownCircle size={10} /> : <X size={10} />}
+                      <td className="font-medium text-slate-900">{mv.material?.name || '—'}</td>
+                      <td>
+                        <Badge variant={mv.type === 'kirim' ? 'success' : mv.type === 'chiqim' ? 'neutral' : 'danger'}>
                           {mv.type.charAt(0).toUpperCase() + mv.type.slice(1)}
-                        </span>
+                        </Badge>
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-700 tabular-nums">
+                      <td className="text-right tabular-nums font-medium text-slate-800 whitespace-nowrap">
                         {mv.type === 'kirim' ? '+' : '-'}{mv.quantity} {mv.material?.unit}
                       </td>
-                      <td className="px-6 py-4 text-xs font-medium text-slate-500 italic max-w-[200px] truncate">
+                      <td className="hidden md:table-cell text-slate-500 max-w-[200px] truncate">
                         {mv.note || '—'}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )
       )}
 
       {/* ADD MATERIAL MODAL */}
       <Modal isOpen={isAddMaterialOpen} onClose={() => setIsAddMaterialOpen(false)} title="Yangi Material Qo'shish">
-        <form onSubmit={handleAddMaterial} className="space-y-5">
+        <form onSubmit={handleAddMaterial} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Material Nomi</label>
+            <label className="form-label">Material Nomi</label>
             <input type="text" required value={newMaterialForm.name} onChange={e => setNewMaterialForm(f => ({ ...f, name: e.target.value }))} className="input-minimal" placeholder="Masalan: A4 Qog'oz, Ko'k Kraska..." />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">O'lchov Birligi</label>
+              <label className="form-label">O'lchov Birligi</label>
               <select value={newMaterialForm.unit} onChange={e => setNewMaterialForm(f => ({ ...f, unit: e.target.value }))} className="select-minimal">
                 {['dona', 'kg', 'g', 'litr', 'ml', 'sm', 'metr', 'm2', 'varaq', 'quti', 'rulon'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Boshlang'ich Qoldiq</label>
-              <NumberInput 
-                value={newMaterialForm.currentStock} 
-                onChange={val => setNewMaterialForm(f => ({ ...f, currentStock: val || '' }))} 
-                className="input-minimal font-bold text-orange-600"
+              <label className="form-label">Boshlang'ich Qoldiq</label>
+              <NumberInput
+                value={newMaterialForm.currentStock}
+                onChange={val => setNewMaterialForm(f => ({ ...f, currentStock: val || '' }))}
+                className="input-minimal text-right tabular-nums"
                 placeholder="0"
                 allowDecimal={true}
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Minimal Qoldiq (Ogohlantirish)</label>
-            <NumberInput 
-              value={newMaterialForm.minStock} 
-              onChange={val => setNewMaterialForm(f => ({ ...f, minStock: val || '' }))} 
-              className="input-minimal font-bold text-amber-600" 
-              placeholder="0 = ogohlantirish yo'q" 
+            <label className="form-label">Minimal Qoldiq (Ogohlantirish)</label>
+            <NumberInput
+              value={newMaterialForm.minStock}
+              onChange={val => setNewMaterialForm(f => ({ ...f, minStock: val || '' }))}
+              className="input-minimal text-right tabular-nums"
+              placeholder="0 = ogohlantirish yo'q"
               allowDecimal={true}
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setIsAddMaterialOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-8 bg-orange-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-orange-700 transition-all">Qo'shish</button>
+            <button type="button" className="btn-outline flex-1" onClick={() => setIsAddMaterialOpen(false)}>Bekor</button>
+            <button type="submit" className="btn-primary flex-1">Qo'shish</button>
           </div>
         </form>
       </Modal>
 
       {/* EDIT MATERIAL MODAL */}
       <Modal isOpen={isEditMaterialOpen} onClose={() => setIsEditMaterialOpen(false)} title="Materialni Tahrirlash">
-        <form onSubmit={handleEditMaterial} className="space-y-5">
+        <form onSubmit={handleEditMaterial} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Material Nomi</label>
+            <label className="form-label">Material Nomi</label>
             <input type="text" required value={editMaterialForm.name || ''} onChange={e => setEditMaterialForm((f: any) => ({ ...f, name: e.target.value }))} className="input-minimal" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Birlik</label>
+              <label className="form-label">Birlik</label>
               <select value={editMaterialForm.unit || 'dona'} onChange={e => setEditMaterialForm((f: any) => ({ ...f, unit: e.target.value }))} className="select-minimal">
                 {['dona', 'kg', 'g', 'litr', 'ml', 'sm', 'metr', 'm2', 'varaq', 'quti', 'rulon'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Minimal Qoldiq</label>
-              <NumberInput 
-                value={editMaterialForm.minStock ?? ''} 
-                onChange={val => setEditMaterialForm((f: any) => ({ ...f, minStock: val || '' }))} 
-                className="input-minimal font-bold text-amber-600" 
-                placeholder="0" 
+              <label className="form-label">Minimal Qoldiq</label>
+              <NumberInput
+                value={editMaterialForm.minStock ?? ''}
+                onChange={val => setEditMaterialForm((f: any) => ({ ...f, minStock: val || '' }))}
+                className="input-minimal text-right tabular-nums"
+                placeholder="0"
                 allowDecimal={true}
               />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setIsEditMaterialOpen(false)}>Bekor</button>
-            <button type="submit" className="h-12 flex-2 px-8 bg-slate-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-slate-700 transition-all">Saqlash</button>
+            <button type="button" className="btn-outline flex-1" onClick={() => setIsEditMaterialOpen(false)}>Bekor</button>
+            <button type="submit" className="btn-primary flex-1">Saqlash</button>
           </div>
         </form>
       </Modal>
@@ -631,49 +587,41 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         title={stockOp === 'kirim' ? 'Kirim' : stockOp === 'chiqim' ? 'Chiqim' : 'Brak'}
         type={stockOp === 'brak' ? 'danger' : stockOp === 'chiqim' ? 'warning' : 'default'}
       >
-        <form onSubmit={handleStockOp} className="space-y-5">
+        <form onSubmit={handleStockOp} className="space-y-4">
           {selectedMaterial && (
-            <div className={`p-4 rounded-2xl border flex items-center gap-3 ${
-              stockOp === 'kirim' ? 'bg-emerald-50 border-emerald-100' :
-              stockOp === 'chiqim' ? 'bg-slate-50 border-slate-100' :
-              'bg-rose-50 border-rose-100'
+            <div className={`p-4 rounded-card border flex items-center gap-3 ${
+              stockOp === 'kirim' ? 'bg-emerald-50 border-emerald-200' :
+              stockOp === 'chiqim' ? 'bg-slate-50 border-slate-200' :
+              'bg-rose-50 border-rose-200'
             }`}>
-              <Package size={20} className={stockOp === 'kirim' ? 'text-emerald-500' : stockOp === 'chiqim' ? 'text-slate-500' : 'text-rose-500'} />
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Material</p>
-                <p className="text-sm font-bold text-slate-800">{selectedMaterial.name}</p>
-                <p className="text-xs font-bold text-slate-500">Joriy qoldiq: {formatStock(selectedMaterial.currentStock, selectedMaterial.unit)}</p>
+              <Package size={20} className={stockOp === 'kirim' ? 'text-emerald-600' : stockOp === 'chiqim' ? 'text-slate-500' : 'text-rose-600'} />
+              <div className="min-w-0">
+                <p className="label-caps">Material</p>
+                <p className="t-h3 truncate">{selectedMaterial.name}</p>
+                <p className="t-caption">Joriy qoldiq: {formatStock(selectedMaterial.currentStock, selectedMaterial.unit)}</p>
               </div>
             </div>
           )}
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">
+            <label className="form-label">
               Miqdor ({selectedMaterial?.unit})
             </label>
             <NumberInput
               value={stockForm.quantity}
               onChange={val => setStockForm(f => ({ ...f, quantity: val || '' }))}
-              className={`input-minimal font-bold text-2xl h-16 ${
-                stockOp === 'kirim' ? 'focus:border-emerald-500 text-emerald-600' :
-                stockOp === 'chiqim' ? 'focus:border-slate-500 text-slate-600' :
-                'focus:border-rose-500 text-rose-600'
-              }`}
+              className="input-minimal h-control-lg text-lg font-semibold text-right tabular-nums"
               placeholder="0"
               allowDecimal={true}
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 px-1">Izoh (ixtiyoriy)</label>
+            <label className="form-label">Izoh (ixtiyoriy)</label>
             <input type="text" value={stockForm.note} onChange={e => setStockForm(f => ({ ...f, note: e.target.value }))} className="input-minimal" placeholder={stockOp === 'brak' ? 'Brak sababi...' : 'Qo\'shimcha ma\'lumot...'} />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" onClick={() => setIsStockOpOpen(false)}>Bekor</button>
-            <button type="submit" className={`h-12 flex-2 px-8 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg transition-all ${
-              stockOp === 'kirim' ? 'bg-emerald-600 hover:bg-emerald-700' :
-              stockOp === 'chiqim' ? 'bg-slate-600 hover:bg-slate-700' :
-              'bg-rose-600 hover:bg-rose-700'
-            }`}>
+            <button type="button" className="btn-outline flex-1" onClick={() => setIsStockOpOpen(false)}>Bekor</button>
+            <button type="submit" className={`flex-1 ${stockOp === 'brak' ? 'btn-danger-solid' : 'btn-primary'}`}>
               {stockOp === 'kirim' ? 'Kirim Qilish' : stockOp === 'chiqim' ? 'Chiqim Qilish' : 'Brak Deb Belgilash'}
             </button>
           </div>
@@ -686,27 +634,27 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         title="Materialni o'chirish"
         type="danger"
       >
-        <div className="space-y-6">
-          <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-start gap-4">
-            <AlertCircle className="text-rose-500 mt-1" size={24} />
+        <div className="space-y-5">
+          <div className="bg-rose-50 p-4 rounded-card border border-rose-100 flex items-start gap-4">
+            <AlertCircle className="text-rose-500 mt-0.5 shrink-0" size={20} />
             <div>
-              <p className="text-sm font-bold text-rose-900 uppercase">Diqqat!</p>
-              <p className="text-xs font-bold text-rose-700 mt-1">
+              <p className="t-h3 text-rose-900">Diqqat!</p>
+              <p className="text-xs font-medium text-rose-700 mt-1 leading-relaxed">
                 Siz <strong>{selectedMaterial?.name}</strong> materialini o'chirmoqchisiz. Bu amalni ortga qaytarib bo'lmaydi!
               </p>
             </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button 
-              type="button" 
-              className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest" 
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="btn-outline flex-1"
               onClick={() => setIsConfirmOpen(false)}
             >
               Bekor qilish
             </button>
-            <button 
-              type="button" 
-              className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all"
+            <button
+              type="button"
+              className="btn-danger-solid flex-1"
               onClick={handleDeleteMaterial}
             >
               Ha, o'chirilsin
@@ -724,47 +672,47 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       >
         <div className="flex flex-col gap-6">
           {/* Smart Calculator Section */}
-          <div className="bg-slate-50 p-5 rounded-3xl border-2 border-slate-100 shadow-sm">
+          <div className="bg-slate-50 p-4 rounded-card border border-slate-200">
              <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-xl bg-slate-600 text-white flex items-center justify-center shadow-lg shadow-slate-500/20">
+                <div className="w-9 h-9 rounded-control bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0">
                    <Calculator size={18} />
                 </div>
                 <div>
-                   <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest leading-none">Oson Hisoblash Kalkulyatori</h4>
-                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Sarf normasini avtomatik hisoblang</p>
+                   <h4 className="t-h3">Oson Hisoblash Kalkulyatori</h4>
+                   <p className="t-caption">Sarf normasini avtomatik hisoblang</p>
                 </div>
              </div>
-             
+
              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
                 <div>
-                   <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1 tracking-[0.1em]">Necha Dona Mahsulot Uchun?</label>
-                   <input 
-                     type="number" 
-                     value={calcForm.productQty} 
-                     onChange={e => setCalcForm({...calcForm, productQty: e.target.value})} 
-                     className="input-minimal h-12 bg-white border-2 border-slate-100 focus:border-slate-500 font-bold text-slate-600"
+                   <label className="form-label">Necha Dona Mahsulot Uchun?</label>
+                   <input
+                     type="number"
+                     value={calcForm.productQty}
+                     onChange={e => setCalcForm({...calcForm, productQty: e.target.value})}
+                     className="input-minimal text-right tabular-nums"
                      placeholder="Masalan: 10 ta vizitka"
                    />
                 </div>
-                <div className="flex items-center justify-center pt-5">
-                   <div className="w-10 h-[2px] bg-slate-200"></div>
+                <div className="hidden md:flex items-center justify-center pt-5">
+                   <div className="w-10 h-px bg-slate-200"></div>
                 </div>
                 <div>
-                   <label className="block text-[11px] font-bold text-slate-400 uppercase mb-2 px-1 tracking-[0.1em]">Qancha {selectedMaterial?.unit} Ketishi Kerak?</label>
-                   <input 
-                     type="number" 
-                     value={calcForm.materialQty} 
-                     onChange={e => setCalcForm({...calcForm, materialQty: e.target.value})} 
-                     className="input-minimal h-12 bg-white border-2 border-slate-100 focus:border-slate-500 font-bold text-slate-600"
+                   <label className="form-label">Qancha {selectedMaterial?.unit} Ketishi Kerak?</label>
+                   <input
+                     type="number"
+                     value={calcForm.materialQty}
+                     onChange={e => setCalcForm({...calcForm, materialQty: e.target.value})}
+                     className="input-minimal text-right tabular-nums"
                      placeholder="Masalan: 1 varaq"
                    />
                 </div>
              </div>
-             
-             <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center bg-white/50 p-4 rounded-2xl">
-                <p className="text-xs font-bold text-slate-500 uppercase">Hisoblangan Norma (1 dona uchun):</p>
-                <div className="text-xl font-bold text-slate-700 bg-white px-6 py-2 rounded-xl shadow-inner border border-slate-100">
-                   {calcForm.result} <span className="text-xs uppercase">{selectedMaterial?.unit}</span>
+
+             <div className="mt-4 flex flex-wrap justify-between items-center gap-2 bg-white p-4 rounded-card border border-slate-200">
+                <p className="t-caption">Hisoblangan Norma (1 dona uchun):</p>
+                <div className="text-xl font-semibold text-slate-900 tabular-nums">
+                   {calcForm.result} <span className="t-caption">{selectedMaterial?.unit}</span>
                 </div>
              </div>
           </div>
@@ -772,42 +720,38 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Services List (To be linked) */}
             <div className="flex flex-col">
-              <div className="flex items-center justify-between mb-4 px-2">
-                 <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                   <Layers size={14}/> Mavjud Xizmatlar
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-3 px-1">
+                 <h5 className="label-caps flex items-center gap-2">
+                   <Layers size={16}/> Mavjud Xizmatlar
                  </h5>
                  <div className="relative w-40">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
-                    <input 
-                      type="text" 
-                      placeholder="Qidirish..." 
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Qidirish..."
                       value={bomSearchTerm}
                       onChange={e => setBomSearchTerm(e.target.value)}
-                      className="w-full pl-8 h-8 rounded-lg bg-slate-100 border-none outline-none text-xs font-bold"
+                      className="input-minimal h-control-sm pl-8 text-xs"
                     />
                  </div>
               </div>
-              <div className="overflow-y-auto max-h-[300px] border border-slate-100 rounded-3xl bg-slate-50/50 p-2 flex flex-col gap-1.5 custom-scroll">
+              <div className="overflow-y-auto max-h-[300px] border border-slate-200 rounded-card bg-slate-50/50 p-2 flex flex-col gap-1.5 custom-scroll">
                 {services
                   .filter(s => s.name.toLowerCase().includes(bomSearchTerm.toLowerCase()))
                   .map(svc => {
                     const isLinked = (selectedMaterial?.bom as any[])?.some(b => b.serviceId === svc.id);
                     return (
-                      <div key={svc.id} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-slate-300 transition-all">
-                        <div>
-                           <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{svc.name}</p>
-                           <p className="text-[11px] font-bold text-slate-400 uppercase">{svc.unit}</p>
+                      <div key={svc.id} className="bg-white p-3 rounded-control border border-slate-200 flex items-center justify-between gap-2 hover:border-slate-300 transition-colors duration-120">
+                        <div className="min-w-0">
+                           <p className="t-h3 truncate">{svc.name}</p>
+                           <p className="t-caption">{svc.unit}</p>
                         </div>
-                        <button 
+                        <button
                           disabled={isLinked}
                           onClick={() => handleLinkService(svc.id, calcForm.result)}
-                          className={`h-8 px-4 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${
-                            isLinked 
-                             ? 'bg-slate-100 text-slate-300 pointer-events-none' 
-                             : 'bg-slate-600 text-white shadow-lg shadow-slate-500/20 hover:bg-slate-700 hover:scale-105 active:scale-95'
-                          }`}
+                          className="btn-outline h-sm flex-shrink-0"
                         >
-                          {isLinked ? 'BOG\'LANGAN' : 'BIRIKTIRISH'}
+                          {isLinked ? 'Bog\'langan' : 'Biriktirish'}
                         </button>
                       </div>
                     )
@@ -817,27 +761,28 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
             {/* Currently Linked Services */}
             <div className="flex flex-col">
-               <h5 className="text-xs font-bold text-orange-600 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
-                 <CheckCircle2 size={14}/> Biriktirilgan Xizmatlar
+               <h5 className="label-caps text-primary-700 mb-3 px-1 flex items-center gap-2">
+                 <CheckCircle2 size={16}/> Biriktirilgan Xizmatlar
                </h5>
-               <div className="overflow-y-auto max-h-[300px] border-2 border-orange-50 rounded-3xl bg-orange-50/20 p-2 flex flex-col gap-1.5 custom-scroll">
+               <div className="overflow-y-auto max-h-[300px] border border-primary-200 rounded-card bg-primary-50/30 p-2 flex flex-col gap-1.5 custom-scroll">
                   {(!selectedMaterial?.bom || (selectedMaterial.bom as any[]).length === 0) ? (
-                    <div className="py-20 text-center opacity-30 flex flex-col items-center">
-                       <Layers size={32} className="mb-2" />
-                       <p className="text-[11px] font-bold uppercase tracking-widest">Hozircha xizmat biriktirilmagan</p>
-                    </div>
+                    <EmptyState
+                      icon={Layers}
+                      title="Hozircha xizmat biriktirilmagan"
+                      className="border-0 bg-transparent p-6 sm:p-8"
+                    />
                   ) : (
                     (selectedMaterial.bom as any[]).map(b => (
-                      <div key={b.id} className="bg-white p-3 rounded-2xl border border-orange-100 shadow-sm flex items-center justify-between group">
-                         <div>
-                            <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{b.service?.name}</p>
-                            <p className="text-xs font-bold text-orange-600">Norma: {b.normPerUnit} {selectedMaterial?.unit}</p>
+                      <div key={b.id} className="bg-white p-3 rounded-control border border-primary-100 flex items-center justify-between gap-2">
+                         <div className="min-w-0">
+                            <p className="t-h3 truncate">{b.service?.name}</p>
+                            <p className="text-xs font-medium text-primary-700 tabular-nums">Norma: {b.normPerUnit} {selectedMaterial?.unit}</p>
                          </div>
-                         <button 
+                         <button
                            onClick={() => askUnlink(b.serviceId)}
-                           className="w-9 h-9 flex items-center justify-center rounded-xl bg-rose-50 text-rose-300 hover:bg-rose-500 hover:text-white transition-all shadow-sm shadow-rose-500/5 group"
+                           className="icon-btn-sm text-rose-500 hover:bg-rose-50 hover:text-rose-600"
                          >
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                          </button>
                       </div>
                     ))
@@ -845,13 +790,13 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                </div>
             </div>
           </div>
-          
+
           <div className="pt-4 border-t border-slate-100">
              <button
                onClick={() => setIsBOMModalOpen(false)}
-               className="w-full h-14 bg-slate-900 text-white rounded-2xl font-bold uppercase text-xs tracking-[0.2em] shadow-xl shadow-slate-900/10 hover:bg-slate-800 transition-all flex items-center justify-center gap-3"
+               className="btn-primary h-lg w-full"
              >
-               SAQLASH VA TUGATISH <Save size={18}/>
+               Saqlash va tugatish <Save size={18}/>
              </button>
           </div>
         </div>
@@ -864,22 +809,22 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         title="Bog'liqlikni o'chirish"
         type="danger"
       >
-        <div className="space-y-6">
-          <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-start gap-4">
-            <AlertCircle className="text-rose-500 mt-1 shrink-0" size={22} />
-            <p className="text-sm font-bold text-rose-800">Bu xizmatni materialdan ajratmoqchimisiz? Xizmat sarflanish normasi o'chiriladi.</p>
+        <div className="space-y-5">
+          <div className="bg-rose-50 p-4 rounded-card border border-rose-100 flex items-start gap-4">
+            <AlertCircle className="text-rose-500 mt-0.5 shrink-0" size={20} />
+            <p className="text-sm font-medium text-rose-800 leading-relaxed">Bu xizmatni materialdan ajratmoqchimisiz? Xizmat sarflanish normasi o'chiriladi.</p>
           </div>
           <div className="flex gap-3">
             <button
               type="button"
-              className="btn-outline h-12 flex-1 rounded-2xl font-bold uppercase text-xs tracking-widest"
+              className="btn-outline flex-1"
               onClick={() => { setIsUnlinkConfirmOpen(false); setUnlinkServiceId(null); }}
             >
               Bekor qilish
             </button>
             <button
               type="button"
-              className="h-12 flex-1 bg-rose-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all"
+              className="btn-danger-solid flex-1"
               onClick={handleUnlinkService}
             >
               Ha, o'chirilsin

@@ -45,7 +45,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           onClick={action.onClick}
           className={action.primary ? 'btn-primary' : 'btn-outline'}
         >
-          {action.icon && <action.icon size={16} strokeWidth={1.75} />}
+          {action.icon && <action.icon size={16} />}
           <span>{action.label}</span>
         </button>
       )}
