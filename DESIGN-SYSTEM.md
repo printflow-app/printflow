@@ -28,6 +28,50 @@ Qoida bittasi hammasidan muhim:
 Hozir kodda ikkita to'q sariq bor: `#f2610d` (tokenda) va `#ea580c` (kodda 34
 marta). Bittasi qoladi — `#ea580c`, chunki u haqiqatda ishlatilgan.
 
+> **Bajarildi (2026-08-19):** kodda uchta to'q sariq bor edi — `#FF6B00`
+> (78 marta), `orange-500` (#f97316, 65 marta) va token `#ea580c`. Hammasi
+> bitta `primary-*` shkalasiga keltirildi; xom hex qolmadi.
+
+### To'q sariq qayerda ko'rinadi
+
+Rang kam bo'lsa ilova "o'lik" tuyuladi, ko'p bo'lsa ko'z asosiy harakatni
+topolmaydi. Shuning uchun ro'yxat aniq:
+
+| Joy | Ko'rinishi |
+|---|---|
+| Ekrandagi asosiy harakat | to'ldirilgan tugma (`btn-primary`) — ekranda **bitta** |
+| Faol menyu punkti | `--brand-50` fon + `--brand-200` ramka + brend rangli ikonka |
+| Faol tab | oq fon, brend rangli matn va ikonka |
+| Tanlangan element (chip, karta) | `--brand-50` fon + `--brand-300` ramka, to'ldirilmaydi |
+| Brend belgisi (logo, avatar, AI ikonkasi) | to'q sariq |
+| Grafikdagi asosiy seriya | `chartColors.primary` |
+
+Bezak uchun (ajratuvchi chiziq, oddiy ikonka, statik matn) ishlatilmaydi.
+
+### Uchinchi rang — to'q ko'k (`--ink`)
+
+| Token | Qiymat | Qachon |
+|---|---|---|
+| `--ink` | `#0f172a` | yakuniy natija paneli |
+| `--ink-soft` | `#1e293b` | hover |
+| `--ink-foreground` | `#ffffff` | ustidagi matn |
+
+Brend uchligi: **oq (fon) + to'q sariq (harakat) + to'q ko'k (natija)**.
+
+Qoida: **bir ekranda bitta** to'q ko'k panel — o'sha ekranning yakuniy
+raqami. Shunda ko'z sahifaga tushishi bilan asosiy natijani topadi:
+
+| Sahifa | To'q ko'k panel |
+|---|---|
+| Kassa | Davr balansi |
+| Dashboard | 30 kunlik sof |
+| Hisobotlar | Sof foyda |
+| Statistika | Samaradorlik yig'indisi |
+
+Komponentda: `<StatCard variant="ink">` yoki `bg-ink`. Ikkita to'q ko'k panel
+bir ekranda turmaydi — u holda ikkalasi ham "asosiy" bo'lib qoladi va
+ierarxiya yo'qoladi.
+
 ### Neytral — bitta shkala, iliq
 
 `#ffffff` · `#fdfcfb` · `#faf9f7` · `#f5f2ee` · `#e7e2db` · `#d6cfc5` ·
@@ -516,6 +560,19 @@ qiymatlar shu hujjatga moslanadi:
   scroll konteynerda, toolbar `flex-wrap`
 - **Sahifa sarlavhasi sahifa ichida TAKRORLANMAYDI** — u shell headerda turadi;
   sahifa faqat toolbar va kontent beradi
+
+**Siqiladigan yon menyu** (2026-08-19): desktopda menyu 288px ↔ 72px o'rtasida
+almashadi. Siqilganda faqat ikonkalar qoladi (nomi tooltip'da), guruh
+sarlavhalari yashirinadi, yangilik soni kichik nuqtaga aylanadi. Tanlov
+`localStorage: pf_sidebar_collapsed` da saqlanadi. Mobil drawer o'zgarmaydi —
+u har doim to'liq kenglikda ochiladi.
+
+**Yon panellar overlay emas, tarkib qismi.** AI chat paneli 1280px (xl) dan
+boshlab yon menyu kabi joyda turadi va kontentni siqadi — orqa fonni
+xiralashtirmaydi, ustiga tushmaydi. Sabab: chat bilan ishlash paytida
+foydalanuvchi kontentni ham ko'rib turadi; xiralashtirilgan fon esa "modal
+ochiq, ishing to'xtadi" degan xabar beradi. Xiralashtirish faqat haqiqiy
+modal uchun (bitta qaror, tasdiqlash).
 
 ### Ma'lum kolliziya — landing CSS
 
