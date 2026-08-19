@@ -148,7 +148,7 @@ const MijozTanlash: React.FC<{
       {/* Yulduzcha — mijoz majburiy. Buyurtma mijozga bog'lanmasa Mijozlar
           sahifasida ham, qarz hisobida ham ko'rinmaydi. */}
       <label className="form-label px-1">
-        Mijoz (tashkilot) va vakili <span className="text-red-500">*</span>
+        Mijoz (tashkilot) va vakili <span className="text-rose-500">*</span>
       </label>
 
       {!tanlangan ? (
@@ -380,12 +380,12 @@ const MijozTanlash: React.FC<{
                   key={`m-${r.mijoz.id}-${i}`}
                   type="button"
                   onClick={() => mijozTanla(r.mijoz)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-50 transition-colors duration-120"
                 >
-                  <Building2 size={14} className="text-slate-400 shrink-0" />
+                  <Building2 size={16} className="text-slate-400 shrink-0" />
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold text-slate-800 truncate">{r.mijoz.name}</span>
-                    <span className="block text-xs text-slate-400 truncate">
+                    <span className="block t-caption truncate">
                       {r.mijoz.phone || 'Telefonsiz'}
                       {(r.mijoz.contacts || []).length > 0 && ` · ${(r.mijoz.contacts || []).length} vakil`}
                     </span>
@@ -396,15 +396,15 @@ const MijozTanlash: React.FC<{
                   key={`v-${r.vakil.id}-${i}`}
                   type="button"
                   onClick={() => vakilTanla(r.mijoz, r.vakil)}
-                  className="w-full flex items-center gap-2.5 pl-8 pr-3 py-2 text-left hover:bg-orange-50/60 transition-colors"
+                  className="w-full flex items-center gap-2.5 pl-8 pr-3 py-2 text-left hover:bg-primary-50 transition-colors duration-120"
                 >
-                  <User size={13} className="text-slate-400 shrink-0" />
+                  <User size={16} className="text-slate-400 shrink-0" />
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm text-slate-700 truncate">
                       {r.vakil.name}
                       {r.vakil.role ? <span className="text-slate-400"> · {r.vakil.role}</span> : null}
                     </span>
-                    <span className="block text-xs text-slate-400 truncate">
+                    <span className="block t-caption truncate">
                       {r.mijoz.name}{r.vakil.phone ? ` · ${r.vakil.phone}` : ''}
                     </span>
                   </span>
@@ -413,7 +413,7 @@ const MijozTanlash: React.FC<{
             )}
 
             {natijalar.length === 0 && (
-              <p className="px-3 py-6 text-xs text-slate-400 text-center">
+              <p className="px-3 py-6 t-caption text-center">
                 {qidiruv.trim() ? 'Topilmadi' : "Mijoz yo'q"}
               </p>
             )}

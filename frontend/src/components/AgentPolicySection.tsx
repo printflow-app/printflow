@@ -304,11 +304,11 @@ export const AgentPolicySection: React.FC = () => {
                     return (
                       <div
                         key={a.key}
-                        className={`p-3 rounded-xl border ${cur === 'off' ? 'border-slate-200 bg-white' : 'border-orange-200 bg-orange-50/40'}`}
+                        className={`p-3 rounded-card border ${cur === 'off' ? 'border-slate-200 bg-white' : 'border-primary-300 bg-primary-50'}`}
                       >
-                        <p className="text-sm font-bold text-slate-700">{a.label}</p>
-                        <p className="text-xs font-semibold text-slate-400 mt-0.5 leading-relaxed">{a.desc}</p>
-                        <div className="flex gap-1.5 mt-2">
+                        <p className="t-h3">{a.label}</p>
+                        <p className="t-caption mt-0.5 leading-relaxed">{a.desc}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
                           {(['off', 'propose', 'execute'] as AreaMode[]).map((m) => (
                             <button
                               key={m}
@@ -322,8 +322,8 @@ export const AgentPolicySection: React.FC = () => {
                                   },
                                 })
                               }
-                              className={`h-7 px-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
-                                cur === m ? MODE_LABEL[m].cls : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'
+                              className={`h-control-sm px-3 rounded-control border text-xs font-medium transition-colors duration-120 ${
+                                cur === m ? MODE_LABEL[m].cls : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                               }`}
                             >
                               {MODE_LABEL[m].t}
@@ -338,7 +338,7 @@ export const AgentPolicySection: React.FC = () => {
 
               {/* Ruxsat berilgan amallar */}
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                <p className="t-h3 mb-1.5">
                   AI qila oladigan amallar
                 </p>
                 <div className="space-y-2">
@@ -359,22 +359,22 @@ export const AgentPolicySection: React.FC = () => {
                             },
                           })
                         }
-                        className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-colors ${
-                          on ? 'border-orange-400 bg-orange-50/60' : 'border-slate-200 bg-white hover:bg-slate-50'
+                        className={`w-full flex items-start gap-3 p-3 rounded-card border text-left transition-colors duration-120 ${
+                          on ? 'border-primary-300 bg-primary-50' : 'border-slate-200 bg-white hover:bg-slate-50'
                         }`}
                       >
                         <span
-                          className={`w-4 h-4 mt-0.5 rounded flex items-center justify-center border flex-shrink-0 transition-colors ${
-                            on ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-300'
+                          className={`w-4 h-4 mt-0.5 rounded flex items-center justify-center border flex-shrink-0 transition-colors duration-120 ${
+                            on ? 'bg-[color:var(--primary)] border-[color:var(--primary)] text-white' : 'border-slate-300'
                           }`}
                         >
-                          {on && <CheckCircle2 size={11} strokeWidth={3} />}
+                          {on && <CheckCircle2 size={12} />}
                         </span>
                         <span className="min-w-0">
-                          <span className={`block text-sm font-bold ${on ? 'text-orange-700' : 'text-slate-700'}`}>
+                          <span className={`block text-sm font-semibold ${on ? 'text-primary-700' : 'text-slate-800'}`}>
                             {a.label}
                           </span>
-                          <span className="block text-xs font-semibold text-slate-400 mt-0.5 leading-relaxed">
+                          <span className="block t-caption mt-0.5 leading-relaxed">
                             {a.desc}
                           </span>
                         </span>
@@ -383,7 +383,7 @@ export const AgentPolicySection: React.FC = () => {
                   })}
                 </div>
                 {policies.autoResolve.allowedActions.length === 0 && (
-                  <p className="text-xs font-bold text-rose-500 mt-2">
+                  <p className="text-xs font-medium text-rose-600 mt-2">
                     Hech bir amal tanlanmagan — AI hech narsa qila olmaydi.
                   </p>
                 )}
@@ -391,10 +391,10 @@ export const AgentPolicySection: React.FC = () => {
 
               {/* SIZNING QOIDALARINGIZ — tizimni har tashkilotga moslashtiradigan joy */}
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+                <p className="t-h3 mb-1">
                   Sizning qoidalaringiz
                 </p>
-                <p className="text-xs font-semibold text-slate-400 mb-2 leading-relaxed">
+                <p className="t-caption mb-2 leading-relaxed">
                   AI qaror qilishdan oldin shu qoidalarni o'qiydi va ularga amal qiladi. O'z tilingizda,
                   oddiy jumlalar bilan yozing — har qoida yangi qatordan.
                 </p>
@@ -414,16 +414,16 @@ export const AgentPolicySection: React.FC = () => {
                     "Zoxidga qo'shimcha ish berma, u allaqachon band.\n" +
                     "Muddati bugun bo'lgan ishlarni birinchi navbatda hal qil."
                   }
-                  className="w-full p-3 text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 leading-relaxed resize-y"
+                  className="textarea-minimal"
                 />
-                <p className="text-xs font-semibold text-slate-400 mt-1">
+                <p className="t-caption mt-1 tabular-nums">
                   {policies.autoResolve.instructions.length}/2000
                 </p>
               </div>
 
               {/* Kunlik chegara */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="t-label">
                   Kuniga ko'pi bilan:
                 </span>
                 <input
@@ -440,15 +440,15 @@ export const AgentPolicySection: React.FC = () => {
                       },
                     })
                   }
-                  className="w-16 h-9 text-center text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500"
+                  className="input-minimal w-16 text-center tabular-nums"
                 />
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">amal</span>
+                <span className="t-label">amal</span>
               </div>
-              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+              <p className="t-caption leading-relaxed">
                 Chegara nazorat uchun: bir kunda ko'p muammo topilsa ham AI shu sondan ortiq
                 ish qilmaydi, qolganini sizga qoldiradi.
                 {Object.values(policies.autoResolve.areas).some((m) => m === 'execute') && (
-                  <span className="block text-amber-600 font-bold mt-1">
+                  <span className="block text-amber-700 font-medium mt-1">
                     Diqqat: "O'zi bajarsin" qo'yilgan sohalarda amallar sizdan so'ramasdan
                     bajariladi. Har biri jurnalga yoziladi va Telegramga xabar keladi.
                   </span>
@@ -457,54 +457,47 @@ export const AgentPolicySection: React.FC = () => {
             </div>
           </Row>
 
-          <p className="text-xs font-semibold text-slate-400 leading-relaxed px-1">
+          <p className="t-caption leading-relaxed px-1">
             Barcha avtonom amallar jurnalga yoziladi — agent nima qilgani har doim ko'rinadi.
             Xabarlar faqat tarifingizda AI/Telegram bo'lsa yuboriladi.
           </p>
 
           {/* Davr statistikasi — agent qancha ish qildi */}
           {stats && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Davrda amallar</p>
-                <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.davrda}</p>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
-                <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">Bajarilgan</p>
-                <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.bajarilgan}</p>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
-                <p className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Avtonom</p>
-                <p className="text-xl font-bold text-slate-900 mt-1">{stats.amallar.avtonom}</p>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-center">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">AI xabarlar</p>
-                <p className="text-xl font-bold text-slate-900 mt-1">
-                  {stats.xabarlar.ishlatilgan}
-                  {!stats.xabarlar.cheksiz && <span className="text-xs text-slate-400"> / {stats.xabarlar.limit}</span>}
-                </p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-2">
+              <StatCard label="Davrda amallar" value={stats.amallar.davrda} />
+              <StatCard label="Bajarilgan" value={stats.amallar.bajarilgan} tone="success" icon={CheckCircle2} />
+              <StatCard label="Avtonom" value={stats.amallar.avtonom} tone="brand" icon={Sparkles} />
+              <StatCard
+                label="AI xabarlar"
+                value={
+                  <>
+                    {stats.xabarlar.ishlatilgan}
+                    {!stats.xabarlar.cheksiz && <span className="text-sm text-slate-500"> / {stats.xabarlar.limit}</span>}
+                  </>
+                }
+              />
             </div>
           )}
 
           {/* Agent jurnali — so'nggi amallar */}
           {journal.length > 0 && (
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 bg-slate-50/60 border-b border-slate-100">
-                <Bot size={14} className="text-slate-400" />
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Agent jurnali — so'nggi amallar</p>
+            <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <Bot size={16} className="text-slate-500" />
+                <p className="label-caps">Agent jurnali — so'nggi amallar</p>
               </div>
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-slate-100">
                 {journal.map((a) => (
                   <div key={a.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      a.userId === 'autonomous' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'
+                    <div className={`w-8 h-8 rounded-control flex items-center justify-center flex-shrink-0 ${
+                      a.userId === 'autonomous' ? 'bg-primary-50 text-primary-700' : 'bg-slate-100 text-slate-500'
                     }`}>
-                      {a.userId === 'autonomous' ? <Sparkles size={12} /> : <Bot size={12} />}
+                      {a.userId === 'autonomous' ? <Sparkles size={16} /> : <Bot size={16} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-700 truncate">{a.summary}</p>
-                      <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                      <p className="t-body-md truncate">{a.summary}</p>
+                      <p className="t-caption mt-0.5">
                         {a.userId === 'autonomous' ? 'Girgitton (avtonom)' : 'Chat orqali'} ·{' '}
                         {new Date(a.createdAt).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </p>

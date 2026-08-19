@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart3, TrendingUp, TrendingDown, Users, ShoppingBag,
-  Minus, RefreshCw, Calendar, ChevronDown,
+  Minus, RefreshCw, Calendar,
   Handshake, Activity, DollarSign, Wallet, Search, Package, Plus, Trash2, Download, X,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -17,6 +17,7 @@ import { SkeletonStats, SkeletonCardGrid } from '../components/Skeleton';
 import EmployeePerformanceTable from '../components/EmployeePerformanceTable';
 import KpiPlansPanel from '../components/KpiPlansPanel';
 import BreakEvenCard from '../components/BreakEvenCard';
+import { chartColors, chartSeries } from '../lib/chartColors';
 
 // =============================================
 // HISOBOTLAR — Tahliliy hisobotlar markazi
@@ -24,7 +25,11 @@ import BreakEvenCard from '../components/BreakEvenCard';
 // kirim/chiqim turlari, chiqim kategoriyalari, xodim samaradorligi.
 // =============================================
 
-const EXPENSE_COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#84cc16'];
+// Grafik ranglari — lib/chartColors dan (xom hex yozilmaydi).
+// Chiqim/xarajat semantik qizildan boshlanadi, keyin neytral palitra.
+const EXPENSE_COLORS = [chartColors.danger, ...chartSeries];
+// Kirim — semantik yashildan boshlanadi.
+const INCOME_COLORS = [chartColors.success, ...chartSeries];
 
 const UZ_MONTHS_SHORT = ['Yan', 'Feb', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
 
@@ -68,20 +73,20 @@ const GrowthCard = ({ label, value, previous, growth, icon, format }: {
   const up = growth !== null && growth > 0;
   const dn = growth !== null && growth < 0;
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600">{icon}</div>
+    <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="w-10 h-10 rounded-control bg-primary-50 border border-primary-100 flex items-center justify-center text-[color:var(--primary)]">{icon}</div>
         {growth !== null ? (
-          <span className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${up ? 'bg-emerald-50 text-emerald-600' : dn ? 'bg-rose-50 text-rose-500' : 'bg-slate-100 text-slate-500'}`}>
-            {up ? <TrendingUp size={11} /> : dn ? <TrendingDown size={11} /> : <Minus size={11} />}
+          <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full tabular-nums ${up ? 'bg-emerald-50 text-emerald-700' : dn ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600'}`}>
+            {up ? <TrendingUp size={12} /> : dn ? <TrendingDown size={12} /> : <Minus size={12} />}
             {up ? '+' : ''}{growth}%
           </span>
-        ) : <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-400">—</span>}
+        ) : <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">—</span>}
       </div>
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
-        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{format(value)}</h3>
-        <p className="text-xs font-bold text-slate-400 mt-0.5">O'tgan oy: {format(previous)}</p>
+        <p className="label-caps mb-1">{label}</p>
+        <h3 className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">{format(value)}</h3>
+        <p className="t-caption mt-0.5 tabular-nums">O'tgan oy: {format(previous)}</p>
       </div>
     </div>
   );
@@ -91,9 +96,9 @@ const GrowthCard = ({ label, value, previous, growth, icon, format }: {
 const PieTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-3 py-2 text-xs">
-      <p className="font-bold text-slate-700">{payload[0].name}</p>
-      <p className="font-bold text-orange-600">{fmtFull(payload[0].value)}</p>
+    <div className="bg-white border border-slate-200 rounded-control shadow-md px-3 py-2 text-xs">
+      <p className="font-semibold text-slate-700">{payload[0].name}</p>
+      <p className="font-semibold text-[color:var(--primary)] tabular-nums">{fmtFull(payload[0].value)}</p>
     </div>
   );
 };
@@ -101,12 +106,12 @@ const PieTooltip = ({ active, payload }: any) => {
 const LineTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-3 py-2 text-xs space-y-1 min-w-[160px]">
-      <p className="font-bold text-slate-500 text-[11px] uppercase tracking-widest">{label}</p>
+    <div className="bg-white border border-slate-200 rounded-control shadow-md px-3 py-2 text-xs space-y-1 min-w-[160px]">
+      <p className="label-caps">{label}</p>
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center justify-between gap-4">
-          <span className="font-bold" style={{ color: p.color }}>{p.name}</span>
-          <span className="font-bold text-slate-800 tabular-nums">{fmtNum(p.value)} UZS</span>
+          <span className="font-semibold" style={{ color: p.color }}>{p.name}</span>
+          <span className="font-semibold text-slate-800 tabular-nums">{fmtNum(p.value)} UZS</span>
         </div>
       ))}
     </div>
@@ -117,12 +122,12 @@ const LineTooltip = ({ active, payload, label }: any) => {
 const Section = ({ title, sub, icon, children, span2 = false }: {
   title: string; sub: string; icon: React.ReactNode; children: React.ReactNode; span2?: boolean;
 }) => (
-  <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden${span2 ? ' lg:col-span-2' : ''}`}>
-    <div className="p-5 border-b border-slate-100">
-      <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
+  <div className={`bg-white rounded-card border border-slate-200 overflow-hidden${span2 ? ' lg:col-span-2' : ''}`}>
+    <div className="p-4 sm:p-5 border-b border-slate-100">
+      <h3 className="t-h3 flex items-center gap-2">
         {icon} {title}
       </h3>
-      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{sub}</p>
+      <p className="t-caption mt-0.5">{sub}</p>
     </div>
     {children}
   </div>
@@ -131,7 +136,7 @@ const Section = ({ title, sub, icon, children, span2 = false }: {
 // ── Pie with legend ──────────────────────────
 const PieWithLegend = ({ data, colors }: { data: { name: string; value: number }[]; colors: string[] }) => {
   if (!data || data.length === 0) {
-    return <div className="p-10 text-center text-slate-400 text-xs font-bold">Ma'lumot yo'q</div>;
+    return <div className="p-10 text-center t-caption">Ma'lumot yo'q</div>;
   }
   const total = data.reduce((s, d) => s + d.value, 0);
   return (
@@ -150,9 +155,9 @@ const PieWithLegend = ({ data, colors }: { data: { name: string; value: number }
         {data.map((entry, i) => (
           <div key={i} className="flex items-center gap-2.5">
             <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
-            <span className="flex-1 text-xs font-bold text-slate-700 truncate">{entry.name}</span>
-            <span className="text-xs font-bold text-slate-400">{total > 0 ? Math.round((entry.value / total) * 100) : 0}%</span>
-            <span className="text-xs font-bold text-slate-700 tabular-nums whitespace-nowrap">{fmtNum(entry.value)}</span>
+            <span className="flex-1 text-xs font-medium text-slate-700 truncate">{entry.name}</span>
+            <span className="text-xs font-medium text-slate-500 tabular-nums">{total > 0 ? Math.round((entry.value / total) * 100) : 0}%</span>
+            <span className="text-xs font-semibold text-slate-700 tabular-nums whitespace-nowrap">{fmtNum(entry.value)}</span>
           </div>
         ))}
       </div>
@@ -172,83 +177,80 @@ const ServiceStats = ({ services }: { services: any[] }) => {
   const share = allRevenue > 0 ? Math.round((totalRevenue / allRevenue) * 100) : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
-            <BarChart3 size={16} className="text-orange-500" /> Xizmat Hajmi & O'rtacha Chek
+          <h3 className="t-h3 flex items-center gap-2">
+            <BarChart3 size={16} className="text-[color:var(--primary)]" /> Xizmat Hajmi & O'rtacha Chek
           </h3>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Xizmat tanlang va ko'rsatkichlarni ko'ring</p>
+          <p className="t-caption mt-0.5">Xizmat tanlang va ko'rsatkichlarni ko'ring</p>
         </div>
-        <div className="relative">
-          <select
-            value={selectedId}
-            onChange={e => setSelectedId(e.target.value)}
-            className="select-minimal text-xs font-bold min-w-[200px]"
-          >
-            {services.map(s => (
-              <option key={s.serviceName} value={s.serviceName}>{s.serviceName}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-        </div>
+        <select
+          value={selectedId}
+          onChange={e => setSelectedId(e.target.value)}
+          className="select-minimal text-sm sm:min-w-[200px] sm:w-auto"
+        >
+          {services.map(s => (
+            <option key={s.serviceName} value={s.serviceName}>{s.serviceName}</option>
+          ))}
+        </select>
       </div>
 
-      <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Orders count */}
-        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Buyurtmalar</p>
-          <p className="text-3xl font-bold text-slate-900 tabular-nums">{totalTasks}</p>
-          <p className="text-xs font-bold text-slate-400 mt-1">ta bajarilgan</p>
+        <div className="bg-slate-50 rounded-card p-4 border border-slate-100">
+          <p className="label-caps mb-2">Buyurtmalar</p>
+          <p className="text-2xl font-semibold text-slate-900 tabular-nums">{totalTasks}</p>
+          <p className="t-caption mt-1">ta bajarilgan</p>
         </div>
 
         {/* Total revenue — aniq qiymat (yumaloqlanmaydi) */}
-        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Jami Daromad</p>
-          <p className="text-lg font-bold text-emerald-700 tabular-nums leading-tight break-all">
+        <div className="bg-emerald-50 rounded-card p-4 border border-emerald-100">
+          <p className="label-caps text-emerald-700 mb-2">Jami Daromad</p>
+          <p className="text-lg font-semibold text-emerald-700 tabular-nums leading-tight break-all">
             {fmtNum(totalRevenue)}
           </p>
-          <p className="text-xs font-bold text-emerald-500 mt-1">UZS</p>
+          <p className="text-xs font-medium text-emerald-600 mt-1">UZS</p>
         </div>
 
         {/* Average check — aniq qiymat (yumaloqlanmaydi) */}
-        <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-orange-500 mb-2">O'rtacha Chek</p>
-          <p className="text-lg font-bold text-orange-700 tabular-nums leading-tight break-all">
+        <div className="bg-orange-50 rounded-card p-4 border border-orange-100">
+          <p className="label-caps text-primary-700 mb-2">O'rtacha Chek</p>
+          <p className="text-lg font-semibold text-orange-700 tabular-nums leading-tight break-all">
             {fmtNum(avgCheck)}
           </p>
-          <p className="text-xs font-bold text-orange-400 mt-1">UZS</p>
+          <p className="text-xs font-medium text-orange-600 mt-1">UZS</p>
         </div>
 
         {/* Share of total */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col justify-between">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Umumiy ulushi</p>
+        <div className="bg-white rounded-card p-4 border border-slate-200 flex flex-col justify-between">
+          <p className="label-caps mb-2">Umumiy ulushi</p>
           <div>
-            <p className="text-3xl font-bold text-slate-800 tabular-nums">{share}%</p>
+            <p className="text-2xl font-semibold text-slate-900 tabular-nums">{share}%</p>
             <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-orange-500 rounded-full transition-all duration-500" style={{ width: `${share}%` }} />
+              <div className="h-full bg-[color:var(--primary)] rounded-full transition-all duration-500" style={{ width: `${share}%` }} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Mini ranking */}
-      <div className="px-5 pb-5">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">Barcha xizmatlar reytingi (daromad bo'yicha)</p>
+      <div className="px-4 sm:px-5 pb-5">
+        <p className="label-caps mb-3">Barcha xizmatlar reytingi (daromad bo'yicha)</p>
         <div className="space-y-2">
           {[...services].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 6).map((s, i) => {
             const pct = allRevenue > 0 ? (s.totalRevenue / allRevenue) * 100 : 0;
             const isActive = s.serviceName === selectedId;
             return (
               <button key={s.serviceName} onClick={() => setSelectedId(s.serviceName)}
-                className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all text-left ${isActive ? 'bg-orange-50 border border-orange-200' : 'hover:bg-slate-50 border border-transparent'}`}>
-                <span className={`text-xs font-bold w-4 ${isActive ? 'text-orange-500' : 'text-slate-400'}`}>{i + 1}</span>
-                <span className={`flex-1 text-xs font-bold truncate ${isActive ? 'text-orange-700' : 'text-slate-700'}`}>{s.serviceName}</span>
-                <span className="text-xs font-bold text-slate-400 tabular-nums w-10 text-right">{s.totalTasks} ta</span>
-                <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${isActive ? 'bg-orange-500' : 'bg-slate-400'}`} style={{ width: `${pct}%` }} />
+                className={`w-full flex items-center gap-3 p-2.5 rounded-control transition-colors duration-120 text-left border ${isActive ? 'bg-primary-50 border-primary-300' : 'hover:bg-slate-50 border-transparent'}`}>
+                <span className={`text-xs font-semibold w-4 tabular-nums ${isActive ? 'text-primary-700' : 'text-slate-500'}`}>{i + 1}</span>
+                <span className={`flex-1 text-xs font-medium truncate ${isActive ? 'text-primary-700' : 'text-slate-700'}`}>{s.serviceName}</span>
+                <span className="text-xs font-medium text-slate-500 tabular-nums w-10 text-right">{s.totalTasks} ta</span>
+                <div className="hidden sm:block w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${isActive ? 'bg-[color:var(--primary)]' : 'bg-slate-400'}`} style={{ width: `${pct}%` }} />
                 </div>
-                <span className={`text-xs font-bold tabular-nums text-right whitespace-nowrap pl-1 ${isActive ? 'text-orange-600' : 'text-slate-600'}`}>{fmtNum(s.totalRevenue)}</span>
+                <span className={`text-xs font-semibold tabular-nums text-right whitespace-nowrap pl-1 ${isActive ? 'text-primary-700' : 'text-slate-600'}`}>{fmtNum(s.totalRevenue)}</span>
               </button>
             );
           })}
@@ -633,24 +635,24 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
   );
 
   return (
-    <div className="space-y-5 pb-20">
+    <div className="space-y-4 sm:space-y-6 pb-20">
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-card border border-slate-200">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+          <h2 className="page-title flex items-center gap-2">
             <BarChart3 size={20} className="text-[color:var(--primary)]" /> Hisobotlar & Tahlil
           </h2>
           <p className="t-caption mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {(isAdmin || p.canExportReports) && (
             <button
               onClick={handleExport}
-              className="btn-outline h-control"
+              className="btn-outline"
               title="Tahliliy ma'lumotlarni Excel'ga eksport qilish"
             >
-              <Download size={14} /> Eksport
+              <Download size={16} /> Eksport
             </button>
           )}
           <button
@@ -659,49 +661,47 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                paymentStatsQuery, expenseQuery, vendorsQuery, allTasksQuery, velocityQuery, kpiQuery]
                 .forEach(q => q.refetch());
             }}
-            className="btn-outline h-control"
+            className="btn-outline"
           >
-            <RefreshCw size={14} /> Yangilash
+            <RefreshCw size={16} /> Yangilash
           </button>
         </div>
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="bg-white border border-slate-200 rounded-card p-3.5 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1.5 t-caption font-semibold">
-          <Calendar size={14} /> Davr:
+      <div className="bg-white border border-slate-200 rounded-card p-3.5 flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 t-caption font-medium">
+          <Calendar size={16} /> Davr:
         </div>
-        <div className="flex bg-slate-100 p-0.5 rounded-control">
+        <div className="flex bg-slate-100 p-0.5 rounded-control max-w-full overflow-x-auto no-scrollbar">
           {(['month', '3month', '6month', 'year', 'custom'] as DatePreset[]).map((pr) => (
             <button key={pr} onClick={() => setPreset(pr)}
-              className={`px-3 py-1.5 text-xs rounded-control transition-all ${preset === pr ? 'bg-white shadow-sm font-semibold text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}>
+              className={`px-3 py-1.5 text-xs rounded-control transition-all duration-120 whitespace-nowrap ${preset === pr ? 'bg-white shadow-sm font-semibold text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}>
               {pr === 'month' ? 'Bu oy' : pr === '3month' ? '3 oy' : pr === '6month' ? '6 oy' : pr === 'year' ? 'Bu yil' : 'Boshqa'}
             </button>
           ))}
         </div>
         {preset === 'custom' && (
-          <div className="flex items-center gap-2">
-            <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="input-minimal text-xs py-1" />
+          <div className="flex flex-wrap items-center gap-2">
+            <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="input-minimal h-control-sm text-xs w-auto" />
             <span className="text-slate-400 text-xs">—</span>
-            <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="input-minimal text-xs py-1" />
+            <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="input-minimal h-control-sm text-xs w-auto" />
           </div>
         )}
-        <div className="flex items-center gap-2 ml-auto flex-wrap">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           {branchId && departments.length > 0 && (
             <>
-              <div className="relative">
-                <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
-                  className="select-minimal text-xs">
-                  <option value="">Barcha bo'limlar</option>
-                  {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-              </div>
+              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
+                className="select-minimal h-control-sm text-xs w-auto">
+                <option value="">Barcha bo'limlar</option>
+                {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
               <button
                 type="button"
                 onClick={() => setGroupByDept(v => !v)}
-                className={`btn-outline h-control text-xs ${
+                className={`btn-outline h-sm ${
                   groupByDept
-                    ? 'border-[color:var(--primary)] text-[color:var(--primary)] bg-orange-50'
+                    ? 'border-primary-300 text-primary-700 bg-primary-50'
                     : ''
                 }`}
                 title="Bo'limlar bo'yicha guruhlash"
@@ -723,13 +723,16 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           <GrowthCard label="Bajarilgan buyurtmalar" value={growth.completedTasks.current} previous={growth.completedTasks.previous}
             growth={growth.completedTasks.growth} icon={<ShoppingBag size={18} />} format={n => String(n)} />
           {dashStats && (
-            <div className="bg-white rounded-card border border-slate-200 p-4 flex flex-col gap-2">
-              <div className="w-9 h-9 rounded-control bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
-                <TrendingDown size={18} />
+            <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5 flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="w-10 h-10 rounded-control bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
+                  <TrendingDown size={18} />
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">—</span>
               </div>
               <div>
-                <p className="t-caption mb-0.5">Jami chiqim</p>
-                <h3 className="text-xl font-semibold text-slate-900 tracking-tight tabular-nums">{fmtFull(dashStats.totalChiqim)}</h3>
+                <p className="label-caps mb-1">Jami chiqim</p>
+                <h3 className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums">{fmtFull(dashStats.totalChiqim)}</h3>
               </div>
             </div>
           )}
@@ -738,32 +741,32 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
       {/* ── Sof Foyda ── */}
       {canViewGrowthCards && dashStats && (
-        <div className="bg-slate-900 rounded-card p-4 sm:p-5 flex items-center justify-between text-white">
-          <div>
-            <p className="text-xs text-slate-400 mb-0.5">Sof foyda (tanlangan davr)</p>
-            <h3 className="text-2xl font-bold tracking-tight tabular-nums">{fmtFull(dashStats.balance)}</h3>
+        <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="t-caption mb-0.5">Sof foyda (tanlangan davr)</p>
+            <h3 className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums break-all">{fmtFull(dashStats.balance)}</h3>
           </div>
-          <div className="w-11 h-11 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center">
-            <Wallet size={20} className="text-orange-400" />
+          <div className="w-11 h-11 shrink-0 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center">
+            <Wallet size={20} className="text-[color:var(--primary)]" />
           </div>
         </div>
       )}
 
       {/* ── Moliyaviy Dinamika LineChart ── */}
       {canViewDynamics && dynamics.length > 0 && (
-        <Section title="Moliyaviy Dinamika" sub={dynamicsType === 'daily' ? 'Kunlik kirim va chiqim' : 'Oylik kirim / chiqim / hamkor xarajati'} icon={<Activity size={16} className="text-orange-500" />} span2>
+        <Section title="Moliyaviy Dinamika" sub={dynamicsType === 'daily' ? 'Kunlik kirim va chiqim' : 'Oylik kirim / chiqim / hamkor xarajati'} icon={<Activity size={16} className="text-[color:var(--primary)]" />} span2>
           <div className="p-4" style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={1} minHeight={1}>
               <LineChart data={dynamics} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} axisLine={false} tickLine={false} minTickGap={20} />
-                <YAxis tickFormatter={fmt} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={50} />
+                <CartesianGrid vertical={false} stroke={chartColors.grid} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fontWeight: 600, fill: chartColors.axis }} axisLine={false} tickLine={false} minTickGap={20} />
+                <YAxis tickFormatter={fmt} tick={{ fontSize: 10, fontWeight: 600, fill: chartColors.axis }} axisLine={false} tickLine={false} width={50} />
                 <Tooltip content={<LineTooltip />} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10, fontWeight: 700 }} />
-                <Line type="monotone" name="Kirim" dataKey="kirim" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
-                <Line type="monotone" name="Chiqim" dataKey="chiqim" stroke="#f43f5e" strokeWidth={2.5} dot={{ r: 3, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
-                <Line type="monotone" name="Hamkorlar" dataKey="hamkorlar" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
-                <Line type="monotone" name="Sof foyda" dataKey="net" stroke="#FF6B00" strokeWidth={3} dot={{ r: 4, fill: '#FF6B00', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
+                <Line type="monotone" name="Kirim" dataKey="kirim" stroke={chartColors.success} dot={{ r: 3, fill: chartColors.success, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" name="Chiqim" dataKey="chiqim" stroke={chartColors.danger} dot={{ r: 3, fill: chartColors.danger, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" name="Hamkorlar" dataKey="hamkorlar" stroke={chartColors.warning} strokeDasharray="5 3" dot={{ r: 3, fill: chartColors.warning, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" name="Sof foyda" dataKey="net" stroke={chartColors.primary} dot={{ r: 3, fill: chartColors.primary, stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -779,13 +782,13 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {(canViewIncomeByType || canViewExpenseByType) && (paymentStats.kirim.length > 0 || paymentStats.chiqim.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {canViewIncomeByType && (
-            <Section title="Kirim Turlari" sub="To'lov turlari bo'yicha" icon={<TrendingUp size={16} className="text-emerald-500" />}>
-              <PieWithLegend data={paymentStats.kirim} colors={['#10b981', '#3b82f6', '#FF6B00', '#6366f1', '#14b8a6', '#f59e0b']} />
+            <Section title="Kirim Turlari" sub="To'lov turlari bo'yicha" icon={<TrendingUp size={16} className="text-emerald-600" />}>
+              <PieWithLegend data={paymentStats.kirim} colors={INCOME_COLORS} />
             </Section>
           )}
           {canViewExpenseByType && (
-            <Section title="Chiqim Turlari" sub="Xarajat turlari bo'yicha" icon={<TrendingDown size={16} className="text-rose-500" />}>
-              <PieWithLegend data={paymentStats.chiqim} colors={['#ef4444', '#f59e0b', '#3b82f6', '#6366f1', '#ec4899', '#8b5cf6']} />
+            <Section title="Chiqim Turlari" sub="Xarajat turlari bo'yicha" icon={<TrendingDown size={16} className="text-rose-600" />}>
+              <PieWithLegend data={paymentStats.chiqim} colors={EXPENSE_COLORS} />
             </Section>
           )}
         </div>
@@ -793,7 +796,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
       {/* ── Chiqim Tahlili ── */}
       {canViewExpenseCharts && expenseBreakdown.length > 0 && (
-        <Section title="Chiqim Tahlili" sub="Kategoriyalar bo'yicha xarajatlar taqsimoti" icon={<TrendingDown size={16} className="text-rose-500" />} span2>
+        <Section title="Chiqim Tahlili" sub="Kategoriyalar bo'yicha xarajatlar taqsimoti" icon={<TrendingDown size={16} className="text-rose-600" />} span2>
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             <div style={{ height: 220 }}>
               <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={1} minHeight={1}>
@@ -805,7 +808,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2">
+            <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scroll pr-2">
               {expenseBreakdown.map((item, i) => {
                 const total = expenseBreakdown.reduce((s, x) => s + x.value, 0);
                 const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
@@ -813,11 +816,11 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   <div key={i} className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: EXPENSE_COLORS[i % EXPENSE_COLORS.length] }} />
-                      <span className="text-xs font-bold text-slate-600 truncate">{item.name}</span>
+                      <span className="text-xs font-medium text-slate-600 truncate">{item.name}</span>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-xs font-bold text-slate-800">{fmtFull(item.value)}</p>
-                      <p className="text-[11px] font-bold text-slate-400">{pct}%</p>
+                      <p className="text-xs font-semibold text-slate-800 tabular-nums">{fmtFull(item.value)}</p>
+                      <p className="text-xs font-medium text-slate-500 tabular-nums">{pct}%</p>
                     </div>
                   </div>
                 );
@@ -829,28 +832,28 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
       {/* ── Hamkor Samaradorligi ── */}
       {canViewVendors && vendors.length > 0 && (
-        <Section title="Hamkor Samaradorligi" sub="Subpudrat xarajati va foyda marjasi" icon={<Handshake size={16} className="text-orange-500" />}>
+        <Section title="Hamkor Samaradorligi" sub="Subpudrat xarajati va foyda marjasi" icon={<Handshake size={16} className="text-[color:var(--primary)]" />}>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-slate-50">
+            <table className="table-minimal">
+              <thead>
                 <tr>
-                  <th className="text-left p-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Hamkor</th>
-                  <th className="text-right p-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Xarajat</th>
-                  <th className="text-right p-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Daromad</th>
-                  <th className="text-right p-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Marja</th>
+                  <th>Hamkor</th>
+                  <th className="text-right hidden md:table-cell">Xarajat</th>
+                  <th className="text-right">Daromad</th>
+                  <th className="text-right">Marja</th>
                 </tr>
               </thead>
               <tbody>
                 {vendors.slice(0, 8).map((v: any) => (
-                  <tr key={v.vendorId} className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
-                    <td className="p-3">
-                      <div className="font-bold text-slate-800">{v.vendorName}</div>
-                      {Array.isArray(v.roles) && v.roles.length > 0 && <div className="text-xs text-slate-400 font-bold">{v.roles.join(', ')}</div>}
+                  <tr key={v.vendorId}>
+                    <td>
+                      <div className="font-semibold text-slate-800">{v.vendorName}</div>
+                      {Array.isArray(v.roles) && v.roles.length > 0 && <div className="text-xs text-slate-500">{v.roles.join(', ')}</div>}
                     </td>
-                    <td className="p-3 text-right font-bold text-rose-500 tabular-nums whitespace-nowrap">{fmtNum(v.totalCost)}</td>
-                    <td className="p-3 text-right font-bold text-emerald-600 tabular-nums whitespace-nowrap">{fmtNum(v.linkedRevenue)}</td>
-                    <td className="p-3 text-right">
-                      <span className={`inline-block px-2 py-0.5 rounded-md font-bold text-xs ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'}`}>
+                    <td className="text-right font-semibold text-rose-600 tabular-nums whitespace-nowrap hidden md:table-cell">{fmtNum(v.totalCost)}</td>
+                    <td className="text-right font-semibold text-emerald-600 tabular-nums whitespace-nowrap">{fmtNum(v.linkedRevenue)}</td>
+                    <td className="text-right">
+                      <span className={`inline-block px-2 py-0.5 rounded-control font-semibold text-xs tabular-nums ${v.marginPct >= 30 ? 'bg-emerald-50 text-emerald-700' : v.marginPct >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>
                         {v.marginPct >= 0 ? '+' : ''}{v.marginPct}%
                       </span>
                     </td>
@@ -882,26 +885,26 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             showBar
           />
         ) : kpiQuery.isLoading || velocityQuery.isLoading ? (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div className="bg-white rounded-card border border-slate-200 p-6">
             <div className="flex items-center gap-2 mb-3">
-              <Users size={16} className="text-orange-500" />
-              <h3 className="text-sm font-bold text-slate-800">Xodimlar Samaradorligi</h3>
+              <Users size={16} className="text-[color:var(--primary)]" />
+              <h3 className="t-h3">Xodimlar Samaradorligi</h3>
             </div>
             <SkeletonStats count={4} />
           </div>
         ) : kpiQuery.isError ? (
-          <div className="bg-white rounded-2xl border border-rose-200 shadow-sm p-6 text-center">
-            <Users size={28} className="mx-auto text-rose-300 mb-2" />
-            <p className="text-xs font-bold text-rose-600">Xodimlar samaradorligini yuklab bo'lmadi</p>
+          <div className="bg-white rounded-card border border-rose-200 p-6 text-center">
+            <Users size={20} className="mx-auto text-rose-400 mb-2" />
+            <p className="text-sm font-medium text-rose-700">Xodimlar samaradorligini yuklab bo'lmadi</p>
             <button onClick={() => { kpiQuery.refetch(); velocityQuery.refetch(); }}
-              className="mt-3 px-3 py-1.5 bg-rose-50 text-rose-600 text-xs font-bold rounded-lg hover:bg-rose-100">
+              className="btn-outline h-sm mt-3">
               Qayta urinib ko'rish
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
-            <Users size={28} className="mx-auto text-slate-300 mb-2" />
-            <p className="text-xs font-bold text-slate-500">Tanlangan davr uchun xodim samaradorligi ma'lumotlari yo'q</p>
+          <div className="bg-white rounded-card border border-slate-200 p-6 text-center">
+            <Users size={20} className="mx-auto text-slate-400 mb-2" />
+            <p className="t-body text-slate-500">Tanlangan davr uchun xodim samaradorligi ma'lumotlari yo'q</p>
           </div>
         )
       )}
@@ -910,18 +913,18 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
           Client-side group-by on the already-loaded tasks; no extra API call.
           Activated by the "Bo'limga guruhlash" button in the filter bar. */}
       {groupByDept && allTasks.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                <Package size={16} className="text-orange-500" /> Bo'limlar bo'yicha taqsimot
+              <h3 className="t-h3 flex items-center gap-2">
+                <Package size={16} className="text-[color:var(--primary)]" /> Bo'limlar bo'yicha taqsimot
               </h3>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+              <p className="t-caption mt-0.5">
                 Buyurtmalar va daromad — bo'limlarga guruhlangan
               </p>
             </div>
           </div>
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             {(() => {
               // Filter to active department if one is selected, otherwise show all.
               const scope = departmentId ? allTasks.filter(t => t.departmentId === departmentId) : allTasks;
@@ -943,7 +946,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               const rows = Object.values(buckets).sort((a, b) => b.revenue - a.revenue);
               const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0) || 1;
               if (rows.length === 0) {
-                return <p className="text-xs font-bold text-slate-400">Ushbu davr uchun buyurtma topilmadi.</p>;
+                return <p className="t-caption">Ushbu davr uchun buyurtma topilmadi.</p>;
               }
               return (
                 <div className="space-y-3">
@@ -951,14 +954,14 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                     const pct = Math.round((r.revenue / totalRevenue) * 100);
                     return (
                       <div key={r.name}>
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
-                          <span>{r.name}</span>
-                          <span className="text-slate-500">
+                        <div className="flex flex-wrap gap-x-2 items-center justify-between text-xs font-medium text-slate-700 mb-1">
+                          <span className="font-semibold">{r.name}</span>
+                          <span className="text-slate-500 tabular-nums">
                             {r.count} ta · {new Intl.NumberFormat('uz-UZ').format(r.revenue).replace(/,/g, ' ')} UZS · {pct}%
                           </span>
                         </div>
                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#FF6B00]" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-[color:var(--primary)]" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
@@ -971,28 +974,28 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       )}
 
       {/* ── Tannarx Kalkulyatori ────────────────────────────────────────── */}
-      {canViewCostCalc && <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-orange-100 bg-orange-50/40 flex items-center justify-between">
+      {canViewCostCalc && <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold text-slate-800 tracking-tight flex items-center gap-2">
-              <Package size={16} className="text-orange-500" /> Tannarx Kalkulyatori
+            <h3 className="t-h3 flex items-center gap-2">
+              <Package size={16} className="text-[color:var(--primary)]" /> Tannarx Kalkulyatori
             </h3>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+            <p className="t-caption mt-0.5">
               Buyurtma ID, nomi yoki mijoz bo'yicha tannarx va foyda tahlili
             </p>
           </div>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-4 sm:p-5 space-y-5">
           {/* Order Selection Dropdown */}
           <div className="space-y-2">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Buyurtmani tanlang</p>
-            <div className="flex gap-3">
-              <div className="relative flex-1">
+            <p className="form-label">Buyurtmani tanlang</p>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <div className="flex-1 min-w-[200px]">
                 <select
                   value={costingTask?.id || ''}
                   onChange={(e) => handleCostingSelect(e.target.value)}
-                  className="select-minimal h-11 font-bold"
+                  className="select-minimal"
                 >
                   <option value="" className="font-sans">--- Buyurtmani tanlang (Joriy oy) ---</option>
                   {allTasks
@@ -1007,24 +1010,23 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                       </option>
                     ))}
                 </select>
-                <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
-              
-              <div className="relative flex-[0.8] hidden sm:block">
-                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+
+              <div className="relative flex-[0.8] min-w-[180px] hidden sm:block">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="ID yoki nom bilan tezkor qidiruv..."
                   value={costingQuery}
                   onChange={e => setCostingQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleCostingSearch()}
-                  className="w-full h-11 pl-10 pr-4 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all"
+                  className="input-minimal pl-10"
                 />
               </div>
               <button
                 onClick={handleCostingSearch}
                 disabled={isSearchingCosting || !costingQuery.trim()}
-                className="h-11 px-5 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap shadow-lg hidden sm:block"
+                className="btn-outline hidden sm:inline-flex"
               >
                 {isSearchingCosting ? '...' : 'QIDIRISH'}
               </button>
@@ -1033,9 +1035,9 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
           {/* Error */}
           {costingError && (
-            <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
-              <X size={16} strokeWidth={2.5} className="text-rose-500" />
-              <p className="text-sm font-bold text-rose-600">{costingError}</p>
+            <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-card px-4 py-3">
+              <X size={16} className="text-rose-600 shrink-0" />
+              <p className="text-sm font-medium text-rose-700">{costingError}</p>
             </div>
           )}
 
@@ -1053,46 +1055,46 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
               <div className="space-y-4 animate-fade-in">
 
                 {/* Task identity strip */}
-                <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
-                  <span className="text-xs font-bold font-mono bg-white border border-orange-300 text-orange-600 px-3 py-1 rounded-lg tracking-widest shrink-0">
+                <div className="flex items-center gap-3 bg-primary-50 border border-primary-300 rounded-card px-4 py-3">
+                  <span className="text-xs font-semibold font-mono bg-white border border-primary-300 text-primary-700 px-3 py-1 rounded-control shrink-0">
                     {costingTask.displayId || `#${costingTask.id.slice(-6).toUpperCase()}`}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-800 truncate uppercase tracking-tight">
+                    <p className="text-sm font-semibold text-slate-800 truncate">
                       {costingTask.orderName ? `${costingTask.orderName} — ` : ''}{costingTask.title}
                     </p>
-                    <p className="text-xs font-bold text-slate-400 mt-0.5">
+                    <p className="t-caption mt-0.5">
                       {costingTask.customerName || 'Mijoz ko\'rsatilmagan'} · {qty} dona
                     </p>
                   </div>
                 </div>
 
                 {/* Main metrics grid */}
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden">
+                <div className="bg-slate-50 border border-slate-200 rounded-card overflow-hidden">
 
                   {/* Revenue + Cost */}
-                  <div className="grid grid-cols-2 divide-x divide-slate-200 border-b border-slate-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-slate-200 border-b border-slate-200">
                     <div className="p-4">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Umumiy Daromad</p>
-                      <p className="text-xl font-bold text-slate-800 font-mono tabular-nums">{revenue.toLocaleString()}</p>
-                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">UZS</p>
+                      <p className="label-caps mb-1.5">Umumiy Daromad</p>
+                      <p className="text-xl font-semibold text-slate-800 font-mono tabular-nums">{revenue.toLocaleString()}</p>
+                      <p className="t-caption mt-0.5">UZS</p>
                     </div>
-                    <div className="p-4">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Jami Xarajat</p>
-                      <p className="text-xl font-bold text-slate-700 font-mono tabular-nums">{totalCost.toLocaleString()}</p>
-                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">UZS · {costingExpenses.length} ta moddа</p>
+                    <div className="p-4 border-t sm:border-t-0 border-slate-200">
+                      <p className="label-caps mb-1.5">Jami Xarajat</p>
+                      <p className="text-xl font-semibold text-slate-700 font-mono tabular-nums">{totalCost.toLocaleString()}</p>
+                      <p className="t-caption mt-0.5">UZS · {costingExpenses.length} ta moddа</p>
                     </div>
                   </div>
 
                   {/* Net profit hero */}
-                  <div className="p-5 border-b border-slate-200">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sof Foyda</p>
-                    <div className="flex items-baseline gap-4">
-                      <p className={`text-3xl font-bold font-mono tracking-tight ${netProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
-                        {netProfit.toLocaleString()} <span className="text-sm font-bold">UZS</span>
+                  <div className="p-4 sm:p-5 border-b border-slate-200">
+                    <p className="label-caps mb-2">Sof Foyda</p>
+                    <div className="flex flex-wrap items-baseline gap-3">
+                      <p className={`text-2xl font-semibold font-mono tracking-tight tabular-nums ${netProfit >= 0 ? 'text-[color:var(--primary)]' : 'text-rose-600'}`}>
+                        {netProfit.toLocaleString()} <span className="text-sm font-medium">UZS</span>
                       </p>
                       {revenue > 0 && (
-                        <span className={`text-xs font-bold px-3 py-1 rounded-lg ${netProfit >= 0 ? 'bg-orange-50 text-orange-600 border border-orange-200' : 'bg-rose-50 text-rose-500 border border-rose-200'}`}>
+                        <span className={`text-xs font-semibold px-3 py-1 rounded-control tabular-nums ${netProfit >= 0 ? 'bg-primary-50 text-primary-700 border border-primary-300' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                           {netProfit >= 0 ? '+' : ''}{margin.toFixed(1)}% marja
                         </span>
                       )}
@@ -1100,37 +1102,37 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                   </div>
 
                   {/* Unit metrics */}
-                  <div className="grid grid-cols-2 divide-x divide-slate-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-slate-200">
                     <div className="p-4">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">1 dona — Tannarx</p>
-                      <p className="text-lg font-bold text-slate-700 font-mono tabular-nums">
-                        {unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-xs font-bold text-slate-400 ml-1">UZS</span>
+                      <p className="label-caps mb-1.5">1 dona — Tannarx</p>
+                      <p className="text-lg font-semibold text-slate-700 font-mono tabular-nums">
+                        {unitCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-xs font-medium text-slate-500 ml-1">UZS</span>
                       </p>
-                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">{qty} dona asosida</p>
+                      <p className="t-caption mt-0.5">{qty} dona asosida</p>
                     </div>
-                    <div className="p-4">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">1 donadan Foyda</p>
-                      <p className={`text-lg font-bold font-mono tabular-nums ${unitProfit >= 0 ? 'text-orange-600' : 'text-rose-600'}`}>
-                        {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-xs font-bold text-slate-400 ml-1">UZS</span>
+                    <div className="p-4 border-t sm:border-t-0 border-slate-200">
+                      <p className="label-caps mb-1.5">1 donadan Foyda</p>
+                      <p className={`text-lg font-semibold font-mono tabular-nums ${unitProfit >= 0 ? 'text-[color:var(--primary)]' : 'text-rose-600'}`}>
+                        {unitProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-xs font-medium text-slate-500 ml-1">UZS</span>
                       </p>
-                      <p className="text-[11px] font-bold text-slate-400 mt-0.5">UZS / dona</p>
+                      <p className="t-caption mt-0.5">UZS / dona</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Add expense form */}
-                <div className="border border-orange-200 rounded-xl overflow-hidden">
-                  <div className="bg-orange-50 px-4 py-2.5 border-b border-orange-200">
-                    <p className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Xarajat qo'shish</p>
+                <div className="border border-slate-200 rounded-card overflow-hidden">
+                  <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
+                    <p className="label-caps">Xarajat qo'shish</p>
                   </div>
-                  <div className="p-4 flex gap-3">
+                  <div className="p-4 flex flex-wrap gap-2 sm:gap-3">
                     <input
                       type="text"
                       placeholder="Xarajat nomi (Qog'oz, Bo'yoq...)"
                       value={expenseForm.expenseName}
                       onChange={e => setExpenseForm(f => ({ ...f, expenseName: e.target.value }))}
                       onKeyDown={e => e.key === 'Enter' && handleAddCostingExpense()}
-                      className="flex-1 h-10 px-3 text-xs font-bold bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                      className="input-minimal flex-1 min-w-[180px]"
                     />
                     <input
                       type="number"
@@ -1138,50 +1140,50 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                       value={expenseForm.amount}
                       onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value }))}
                       onKeyDown={e => e.key === 'Enter' && handleAddCostingExpense()}
-                      className="w-36 h-10 px-3 text-xs font-bold font-mono bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                      className="input-minimal w-36 font-mono tabular-nums"
                     />
                     <button
                       onClick={handleAddCostingExpense}
                       disabled={isAddingExpense || !expenseForm.expenseName.trim() || !expenseForm.amount}
-                      className="h-10 px-4 bg-orange-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-orange-700 transition-all active:scale-95 flex items-center gap-1.5 shadow-sm shadow-orange-500/20"
+                      className="btn-primary"
                     >
-                      <Plus size={13} strokeWidth={3} /> QO'SH
+                      <Plus size={16} /> QO'SH
                     </button>
                   </div>
                 </div>
 
                 {/* Expense breakdown table */}
                 {costingExpenses.length > 0 && (
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="border border-slate-200 rounded-card overflow-hidden">
                     <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200">
-                      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Xarajatlar ro'yxati</p>
+                      <p className="label-caps">Xarajatlar ro'yxati</p>
                     </div>
                     <div className="divide-y divide-slate-100">
                       {costingExpenses.map((exp: any) => (
-                        <div key={exp.id} className="flex items-center justify-between px-4 py-3 hover:bg-orange-50/40 transition-colors group">
-                          <div>
-                            <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{exp.expenseName}</p>
-                            <p className="text-[11px] text-slate-400 font-bold mt-0.5">
+                        <div key={exp.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50 transition-colors duration-120 group">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">{exp.expenseName}</p>
+                            <p className="t-caption mt-0.5">
                               {new Date(exp.createdAt).toLocaleDateString('uz-UZ')}
                             </p>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm font-bold text-slate-700 font-mono tabular-nums">
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-sm font-semibold text-slate-700 font-mono tabular-nums">
                               {Number(exp.amount).toLocaleString()} UZS
                             </span>
                             <button
                               onClick={() => handleDeleteCostingExpense(exp.id)}
-                              className="w-7 h-7 rounded-lg bg-rose-50 text-rose-300 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                              className="icon-btn-sm text-slate-400 hover:text-rose-600 hover:bg-rose-50 opacity-100 md:opacity-0 md:group-hover:opacity-100"
                             >
-                              <Trash2 size={12} />
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </div>
                       ))}
                       {/* Total row */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-orange-50">
-                        <span className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Jami Xarajat</span>
-                        <span className="text-sm font-bold text-slate-800 font-mono tabular-nums">
+                      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-50">
+                        <span className="label-caps">Jami Xarajat</span>
+                        <span className="text-sm font-semibold text-slate-800 font-mono tabular-nums">
                           {totalCost.toLocaleString()} UZS
                         </span>
                       </div>
@@ -1190,7 +1192,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 )}
 
                 {costingExpenses.length === 0 && (
-                  <p className="text-center text-xs font-bold text-slate-400 py-4">
+                  <p className="text-center t-caption py-4">
                     Xarajat yo'q — yuqorida qo'shing
                   </p>
                 )}
@@ -1200,9 +1202,9 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
           {/* Empty state */}
           {!costingTask && !costingError && !isSearchingCosting && (
-            <div className="py-10 flex flex-col items-center justify-center gap-2 opacity-40">
-              <Package size={32} className="text-orange-400" />
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+            <div className="py-10 flex flex-col items-center justify-center gap-2">
+              <Package size={20} className="text-slate-400" />
+              <p className="t-caption text-center">
                 Buyurtma ID yoki nomini kiriting
               </p>
             </div>
@@ -1211,10 +1213,10 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       </div>}
 
       {!needsFinanceData && !canViewKpi && !canViewVendors && !canViewCostCalc && (
-        <div className="text-center py-20 text-slate-400">
-          <BarChart3 size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-bold text-sm uppercase tracking-widest">Ruxsat yo'q</p>
-          <p className="text-xs font-bold mt-1">Hisobotlarni ko'rish uchun administrator bilan bog'laning</p>
+        <div className="text-center py-20">
+          <BarChart3 size={20} className="mx-auto mb-3 text-slate-400" />
+          <p className="t-h3">Ruxsat yo'q</p>
+          <p className="t-caption mt-1">Hisobotlarni ko'rish uchun administrator bilan bog'laning</p>
         </div>
       )}
     </div>

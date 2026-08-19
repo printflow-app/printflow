@@ -84,37 +84,35 @@ const KpiStartDate: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-      <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
+    <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5">
+      <label className="form-label">
         KPI qaysi sanadan boshlab hisoblanadi
       </label>
       <div className="flex flex-wrap items-center gap-2">
+        {/* Native date picker — brauzer kalendari saqlanadi */}
         <input
           type="date"
           value={value}
           onChange={e => setValue(e.target.value)}
-          className="input-minimal h-10 text-sm font-bold w-auto"
+          className="input-minimal w-auto"
         />
         {value !== saved && (
-          <button onClick={save} disabled={busy} className="btn-primary h-10 px-4 text-xs">
+          <button onClick={save} disabled={busy} className="btn-primary">
             {busy ? 'Saqlanmoqda...' : 'Saqlash'}
           </button>
         )}
         {value && (
-          <button
-            onClick={() => setValue('')}
-            className="h-10 px-3 text-xs font-bold text-slate-400 hover:text-rose-500"
-          >
+          <button onClick={() => setValue('')} className="btn-ghost">
             Tozalash
           </button>
         )}
       </div>
-      <p className="text-xs font-semibold text-slate-400 mt-2 leading-relaxed">
+      <p className="t-caption mt-2 leading-relaxed">
         {value
           ? `Shu sanadan OLDIN qabul qilingan buyurtmalar KPI'ga kirmaydi — ular boshqa shartlarda olingan. Sanadan keyin qabul qilinganlari esa BAJARILGANDA hisoblanadi.`
           : `Belgilanmasa barcha buyurtmalar hisobga olinadi, jumladan KPI joriy qilinishidan oldingilari ham.`}
       </p>
-      <p className="text-xs font-semibold text-slate-400 mt-1.5 leading-relaxed">
+      <p className="t-caption mt-1.5 leading-relaxed">
         KPI buyurtma <b>topshirilganda</b> yoziladi, qabul qilinganda emas — yo'lda
         bekor bo'lgan ish uchun pul berilmaydi. Shuning uchun oy oxirida olingan
         buyurtma keyingi oy tayyor bo'lsa, KPI keyingi oyga tushadi.
@@ -173,9 +171,9 @@ const DEPT_NOTE =
   "Xodimga Xodimlar sahifasida bo'lim biriktirilgan bo'lsa, bu ko'rsatkich faqat O'SHA bo'lim buyurtma va tushumidan hisoblanadi.";
 
 const TYPES: { key: Group; label: string; desc: string; icon: any; tone: string }[] = [
-  { key: 'fiksa', label: 'Fiksa', desc: "Qat'iy summa. Shart qo'ysangiz — faqat shart bajarilsa beriladi.", icon: Wallet, tone: 'text-slate-700 border-slate-200 hover:border-slate-400' },
-  { key: 'kpi', label: 'KPI', desc: "Natijaga qarab qo'shiladi (bajarilgan buyurtma, ish soati...).", icon: TrendingUp, tone: 'text-emerald-700 border-emerald-200 hover:border-emerald-400' },
-  { key: 'jarima', label: 'Jarima', desc: 'Hisoblanadi, tasdiqlasangiz ushlab qolinadi.', icon: AlertTriangle, tone: 'text-rose-700 border-rose-200 hover:border-rose-400' },
+  { key: 'fiksa', label: 'Fiksa', desc: "Qat'iy summa. Shart qo'ysangiz — faqat shart bajarilsa beriladi.", icon: Wallet, tone: 'text-slate-600' },
+  { key: 'kpi', label: 'KPI', desc: "Natijaga qarab qo'shiladi (bajarilgan buyurtma, ish soati...).", icon: TrendingUp, tone: 'text-emerald-600' },
+  { key: 'jarima', label: 'Jarima', desc: 'Hisoblanadi, tasdiqlasangiz ushlab qolinadi.', icon: AlertTriangle, tone: 'text-rose-600' },
 ];
 
 const OPS: { key: Op; label: string }[] = [
@@ -387,18 +385,18 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <KpiStartDate />
 
       {/* 1-qadam: lavozim */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
+      <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5">
+        <label className="form-label">
           1. Lavozimni tanlang
         </label>
         <select
           value={roleId}
           onChange={e => selectRole(e.target.value)}
-          className="select-minimal font-bold w-full max-w-sm text-sm"
+          className="select-minimal w-full sm:max-w-sm"
         >
           <option value="">Lavozim...</option>
           {roles.map((r: any) => {
@@ -407,20 +405,20 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
           })}
         </select>
         {!roleId && (
-          <p className="text-xs font-semibold text-slate-400 mt-2">
+          <p className="t-caption mt-2">
             Sxema belgilanmagan lavozimda maosh avvalgidek qo'lda yoziladi.
           </p>
         )}
       </div>
 
       {roleId && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+        <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5 space-y-4">
+          <p className="t-h3">
             2. {role?.name} uchun to'lov turlari
           </p>
 
           {components.length === 0 && !adding && !picking && (
-            <p className="text-sm font-semibold text-slate-400 py-3">
+            <p className="t-caption py-3">
               Hali hech narsa qo'shilmagan.
             </p>
           )}
@@ -432,71 +430,71 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
               const ex = explain(c);
               const open = openInfo === c.id;
               return (
-                <div key={c.id} className="bg-slate-50 rounded-xl border border-slate-200">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    c.group === 'jarima' ? 'bg-rose-100 text-rose-600'
-                      : c.group === 'kpi' ? 'bg-emerald-100 text-emerald-600'
+                <div key={c.id} className="bg-slate-50 rounded-card border border-slate-200">
+                <div className="flex items-start gap-3 px-3 sm:px-4 py-3">
+                  <div className={`w-8 h-8 rounded-control flex items-center justify-center flex-shrink-0 ${
+                    c.group === 'jarima' ? 'bg-rose-50 text-rose-600'
+                      : c.group === 'kpi' ? 'bg-emerald-50 text-emerald-600'
                       : 'bg-slate-200 text-slate-600'
                   }`}>
-                    <Icon size={15} />
+                    <Icon size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-800">
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mr-2">{type.label}</span>
+                    <p className="t-body-md">
+                      <span className="label-caps mr-2">{type.label}</span>
                       {c.label}
                     </p>
-                    <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                    <p className="t-caption mt-0.5">
                       {summary(c)}
                       {(c.conditions || []).map((cd, i) => (
-                        <span key={i} className="text-orange-600">
+                        <span key={i} className="text-[color:var(--primary)]">
                           {' · '}{metricLabel(cd.metric)} {OPS.find(o => o.key === cd.op)?.label} {fm(cd.value)}
                         </span>
                       ))}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setOpenInfo(open ? null : c.id)}
-                    title="Nima bo'ladi"
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      open ? 'text-orange-600 bg-orange-50' : 'text-slate-400 hover:text-orange-600 hover:bg-orange-50'
-                    }`}
-                  >
-                    <HelpCircle size={14} />
-                  </button>
-                  {canManage && (
-                    <>
-                      <button onClick={() => setAdding({ ...c })} title="Tahrirlash"
-                        className="w-8 h-8 rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center">
-                        <Pencil size={13} />
-                      </button>
-                      <button onClick={() => { setComponents(p => p.filter(x => x.id !== c.id)); setDirty(true); }} title="O'chirish"
-                        className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center">
-                        <Trash2 size={13} />
-                      </button>
-                    </>
-                  )}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => setOpenInfo(open ? null : c.id)}
+                      title="Nima bo'ladi"
+                      className={`icon-btn-sm ${open ? 'text-[color:var(--primary)] bg-primary-50' : 'hover:text-[color:var(--primary)] hover:bg-primary-50'}`}
+                    >
+                      <HelpCircle size={16} />
+                    </button>
+                    {canManage && (
+                      <>
+                        <button onClick={() => setAdding({ ...c })} title="Tahrirlash"
+                          className="icon-btn-sm hover:text-[color:var(--primary)] hover:bg-primary-50">
+                          <Pencil size={16} />
+                        </button>
+                        <button onClick={() => { setComponents(p => p.filter(x => x.id !== c.id)); setDirty(true); }} title="O'chirish"
+                          className="icon-btn-sm hover:text-rose-600 hover:bg-rose-50">
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Qator qanday ishlashini holatlar bo'yicha ochib beradi */}
                 {open && (ex.ok.length > 0 || ex.no.length > 0) && (
-                  <div className="px-4 pb-3 pt-1 border-t border-slate-200 space-y-1.5">
+                  <div className="px-3 sm:px-4 pb-3 pt-1 border-t border-slate-200 space-y-1.5">
                     {ex.ok.map((line, i) => (
                       <div key={`o${i}`} className="flex items-start gap-2">
-                        <Check size={12} className="text-emerald-600 mt-0.5 flex-shrink-0" strokeWidth={3} />
-                        <p className="text-xs font-semibold text-slate-700 leading-snug">{line}</p>
+                        <Check size={16} className="text-emerald-600 mt-px flex-shrink-0" />
+                        <p className="t-caption text-slate-700 leading-snug">{line}</p>
                       </div>
                     ))}
                     {ex.no.map((line, i) => (
                       <div key={`n${i}`} className="flex items-start gap-2">
-                        <X size={12} className="text-slate-400 mt-0.5 flex-shrink-0" strokeWidth={3} />
-                        <p className="text-xs font-semibold text-slate-500 leading-snug">{line}</p>
+                        <X size={16} className="text-slate-400 mt-px flex-shrink-0" />
+                        <p className="t-caption leading-snug">{line}</p>
                       </div>
                     ))}
                     {ex.warn && (
                       <div className="flex items-start gap-2">
-                        <AlertTriangle size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs font-semibold text-amber-800 leading-snug">{ex.warn}</p>
+                        <AlertTriangle size={16} className="text-amber-600 mt-px flex-shrink-0" />
+                        <p className="text-xs text-amber-800 leading-snug">{ex.warn}</p>
                       </div>
                     )}
                   </div>
@@ -508,23 +506,22 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
           {/* Tur tanlash */}
           {picking && (
-            <div className="border border-orange-200 bg-orange-50/40 rounded-xl p-4 space-y-2">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Qanday to'lov turi?</p>
+            <div className="border border-primary-200 bg-primary-50 rounded-card p-3 sm:p-4 space-y-2">
+              <p className="t-h3 mb-2">Qanday to'lov turi?</p>
               {TYPES.map(t => {
                 const Icon = t.icon;
                 return (
                   <button key={t.key} onClick={() => startAdd(t.key)}
-                    className={`w-full flex items-start gap-3 bg-white border-2 rounded-xl px-4 py-3 text-left transition-all ${t.tone}`}>
-                    <Icon size={16} className="mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold">{t.label}</p>
-                      <p className="text-xs font-medium text-slate-500 mt-0.5">{t.desc}</p>
+                    className="w-full flex items-start gap-3 bg-white border border-slate-200 rounded-card px-4 py-3 text-left transition-colors duration-120 hover:border-primary-300">
+                    <Icon size={16} className={`mt-0.5 flex-shrink-0 ${t.tone}`} />
+                    <div className="min-w-0">
+                      <p className="t-h3">{t.label}</p>
+                      <p className="t-caption mt-0.5">{t.desc}</p>
                     </div>
                   </button>
                 );
               })}
-              <button onClick={() => setPicking(false)}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider pt-1">
+              <button onClick={() => setPicking(false)} className="btn-ghost h-sm">
                 Bekor qilish
               </button>
             </div>
@@ -532,13 +529,13 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
           {/* Tanlangan turga qarab savollar */}
           {adding && (
-            <div className="border border-orange-200 bg-orange-50/40 rounded-xl p-4 space-y-3">
-              <p className="text-xs font-bold text-orange-700 uppercase tracking-widest">
+            <div className="border border-primary-200 bg-primary-50 rounded-card p-3 sm:p-4 space-y-3">
+              <p className="t-h3 text-primary-700">
                 {TYPES.find(t => t.key === adding.group)?.label}
               </p>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Nomi</label>
+                <label className="form-label">Nomi</label>
                 <input
                   value={adding.label}
                   onChange={e => setAdding({ ...adding, label: e.target.value })}
@@ -547,25 +544,25 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                       : adding.group === 'kpi' ? 'Masalan: Bajarilgan ish uchun'
                       : 'Masalan: Kechikish uchun'
                   }
-                  className="input-minimal w-full text-sm font-bold"
+                  className="input-minimal"
                   autoFocus
                 />
               </div>
 
               {adding.group === 'fiksa' ? (
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Summa</label>
+                  <label className="form-label">Summa</label>
                   <CurrencyInput
                     value={adding.amount || ''}
                     onChange={(uzs) => setAdding({ ...adding, amount: Number(uzs) || 0 })}
                     colorClass="text-emerald-600"
-                    className="input-minimal font-bold w-full max-w-xs"
+                    className="input-minimal text-right font-semibold tabular-nums w-full sm:max-w-xs"
                   />
                 </div>
               ) : (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
+                    <label className="form-label">
                       Nimaga qarab?
                     </label>
                     <select
@@ -574,7 +571,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                         const metric = e.target.value;
                         setAdding({ ...adding, metric, kind: MONEY_METRICS.has(metric) ? adding.kind : 'per_unit' });
                       }}
-                      className="select-minimal font-bold w-full max-w-md text-sm"
+                      className="select-minimal w-full sm:max-w-md"
                     >
                       <option value="">Tanlang...</option>
                       {metrics.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
@@ -583,20 +580,20 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     {/* Tanlangan ko'rsatkich nimani anglatishi — tuzoqlari
                         bilan. Raqamli misol pastdagi "Nima bo'ladi" blokida. */}
                     {adding.metric && METRIC_MEANING[adding.metric] && (
-                      <div className="mt-2 p-2.5 rounded-xl bg-slate-50/70 border border-slate-100">
-                        <p className="text-xs font-semibold text-slate-800 leading-relaxed">
+                      <div className="mt-2 p-3 rounded-card bg-white border border-slate-200">
+                        <p className="text-xs text-slate-700 leading-relaxed">
                           {METRIC_MEANING[adding.metric]}
                         </p>
                         {(adding.metric === 'bajarilgan_buyurtma_soni' ||
                           adding.metric === 'bajarilgan_buyurtma_summasi' ||
                           adding.metric === 'kirim_summasi') && (
-                          <p className="text-xs font-semibold text-slate-700/80 mt-1.5 leading-relaxed">
+                          <p className="t-caption mt-1.5 leading-relaxed">
                             {DEPT_NOTE}
                           </p>
                         )}
                         {adding.kind && KIND_MEANING[adding.kind] && (
-                          <p className="text-xs font-semibold text-slate-700/80 mt-1.5 leading-relaxed">
-                            <b>To'lov turi:</b> {KIND_MEANING[adding.kind]}
+                          <p className="t-caption mt-1.5 leading-relaxed">
+                            <b className="font-semibold">To'lov turi:</b> {KIND_MEANING[adding.kind]}
                           </p>
                         )}
                       </div>
@@ -605,11 +602,11 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
                   {/* Foiz varianti faqat pul metrikasida so'raladi */}
                   {adding.metric && MONEY_METRICS.has(adding.metric) && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {(['per_unit', 'percent'] as Kind[]).map(k => (
                         <button key={k} onClick={() => setAdding({ ...adding, kind: k })}
-                          className={`px-3 h-8 text-xs font-bold uppercase tracking-wider rounded-lg border-2 transition-all ${
-                            adding.kind === k ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200'
+                          className={`h-control-sm px-3 rounded-control border text-xs font-medium transition-colors duration-120 ${
+                            adding.kind === k ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                           }`}>
                           {k === 'percent' ? 'Foiz' : 'Har birlik uchun'}
                         </button>
@@ -619,7 +616,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
 
                   {adding.metric && (
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
+                      <label className="form-label">
                         {adding.kind === 'percent'
                           ? 'Necha foiz?'
                           : `Har bir "${metricLabel(adding.metric).toLowerCase()}" uchun qancha?`}
@@ -627,13 +624,13 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                       {adding.kind === 'percent' ? (
                         <input type="number" min={0} step="0.1" value={adding.rate ?? ''}
                           onChange={e => setAdding({ ...adding, rate: Number(e.target.value) || 0 })}
-                          className="input-minimal font-bold w-32" />
+                          className="input-minimal w-32 text-right tabular-nums" />
                       ) : (
                         <CurrencyInput
                           value={adding.rate || ''}
                           onChange={(uzs) => setAdding({ ...adding, rate: Number(uzs) || 0 })}
                           colorClass="text-slate-700"
-                          className="input-minimal font-bold w-full max-w-xs"
+                          className="input-minimal text-right font-semibold tabular-nums w-full sm:max-w-xs"
                         />
                       )}
                     </div>
@@ -645,23 +642,23 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
               <div className="pt-1">
                 {(adding.conditions || []).map((cd, ci) => (
                   <div key={ci} className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Faqat agar</span>
+                    <span className="t-label">Faqat agar</span>
                     <select value={cd.metric}
                       onChange={e => setAdding({ ...adding, conditions: adding.conditions!.map((x, i) => i === ci ? { ...x, metric: e.target.value } : x) })}
-                      className="select-minimal text-xs font-bold flex-1 min-w-[170px]">
+                      className="select-minimal flex-1 min-w-[150px]">
                       {metrics.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
                     </select>
                     <select value={cd.op}
                       onChange={e => setAdding({ ...adding, conditions: adding.conditions!.map((x, i) => i === ci ? { ...x, op: e.target.value as Op } : x) })}
-                      className="select-minimal text-xs font-bold w-32">
+                      className="select-minimal w-32">
                       {OPS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
                     </select>
                     <input type="number" value={cd.value}
                       onChange={e => setAdding({ ...adding, conditions: adding.conditions!.map((x, i) => i === ci ? { ...x, value: Number(e.target.value) || 0 } : x) })}
-                      className="input-minimal text-xs font-bold w-20" />
+                      className="input-minimal w-20 text-right tabular-nums" />
                     <button onClick={() => setAdding({ ...adding, conditions: adding.conditions!.filter((_, i) => i !== ci) })}
-                      className="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-500 flex items-center justify-center">
-                      <X size={13} />
+                      className="icon-btn-sm hover:text-rose-600 hover:bg-rose-50">
+                      <X size={16} />
                     </button>
                   </div>
                 ))}
@@ -671,17 +668,17 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                     ...adding,
                     conditions: [...(adding.conditions || []), { metric: metrics[0]?.key || '', op: 'gte', value: 0 }],
                   })}
-                  className="text-xs font-bold text-orange-600 hover:text-orange-700 uppercase tracking-wider"
+                  className="btn-ghost h-sm text-[color:var(--primary)] hover:text-[color:var(--primary-hover)]"
                 >
                   + Shart qo'shish
                 </button>
 
                 {adding.kind === 'fixed' && (adding.conditions || []).some(x => x.op === 'gte') && (
-                  <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                  <label className="flex items-start gap-2 mt-2 cursor-pointer">
                     <input type="checkbox" checked={!!adding.proportional}
                       onChange={e => setAdding({ ...adding, proportional: e.target.checked })}
-                      className="w-3.5 h-3.5 accent-orange-500" />
-                    <span className="text-xs font-semibold text-slate-600">
+                      className="w-4 h-4 mt-0.5 shrink-0 accent-[color:var(--primary)]" />
+                    <span className="t-label">
                       Shart to'liq bajarilmasa nisbatan berilsin (22 dan 20 kun → 20/22 qismi)
                     </span>
                   </label>
@@ -693,27 +690,27 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                 const ex = explain(adding);
                 if (ex.ok.length === 0 && ex.no.length === 0) return null;
                 return (
-                  <div className="bg-white border border-slate-200 rounded-xl p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                  <div className="bg-white border border-slate-200 rounded-card p-3.5">
+                    <p className="label-caps mb-2">
                       Nima bo'ladi
                     </p>
                     <div className="space-y-1.5">
                       {ex.ok.map((line, i) => (
                         <div key={`ok${i}`} className="flex items-start gap-2">
-                          <Check size={12} className="text-emerald-600 mt-0.5 flex-shrink-0" strokeWidth={3} />
-                          <p className="text-xs font-semibold text-slate-700 leading-snug">{line}</p>
+                          <Check size={16} className="text-emerald-600 mt-px flex-shrink-0" />
+                          <p className="t-caption text-slate-700 leading-snug">{line}</p>
                         </div>
                       ))}
                       {ex.no.map((line, i) => (
                         <div key={`no${i}`} className="flex items-start gap-2">
-                          <X size={12} className="text-slate-400 mt-0.5 flex-shrink-0" strokeWidth={3} />
-                          <p className="text-xs font-semibold text-slate-500 leading-snug">{line}</p>
+                          <X size={16} className="text-slate-400 mt-px flex-shrink-0" />
+                          <p className="t-caption leading-snug">{line}</p>
                         </div>
                       ))}
                       {ex.warn && (
                         <div className="flex items-start gap-2 pt-1.5 mt-1.5 border-t border-slate-100">
-                          <AlertTriangle size={12} className="text-amber-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-xs font-semibold text-amber-800 leading-snug">{ex.warn}</p>
+                          <AlertTriangle size={16} className="text-amber-600 mt-px flex-shrink-0" />
+                          <p className="text-xs text-amber-800 leading-snug">{ex.warn}</p>
                         </div>
                       )}
                     </div>
@@ -721,45 +718,39 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
                 );
               })()}
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-orange-200">
-                <button onClick={() => setAdding(null)}
-                  className="h-9 px-4 text-xs font-bold uppercase tracking-wider text-slate-500 hover:bg-white rounded-lg">
+              <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-primary-200">
+                <button onClick={() => setAdding(null)} className="btn-outline">
                   Bekor qilish
                 </button>
-                <button onClick={commitAdd}
-                  className="h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5">
-                  <Check size={13} /> Qo'shish
+                <button onClick={commitAdd} className="btn-primary">
+                  <Check size={16} /> Qo'shish
                 </button>
               </div>
             </div>
           )}
 
           {!adding && !picking && canManage && (
-            <button onClick={() => setPicking(true)}
-              className="h-10 px-4 text-xs font-bold uppercase tracking-wider rounded-xl border-2 border-dashed border-slate-300 text-slate-600 hover:border-orange-400 hover:text-orange-600 transition-colors flex items-center gap-1.5">
-              <Plus size={14} /> To'lov turi qo'shish
+            <button onClick={() => setPicking(true)} className="btn-outline border-dashed w-full sm:w-auto">
+              <Plus size={16} /> To'lov turi qo'shish
             </button>
           )}
 
           {components.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
-              <p className="text-xs font-semibold text-slate-600">
+              <p className="t-body">
                 Barcha shartlar bajarilganda fiksa:{' '}
-                <span className="text-emerald-600 font-bold">{fm(totalFiksa)} so'm</span>
+                <span className="text-emerald-600 font-semibold tabular-nums">{fm(totalFiksa)} so'm</span>
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {scheme && canManage && (
-                  <button
-                    onClick={() => setOchirishSoraldi(true)}
-                    className="h-10 px-4 text-xs font-bold uppercase tracking-wider text-rose-600 hover:bg-rose-50 rounded-xl"
-                  >
+                  <button onClick={() => setOchirishSoraldi(true)} className="btn-danger">
                     O'chirish
                   </button>
                 )}
                 <button
                   disabled={!canManage || !dirty || saveMut.isPending}
                   onClick={() => saveMut.mutate()}
-                  className="h-10 px-6 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-40"
+                  className="btn-primary"
                 >
                   {saveMut.isPending ? 'Saqlanmoqda...' : dirty ? 'Saqlash' : 'Saqlangan'}
                 </button>
@@ -773,7 +764,7 @@ export const SalarySchemeSection: React.FC<{ canManage: boolean }> = ({ canManag
         isOpen={ochirishSoraldi}
         title="Sxemani o'chirish"
         message={<>
-          <span className="font-bold text-slate-800">{role?.name}</span> lavozimining maosh
+          <span className="font-semibold text-slate-900">{role?.name}</span> lavozimining maosh
           sxemasi o'chiriladi. Bu lavozimdagi xodimlarning maoshi yana qo'lda yoziladi.
         </>}
         confirmText="O'chirish"

@@ -10,6 +10,7 @@ import {
 import { dashboardApi, aiApi } from '../api';
 import { SkeletonStats } from '../components/Skeleton';
 import { buildRiskMessage } from '../utils/riskPrompt';
+import { chartColors } from '../lib/chartColors';
 
 // =============================================
 // BOSH SAHIFA — rol asosidagi, sozlanadigan nazorat paneli.
@@ -28,11 +29,12 @@ import { buildRiskMessage } from '../utils/riskPrompt';
 //    + neytral slate. Boshqa hue ishlatilmaydi.
 // =============================================
 
-const BRAND = '#FF6B00';
-const EMERALD = '#10b981';
-const ROSE = '#f43f5e';
-const GRID = '#e2e8f0';
-const AXIS = '#94a3b8';
+// Ranglar — yagona manbadan (lib/chartColors). Sahifada xom hex yozilmaydi.
+const BRAND = chartColors.primary;
+const EMERALD = chartColors.success;
+const ROSE = chartColors.danger;
+const GRID = chartColors.grid;
+const AXIS = chartColors.axis;
 
 const fm = (n: number) => Math.round(n || 0).toLocaleString('uz-UZ').replace(/,/g, ' ');
 const fmShort = (n: number) => {
@@ -86,7 +88,7 @@ function useWidgetVisibility(tenantId?: string) {
 
 const Stat: React.FC<{
   label: string; value: React.ReactNode; sub?: string; icon: any;
-  tone?: 'brand' | 'emerald' | 'rose' | 'amber' | 'slate' | 'dark';
+  tone?: 'brand' | 'emerald' | 'rose' | 'amber' | 'slate';
 }> = ({ label, value, sub, icon: Icon, tone = 'slate' }) => {
   const tones: Record<string, string> = {
     brand: 'bg-orange-50 text-orange-600 border-orange-100',
@@ -94,17 +96,15 @@ const Stat: React.FC<{
     rose: 'bg-rose-50 text-rose-600 border-rose-100',
     amber: 'bg-amber-50 text-amber-600 border-amber-100',
     slate: 'bg-slate-100 text-slate-500 border-slate-200',
-    dark: 'bg-white/10 text-white border-white/10',
   };
-  const isDark = tone === 'dark';
   return (
-    <div className={`p-4 rounded-xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`}>
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 border ${tones[tone]}`}>
-        <Icon size={17} />
+    <div className="bg-white rounded-card border border-slate-200 p-4">
+      <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-3 border ${tones[tone]}`}>
+        <Icon size={18} />
       </div>
-      <p className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${isDark ? 'text-white/50' : 'text-slate-400'}`}>{label}</p>
-      <h3 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>{value}</h3>
-      {sub && <p className={`text-xs font-semibold mt-0.5 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{sub}</p>}
+      <p className="label-caps mb-0.5">{label}</p>
+      <h3 className="text-xl font-semibold text-slate-900 tracking-tight tabular-nums">{value}</h3>
+      {sub && <p className="t-caption mt-0.5">{sub}</p>}
     </div>
   );
 };
@@ -112,10 +112,10 @@ const Stat: React.FC<{
 const Panel: React.FC<{ title: string; sub?: string; children: React.ReactNode; className?: string }> = ({
   title, sub, children, className = '',
 }) => (
-  <div className={`bg-white rounded-xl border border-slate-200 shadow-sm p-4 ${className}`}>
+  <div className={`bg-white rounded-card border border-slate-200 p-4 ${className}`}>
     <div className="mb-3">
-      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{title}</p>
-      {sub && <p className="text-xs font-medium text-slate-400 mt-0.5">{sub}</p>}
+      <p className="t-h3">{title}</p>
+      {sub && <p className="t-caption mt-0.5">{sub}</p>}
     </div>
     {children}
   </div>
@@ -123,8 +123,8 @@ const Panel: React.FC<{ title: string; sub?: string; children: React.ReactNode; 
 
 const SectionTitle: React.FC<{ icon: any; children: React.ReactNode }> = ({ icon: Icon, children }) => (
   <div className="flex items-center gap-2 pt-2">
-    <Icon size={13} className="text-slate-400" />
-    <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">{children}</p>
+    <Icon size={16} className="text-slate-400" />
+    <p className="t-h3">{children}</p>
     <div className="flex-1 h-px bg-slate-200" />
   </div>
 );
@@ -132,10 +132,10 @@ const SectionTitle: React.FC<{ icon: any; children: React.ReactNode }> = ({ icon
 const ChartTip: React.FC<any> = ({ active, payload, label, suffix = '' }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-lg px-3 py-2">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+    <div className="bg-white border border-slate-200 rounded-control shadow-md px-3 py-2">
+      <p className="label-caps mb-1">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+        <p key={p.dataKey} className="text-xs font-semibold text-slate-800 flex items-center gap-1.5 tabular-nums">
           <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
           {p.name}: {fm(p.value)}{suffix}
         </p>
@@ -145,21 +145,21 @@ const ChartTip: React.FC<any> = ({ active, payload, label, suffix = '' }) => {
 };
 
 const EmptyNote: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-xs font-medium text-slate-400 py-6 text-center">{children}</p>
+  <p className="t-caption py-6 text-center">{children}</p>
 );
 
 // Ro'yxat qatori — nom + qiymat (jadval uslubida, tabular raqamlar)
 const Row: React.FC<{ nom: string; qiymat: string; tone?: string }> = ({ nom, qiymat, tone = 'text-slate-700' }) => (
   <div className="flex items-center justify-between gap-3 py-2 border-b border-slate-50 last:border-0">
-    <span className="text-xs font-semibold text-slate-600 truncate">{nom}</span>
-    <span className={`text-xs font-bold tabular-nums whitespace-nowrap ${tone}`}>{qiymat}</span>
+    <span className="text-xs font-medium text-slate-600 truncate">{nom}</span>
+    <span className={`text-xs font-semibold tabular-nums whitespace-nowrap ${tone}`}>{qiymat}</span>
   </div>
 );
 
 const RISK_TONE: Record<string, { border: string; bg: string; icon: string; title: string; text: string; btn: string; dismiss: string }> = {
-  critical: { border: 'border-rose-200', bg: 'bg-rose-50/60', icon: 'bg-rose-100 text-rose-600', title: 'text-rose-800', text: 'text-rose-700/90', btn: 'bg-rose-600 hover:bg-rose-700', dismiss: 'text-rose-700 hover:bg-rose-100' },
-  warning: { border: 'border-amber-200', bg: 'bg-amber-50/60', icon: 'bg-amber-100 text-amber-600', title: 'text-amber-800', text: 'text-amber-700/90', btn: 'bg-amber-600 hover:bg-amber-700', dismiss: 'text-amber-700 hover:bg-amber-100' },
-  info: { border: 'border-slate-200', bg: 'bg-slate-50', icon: 'bg-slate-100 text-slate-500', title: 'text-slate-700', text: 'text-slate-500', btn: 'bg-slate-700 hover:bg-slate-800', dismiss: 'text-slate-500 hover:bg-slate-100' },
+  critical: { border: 'border-rose-200', bg: 'bg-rose-50/60', icon: 'bg-rose-100 text-rose-600', title: 'text-rose-800', text: 'text-rose-700/90', btn: 'btn-danger h-sm', dismiss: 'btn-ghost h-sm' },
+  warning: { border: 'border-amber-200', bg: 'bg-amber-50/60', icon: 'bg-amber-100 text-amber-600', title: 'text-amber-800', text: 'text-amber-700/90', btn: 'btn-outline h-sm', dismiss: 'btn-ghost h-sm' },
+  info: { border: 'border-slate-200', bg: 'bg-slate-50', icon: 'bg-slate-100 text-slate-500', title: 'text-slate-700', text: 'text-slate-500', btn: 'btn-outline h-sm', dismiss: 'btn-ghost h-sm' },
 };
 
 const SEVERITY_LABEL: Record<string, string> = {
@@ -256,31 +256,31 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
   }
 
   return (
-    <div className="space-y-5 animate-fade-in pb-4">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-4">
       {/* Sarlavha qatori */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{todayLabel()}</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="label-caps">{todayLabel()}</p>
         <div className="relative">
           <button
             onClick={() => setPickerOpen(v => !v)}
-            className="h-9 px-3 flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="btn-ghost h-sm"
           >
-            <Settings2 size={14} /> Widget'lar
+            <Settings2 size={16} /> Widget'lar
           </button>
           {pickerOpen && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setPickerOpen(false)} />
-              <div className="absolute right-0 mt-1 z-20 w-60 bg-white border border-slate-200 rounded-xl shadow-lg p-2">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 px-2.5 pt-1 pb-2">Ko'rsatiladigan bo'limlar</p>
+              <div className="fixed inset-0 z-sticky" onClick={() => setPickerOpen(false)} />
+              <div className="absolute right-0 mt-1 z-dropdown w-60 bg-white border border-slate-200 rounded-card shadow-md p-2 animate-fade-in">
+                <p className="label-caps px-2.5 pt-1 pb-2">Ko'rsatiladigan bo'limlar</p>
                 {availableWidgets.map(w => (
                   <button
                     key={w.key}
                     onClick={() => toggle(w.key)}
-                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-slate-50 text-left transition-colors"
+                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-control hover:bg-slate-50 text-left transition-colors duration-120"
                   >
-                    <span className="text-sm font-semibold text-slate-700">{w.label}</span>
-                    <span className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${visible[w.key] ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-300'}`}>
-                      {visible[w.key] && <Check size={11} strokeWidth={3} />}
+                    <span className="text-sm font-medium text-slate-700">{w.label}</span>
+                    <span className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${visible[w.key] ? 'bg-[color:var(--primary)] border-[color:var(--primary)] text-white' : 'border-slate-300'}`}>
+                      {visible[w.key] && <Check size={12} />}
                     </span>
                   </button>
                 ))}
@@ -299,21 +299,21 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
           <div className="flex items-center justify-between">
             <SectionTitle icon={ShieldAlert}>AI nazorati</SectionTitle>
             {risks.length > 0 && (
-              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              <span className="label-caps whitespace-nowrap">
                 {risks.length} ta ogohlantirish
               </span>
             )}
           </div>
 
           {risks.length === 0 ? (
-            <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-emerald-50 text-emerald-600 border-emerald-100 flex-shrink-0">
-                <ShieldCheck size={17} />
+            <div className="p-4 rounded-card border border-slate-200 bg-white flex items-center gap-3">
+              <div className="w-9 h-9 rounded-control flex items-center justify-center border bg-emerald-50 text-emerald-600 border-emerald-100 flex-shrink-0">
+                <ShieldCheck size={18} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Holat</p>
-                <h3 className="text-sm font-bold tracking-tight text-slate-800">Xavf aniqlanmadi</h3>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                <p className="label-caps mb-0.5">Holat</p>
+                <h3 className="t-h3">Xavf aniqlanmadi</h3>
+                <p className="t-caption mt-0.5">
                   AI modullarni o'zaro solishtirib fonda kuzatib turibdi
                 </p>
               </div>
@@ -325,30 +325,30 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                 return (
                   <div
                     key={r.id}
-                    className={`p-4 rounded-xl border shadow-sm flex flex-col ${tone.border} ${tone.bg}`}
+                    className={`p-4 rounded-card border flex flex-col ${tone.border} ${tone.bg}`}
                   >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${tone.icon}`}>
-                      <ShieldAlert size={17} strokeWidth={2.5} />
+                    <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-3 ${tone.icon}`}>
+                      <ShieldAlert size={18} />
                     </div>
-                    <p className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${tone.text}`}>
+                    <p className={`label-caps mb-0.5 ${tone.text}`}>
                       {SEVERITY_LABEL[r.severity] || 'Ogohlantirish'}
                     </p>
-                    <h3 className={`text-sm font-bold tracking-tight ${tone.title}`}>{r.title}</h3>
-                    <p className={`text-xs font-semibold ${tone.text} mt-1 leading-snug flex-1`}>{r.message}</p>
-                    <div className="flex items-center gap-2 mt-3">
+                    <h3 className={`text-sm font-semibold tracking-tight ${tone.title}`}>{r.title}</h3>
+                    <p className={`text-xs font-normal ${tone.text} mt-1 leading-snug flex-1`}>{r.message}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
                       {/* AI o'chiq bo'lsa tugma ko'rsatilmaydi — bosilsa
                           hech nima bo'lmasdi (chat umuman yuklanmagan). */}
                       {aiEnabled && (
                         <button
                           onClick={() => resolveRisk(buildRiskMessage(r.type, r.title, r.message))}
-                          className={`h-7 px-3 text-xs font-bold uppercase tracking-wider ${tone.btn} text-white rounded-lg transition-colors`}
+                          className={tone.btn}
                         >
                           Bartaraf etish
                         </button>
                       )}
                       <button
                         onClick={() => dismissRisk(r.id)}
-                        className={`h-7 px-3 text-xs font-bold uppercase tracking-wider ${tone.dismiss} rounded-lg transition-colors`}
+                        className={tone.dismiss}
                       >
                         Yopish
                       </button>
@@ -369,7 +369,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               ustida rahbar amal qilishi kerak. */}
           {etiborKerak.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 pt-1">
+              <p className="label-caps pt-1">
                 AI — e'tiboringiz kerak
               </p>
               {etiborKerak.map(a => {
@@ -378,43 +378,43 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                 return (
                   <div
                     key={a.id}
-                    className={`p-3.5 rounded-xl border shadow-sm flex items-start gap-3 ${
+                    className={`p-3.5 rounded-card border flex items-start gap-3 ${
                       pending ? 'border-amber-200 bg-amber-50/60'
                       : failed ? 'border-rose-200 bg-rose-50/60'
                       : 'border-slate-200 bg-white'
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${
+                    <div className={`w-8 h-8 rounded-control flex items-center justify-center flex-shrink-0 border ${
                       pending ? 'bg-amber-100 text-amber-600 border-amber-200'
                       : failed ? 'bg-rose-100 text-rose-600 border-rose-200'
                       : 'bg-emerald-50 text-emerald-600 border-emerald-100'
                     }`}>
-                      <Bot size={15} strokeWidth={2.5} />
+                      <Bot size={16} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">
+                      <p className="label-caps mb-0.5">
                         {pending ? 'Tasdiq kutilmoqda'
                           : failed ? 'Bajarilmadi'
                           : a.status === 'rejected' ? 'Rad etilgan'
                           : 'AI bajardi'}
                       </p>
-                      <p className="text-sm font-semibold text-slate-700 leading-snug">{a.summary}</p>
+                      <p className="t-body-md leading-snug">{a.summary}</p>
                       {failed && a.error && (
-                        <p className="text-xs font-semibold text-rose-500 mt-1">{a.error}</p>
+                        <p className="text-xs font-medium text-rose-600 mt-1">{a.error}</p>
                       )}
                       {pending && (
-                        <div className="flex items-center gap-2 mt-2.5">
+                        <div className="flex flex-wrap items-center gap-2 mt-2.5">
                           <button
                             disabled={busyAction === a.id}
                             onClick={() => decideAction(a.id, true)}
-                            className="h-7 px-3 text-xs font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                            className="h-control-sm px-3 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-control transition-colors duration-120"
                           >
                             Tasdiqlash
                           </button>
                           <button
                             disabled={busyAction === a.id}
                             onClick={() => decideAction(a.id, false)}
-                            className="h-7 px-3 text-xs font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 disabled:opacity-50 rounded-lg transition-colors"
+                            className="h-control-sm px-3 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 rounded-control transition-colors duration-120"
                           >
                             Rad etish
                           </button>
@@ -431,22 +431,22 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               Bitta qatorga sig'adi; ochilganda takrorlar «×N» bilan
               birlashtirilgan qisqa ro'yxat chiqadi. */}
           {bajarilganGuruh.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="rounded-card border border-slate-200 bg-white overflow-hidden">
               <button
                 onClick={() => setAiTarixOchiq(v => !v)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors duration-120"
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border bg-emerald-50 text-emerald-600 border-emerald-100">
-                  <Bot size={15} strokeWidth={2.5} />
+                <div className="w-8 h-8 rounded-control flex items-center justify-center flex-shrink-0 border bg-emerald-50 text-emerald-600 border-emerald-100">
+                  <Bot size={16} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                  <p className="label-caps">
                     AI bajargan ishlar
                   </p>
-                  <p className="text-sm font-bold tracking-tight text-slate-800">
+                  <p className="t-h3">
                     {bajarilgan.length} ta ish
                     {bajarilganGuruh.length !== bajarilgan.length && (
-                      <span className="font-semibold text-slate-400"> · {bajarilganGuruh.length} xil</span>
+                      <span className="font-normal text-slate-500"> · {bajarilganGuruh.length} xil</span>
                     )}
                   </p>
                 </div>
@@ -459,12 +459,12 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                 <div className="border-t border-slate-100 divide-y divide-slate-50">
                   {bajarilganGuruh.map((g, i) => (
                     <div key={i} className="flex items-start gap-2.5 px-4 py-2">
-                      <Check size={13} className="text-emerald-500 flex-shrink-0 mt-0.5" strokeWidth={3} />
-                      <p className="text-xs font-semibold text-slate-600 leading-snug flex-1 min-w-0">
+                      <Check size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs font-medium text-slate-600 leading-snug flex-1 min-w-0">
                         {g.summary}
                       </p>
                       {g.soni > 1 && (
-                        <span className="text-[11px] font-bold text-slate-400 flex-shrink-0 tabular-nums">
+                        <span className="text-xs font-semibold text-slate-500 flex-shrink-0 tabular-nums">
                           ×{g.soni}
                         </span>
                       )}
@@ -484,7 +484,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat label="Bugungi kirim" value={`${fm(s.finance.kirim)}`} sub="so'm" icon={TrendingUp} tone="emerald" />
             <Stat label="Bugungi chiqim" value={`${fm(s.finance.chiqim)}`} sub="so'm" icon={TrendingDown} tone="rose" />
-            <Stat label="Bugungi balans" value={`${fm(s.finance.balans)}`} sub="so'm" icon={Wallet} tone="dark" />
+            <Stat label="Bugungi balans" value={`${fm(s.finance.balans)}`} sub="so'm" icon={Wallet} tone="slate" />
             <Stat label="30 kunlik sof" value={`${fm(s.finance.oylikKirim - s.finance.oylikChiqim)}`} sub={`kirim ${fmShort(s.finance.oylikKirim)} · chiqim ${fmShort(s.finance.oylikChiqim)}`} icon={TrendingUp} tone="brand" />
           </div>
 
@@ -493,16 +493,16 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={s.finance.trend} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
-                    <CartesianGrid stroke={GRID} strokeWidth={1} vertical={false} />
+                    <CartesianGrid stroke={GRID} vertical={false} />
                     <XAxis dataKey="kun" tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={{ stroke: GRID }} />
                     <YAxis tickFormatter={fmShort} tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={false} width={44} />
                     <Tooltip content={<ChartTip suffix=" so'm" />} />
                     <Legend
                       verticalAlign="top" align="right" height={24} iconType="circle" iconSize={7}
-                      wrapperStyle={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}
+                      wrapperStyle={{ fontSize: 11, fontWeight: 600 }}
                     />
-                    <Line type="monotone" dataKey="kirim" name="Kirim" stroke={EMERALD} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }} />
-                    <Line type="monotone" dataKey="chiqim" name="Chiqim" stroke={ROSE} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }} />
+                    <Line type="monotone" dataKey="kirim" name="Kirim" stroke={EMERALD} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }} />
+                    <Line type="monotone" dataKey="chiqim" name="Chiqim" stroke={ROSE} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -515,7 +515,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={s.finance.tolovTurlari} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
-                      <CartesianGrid stroke={GRID} strokeWidth={1} horizontal={false} />
+                      <CartesianGrid stroke={GRID} horizontal={false} />
                       <XAxis type="number" tickFormatter={fmShort} tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={false} />
                       <YAxis type="category" dataKey="nom" tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={false} width={72} />
                       <Tooltip content={<ChartTip suffix=" so'm" />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
@@ -546,7 +546,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={s.tasks.bosqichlar} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
-                    <CartesianGrid stroke={GRID} strokeWidth={1} vertical={false} />
+                    <CartesianGrid stroke={GRID} vertical={false} />
                     <XAxis dataKey="nom" tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={{ stroke: GRID }} interval={0} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={false} width={40} />
                     <Tooltip content={<ChartTip suffix=" ta" />} cursor={{ fill: 'rgba(148,163,184,0.08)' }} />
@@ -583,11 +583,11 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
               <div className="h-44">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={s.attendance.trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <CartesianGrid stroke={GRID} strokeWidth={1} vertical={false} />
+                    <CartesianGrid stroke={GRID} vertical={false} />
                     <XAxis dataKey="kun" tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={{ stroke: GRID }} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: AXIS }} tickLine={false} axisLine={false} width={36} />
                     <Tooltip content={<ChartTip suffix=" ta" />} />
-                    <Line type="monotone" dataKey="soni" name="Kelgan xodim" stroke={BRAND} strokeWidth={2} dot={{ r: 3, fill: BRAND, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
+                    <Line type="monotone" dataKey="soni" name="Kelgan xodim" stroke={BRAND} dot={{ r: 3, fill: BRAND, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -604,8 +604,8 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
             {show('customers') && s?.customers && (
               <Panel title="Mijozlar va qarzdorlar" sub={`${s.customers.total} ta mijoz · ${s.customers.qarzdorSoni} ta qarzdor`}>
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-xl font-bold text-rose-600 tracking-tight">{fm(s.customers.qarzJami)}</span>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">so'm qarz</span>
+                  <span className="text-xl font-semibold text-rose-600 tracking-tight tabular-nums">{fm(s.customers.qarzJami)}</span>
+                  <span className="label-caps">so'm qarz</span>
                 </div>
                 {s.customers.topQarzdorlar.length === 0 ? (
                   <EmptyNote>Qarzdorlar yo'q</EmptyNote>
@@ -622,10 +622,10 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
             {show('inventory') && s?.inventory && (
               <Panel title="Ombor" sub={`${s.inventory.total} ta material · ${fm(s.inventory.bandJami)} band`}>
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className={`text-xl font-bold tracking-tight ${s.inventory.kamQoldiqSoni > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  <span className={`text-xl font-semibold tracking-tight tabular-nums ${s.inventory.kamQoldiqSoni > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
                     {s.inventory.kamQoldiqSoni}
                   </span>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">ta kam qoldiq</span>
+                  <span className="label-caps">ta kam qoldiq</span>
                 </div>
                 {s.inventory.kamQoldiq.length === 0 ? (
                   <EmptyNote>Barcha materiallar yetarli</EmptyNote>
@@ -641,14 +641,14 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
 
             {show('vendors') && s?.vendors && (
               <Panel title="Hamkorlar" sub={`${s.vendors.total} ta hamkor`}>
-                <div className="grid grid-cols-2 gap-3 mb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Biz qarzdormiz</p>
-                    <p className="text-base font-bold text-rose-600 tracking-tight">{fm(s.vendors.bizQarzdorJami)}</p>
+                    <p className="label-caps">Biz qarzdormiz</p>
+                    <p className="text-base font-semibold text-rose-600 tracking-tight tabular-nums">{fm(s.vendors.bizQarzdorJami)}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Bizga qarzdor</p>
-                    <p className="text-base font-bold text-emerald-600 tracking-tight">{fm(s.vendors.ularQarzdorJami)}</p>
+                    <p className="label-caps">Bizga qarzdor</p>
+                    <p className="text-base font-semibold text-emerald-600 tracking-tight tabular-nums">{fm(s.vendors.ularQarzdorJami)}</p>
                   </div>
                 </div>
                 {s.vendors.qarzdorlar.length === 0 ? (
@@ -686,13 +686,13 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
       )}
 
       {nothingToShow && (
-        <div className="bg-white border border-slate-200 rounded-xl py-14 flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
-            <Settings2 size={22} />
+        <div className="bg-white border border-slate-200 rounded-card py-14 px-4 flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-card bg-slate-100 text-slate-400 flex items-center justify-center">
+            <Settings2 size={20} />
           </div>
           <div className="text-center">
-            <p className="text-sm font-bold text-slate-700">Ko'rsatiladigan bo'lim yo'q</p>
-            <p className="text-sm font-medium text-slate-400 mt-0.5 max-w-xs">
+            <p className="t-h3">Ko'rsatiladigan bo'lim yo'q</p>
+            <p className="t-caption mt-0.5 max-w-xs">
               Yuqoridagi "Widget'lar" tugmasidan kerakli bo'limlarni yoqing yoki Sozlamalardan ruxsatlaringizni tekshiring.
             </p>
           </div>

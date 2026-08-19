@@ -58,11 +58,11 @@ const ScopeRow: React.FC<{ s: any; asosiy?: boolean }> = ({ s, asosiy }) => {
       {/* Zararsiz nuqtaning O'ZI doim ko'rinadi. Ilgari u faqat qoplangandan
           keyin chiqardi, ya'ni "yana qancha kerak" degan savolga javob bor edi,
           "jami qancha kerak" degan savolga esa yo'q. */}
-      <div className="flex justify-between gap-2 mt-1 text-xs font-bold">
-        <span className="text-slate-500 truncate">
+      <div className="flex justify-between gap-2 mt-1 text-xs font-medium">
+        <span className="text-slate-500 truncate tabular-nums">
           {bosh ? '—' : `${fmt(s.tushum)} / ${fmt(s.kerakli_qoplama)} kerak`}
         </span>
-        <span className={`shrink-0 ${done ? 'text-emerald-600' : 'text-slate-400'}`}>
+        <span className={`shrink-0 ${done ? 'text-emerald-600' : 'text-slate-500'}`}>
           {bosh
             ? 'xarajat/tushum biriktirilmagan'
             : s.qolgan_summa > 0
