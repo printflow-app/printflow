@@ -86,6 +86,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   const _isAdminForTour = _roleNameLower === 'admin' || _roleNameLower === 'superadmin';
   const [showTour, setShowTour] = useState<boolean>(() => {
     const tid = currentUser?.tenantId;
+    if (currentUser?.impersonatedBy) return false;
     return !!tid && _isAdminForTour && !isTourComplete(tid) && !isOnboardingComplete(tid);
   });
 
@@ -196,8 +197,21 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   // tekshiruv /auth/lock-settings/verify orqali. Faqat "qulflangan holat"
   // (isLocked) qurilmada qoladi — u ham user id bilan scoped.
   // =============================================
+  // SUPPORT SESSIYASI — super-admin workspace'ga texnik yordam uchun kirgan.
+  //
+  // Ekran qulfi (PIN) xodimning SHAXSIY vositasi: kompyuterni ochiq qoldirsa
+  // hamkasbi sahifalarini ko'rmasin. Super-admin uchun u himoya emas, oddiy
+  // to'siq — u baribir to'liq huquq bilan kirgan va PIN'ni bilmaydi (u
+  // mijozniki). Shuning uchun support sessiyasida qulf butunlay ishlamaydi:
+  // ne avtomatik qulflanish, ne sahifa qulfi.
+  //
+  // Bu himoyani zaiflashtirmaydi: `impersonatedBy` JWT ichidan keladi va uni
+  // faqat super-admin paroli bilan olish mumkin; qulfning o'zi esa server
+  // tomonda hech narsani cheklamaydi — u faqat brauzerdagi ko'rinish.
+  const isSupportSession = !!currentUser?.impersonatedBy;
+
   const lockStateKey = `pf_is_locked_${currentUser?.id || 'anon'}`;
-  const [isLocked, setIsLocked] = useState(() => localStorage.getItem(lockStateKey) === 'true');
+  const [isLocked, setIsLocked] = useState(() => !isSupportSession && localStorage.getItem(lockStateKey) === 'true');
   const [isLockSettingsOpen, setIsLockSettingsOpen] = useState(false);
   const [hasLockPin, setHasLockPin] = useState(false);
   const [lockTimeout, setLockTimeout] = useState(5); // Default 5 min
@@ -212,6 +226,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
   useEffect(() => {
     // Eski global kalitlar bir brauzerdagi BARCHA akkauntlarni qulflab qo'yardi — tozalaymiz.
     ['pf_lock_pin', 'pf_lock_timeout', 'pf_locked_tabs', 'pf_is_locked'].forEach(k => localStorage.removeItem(k));
+    // Support sessiyasida qulf sozlamalari umuman o'qilmaydi — mijozning
+    // PIN'i va qulflangan sahifalari super-admin ekraniga taalluqli emas.
+    if (isSupportSession) {
+      setIsLocked(false);
+      localStorage.removeItem(lockStateKey);
+      return;
+    }
     authApi.getLockSettings().then(r => {
       const s = r.data || {};
       setHasLockPin(!!s.hasPin);
@@ -603,9 +624,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           <h1 className="text-base font-semibold text-slate-900 tracking-tight">Print<span className="text-[color:var(--primary)]">Flow</span></h1>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleManualLock} className="w-9 h-9 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg">
-            <Lock size={16} />
-          </button>
+          {!isSupportSession && (
+            <button onClick={handleManualLock} className="w-9 h-9 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg">
+              <Lock size={16} />
+            </button>
+          )}
           {aiCopilotEnabled && (
             <button
               onClick={() => setIsAICopilotOpen(true)}
@@ -639,7 +662,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               </div>
             )}
           </div>
-          <div className={`items-center gap-0.5 ${isSidebarCollapsed ? 'hidden' : 'flex'}`}>
+          <div className={`items-center gap-0.5 ${isSidebarCollapsed || isSupportSession ? 'hidden' : 'flex'}`}>
             <button
               onClick={() => {
                 if (hasLockPin) {
@@ -740,7 +763,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
                     <div
                       onClick={(e) => toggleTabLock(item.id, e)}
-                      className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors duration-120 ${isSidebarCollapsed ? 'md:hidden' : ''} ${lockedTabs.has(item.id)
+                      className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors duration-120 ${isSupportSession ? 'hidden' : ''} ${isSidebarCollapsed ? 'md:hidden' : ''} ${lockedTabs.has(item.id)
                           ? 'bg-rose-500 text-white'
                           : 'text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-600'
                         }`}
@@ -954,14 +977,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
               </select>
             )}
 
-            <button
-              onClick={(e) => toggleTabLock(activeTab, e)}
-              className={lockedTabs.has(activeTab) ? 'btn-danger h-sm' : 'btn-outline h-sm'}
-              title={lockedTabs.has(activeTab) ? 'Sahifa qulflangan' : 'Sahifani qulflash'}
-            >
-              {lockedTabs.has(activeTab) ? <Lock size={14} /> : <Unlock size={14} />}
-              <span className="hidden xl:inline">{lockedTabs.has(activeTab) ? 'Qulflangan' : 'Qulflash'}</span>
-            </button>
+            {!isSupportSession && (
+              <button
+                onClick={(e) => toggleTabLock(activeTab, e)}
+                className={lockedTabs.has(activeTab) ? 'btn-danger h-sm' : 'btn-outline h-sm'}
+                title={lockedTabs.has(activeTab) ? 'Sahifa qulflangan' : 'Sahifani qulflash'}
+              >
+                {lockedTabs.has(activeTab) ? <Lock size={14} /> : <Unlock size={14} />}
+                <span className="hidden xl:inline">{lockedTabs.has(activeTab) ? 'Qulflangan' : 'Qulflash'}</span>
+              </button>
+            )}
           </div>
         </header>
 

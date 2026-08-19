@@ -30,6 +30,11 @@ export interface User {
   tenantName?: string;
   workspaceSlug: string;
   tenantFeatures?: Record<string, boolean>;
+  /**
+   * Super-admin support sessiyasi. Backend tokendagi `impersonatedBy` ni
+   * shu yerga qaytaradi — o'z workspace'ida bu maydon bo'lmaydi.
+   */
+  impersonatedBy?: string;
   permissions: {
     canViewFinance: boolean;
     canAddIncome: boolean;
