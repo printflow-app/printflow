@@ -117,8 +117,8 @@ export const CashBoxManagerSection: React.FC<{
               <option key={e.id} value={e.id}>{e.fullName}</option>
             ))}
           </select>
-          <button type="submit" className="btn-primary">
-            <Plus size={16} /> QO'SHISH
+          <button type="submit" className="btn-outline">
+            <Plus size={16} /> Qo'shish
           </button>
         </form>
 

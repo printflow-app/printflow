@@ -602,8 +602,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                           {isEditing ? (
                             <>
-                              <button onClick={saveEditRole} className="btn-primary h-sm">
-                                <Save size={16} /> SAQLASH
+                              <button onClick={saveEditRole} className="btn-outline h-sm">
+                                <Save size={16} /> Saqlash
                               </button>
                               <button onClick={cancelEditRole} className="btn-outline h-sm">
                                 BEKOR
@@ -723,8 +723,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                     className="input-minimal flex-1 md:min-w-[220px]"
                     placeholder="Yangi usul nomi (Click, Uzcard...)"
                   />
-                  <button type="submit" className="btn-primary">
-                    <Plus size={16} /> QO'SHISH
+                  <button type="submit" className="btn-outline">
+                    <Plus size={16} /> Qo'shish
                   </button>
                 </form>
 
@@ -743,7 +743,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                               className="input-minimal"
                             />
                             <div className="flex gap-2">
-                              <button onClick={() => handleUpdatePT(pt.id)} className="btn-primary h-sm flex-1">Saqlash</button>
+                              <button onClick={() => handleUpdatePT(pt.id)} className="btn-outline h-sm flex-1">Saqlash</button>
                               <button onClick={() => setEditingPTId(null)} className="btn-outline h-sm flex-1">Bekor</button>
                             </div>
                           </div>
@@ -809,8 +809,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                     className="input-minimal flex-1 md:min-w-[220px]"
                     placeholder="Xarajat turi nomi (Material, Kommunal...)"
                   />
-                  <button type="submit" className="btn-primary">
-                    <Plus size={16} /> QO'SHISH
+                  <button type="submit" className="btn-outline">
+                    <Plus size={16} /> Qo'shish
                   </button>
                 </form>
 
@@ -829,7 +829,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                               className="input-minimal"
                             />
                             <div className="flex gap-2">
-                              <button onClick={() => handleUpdateET(et.id)} className="btn-primary h-sm flex-1">Saqlash</button>
+                              <button onClick={() => handleUpdateET(et.id)} className="btn-outline h-sm flex-1">Saqlash</button>
                               <button onClick={() => setEditingETId(null)} className="btn-outline h-sm flex-1">Bekor</button>
                             </div>
                           </div>
@@ -885,9 +885,9 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                   <button
                     onClick={savePrepaymentPct}
                     disabled={savingPrepayment}
-                    className="btn-primary w-full sm:w-auto"
+                    className="btn-outline w-full sm:w-auto"
                   >
-                    {savingPrepayment ? 'SAQLANMOQDA...' : 'SAQLASH'}
+                    {savingPrepayment ? 'Saqlanmoqda...' : 'Saqlash'}
                   </button>
                 </div>
               </div>
@@ -1023,7 +1023,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                         type="button"
                         onClick={saveGeoSettings}
                         disabled={savingGeo}
-                        className="btn-primary"
+                        className="btn-outline"
                       >
                         <Save size={16} /> {savingGeo ? 'Saqlanmoqda...' : 'Saqlash'}
                       </button>
@@ -1462,7 +1462,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                 <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                   {isEditing ? (
                     <>
-                      <button onClick={() => handleUpdateService(svc.id)} className="btn-primary h-sm"><Save size={16} /> SAQLASH</button>
+                      <button onClick={() => handleUpdateService(svc.id)} className="btn-outline h-sm"><Save size={16} /> Saqlash</button>
                       <button onClick={() => setEditSvcId(null)} className="btn-outline h-sm">Bekor</button>
                     </>
                   ) : (
