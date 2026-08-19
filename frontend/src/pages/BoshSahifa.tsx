@@ -89,7 +89,9 @@ function useWidgetVisibility(tenantId?: string) {
 const Stat: React.FC<{
   label: string; value: React.ReactNode; sub?: string; icon: any;
   tone?: 'brand' | 'emerald' | 'rose' | 'amber' | 'slate';
-}> = ({ label, value, sub, icon: Icon, tone = 'slate' }) => {
+  /** `ink` — to'q ko'k to'ldirilgan karta. Guruhda faqat BITTA: yakuniy natija. */
+  variant?: 'default' | 'ink';
+}> = ({ label, value, sub, icon: Icon, tone = 'slate', variant = 'default' }) => {
   const tones: Record<string, string> = {
     brand: 'bg-primary-50 text-primary-600 border-primary-100',
     emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
@@ -97,14 +99,15 @@ const Stat: React.FC<{
     amber: 'bg-amber-50 text-amber-600 border-amber-100',
     slate: 'bg-slate-100 text-slate-500 border-slate-200',
   };
+  const isInk = variant === 'ink';
   return (
-    <div className="bg-white rounded-card border border-slate-200 p-4">
-      <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-3 border ${tones[tone]}`}>
+    <div className={`rounded-card p-4 ${isInk ? 'bg-ink' : 'bg-white border border-slate-200'}`}>
+      <div className={`w-9 h-9 rounded-control flex items-center justify-center mb-3 border ${isInk ? 'bg-white/10 text-white border-white/15' : tones[tone]}`}>
         <Icon size={18} />
       </div>
-      <p className="label-caps mb-0.5">{label}</p>
-      <h3 className="text-xl font-semibold text-slate-900 tracking-tight tabular-nums">{value}</h3>
-      {sub && <p className="t-caption mt-0.5">{sub}</p>}
+      <p className={`label-caps mb-0.5 ${isInk ? 'text-white/70' : ''}`}>{label}</p>
+      <h3 className={`text-xl font-semibold tracking-tight tabular-nums ${isInk ? 'text-white' : 'text-slate-900'}`}>{value}</h3>
+      {sub && <p className={`mt-0.5 text-xs ${isInk ? 'text-white/60' : 'text-slate-500'}`}>{sub}</p>}
     </div>
   );
 };
@@ -485,7 +488,7 @@ const BoshSahifa: React.FC<{ currentUser?: any; aiEnabled?: boolean }> = ({ curr
             <Stat label="Bugungi kirim" value={`${fm(s.finance.kirim)}`} sub="so'm" icon={TrendingUp} tone="emerald" />
             <Stat label="Bugungi chiqim" value={`${fm(s.finance.chiqim)}`} sub="so'm" icon={TrendingDown} tone="rose" />
             <Stat label="Bugungi balans" value={`${fm(s.finance.balans)}`} sub="so'm" icon={Wallet} tone="slate" />
-            <Stat label="30 kunlik sof" value={`${fm(s.finance.oylikKirim - s.finance.oylikChiqim)}`} sub={`kirim ${fmShort(s.finance.oylikKirim)} · chiqim ${fmShort(s.finance.oylikChiqim)}`} icon={TrendingUp} tone="brand" />
+            <Stat label="30 kunlik sof" value={`${fm(s.finance.oylikKirim - s.finance.oylikChiqim)}`} sub={`kirim ${fmShort(s.finance.oylikKirim)} · chiqim ${fmShort(s.finance.oylikChiqim)}`} icon={TrendingUp} variant="ink" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">

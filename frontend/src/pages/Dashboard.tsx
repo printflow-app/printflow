@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, FileText, Home, HelpCircle } from 'lucide-react';
+import { Users, LogOut, ClipboardList, UserSquare2, Wallet, Settings, Menu, X, TrendingUp, PackageOpen, QrCode, Lock, Unlock, Eye, EyeOff, ShieldCheck, Handshake, BarChart3, ChevronDown, Briefcase, PieChart, Sliders, Sparkles, FileText, Home, HelpCircle, PanelLeftClose, PanelLeftOpen, BookOpen } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { authApi, employeesApi, branchesApi, billingApi } from '../api';
 import logo from '../assets/logo.png';
@@ -121,6 +121,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Desktop sidebar siqilgan holati (faqat ikonkalar). Mobil drawer'ga
+  // ta'sir qilmaydi — u har doim to'liq kenglikda ochiladi.
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem('pf_sidebar_collapsed') === '1'; } catch { return false; }
+  });
+  const toggleSidebarCollapsed = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem('pf_sidebar_collapsed', next ? '1' : '0'); } catch { /* ignore */ }
+      return next;
+    });
+  };
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isAICopilotOpen, setIsAICopilotOpen] = useState(false);
   // Platforma darajasidagi global ON/OFF (super-admin nazoratida)
@@ -616,16 +628,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-nav md:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      <aside className={`fixed md:static inset-y-0 left-0 w-72 bg-surface2 border-r border-[color:var(--border)] flex flex-col transition-transform duration-300 z-nav ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="h-14 hidden md:flex items-center justify-between px-4 border-b border-slate-100">
-          <div className="flex items-center gap-2">
+      <aside className={`fixed md:static inset-y-0 left-0 w-72 ${isSidebarCollapsed ? 'md:w-[72px]' : 'md:w-72'} bg-surface2 border-r border-[color:var(--border)] flex flex-col transition-all duration-180 z-nav ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className={`h-14 hidden md:flex items-center border-b border-slate-100 ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
+          <div className="flex items-center gap-2 min-w-0">
             <img src={logo} alt="PF" style={{ height: 28, width: 'auto' }} />
-            <div>
-              <h1 className="text-base font-semibold text-slate-900 tracking-tight leading-none">Print<span className="text-[color:var(--primary)]">Flow</span></h1>
-              <p className="text-xs font-medium text-slate-400 mt-0.5">{currentUser.role?.name || 'Xodim'}</p>
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="min-w-0">
+                <h1 className="text-base font-semibold text-slate-900 tracking-tight leading-none">Print<span className="text-[color:var(--primary)]">Flow</span></h1>
+                <p className="text-xs font-medium text-slate-400 mt-0.5 truncate">{currentUser.role?.name || 'Xodim'}</p>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className={`items-center gap-0.5 ${isSidebarCollapsed ? 'hidden' : 'flex'}`}>
             <button
               onClick={() => {
                 if (hasLockPin) {
@@ -664,7 +678,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             return (
               <React.Fragment key={group.label}>
                 {gi > 0 && <div className="my-1.5 border-t border-slate-100" />}
-                {/* Group header — clickable to expand/collapse */}
+                {/* Guruh sarlavhasi — siqilgan holatda ko'rinmaydi */}
+                {!isSidebarCollapsed && (
                 <button
                   type="button"
                   data-tour-group={group.label.toLowerCase()}
@@ -691,9 +706,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-600' : 'text-slate-400'}`}
                   />
                 </button>
+                )}
 
-                {/* Group items — only render when open */}
-                {isOpen && visibleItems.map(item => {
+                {/* Group items — siqilgan holatda guruh yopiq bo'lsa ham ko'rinadi */}
+                {(isOpen || isSidebarCollapsed) && visibleItems.map(item => {
                   const itemCount = (sidebarCounts as any)[item.id] || 0;
                   const showBadge = itemCount > 0 && item.id !== activeTab;
                   return (
@@ -701,18 +717,21 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                     key={item.id}
                     data-tour-id={`nav-${item.id}`}
                     onClick={() => handleTabChange(item.id as any)}
-                    className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-control text-sm transition-colors duration-120 ${menyuBandi(activeTab) === item.id
-                        ? 'bg-white text-slate-900 font-semibold border border-[color:var(--border)] shadow-sm'
+                    title={isSidebarCollapsed ? item.label : undefined}
+                    className={`group relative flex items-center rounded-control text-sm transition-colors duration-120 ${isSidebarCollapsed ? 'md:justify-center md:px-0 md:h-10 gap-2.5 px-3 py-2' : 'gap-2.5 px-3 py-2'} ${menyuBandi(activeTab) === item.id
+                        ? 'bg-primary-50 text-primary-900 font-semibold border border-primary-200'
                         : 'text-slate-600 font-medium hover:bg-slate-900/[0.04] hover:text-slate-900 border border-transparent'
                       }`}
                   >
-                    <item.icon size={16} className={menyuBandi(activeTab) === item.id ? 'text-[color:var(--primary)]' : 'text-slate-400 group-hover:text-slate-600'} />
-                    <p className="text-left flex-1 leading-tight tracking-tight truncate">{item.label}</p>
+                    <item.icon size={16} className={`shrink-0 ${menyuBandi(activeTab) === item.id ? 'text-[color:var(--primary)]' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                    <p className={`text-left flex-1 leading-tight tracking-tight truncate ${isSidebarCollapsed ? 'md:hidden' : ''}`}>{item.label}</p>
 
-                    {/* Per-item notification badge — yangilik soni */}
+                    {/* Yangilik soni — siqilganda ikonka ustidagi kichik nuqta */}
                     {showBadge && (
                       <span
-                        className="text-xs font-semibold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center bg-[color:var(--primary)] text-white"
+                        className={`text-xs font-semibold rounded-full flex items-center justify-center bg-[color:var(--primary)] text-white ${isSidebarCollapsed
+                          ? 'px-1.5 min-w-[18px] h-[18px] md:absolute md:top-0.5 md:right-1 md:min-w-[8px] md:w-2 md:h-2 md:p-0 md:text-[0px]'
+                          : 'px-1.5 min-w-[18px] h-[18px]'}`}
                         title={`${itemCount} ta yangi`}
                       >
                         {itemCount > 99 ? '99+' : itemCount}
@@ -721,7 +740,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
                     <div
                       onClick={(e) => toggleTabLock(item.id, e)}
-                      className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors duration-120 ${lockedTabs.has(item.id)
+                      className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors duration-120 ${isSidebarCollapsed ? 'md:hidden' : ''} ${lockedTabs.has(item.id)
                           ? 'bg-rose-500 text-white'
                           : 'text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-600'
                         }`}
@@ -737,6 +756,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
         </nav>
 
         <div className="p-2.5 border-t border-slate-100 space-y-1">
+          {/* Siqish/yoyish — faqat desktopda */}
+          <button
+            onClick={toggleSidebarCollapsed}
+            title={isSidebarCollapsed ? 'Menyuni yoyish' : 'Menyuni siqish'}
+            className={`hidden md:flex items-center w-full gap-2.5 px-2.5 py-2 rounded-control text-slate-500 hover:bg-slate-900/[0.04] hover:text-slate-800 transition-colors duration-120 ${isSidebarCollapsed ? 'justify-center' : ''}`}
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            {!isSidebarCollapsed && <span className="text-sm font-medium">Menyuni siqish</span>}
+          </button>
+
           <button
             onClick={() => {
               if (hasLockPin) {
@@ -745,29 +774,34 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 setIsProfileModalOpen(true);
               }
             }}
-            className="flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-900/[0.04] transition-colors group"
+            title={isSidebarCollapsed ? currentUser.fullName : undefined}
+            className={`flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-control hover:bg-slate-900/[0.04] transition-colors group ${isSidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
           >
-            <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 font-semibold flex items-center justify-center text-xs">
+            <div className="w-7 h-7 shrink-0 rounded-full bg-primary-100 text-primary-700 font-semibold flex items-center justify-center text-xs">
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
-            <div className="overflow-hidden min-w-0 flex-1">
+            <div className={`overflow-hidden min-w-0 flex-1 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
               <p className="text-sm font-medium text-slate-800 truncate leading-tight">{currentUser.fullName}</p>
               <p className="text-xs text-slate-400 mt-0.5 truncate">Profil sozlamalari</p>
             </div>
-            <Settings size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+            <Settings size={14} className={`text-slate-300 group-hover:text-slate-500 transition-colors ${isSidebarCollapsed ? 'md:hidden' : ''}`} />
           </button>
-          <div className="flex gap-1">
+          <div className={`flex gap-1 ${isSidebarCollapsed ? 'md:flex-col' : ''}`}>
             <button
               onClick={() => handleTabChange('qollanma')}
-              className={`btn-ghost flex-1 ${activeTab === 'qollanma' ? 'bg-slate-100 text-slate-900' : ''}`}
+              title={isSidebarCollapsed ? "Qo'llanma" : undefined}
+              className={`btn-ghost flex-1 ${isSidebarCollapsed ? 'md:px-0' : ''} ${activeTab === 'qollanma' ? 'bg-slate-100 text-slate-900' : ''}`}
             >
-              Qo'llanma
+              {isSidebarCollapsed && <BookOpen size={16} className="hidden md:block" />}
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Qo'llanma</span>
             </button>
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="btn-ghost flex-1 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+              title={isSidebarCollapsed ? 'Chiqish' : undefined}
+              className={`btn-ghost flex-1 text-rose-600 hover:bg-rose-50 hover:text-rose-700 ${isSidebarCollapsed ? 'md:px-0' : ''}`}
             >
-              <LogOut size={14} /> Chiqish
+              <LogOut size={14} />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Chiqish</span>
             </button>
           </div>
         </div>

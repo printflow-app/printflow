@@ -650,7 +650,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
             </span>
           }
           icon={Wallet}
-          tone={(summary?.balance || 0) >= 0 ? "brand" : "danger"}
+          variant="ink"
         />
 
         <StatCard

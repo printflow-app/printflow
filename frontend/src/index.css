@@ -17,6 +17,12 @@
   --surface-2: #fdfcfb;
   --border: #e7e2db;          /* yumshoq ramka                      */
   --border-strong: #d6cfc5;
+  /* Uchinchi brend rangi — to'q ko'k (ierarxiyadagi eng muhim raqam paneli,
+     faol holat urg'usi). Oq + to'q sariq + to'q ko'k = brend uchligi. */
+  --ink: #0f172a;
+  --ink-soft: #1e293b;
+  --ink-foreground: #ffffff;
+
   --muted: #57534e;
   --muted-foreground: #78716c;
   --subtle-foreground: #a8a29e;

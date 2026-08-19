@@ -38,6 +38,11 @@ export default {
           foreground: "var(--muted-foreground)",
         },
         subtle: "var(--subtle-foreground)",
+        ink: {
+          DEFAULT: "var(--ink)",
+          soft: "var(--ink-soft)",
+          foreground: "var(--ink-foreground)",
+        },
         surface2: "var(--surface-2)",
       },
       fontFamily: {

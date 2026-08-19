@@ -761,18 +761,10 @@ type Usage = {
 };
 
 const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => {
-  // Panel yonma-yon (docked) turadimi yoki kontent ustidan ochiladimi.
-  // 1536px — Tailwind 2xl chegarasi; shundan tor ekranda yonma-yon turish
-  // kontentni siqib qo'yadi, shuning uchun overlay bo'ladi.
-  const [isDocked, setIsDocked] = useState(
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1536px)').matches : true,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1536px)');
-    const on = () => setIsDocked(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
+  // Panel 1280px (xl) dan boshlab yonma-yon turadi — xuddi yon menyu kabi
+  // tarkibning bir qismi, kontent ustiga tushmaydi va orqa fonni
+  // xiralashtirmaydi. Undan tor ekranlarda yon tomondan surilib chiqadi.
+  // Joy hisobi: 1280 − 72 (siqilgan menyu) − 380 = 828px kontent.
 
   // KENGAYTIRILGAN REJIM — panel butun ekranni egallaydi.
   //
@@ -1111,19 +1103,13 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           olardi: 1366px noutbukda kontentga ~716px qolib, jadvallar ikki
           qatorga tushib ketardi. Yonma-yon turish faqat haqiqatan joy
           bo'lganda (1536px+) mantiqiy. */}
-      {!isDocked && !kengaytirilgan && (
-        <div
-          onClick={onClose}
-          className="fixed inset-0 z-overlay bg-slate-900/20 backdrop-blur-[2px] 2xl:hidden"
-        />
-      )}
       <aside
         className={
           kengaytirilgan
             // Kengaytirilgan: butun ekran. Yon chegara ham, soya ham keraksiz —
             // panel ostida ko'rinadigan narsa qolmaydi.
             ? 'fixed inset-0 z-overlay bg-white flex flex-col animate-fade-in'
-            : 'fixed inset-y-0 right-0 z-overlay w-full max-w-[440px] 2xl:static 2xl:z-auto 2xl:max-w-none 2xl:w-[400px] 2xl:shrink-0 2xl:h-screen bg-white border-l border-[color:var(--border)] shadow-xl 2xl:shadow-none flex flex-col animate-drawer-in'
+            : 'fixed inset-y-0 right-0 z-overlay w-full max-w-[400px] xl:static xl:z-auto xl:max-w-none xl:w-[380px] xl:shrink-0 xl:h-screen bg-white border-l border-[color:var(--border)] shadow-xl xl:shadow-none flex flex-col animate-drawer-in'
         }
       >
 

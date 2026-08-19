@@ -137,7 +137,7 @@ const Kpi: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentU
         const myPrev = getPrevScore(me.employeeId);
         const diff = myPrev !== null ? me.velocityScore - myPrev : null;
         return (
-          <div className="bg-slate-900 p-5 rounded-card text-white">
+          <div className="bg-ink p-5 rounded-card text-white">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="label-caps text-slate-400">Sizning samaradorligingiz</p>

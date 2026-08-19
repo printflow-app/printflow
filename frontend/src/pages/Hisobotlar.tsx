@@ -740,13 +740,13 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
 
       {/* ── Sof Foyda ── */}
       {canViewGrowthCards && dashStats && (
-        <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5 flex items-center justify-between gap-3">
+        <div className="bg-ink rounded-card p-4 sm:p-5 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="t-caption mb-0.5">Sof foyda (tanlangan davr)</p>
-            <h3 className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums break-all">{fmtFull(dashStats.balance)}</h3>
+            <p className="text-xs font-medium text-white/70 mb-0.5">Sof foyda (tanlangan davr)</p>
+            <h3 className="text-2xl font-semibold text-white tracking-tight tabular-nums break-all">{fmtFull(dashStats.balance)}</h3>
           </div>
-          <div className="w-11 h-11 shrink-0 rounded-full bg-primary-50 border border-primary-100 flex items-center justify-center">
-            <Wallet size={20} className="text-[color:var(--primary)]" />
+          <div className="w-11 h-11 shrink-0 rounded-full bg-white/10 flex items-center justify-center">
+            <Wallet size={20} className="text-white" />
           </div>
         </div>
       )}

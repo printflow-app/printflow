@@ -43,14 +43,14 @@ export function Tabs<T extends string = string>({
                 : 'px-4 text-sm h-control'
             } ${
               isActive
-                ? 'bg-white text-slate-900 shadow-sm font-semibold'
+                ? 'bg-white text-primary-700 shadow-sm font-semibold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             }`}
           >
             {Icon && (
               <Icon
                 size={isSm ? 14 : 16}
-                className={isActive ? 'text-primary-600' : 'text-slate-500'}
+                className={isActive ? 'text-[color:var(--primary)]' : 'text-slate-500'}
               />
             )}
             <span>{tab.label}</span>
