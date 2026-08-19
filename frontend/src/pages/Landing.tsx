@@ -296,17 +296,9 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
         }
         .logo-track { animation: logoScroll 28s linear infinite; }
         .logo-track:hover { animation-play-state: paused; }
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
+        /* Bitta brend rangi — gradient-matn olib tashlandi (bir xil aydentika). */
         .gradient-text {
-          background: linear-gradient(90deg, #f97316, #fb923c, #fdba74, #f97316);
-          background-size: 300% 100%;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: gradientShift 5s ease infinite;
+          color: var(--primary);
         }
         @keyframes heroGrid {
           from { opacity: 0; transform: scale(0.97); }
