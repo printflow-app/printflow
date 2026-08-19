@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Clock, UserCheck, Calendar, CheckCircle2,
-  LogIn, LogOut, Users, MapPin, AlarmClock, ThumbsUp, ThumbsDown, Download,
+  LogIn, LogOut, Users, MapPin, AlarmClock, ThumbsUp, ThumbsDown, Download, X,
 } from 'lucide-react';
 import { attendanceApi, settingsApi, overtimeApi } from '../api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -844,13 +844,19 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 
                 // Qatorlar = xodimlar (admin/rahbarsiz), ism bo'yicha; record'i bor lekin
                 // ro'yxatda yo'q xodimlarni ham qo'shamiz (rol o'chirilgan bo'lsa ham ko'rinsin).
-                const rowEmps: { id: string; fullName: string; role?: { name: string } }[] =
-                  [...employees].map(e => ({ id: e.id, fullName: e.fullName, role: e.role }));
+                const rowEmps: { id: string; fullName: string; role?: { name: string }; createdAt?: string }[] =
+                  [...employees].map(e => ({ id: e.id, fullName: e.fullName, role: e.role, createdAt: (e as any).createdAt }));
                 const known = new Set(rowEmps.map(e => e.id));
                 for (const r of monthlyRecords) {
                   if (!known.has(r.employeeId) && r.employee) {
                     known.add(r.employeeId);
-                    rowEmps.push({ id: r.employeeId, fullName: r.employee.fullName, role: r.employee.role });
+                    const toliq = (rawEmployees as any[]).find(e => e.id === r.employeeId);
+                    rowEmps.push({
+                      id: r.employeeId,
+                      fullName: r.employee.fullName,
+                      role: r.employee.role,
+                      createdAt: toliq?.createdAt,
+                    });
                   }
                 }
                 rowEmps.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
@@ -865,6 +871,33 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 }
 
                 const thBase = 'px-1.5 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider tabular-nums';
+
+                // KELMAGAN KUN — bo'sh katakdan farqi bor.
+                //
+                // Bo'sh katak ikki xil bo'lishi mumkin: "hali kelmagan kun" va
+                // "kelmagan xodim". Ikkalasi bir xil ko'rinsa, jadvaldan davomat
+                // holatini o'qib bo'lmaydi. Shuning uchun faqat quyidagi hollarda
+                // X qo'yiladi:
+                //   - kun ish kuni (Sozlamalardagi grafik bo'yicha)
+                //   - kun allaqachon o'tgan (bugun ham, kelasi kunlar ham emas —
+                //     ish kuni tugamaguncha "kelmagan" deyish erta)
+                //   - xodim o'sha kunda allaqachon ishga kirgan bo'lgan
+                // Xodim davomat belgilashi bilan katakda vaqt paydo bo'ladi va
+                // X o'z-o'zidan yo'qoladi — alohida amal talab qilinmaydi.
+                const ishKunlari: number[] = Array.isArray(workSettings.workDays) && workSettings.workDays.length
+                  ? workSettings.workDays
+                  : [1, 2, 3, 4, 5, 6];
+                const bugunKuni = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                const kelmaganmi = (kun: number, dow: number, ishgaKirgan?: string) => {
+                  if (!ishKunlari.includes(dow)) return false;
+                  const sana = new Date(matrixDate.year, matrixDate.month - 1, kun).getTime();
+                  if (sana >= bugunKuni) return false;
+                  if (ishgaKirgan) {
+                    const k = new Date(ishgaKirgan);
+                    if (sana < new Date(k.getFullYear(), k.getMonth(), k.getDate()).getTime()) return false;
+                  }
+                  return true;
+                };
 
                 return (
                   <table className="text-xs border-collapse">
@@ -896,6 +929,14 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                       {rowEmps.map(emp => {
                         const dayMap = byEmp.get(emp.id) || new Map<number, AttendanceRecord>();
                         let totalWorked = 0, totalLate = 0, totalOt = 0, present = 0;
+                        // Kelmagan kunlar — katakdagi X bilan bir xil qoida bo'yicha
+                        let kelmagan = 0;
+                        for (const kun of days) {
+                          const rec = dayMap.get(kun);
+                          if (rec && rec.checkIn) continue;
+                          const dw = new Date(matrixDate.year, matrixDate.month - 1, kun).getDay();
+                          if (kelmaganmi(kun, dw, emp.createdAt)) kelmagan++;
+                        }
                         for (const r of dayMap.values()) {
                           if (r.checkIn) {
                             present++;
@@ -924,9 +965,16 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                               const weekendBg = dow === 0 ? 'bg-rose-50/30' : '';
                               const r = dayMap.get(d);
                               if (!r || !r.checkIn) {
+                                const yoq = kelmaganmi(d, dow, emp.createdAt);
                                 return (
-                                  <td key={d} className={`text-center border-r border-slate-50 ${weekendBg}`}>
-                                    <span className="text-slate-200 text-xs">·</span>
+                                  <td key={d} className={`text-center border-r border-slate-50 ${weekendBg} ${yoq ? 'bg-rose-50/40' : ''}`}>
+                                    {yoq ? (
+                                      <span title="Kelmagan" className="inline-flex items-center justify-center text-rose-500">
+                                        <X size={14} />
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-200 text-xs">·</span>
+                                    )}
                                   </td>
                                 );
                               }
@@ -962,6 +1010,11 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                                   <Clock size={10} className="text-slate-400" /> {fmtMinutes(totalWorked)}
                                 </span>
                                 <span className="label-caps">{present} kun</span>
+                                {kelmagan > 0 && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600" title="Kelmagan kunlar">
+                                    <X size={10} /> {kelmagan} kun
+                                  </span>
+                                )}
                                 {(totalLate > 0 || totalOt > 0) && (
                                   <div className="flex gap-1.5">
                                     {totalLate > 0 && <span className="text-[11px] font-semibold text-rose-600">kech {totalLate}m</span>}
@@ -986,6 +1039,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               <span className="flex items-center gap-1 text-slate-500"><Clock size={10} /> Ishlagan</span>
               <span className="flex items-center gap-1 text-rose-500">▲ Kechikish (min)</span>
               <span className="flex items-center gap-1 text-slate-500">+ Ortiqcha (min)</span>
+              <span className="flex items-center gap-1 text-rose-500"><X size={10} /> Kelmagan</span>
             </div>
           </div>
         </>
