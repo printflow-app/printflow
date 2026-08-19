@@ -307,7 +307,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
             <p className="t-caption mt-0.5">
               Tizimga kirish huquqiga ega barcha xodimlar
               {maxEmployees > 0 && (
-                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${employees.length >= maxEmployees ? 'bg-rose-100 text-rose-700' : 'bg-orange-50 text-orange-700'}`}>
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${employees.length >= maxEmployees ? 'bg-rose-100 text-rose-700' : 'bg-primary-50 text-primary-700'}`}>
                   {employees.length} / {maxEmployees}
                 </span>
               )}
@@ -359,7 +359,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                 {employees.length === 0 ? (
                   <tr><td colSpan={6} className="py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
+                      <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
                         <UserPlus size={20} />
                       </div>
                       <div>
@@ -495,7 +495,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                            type={showGenPass ? "text" : "password"} 
                            readOnly 
                            value={generatedCreds.pass} 
-                           className="font-mono font-bold text-orange-700 bg-transparent text-sm w-full outline-none" 
+                           className="font-mono font-bold text-primary-700 bg-transparent text-sm w-full outline-none" 
                         />
                         <button 
                            type="button" 
@@ -627,7 +627,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                     type={showSelectedPass ? "text" : "password"} 
                     readOnly 
                     value={selectedEmp.password} 
-                    className="w-full font-mono font-semibold text-orange-700 bg-transparent text-sm select-all outline-none" 
+                    className="w-full font-mono font-semibold text-primary-700 bg-transparent text-sm select-all outline-none" 
                   />
                   <button 
                     type="button" 

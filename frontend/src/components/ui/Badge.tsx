@@ -31,8 +31,8 @@ const variantStyles: Record<BadgeVariant, { badge: string; dot: string }> = {
     dot: 'bg-slate-400',
   },
   brand: {
-    badge: 'bg-orange-50 text-orange-700 border-orange-200/70',
-    dot: 'bg-orange-500',
+    badge: 'bg-primary-50 text-primary-700 border-primary-200/70',
+    dot: 'bg-primary-500',
   },
 };
 

@@ -528,7 +528,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
         <div className="w-full max-w-xs text-center">
           <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-6 h-6 text-orange-400" strokeWidth={2} />
+            <Lock className="w-6 h-6 text-primary-400" strokeWidth={2} />
           </div>
           <h1 className="text-lg font-semibold text-white tracking-tight mb-1">
             {pendingTab === 'settings_access' ? 'Sozlamalarga kirish' : pendingTab === 'profile_access' ? 'Profilga kirish' : pendingTab ? 'Sahifaga kirish' : 'Tizim qulflangan'}
@@ -541,7 +541,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 type={showPins.input ? "text" : "password"}
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
-                className="w-full h-12 bg-white/5 border border-white/15 rounded-xl px-5 text-center text-xl font-semibold tracking-[0.4em] text-white focus:bg-white/10 focus:border-orange-500 focus:outline-none transition-all placeholder:text-white/20"
+                className="w-full h-12 bg-white/5 border border-white/15 rounded-xl px-5 text-center text-xl font-semibold tracking-[0.4em] text-white focus:bg-white/10 focus:border-primary-500 focus:outline-none transition-all placeholder:text-white/20"
                 placeholder="••••"
                 maxLength={8}
                 autoFocus
@@ -747,7 +747,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             }}
             className="flex items-center w-full text-left gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-900/[0.04] transition-colors group"
           >
-            <div className="w-7 h-7 rounded-full bg-orange-100 text-orange-700 font-semibold flex items-center justify-center text-xs">
+            <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 font-semibold flex items-center justify-center text-xs">
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="overflow-hidden min-w-0 flex-1">
@@ -1026,9 +1026,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
       <Modal isOpen={isLockSettingsOpen} onClose={() => setIsLockSettingsOpen(false)} title="Ekran Qulfi Sozlamalari" maxWidth="max-w-sm">
         <form onSubmit={handleSetLock} className="space-y-5">
-          <div className="bg-orange-50 p-3 rounded-lg border border-orange-100 flex items-center gap-3 mb-2">
-            <ShieldCheck size={18} className="text-orange-600 flex-shrink-0" />
-            <p className="text-xs text-orange-800 leading-snug">PIN kod akkauntingizga bog'lanadi va istalgan qurilmada ishlaydi.</p>
+          <div className="bg-primary-50 p-3 rounded-lg border border-primary-100 flex items-center gap-3 mb-2">
+            <ShieldCheck size={18} className="text-primary-600 flex-shrink-0" />
+            <p className="text-xs text-primary-800 leading-snug">PIN kod akkauntingizga bog'lanadi va istalgan qurilmada ishlaydi.</p>
           </div>
 
           <div className="space-y-4">
@@ -1044,7 +1044,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   placeholder="••••"
                   maxLength={8}
                 />
-                <button type="button" onClick={() => setShowPins({ ...showPins, p1: !showPins.p1 })} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-orange-500">
+                <button type="button" onClick={() => setShowPins({ ...showPins, p1: !showPins.p1 })} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary-500">
                   {showPins.p1 ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -1061,7 +1061,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   placeholder="••••"
                   maxLength={8}
                 />
-                <button type="button" onClick={() => setShowPins({ ...showPins, p2: !showPins.p2 })} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-orange-500">
+                <button type="button" onClick={() => setShowPins({ ...showPins, p2: !showPins.p2 })} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary-500">
                   {showPins.p2 ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -1069,7 +1069,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
             <div>
               <label className="form-label flex justify-between">
                 <span>Avtomatik qulflash (daqiqa)</span>
-                <span className="text-orange-600">{lockTimeout} min</span>
+                <span className="text-primary-600">{lockTimeout} min</span>
               </label>
               <input
                 type="range"
@@ -1077,7 +1077,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                 max="60"
                 value={lockTimeout}
                 onChange={(e) => setLockTimeout(Number(e.target.value))}
-                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-primary-600"
               />
               <div className="flex justify-between mt-1 text-xs text-slate-400">
                 <span>1 min</span>
@@ -1123,10 +1123,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   type={showProfilePass ? "text" : "password"}
                   value={profileForm.password}
                   onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
-                  className="input-minimal w-full font-mono text-orange-600 text-xs pr-10"
+                  className="input-minimal w-full font-mono text-primary-600 text-xs pr-10"
                   autoComplete="new-password"
                 />
-                <button type="button" onClick={() => setShowProfilePass(!showProfilePass)} className="absolute right-3 bottom-3 text-slate-300 hover:text-orange-500">
+                <button type="button" onClick={() => setShowProfilePass(!showProfilePass)} className="absolute right-3 bottom-3 text-slate-300 hover:text-primary-500">
                   {showProfilePass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -1136,10 +1136,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
                   type={showProfileConfirmPass ? "text" : "password"}
                   value={profileForm.confirmPassword}
                   onChange={(e) => setProfileForm({ ...profileForm, confirmPassword: e.target.value })}
-                  className="input-minimal w-full font-mono text-orange-600 text-xs pr-10"
+                  className="input-minimal w-full font-mono text-primary-600 text-xs pr-10"
                   autoComplete="new-password"
                 />
-                <button type="button" onClick={() => setShowProfileConfirmPass(!showProfileConfirmPass)} className="absolute right-3 bottom-3 text-slate-300 hover:text-orange-500">
+                <button type="button" onClick={() => setShowProfileConfirmPass(!showProfileConfirmPass)} className="absolute right-3 bottom-3 text-slate-300 hover:text-primary-500">
                   {showProfileConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>

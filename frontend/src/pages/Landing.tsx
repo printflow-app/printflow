@@ -426,7 +426,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-8 uppercase tracking-wider"
+            className="inline-flex items-center gap-2 bg-primary-50 border border-primary-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-8 uppercase tracking-wider"
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[color:var(--primary)] opacity-75" />
@@ -508,7 +508,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
             whileInView="show"
             viewport={{ once: true, margin: '-80px' }}
           >
-            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
+            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-primary-50 border border-primary-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
               <Sparkles size={12} /> Nima uchun PrintFlow?
             </motion.div>
             <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
@@ -552,7 +552,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               whileInView="show"
               viewport={{ once: true, margin: '-80px' }}
             >
-              <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[color:var(--primary)] text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 bg-primary-50 border border-primary-200 text-[color:var(--primary)] text-xs font-bold px-3 py-1.5 rounded-full mb-5 uppercase tracking-wider">
                 <CreditCard size={10} /> Moliya Moduli
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
@@ -565,7 +565,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               <ul className="space-y-3">
                 {['Kunlik / haftalik / oylik dinamika grafiği', "To'lov turlari bo'yicha taqsimlash", 'Xarajat kategoriyalari tahlili', 'Mijozlar qarzi avtomatik hisoblanadi'].map((b, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                    <div className="w-5 h-5 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center flex-shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-primary-50 border border-primary-200 flex items-center justify-center flex-shrink-0">
                       <Check size={11} className="text-[color:var(--primary)]" strokeWidth={3} />
                     </div>
                     {b}
@@ -676,7 +676,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               whileInView="show"
               viewport={{ once: true }}
             >
-              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-[color:var(--primary)]/10 border border-orange-500/30 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
+              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-[color:var(--primary)]/10 border border-primary-500/30 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-5 uppercase tracking-wider">
                 <Zap size={12} /> Narxlar
               </motion.div>
               <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-black text-white tracking-tight mb-4">
@@ -743,7 +743,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       <h3 className={`text-lg font-semibold mb-1 ${plan.isPopular ? 'text-white' : 'text-white'}`}>
                         {plan.displayName}
                       </h3>
-                      <p className={`text-sm ${plan.isPopular ? 'text-orange-100' : 'text-slate-400'}`}>
+                      <p className={`text-sm ${plan.isPopular ? 'text-primary-100' : 'text-slate-400'}`}>
                         {plan.description || 'Boshlash uchun ideal'}
                       </p>
                     </div>
@@ -752,10 +752,10 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       <span className={`text-4xl font-black ${plan.isPopular ? 'text-white' : 'text-white'}`}>
                         {price.toLocaleString()}
                       </span>
-                      <span className={`text-sm ml-1 ${plan.isPopular ? 'text-orange-200' : 'text-slate-400'}`}>
+                      <span className={`text-sm ml-1 ${plan.isPopular ? 'text-primary-200' : 'text-slate-400'}`}>
                         UZS / {duration} oy
                       </span>
-                      <div className={`text-xs mt-1 ${plan.isPopular ? 'text-orange-100' : 'text-slate-500'}`}>
+                      <div className={`text-xs mt-1 ${plan.isPopular ? 'text-primary-100' : 'text-slate-500'}`}>
                         Xodimlar: {plan.maxEmployees === 0 ? 'Cheksiz' : `Max ${plan.maxEmployees} ta`}
                       </div>
                     </div>
@@ -767,7 +767,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                           <li key={feat.ids[0]} className={`flex items-center gap-2.5 text-sm ${val ? '' : 'opacity-35'}`}>
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
                               val
-                                ? plan.isPopular ? 'bg-white/20' : 'bg-orange-50/10'
+                                ? plan.isPopular ? 'bg-white/20' : 'bg-primary-50/10'
                                 : plan.isPopular ? 'bg-white/5' : 'bg-slate-800'
                             }`}>
                               {val
@@ -776,7 +776,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                             </div>
                             <span className={val
                               ? plan.isPopular ? 'text-white font-semibold' : 'text-slate-200 font-semibold'
-                              : plan.isPopular ? 'text-orange-200/60' : 'text-slate-500'}
+                              : plan.isPopular ? 'text-primary-200/60' : 'text-slate-500'}
                             >
                               {feat.label}
                             </span>
@@ -789,7 +789,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       onClick={() => scrollTo('contact')}
                       className={`w-full h-11 rounded-xl font-bold text-sm transition-all ${
                         plan.isPopular
-                          ? 'bg-white text-[color:var(--primary)] hover:bg-orange-50'
+                          ? 'bg-white text-[color:var(--primary)] hover:bg-primary-50'
                           : 'bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary-hover)] shadow-lg'
                       }`}
                       whileHover={{ scale: 1.02 }}
@@ -839,7 +839,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
               whileInView="show"
               viewport={{ once: true }}
             >
-              <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 bg-primary-50 border border-primary-200 text-[color:var(--primary)] text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-wider">
                 <Send size={12} /> Demo So'rov
               </div>
               <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-5 leading-tight">
@@ -858,7 +858,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                   { icon: <ShieldCheck size={16} />, text: "Ma'lumotlar xavfsizligi kafolati" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 text-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary-50 border border-primary-200 text-[color:var(--primary)] flex items-center justify-center flex-shrink-0">
                       {item.icon}
                     </div>
                     {item.text}
@@ -891,7 +891,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                       </div>
                       <h3 className="text-xl font-black text-slate-900 mb-2">So'rov Qabul Qilindi!</h3>
                       <p className="text-slate-500 text-sm mb-6">Tez orada siz bilan bog'lanamiz.</p>
-                      <button onClick={() => setFormStatus('idle')} className="h-11 px-6 bg-[color:var(--primary)] text-white font-bold rounded-xl text-sm hover:bg-orange-600 transition-all">
+                      <button onClick={() => setFormStatus('idle')} className="h-11 px-6 bg-[color:var(--primary)] text-white font-bold rounded-xl text-sm hover:bg-primary-600 transition-all">
                         Yangi So'rov
                       </button>
                     </motion.div>
@@ -914,7 +914,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                               value={(formData as any)[field.key]}
                               onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
                               placeholder={field.placeholder}
-                              className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 placeholder-slate-300 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 transition-all"
+                              className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 placeholder-slate-300 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all"
                             />
                           </div>
                         ))}
@@ -927,7 +927,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                           value={formData.companyName}
                           onChange={e => setFormData({ ...formData, companyName: e.target.value })}
                           placeholder="Ideal Print MChJ"
-                          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 placeholder-slate-300 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 transition-all"
+                          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 placeholder-slate-300 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all"
                         />
                       </div>
 
@@ -937,7 +937,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                           required
                           value={formData.role}
                           onChange={e => setFormData({ ...formData, role: e.target.value })}
-                          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 transition-all appearance-none"
+                          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all appearance-none"
                         >
                           <option value="">Tanlang...</option>
                           <option value="Rahbar">Rahbar</option>
@@ -956,7 +956,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                             value={formData.phone}
                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
                             placeholder="+998 90 123 45 67"
-                            className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 placeholder-slate-300 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 transition-all"
+                            className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 placeholder-slate-300 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all"
                           />
                         </div>
                         <div>
@@ -965,7 +965,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                             value={formData.telegramUser}
                             onChange={e => setFormData({ ...formData, telegramUser: e.target.value })}
                             placeholder="@username"
-                            className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 placeholder-slate-300 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 transition-all"
+                            className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium text-slate-900 placeholder-slate-300 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10 transition-all"
                           />
                         </div>
                       </div>
@@ -1023,7 +1023,7 @@ function Landing({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; 
                   {link.label}
                 </button>
               ))}
-              <button onClick={onLoginClick} className="text-sm font-semibold text-[color:var(--primary)] hover:text-orange-400 transition-colors">
+              <button onClick={onLoginClick} className="text-sm font-semibold text-[color:var(--primary)] hover:text-primary-400 transition-colors">
                 Tizimga Kirish
               </button>
             </div>

@@ -164,7 +164,7 @@ export const PayrollSection: React.FC<{
                           <button
                             onClick={() => setOpenRow(openRow === row.employeeId ? null : row.employeeId)}
                             title="Hisob tafsiloti"
-                            className="w-5 h-5 rounded-control text-slate-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center flex-shrink-0"
+                            className="w-5 h-5 rounded-control text-slate-400 hover:text-primary-600 hover:bg-primary-50 flex items-center justify-center flex-shrink-0"
                           >
                             {openRow === row.employeeId ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           </button>
@@ -175,7 +175,7 @@ export const PayrollSection: React.FC<{
                           <p className="text-xs font-semibold text-slate-800">{row.fullName}</p>
                           <p className="text-xs text-slate-500">
                             {row.roleName}
-                            {row.jonli && <span className="ml-1.5 text-orange-500 font-semibold">· jonli hisob</span>}
+                            {row.jonli && <span className="ml-1.5 text-primary-500 font-semibold">· jonli hisob</span>}
                           </p>
                         </div>
                       </div>
@@ -218,7 +218,7 @@ export const PayrollSection: React.FC<{
                       )}
                     </td>
                     <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-slate-700">{fmt(liveNet(row))}</span></td>
-                    <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-orange-600">{row.advances ? '−' + fmt(row.advances) : '—'}</span></td>
+                    <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-primary-600">{row.advances ? '−' + fmt(row.advances) : '—'}</span></td>
                     <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-rose-500">{row.prevDebt ? '−' + fmt(row.prevDebt) : '—'}</span></td>
                     <td className="text-right whitespace-nowrap">
                       <span className={`text-sm font-bold tabular-nums ${toPay < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>{fmt(toPay)}</span>
@@ -314,7 +314,7 @@ export const PayrollSection: React.FC<{
                   <td><span className="label-caps">Jami</span></td>
                   <td colSpan={3} className="hidden md:table-cell"></td>
                   <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-slate-700">{fmt(totals.net)}</span></td>
-                  <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-orange-600">−{fmt(totals.adv)}</span></td>
+                  <td className="hidden md:table-cell text-right"><span className="text-xs font-bold tabular-nums text-primary-600">−{fmt(totals.adv)}</span></td>
                   <td className="hidden md:table-cell"></td>
                   <td className="text-right"><span className="text-sm font-bold tabular-nums text-emerald-700">{fmt(totals.toPay)}</span></td>
                   <td></td>

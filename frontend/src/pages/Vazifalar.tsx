@@ -18,7 +18,7 @@ import ConfirmModal from '../components/ConfirmModal';
 
 const USTUNLAR: { key: 'reja' | 'jarayon' | 'bajarildi'; nom: string; rang: string }[] = [
   { key: 'reja', nom: 'Qilinishi kerak', rang: 'bg-slate-400' },
-  { key: 'jarayon', nom: 'Jarayonda', rang: 'bg-orange-500' },
+  { key: 'jarayon', nom: 'Jarayonda', rang: 'bg-primary-500' },
   { key: 'bajarildi', nom: 'Bajarilgan', rang: 'bg-emerald-500' },
 ];
 
@@ -247,7 +247,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-control text-xs font-semibold transition-colors duration-120 ${
                   tanlangan
                     ? 'bg-[color:var(--primary)] text-white'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-600'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:border-primary-300 hover:text-primary-600'
                 }`}
               >
                 {e.ism}
@@ -284,7 +284,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                 onDrop={(e) => onDrop(e, u.key)}
                 className={`rounded-card border p-3 transition-colors ${
                   overCol === u.key
-                    ? 'bg-orange-50/70 border-orange-300 border-dashed'
+                    ? 'bg-primary-50/70 border-primary-300 border-dashed'
                     : 'bg-slate-50/60 border-slate-200'
                 }`}
               >
@@ -316,7 +316,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                       } ${dragged?.id === it.id ? 'opacity-40' : ''}`}
                     >
                       <div className="flex items-start gap-2">
-                        <div className={`p-1.5 rounded-lg shrink-0 ${it.tur === 'buyurtma' ? 'bg-slate-50 text-slate-500' : 'bg-orange-50 text-orange-500'}`}>
+                        <div className={`p-1.5 rounded-lg shrink-0 ${it.tur === 'buyurtma' ? 'bg-slate-50 text-slate-500' : 'bg-primary-50 text-primary-500'}`}>
                           {it.tur === 'buyurtma' ? <Package size={12} /> : <ClipboardList size={12} />}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -363,7 +363,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                             <button
                               key={x.key}
                               onClick={() => move(it.id, x.key)}
-                              className="text-xs font-semibold text-slate-500 hover:text-orange-600 px-1.5 py-1 rounded hover:bg-orange-50 transition-colors duration-120"
+                              className="text-xs font-semibold text-slate-500 hover:text-primary-600 px-1.5 py-1 rounded hover:bg-primary-50 transition-colors duration-120"
                             >
                               → {x.nom}
                             </button>

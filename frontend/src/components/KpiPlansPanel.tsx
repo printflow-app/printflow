@@ -197,10 +197,10 @@ const KpiPlansPanel: React.FC<Props> = ({ currentUser, activeBranchId, readOnly 
               return (
                 <div
                   key={emp.employeeId}
-                  className={`rounded-card border p-4 ${isMe ? 'border-orange-200 bg-orange-50/40' : 'border-slate-200 bg-white'}`}
+                  className={`rounded-card border p-4 ${isMe ? 'border-primary-200 bg-primary-50/40' : 'border-slate-200 bg-white'}`}
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <div className={`w-8 h-8 rounded-control font-semibold text-xs flex items-center justify-center border ${isMe ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <div className={`w-8 h-8 rounded-control font-semibold text-xs flex items-center justify-center border ${isMe ? 'bg-primary-100 text-primary-700 border-primary-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                       {emp.fullName?.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">

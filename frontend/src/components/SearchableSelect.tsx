@@ -52,7 +52,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`w-full min-h-control bg-white border rounded-control px-3 py-1.5 flex items-center justify-between cursor-pointer transition-all duration-120 ${
-          isOpen ? 'border-orange-500 ring-2 ring-orange-500/20' : 'border-slate-200 hover:border-slate-300'
+          isOpen ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-slate-200 hover:border-slate-300'
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
       >
         <div className="flex-1 truncate">
@@ -79,7 +79,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Qidirish..."
-                className="w-full h-control-sm bg-white border border-slate-200 rounded-control pl-9 pr-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-120 placeholder-slate-400"
+                className="w-full h-control-sm bg-white border border-slate-200 rounded-control pl-9 pr-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-120 placeholder-slate-400"
               />
             </div>
           </div>
@@ -95,14 +95,14 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     setSearch("");
                   }}
                   className={`px-3 py-2.5 hover:bg-slate-50 cursor-pointer flex items-center justify-between transition-colors duration-120 ${
-                    value === opt.id ? 'bg-orange-50/60' : ''
+                    value === opt.id ? 'bg-primary-50/60' : ''
                   }`}
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-slate-800">{opt.label}</span>
                     {opt.subLabel && <span className="text-xs text-slate-500">{opt.subLabel}</span>}
                   </div>
-                  {value === opt.id && <Check size={16} className="text-orange-600" />}
+                  {value === opt.id && <Check size={16} className="text-primary-600" />}
                 </div>
               ))
             ) : (

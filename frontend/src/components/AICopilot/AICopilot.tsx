@@ -1513,7 +1513,7 @@ const AICopilot: React.FC<AICopilotProps> = ({ isOpen, onClose, onRefresh }) => 
           {/* Dekorativ gradient blur olib tashlandi: fokus holati chegara va
               ring bilan ko'rsatiladi, xuddi tizimdagi boshqa inputlar kabi. */}
           <form onSubmit={handleFormSubmit}>
-            <div className="flex items-end gap-2 bg-white border border-slate-200 rounded-control p-1.5 pl-3 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 transition-all duration-120">
+            <div className="flex items-end gap-2 bg-white border border-slate-200 rounded-control p-1.5 pl-3 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 transition-all duration-120">
               <textarea
                 ref={inputRef}
                 value={input}

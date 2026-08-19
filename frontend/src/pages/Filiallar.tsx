@@ -279,9 +279,9 @@ const FiliallarTab: React.FC<{ currentUser: any }> = ({ currentUser }) => {
         {branches.map((b) => {
           const manager = employees.find((e) => e.id === b.managerEmployeeId);
           return (
-            <div key={b.id} className="bg-white rounded-card border border-slate-200 p-4 transition-all hover:border-orange-200">
+            <div key={b.id} className="bg-white rounded-card border border-slate-200 p-4 transition-all hover:border-primary-200">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-control bg-orange-50 text-[color:var(--primary)] border border-orange-100 flex items-center justify-center"><Building2 size={18} /></div>
+                <div className="w-10 h-10 rounded-control bg-primary-50 text-[color:var(--primary)] border border-primary-100 flex items-center justify-center"><Building2 size={18} /></div>
                 {canManage && (() => {
                   const isLast = branches.length <= 1;
                   const delTitle = isLast ? "Oxirgi filial o'chirilmaydi" : "O'chirish";

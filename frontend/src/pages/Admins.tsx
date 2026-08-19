@@ -130,13 +130,13 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
             key={tab.id}
             data-tour-id={`admin-tab-${tab.id}`}
             onClick={() => setActiveAdminTab(tab.id as any)}
-            className={`inline-flex items-center gap-2 px-4 py-2 h-[34px] rounded-control text-sm font-medium transition-all duration-120 whitespace-nowrap ${
+            className={`inline-flex items-center gap-2 px-4 h-control rounded-control text-sm font-medium transition-all duration-120 whitespace-nowrap ${
               activeAdminTab === tab.id
                 ? 'bg-white text-slate-900 shadow-sm font-semibold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             }`}
           >
-            <tab.icon size={16} className={activeAdminTab === tab.id ? 'text-orange-600' : 'text-slate-500'} /> {tab.label}
+            <tab.icon size={16} className={activeAdminTab === tab.id ? 'text-primary-600' : 'text-slate-500'} /> {tab.label}
           </button>
         ))}
       </div>

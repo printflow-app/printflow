@@ -439,10 +439,9 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       {/* Header */}
       <div className="bg-white p-4 sm:p-5 rounded-card border border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
-          <h2 className="page-title flex items-center gap-2">
-            <Users size={20} className="text-[color:var(--primary)]" /> Mijozlar bazasi
-          </h2>
-          <p className="t-caption mt-0.5">Barcha hamkorlar va ularning moliyaviy holati</p>
+          <p className="t-body-md flex items-center gap-2">
+            <Users size={18} className="text-[color:var(--primary)]" /> Barcha hamkorlar va ularning moliyaviy holati
+          </p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
           {activeView === 'all' && (
@@ -588,7 +587,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                     return (
                       <React.Fragment key={c.id}>
                         <tr
-                          className={`hover:bg-slate-50/70 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/80 border-b border-orange-100' : ''}`}
+                          className={`hover:bg-slate-50/70 transition-colors group cursor-pointer ${isExpanded ? 'bg-slate-50/80 border-b border-primary-100' : ''}`}
                           onClick={() => toggleExpand(c.id)}
                         >
                           <td>
@@ -674,7 +673,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                                                   )}
                                                 </p>
                                                 {t.service && (
-                                                  <p className="text-xs text-orange-700 font-medium mt-0.5">
+                                                  <p className="text-xs text-primary-700 font-medium mt-0.5">
                                                     {t.service.name}
                                                   </p>
                                                 )}
@@ -827,12 +826,12 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
         ) : (
           <div className="space-y-3.5">
             {canManageContacts && editingContactId && (
-              <div className="flex items-center justify-between gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-control">
-                <p className="text-xs font-semibold text-orange-800">Vakil tahrirlanmoqda</p>
+              <div className="flex items-center justify-between gap-2 px-3 py-2 bg-primary-50 border border-primary-200 rounded-control">
+                <p className="text-xs font-semibold text-primary-800">Vakil tahrirlanmoqda</p>
                 <button
                   type="button"
                   onClick={cancelEditContact}
-                  className="text-xs font-medium text-orange-700 hover:text-orange-900"
+                  className="text-xs font-medium text-primary-700 hover:text-primary-900"
                 >
                   Bekor qilish
                 </button>

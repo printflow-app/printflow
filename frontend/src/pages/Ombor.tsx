@@ -253,11 +253,8 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-card border border-slate-200">
         <div>
-          <h2 className="page-title flex items-center gap-2">
-            <Package size={20} className="text-[color:var(--primary)]" /> Ombor boshqaruvi
-          </h2>
-          <p className="t-caption mt-0.5">
-            Xomashyo va materiallar nazorati
+          <p className="t-body-md flex items-center gap-2">
+            <Package size={18} className="text-[color:var(--primary)]" /> Xomashyo va materiallar nazorati
           </p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -753,7 +750,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                <h5 className="text-xs font-semibold text-slate-700 mb-2 px-1 flex items-center gap-1.5">
                  <CheckCircle2 size={16} className="text-emerald-600" /> Biriktirilgan xizmatlar
                </h5>
-               <div className="overflow-y-auto max-h-[280px] border border-orange-200 rounded-card bg-orange-50/20 p-2 flex flex-col gap-1.5 custom-scroll">
+               <div className="overflow-y-auto max-h-[280px] border border-primary-200 rounded-card bg-primary-50/20 p-2 flex flex-col gap-1.5 custom-scroll">
                   {(!selectedMaterial?.bom || (selectedMaterial.bom as any[]).length === 0) ? (
                     <div className="py-16 text-center opacity-40 flex flex-col items-center">
                        <Layers size={28} className="mb-1.5 text-slate-400" />
@@ -761,10 +758,10 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     </div>
                   ) : (
                     (selectedMaterial.bom as any[]).map(b => (
-                      <div key={b.id} className="bg-white p-2.5 rounded-control border border-orange-200 flex items-center justify-between group">
+                      <div key={b.id} className="bg-white p-2.5 rounded-control border border-primary-200 flex items-center justify-between group">
                          <div>
                             <p className="text-xs font-semibold text-slate-800">{b.service?.name}</p>
-                            <p className="text-xs text-orange-700 font-medium">Norma: {b.normPerUnit} {selectedMaterial?.unit}</p>
+                            <p className="text-xs text-primary-700 font-medium">Norma: {b.normPerUnit} {selectedMaterial?.unit}</p>
                          </div>
                          <button 
                            onClick={() => askUnlink(b.serviceId)}

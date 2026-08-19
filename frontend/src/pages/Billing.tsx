@@ -154,7 +154,7 @@ export default function Billing() {
       {/* Current Status Header */}
       <div className="bg-white border border-slate-200 rounded-card p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex items-center gap-3">
-           <div className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-control flex items-center justify-center ${status?.status === 'EXPIRED' ? 'bg-rose-50 text-rose-600' : 'bg-orange-50 text-[color:var(--primary)]'}`}>
+           <div className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-control flex items-center justify-center ${status?.status === 'EXPIRED' ? 'bg-rose-50 text-rose-600' : 'bg-primary-50 text-[color:var(--primary)]'}`}>
               <ShieldCheck size={20} />
            </div>
            <div>
@@ -306,7 +306,7 @@ export default function Billing() {
                       // Faqat shu planga kiritilgan imkoniyatlarni ko'rsatamiz.
                       return allFeatures.filter(isEnabled).map(feat => (
                         <li key={feat.ids[0]} className="flex items-center gap-3 text-sm font-normal text-slate-700">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-orange-50">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-primary-50">
                             <Check size={12} className="text-[color:var(--primary)]" />
                           </div>
                           <span>{feat.label}</span>
@@ -333,7 +333,7 @@ export default function Billing() {
               <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
                 {aiPackages.map((pkg: any) => (
                   <div key={pkg.id} className="bg-white border border-slate-200 rounded-card p-4 sm:p-5 w-full sm:w-64 flex flex-col">
-                    <div className="w-9 h-9 rounded-control bg-orange-50 text-[color:var(--primary)] flex items-center justify-center mb-3">
+                    <div className="w-9 h-9 rounded-control bg-primary-50 text-[color:var(--primary)] flex items-center justify-center mb-3">
                       <Sparkles size={16} />
                     </div>
                     <p className="t-h3">{pkg.label}</p>

@@ -397,7 +397,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-orange-100">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-primary-100">
       {showOnboarding && (
         <div className="fixed inset-0 z-overlay bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-lg rounded-overlay shadow-2xl overflow-hidden border border-slate-200 animate-slide-up">

@@ -270,8 +270,8 @@ export const QuoteBuilder: React.FC<Props> = ({ data }) => {
         <div className="bg-primary-50 border border-primary-200 rounded-card p-3 flex items-start gap-3">
           <Sparkles size={18} className="text-[color:var(--primary)] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs font-semibold text-orange-900">Buyurtma tuzish</p>
-            <p className="text-xs text-orange-800 mt-0.5">
+            <p className="text-xs font-semibold text-primary-900">Buyurtma tuzish</p>
+            <p className="text-xs text-primary-800 mt-0.5">
               Kerakli mahsulotni tanlang, sonini kiriting va "Qo'shish" bosing. Pastda jami summa avtomatik hisoblanadi.
             </p>
           </div>

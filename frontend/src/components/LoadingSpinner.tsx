@@ -22,7 +22,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const tailwindSpinner = (
     <div className={`flex items-center justify-center ${className}`}>
         <div 
-          className={`animate-spin rounded-full ${sizeClasses[size].split(' ')[0]} ${sizeClasses[size].split(' ')[1]} border-b-2 border-orange-500`}
+          className={`animate-spin rounded-full ${sizeClasses[size].split(' ')[0]} ${sizeClasses[size].split(' ')[1]} border-b-2 border-primary-500`}
           style={{ borderTopColor: 'transparent' }}
         ></div>
     </div>

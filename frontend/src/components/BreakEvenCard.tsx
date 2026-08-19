@@ -115,7 +115,7 @@ const BreakEvenCard: React.FC = () => {
     <div className="bg-white rounded-card border border-slate-200 p-4 sm:p-5">
       <div className="flex items-start justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-control ${data.umumiy?.nolga_chiqdi ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-[color:var(--primary)]'}`}>
+          <div className={`p-2 rounded-control ${data.umumiy?.nolga_chiqdi ? 'bg-emerald-50 text-emerald-600' : 'bg-primary-50 text-[color:var(--primary)]'}`}>
             <Target size={16} />
           </div>
           <div>

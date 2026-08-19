@@ -157,7 +157,7 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
                     onMouseEnter={() => setActiveIndex(i)}
                     onClick={() => handleSelect(row)}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                      isActive ? 'bg-orange-50' : 'hover:bg-slate-50'
+                      isActive ? 'bg-primary-50' : 'hover:bg-slate-50'
                     }`}
                   >
                     <div className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 ${
@@ -183,7 +183,7 @@ export function CommandPalette({ agentEnabled = false }: { agentEnabled?: boolea
                   onMouseEnter={() => setActiveIndex(i)}
                   onClick={() => handleSelect(row)}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                    isActive ? 'bg-orange-50' : 'hover:bg-slate-50'
+                    isActive ? 'bg-primary-50' : 'hover:bg-slate-50'
                   }`}
                 >
                   <div className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 ${

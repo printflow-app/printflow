@@ -15,7 +15,7 @@ interface StatCardProps {
 
 const toneIconStyles: Record<StatCardTone, { bg: string; text: string }> = {
   neutral: { bg: 'bg-slate-100', text: 'text-slate-600' },
-  brand:   { bg: 'bg-orange-50', text: 'text-orange-600' },
+  brand:   { bg: 'bg-primary-50', text: 'text-primary-600' },
   success: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
   danger:  { bg: 'bg-rose-50', text: 'text-rose-600' },
   warning: { bg: 'bg-amber-50', text: 'text-amber-700' },

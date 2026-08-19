@@ -236,7 +236,7 @@ export const PriceListModal: React.FC<Props> = ({
                 onClick={() => setActiveTab('quote')}
                 className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                   activeTab === 'quote'
-                    ? 'bg-orange-500 text-white shadow-sm'
+                    ? 'bg-primary-500 text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
@@ -251,7 +251,7 @@ export const PriceListModal: React.FC<Props> = ({
           <div className="flex-1 overflow-y-auto custom-scroll p-4 sm:p-6 bg-slate-100">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 size={28} className="text-orange-500 animate-spin" />
+                <Loader2 size={28} className="text-primary-500 animate-spin" />
               </div>
             ) : tenant && branchInfo ? (
               <QuoteBuilder
@@ -279,7 +279,7 @@ export const PriceListModal: React.FC<Props> = ({
               </p>
               <button
                 onClick={toggleAll}
-                className="text-xs font-bold text-orange-600 hover:text-orange-700 uppercase tracking-wider"
+                className="text-xs font-bold text-primary-600 hover:text-primary-700 uppercase tracking-wider"
               >
                 {allChecked ? 'Bekor' : 'Hammasi'}
               </button>
@@ -293,7 +293,7 @@ export const PriceListModal: React.FC<Props> = ({
                   value={serviceSearch}
                   onChange={e => setServiceSearch(e.target.value)}
                   placeholder="Xizmatni qidirish..."
-                  className="w-full h-9 pl-8 pr-8 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-orange-300 focus:bg-white transition-colors"
+                  className="w-full h-9 pl-8 pr-8 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-primary-300 focus:bg-white transition-colors"
                 />
                 {serviceSearch && (
                   <button
@@ -322,11 +322,11 @@ export const PriceListModal: React.FC<Props> = ({
                       key={svc.id}
                       onClick={() => toggleService(svc.id)}
                       className={`w-full flex items-start gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
-                        checked ? 'bg-orange-50 hover:bg-orange-100' : 'hover:bg-slate-50'
+                        checked ? 'bg-primary-50 hover:bg-primary-100' : 'hover:bg-slate-50'
                       }`}
                     >
                       {checked
-                        ? <CheckSquare size={16} className="text-orange-500 mt-0.5 flex-shrink-0" />
+                        ? <CheckSquare size={16} className="text-primary-500 mt-0.5 flex-shrink-0" />
                         : <Square size={16} className="text-slate-300 mt-0.5 flex-shrink-0" />}
                       <div className="min-w-0 flex-1">
                         <p className={`text-sm font-bold truncate ${checked ? 'text-slate-900' : 'text-slate-600'}`}>
@@ -347,7 +347,7 @@ export const PriceListModal: React.FC<Props> = ({
           <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center custom-scroll min-w-0">
             {loading ? (
               <div className="flex items-center justify-center py-32">
-                <Loader2 size={32} className="text-orange-500 animate-spin" />
+                <Loader2 size={32} className="text-primary-500 animate-spin" />
               </div>
             ) : filteredData ? (
               filteredData.services.length === 0 ? (
@@ -377,7 +377,7 @@ export const PriceListModal: React.FC<Props> = ({
             <button
               onClick={handlePrint}
               disabled={!hasSelection}
-              className="h-10 px-4 rounded-lg border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50 text-xs font-bold text-slate-700 uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-10 px-4 rounded-lg border-2 border-slate-200 hover:border-primary-300 hover:bg-primary-50 text-xs font-bold text-slate-700 uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Printer size={13} /> Print
             </button>
@@ -388,7 +388,7 @@ export const PriceListModal: React.FC<Props> = ({
                 value={exportFormat}
                 onChange={e => setExportFormat(e.target.value as 'png' | 'pdf')}
                 disabled={exporting}
-                className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold uppercase tracking-wider px-3 border-r border-orange-700 focus:outline-none cursor-pointer disabled:opacity-60"
+                className="bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold uppercase tracking-wider px-3 border-r border-primary-700 focus:outline-none cursor-pointer disabled:opacity-60"
               >
                 <option value="png">PNG</option>
                 <option value="pdf">PDF</option>
@@ -396,7 +396,7 @@ export const PriceListModal: React.FC<Props> = ({
               <button
                 onClick={handleDownload}
                 disabled={exporting || !hasSelection}
-                className="px-4 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-4 bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {exporting
                   ? <Loader2 size={13} className="animate-spin" />

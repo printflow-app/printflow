@@ -54,7 +54,7 @@ function IdPill({ id }: { id: string }) {
       onClick={nusxaOl}
       title={nusxalandi ? 'Nusxalandi' : 'ID dan nusxa olish'}
       className={`font-mono transition-colors duration-120 ${
-        nusxalandi ? 'badge-success' : 'badge-primary hover:bg-orange-100'
+        nusxalandi ? 'badge-success' : 'badge-primary hover:bg-primary-100'
       }`}
     >
       {nusxalandi ? <Check size={12} /> : <Copy size={12} className="opacity-70" />}

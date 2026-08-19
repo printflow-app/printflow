@@ -91,7 +91,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
       className={`relative flex items-center w-full h-control bg-white border rounded-control transition-all duration-120 ${
         hasError
           ? 'border-rose-400 focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-500/20'
-          : 'border-slate-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20'
+          : 'border-slate-200 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20'
       } ${disabled ? 'bg-slate-50 opacity-60 cursor-not-allowed' : ''} ${className}`}
     >
       <span className="pl-3 pr-1 text-slate-500 font-medium text-sm select-none border-r border-slate-200 mr-2 py-0.5">

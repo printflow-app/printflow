@@ -50,7 +50,7 @@ export function Tabs<T extends string = string>({
             {Icon && (
               <Icon
                 size={isSm ? 14 : 16}
-                className={isActive ? 'text-orange-600' : 'text-slate-500'}
+                className={isActive ? 'text-primary-600' : 'text-slate-500'}
               />
             )}
             <span>{tab.label}</span>
@@ -58,7 +58,7 @@ export function Tabs<T extends string = string>({
               <span
                 className={`ml-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
                   isActive
-                    ? 'bg-orange-50 text-orange-700'
+                    ? 'bg-primary-50 text-primary-700'
                     : 'bg-slate-200/70 text-slate-600'
                 }`}
               >

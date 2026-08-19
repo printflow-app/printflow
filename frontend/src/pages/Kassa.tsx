@@ -921,7 +921,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
 
           {!kirimForm.vendorId && customerTasks.length > 0 && (
             <div className="animate-fade-in">
-              <label className="form-label text-orange-700 font-semibold">Bog'liq buyurtma (qarzni shu buyurtmaga belgilash)</label>
+              <label className="form-label text-primary-700 font-semibold">Bog'liq buyurtma (qarzni shu buyurtmaga belgilash)</label>
               <select
                 value={kirimForm.taskId}
                 onChange={e => {
@@ -934,7 +934,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                     departmentId: selectedTask?.departmentId || f.departmentId,
                   }));
                 }}
-                className="select-minimal text-orange-700 font-medium"
+                className="select-minimal text-primary-700 font-medium"
               >
                 <option value="">— Buyurtmani tanlang (ixtiyoriy) —</option>
                 {customerTasks
@@ -949,14 +949,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           )}
 
           {!kirimForm.vendorId && hasDebt && (
-            <div className="bg-orange-50 border border-orange-200 rounded-card p-3 space-y-2">
-              <p className="text-xs font-semibold text-orange-900 flex items-center gap-2">
-                <AlertCircle size={12} className="text-orange-600" />
+            <div className="bg-primary-50 border border-primary-200 rounded-card p-3 space-y-2">
+              <p className="text-xs font-semibold text-primary-900 flex items-center gap-2">
+                <AlertCircle size={12} className="text-primary-600" />
                 Mijoz qarzi: <span className="font-bold">{formatCurrency(currentDebtAmount)}</span>
               </p>
               <label className="flex items-center gap-2.5 cursor-pointer">
-                <input type="checkbox" checked={kirimForm.forExistingDebt} onChange={(e) => setKirimForm({...kirimForm, forExistingDebt: e.target.checked})} className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer" />
-                <span className="text-xs font-medium text-orange-800">Qarzdorlikni qoplash uchun</span>
+                <input type="checkbox" checked={kirimForm.forExistingDebt} onChange={(e) => setKirimForm({...kirimForm, forExistingDebt: e.target.checked})} className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer" />
+                <span className="text-xs font-medium text-primary-800">Qarzdorlikni qoplash uchun</span>
               </label>
             </div>
           )}
@@ -1029,7 +1029,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
         <form onSubmit={handleAddChiqim} className="space-y-4">
           <div className="flex bg-slate-100 p-1 rounded-card mb-2">
             <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: false, isVendorExpense: false}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${!chiqimForm.isEmployeeExpense && !chiqimForm.isVendorExpense ? 'bg-white shadow-sm font-semibold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Umumiy</button>
-            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true, isVendorExpense: false}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow-sm font-semibold text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}>Xodim</button>
+            <button type="button" onClick={() => setChiqimForm(f => ({...f, isEmployeeExpense: true, isVendorExpense: false}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${chiqimForm.isEmployeeExpense ? 'bg-white shadow-sm font-semibold text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}>Xodim</button>
             {vendors.length > 0 && <button type="button" onClick={() => setChiqimForm(f => ({...f, isVendorExpense: true, isEmployeeExpense: false}))} className={`flex-1 py-1.5 text-xs font-medium rounded-control transition-colors ${chiqimForm.isVendorExpense ? 'bg-white shadow-sm font-semibold text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>Hamkor</button>}
           </div>
 
@@ -1053,16 +1053,16 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   placeholder="Xodim qidirish..."
                 />
               </div>
-              <label className="flex items-start gap-2.5 cursor-pointer bg-orange-50 border border-orange-200 rounded-card p-3">
+              <label className="flex items-start gap-2.5 cursor-pointer bg-primary-50 border border-primary-200 rounded-card p-3">
                 <input
                   type="checkbox"
                   checked={chiqimForm.isSalaryAdvance}
                   onChange={(e) => setChiqimForm(f => ({ ...f, isSalaryAdvance: e.target.checked }))}
-                  className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 mt-0.5 cursor-pointer"
+                  className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 mt-0.5 cursor-pointer"
                 />
-                <span className="text-xs font-medium text-orange-900">
+                <span className="text-xs font-medium text-primary-900">
                   Bu avans (oylikdan ushlanadi)
-                  <span className="block text-xs font-normal text-orange-700 mt-0.5">Belgilansa — oy oxirida maoshdan avtomatik ayiriladi. Belgilanmasa — oddiy xarajat qoplash (maoshga tegmaydi).</span>
+                  <span className="block text-xs font-normal text-primary-700 mt-0.5">Belgilansa — oy oxirida maoshdan avtomatik ayiriladi. Belgilanmasa — oddiy xarajat qoplash (maoshga tegmaydi).</span>
                 </span>
               </label>
             </div>

@@ -60,7 +60,7 @@ const MasulTanlash: React.FC<{
       <button
         type="button"
         onClick={() => setOchiq((v) => !v)}
-        className="w-full min-h-[36px] flex items-center gap-2 bg-white border border-slate-200 rounded-control px-2.5 py-1.5 text-left hover:border-slate-300 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-120"
+        className="w-full min-h-[36px] flex items-center gap-2 bg-white border border-slate-200 rounded-control px-2.5 py-1.5 text-left hover:border-slate-300 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-120"
       >
         <Users size={16} className="text-slate-400 shrink-0" />
         <span className="flex-1 flex flex-wrap gap-1 min-w-0">

@@ -214,12 +214,12 @@ const ServiceStats = ({ services }: { services: any[] }) => {
         </div>
 
         {/* Average check — aniq qiymat (yumaloqlanmaydi) */}
-        <div className="bg-orange-50 rounded-card p-4 border border-orange-100">
+        <div className="bg-primary-50 rounded-card p-4 border border-primary-100">
           <p className="label-caps text-primary-700 mb-2">O'rtacha Chek</p>
-          <p className="text-lg font-semibold text-orange-700 tabular-nums leading-tight break-all">
+          <p className="text-lg font-semibold text-primary-700 tabular-nums leading-tight break-all">
             {fmtNum(avgCheck)}
           </p>
-          <p className="text-xs font-medium text-orange-600 mt-1">UZS</p>
+          <p className="text-xs font-medium text-primary-600 mt-1">UZS</p>
         </div>
 
         {/* Share of total */}
@@ -640,10 +640,9 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 sm:p-5 rounded-card border border-slate-200">
         <div>
-          <h2 className="page-title flex items-center gap-2">
-            <BarChart3 size={20} className="text-[color:var(--primary)]" /> Hisobotlar & Tahlil
-          </h2>
-          <p className="t-caption mt-0.5">Biznes ko'rsatkichlari va chuqur tahlil</p>
+          <p className="t-body-md flex items-center gap-2">
+            <BarChart3 size={18} className="text-[color:var(--primary)]" /> Biznes ko'rsatkichlari va chuqur tahlil
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {(isAdmin || p.canExportReports) && (
@@ -746,7 +745,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
             <p className="t-caption mb-0.5">Sof foyda (tanlangan davr)</p>
             <h3 className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums break-all">{fmtFull(dashStats.balance)}</h3>
           </div>
-          <div className="w-11 h-11 shrink-0 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center">
+          <div className="w-11 h-11 shrink-0 rounded-full bg-primary-50 border border-primary-100 flex items-center justify-center">
             <Wallet size={20} className="text-[color:var(--primary)]" />
           </div>
         </div>

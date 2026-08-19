@@ -67,13 +67,13 @@ interface Props {
 const DEFAULT_BRANDING: Required<Pick<PriceListBranding,
   'headerBg' | 'headerText' | 'accent' | 'tableHeaderBg' | 'tableHeaderText' | 'cardBorder' | 'totalSum'
 >> = {
-  headerBg: '#f97316',         // orange-500
+  headerBg: '#f97316',         // primary-500
   headerText: '#ffffff',
-  accent: '#ea580c',           // orange-600
+  accent: '#ea580c',           // primary-600
   tableHeaderBg: '#1e293b',    // slate-800
   tableHeaderText: '#ffffff',
   cardBorder: '#e2e8f0',       // slate-200
-  totalSum: '#ea580c',         // orange-600
+  totalSum: '#ea580c',         // primary-600
 };
 
 function resolveBranding(b?: PriceListBranding | null) {

@@ -144,7 +144,7 @@ const Kpi: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ currentU
                 <h3 className="text-lg font-semibold tracking-tight text-white">{me.fullName}</h3>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <div className="w-14 h-14 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-2xl font-bold text-orange-400">
+                <div className="w-14 h-14 rounded-full bg-primary-500/20 border border-primary-500/40 flex items-center justify-center text-2xl font-bold text-primary-400">
                   {me.velocityScore}
                 </div>
                 {diff !== null && Math.abs(diff) >= 2 && (

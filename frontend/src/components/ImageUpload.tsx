@@ -66,7 +66,7 @@ export function ImageUpload({ value, onChange, size = 'md', label }: Props) {
           className={`${SIZES[size]} relative rounded-xl border-2 border-dashed border-slate-200 hover:border-primary-300 hover:bg-primary-50/30 flex items-center justify-center overflow-hidden transition-colors group flex-shrink-0`}
         >
           {busy ? (
-            <Loader2 size={20} className="text-orange-500 animate-spin" />
+            <Loader2 size={20} className="text-primary-500 animate-spin" />
           ) : value ? (
             <>
               <img src={value} alt="" className="w-full h-full object-cover" />

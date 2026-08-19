@@ -472,7 +472,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
         {/* Progress bar */}
         <div className="h-1 bg-slate-100">
           <div
-            className="h-full bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-primary-400 to-primary-500 transition-all duration-300"
             style={{ width: `${(currentActionIndex / totalActionSteps) * 100}%` }}
           />
         </div>
@@ -515,7 +515,7 @@ export function OnboardingTour({ tenantId, activeTab, onComplete }: Props) {
             </button>
           )}
           {current.kind === 'nav' && (
-            <span className="text-xs font-bold text-orange-500 italic">
+            <span className="text-xs font-bold text-primary-500 italic">
               Orange chiziq ichidagi tugmani bosing
             </span>
           )}

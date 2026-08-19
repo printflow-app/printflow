@@ -327,11 +327,11 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                   <tr key={v.id} className="cursor-pointer group" onClick={() => openDetail(v)}>
                     <td>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-control bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 font-bold text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-control bg-primary-50 border border-primary-100 flex items-center justify-center text-primary-500 font-bold text-xs shrink-0">
                           {v.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs font-semibold text-slate-800 group-hover:text-orange-600 transition-colors">{v.name}</span>
+                          <span className="text-xs font-semibold text-slate-800 group-hover:text-primary-600 transition-colors">{v.name}</span>
                           {Array.isArray(v.roles) && v.roles.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {v.roles.map((r: string) => (
@@ -408,7 +408,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
                     key={r.key}
                     type="button"
                     onClick={() => toggleRole(r.key)}
-                    className={`px-3 py-1.5 rounded-control text-xs font-medium border transition-colors ${active ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                    className={`px-3 py-1.5 rounded-control text-xs font-medium border transition-colors ${active ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
                   >
                     {r.label}
                   </button>
