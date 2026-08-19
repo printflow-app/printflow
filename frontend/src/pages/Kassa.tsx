@@ -539,7 +539,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-1 flex-1">
             <button
               onClick={() => setSelectedCashBoxId('')}
-              className={`shrink-0 px-3 py-1.5 rounded-control text-xs font-medium transition-colors border ${!selectedCashBoxId ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+              className={`shrink-0 px-3 min-h-[52px] flex flex-col justify-center rounded-control text-xs font-medium transition-colors duration-120 border ${!selectedCashBoxId ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
             >
               Barcha kassalar
             </button>
@@ -550,7 +550,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                   key={b.id}
                   onClick={() => setSelectedCashBoxId(b.id)}
                   title={b.assignedUserName ? `Mas'ul: ${b.assignedUserName}` : undefined}
-                  className={`shrink-0 px-3 py-1.5 rounded-control text-left transition-colors border ${active ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+                  className={`shrink-0 px-3 min-h-[52px] flex flex-col justify-center rounded-control text-left transition-colors duration-120 border ${active ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
                 >
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-medium whitespace-nowrap">{b.name}</span>
@@ -717,7 +717,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                </button>
                <button
                  onClick={() => { const t = new Date().toLocaleDateString('en-CA'); setDraftStart(t); setDraftEnd(t); setStartDate(t); setEndDate(t); setPage(1); }}
-                 className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-xs font-medium rounded-control transition-colors text-slate-600"
+                 className="btn-outline h-sm"
                >
                  Bugun
                </button>

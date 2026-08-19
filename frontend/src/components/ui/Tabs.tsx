@@ -39,8 +39,8 @@ export function Tabs<T extends string = string>({
             onClick={() => onChange(tab.id)}
             className={`inline-flex items-center gap-2 rounded-control font-medium transition-all duration-120 select-none whitespace-nowrap ${
               isSm
-                ? 'px-3 py-1.5 text-xs h-[30px]'
-                : 'px-4 py-2 text-sm h-[34px]'
+                ? 'px-3 text-xs h-control-sm'
+                : 'px-4 text-sm h-control'
             } ${
               isActive
                 ? 'bg-white text-slate-900 shadow-sm font-semibold'

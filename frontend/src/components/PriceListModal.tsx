@@ -357,7 +357,7 @@ export const PriceListModal: React.FC<Props> = ({
                   <p className="text-xs mt-1">Chap paneldan kerakli xizmatlarni belgilang</p>
                 </div>
               ) : (
-                <div className="shadow-2xl shadow-slate-300/40 origin-top">
+                <div className="shadow-xl origin-top">
                   <PriceListView ref={printableRef} data={filteredData} />
                 </div>
               )
@@ -383,7 +383,7 @@ export const PriceListModal: React.FC<Props> = ({
             </button>
 
             {/* Format select + Yuklab olish — bitta kombinatsiya */}
-            <div className="flex h-10 rounded-lg overflow-hidden shadow-md shadow-orange-500/20">
+            <div className="flex h-control rounded-control overflow-hidden border border-slate-200">
               <select
                 value={exportFormat}
                 onChange={e => setExportFormat(e.target.value as 'png' | 'pdf')}

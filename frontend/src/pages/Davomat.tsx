@@ -401,7 +401,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
         <div className="p-5 border-b border-slate-100">
           <h3 className="t-h3 flex items-center gap-2">
-            <UserCheck size={16} className="text-orange-500" /> Mening Davomatim — Bugun
+            <UserCheck size={16} className="text-[color:var(--primary)]" /> Mening Davomatim — Bugun
           </h3>
           <p className="t-caption mt-0.5">
             {currentUser.fullName} · {getTodayString()}
@@ -434,7 +434,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             )}
           </button>
           {buttonState === 'ketdim' && (
-            <p className="text-xs font-medium text-orange-600 animate-pulse mt-1">
+            <p className="text-xs font-medium text-[color:var(--primary)] mt-1">
               Ortiqcha ish izohini Telegram'da yozing
             </p>
           )}
@@ -450,7 +450,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <LogIn size={14} className={myToday?.checkIn ? 'text-emerald-600' : 'text-slate-300'} />
                 <span className="label-caps">Kelish</span>
               </div>
-              <p className={`text-2xl font-bold font-mono tabular-nums ${myToday?.checkIn ? 'text-emerald-700' : 'text-slate-300'}`}>
+              <p className={`text-2xl font-semibold font-mono tabular-nums ${myToday?.checkIn ? 'text-emerald-700' : 'text-slate-300'}`}>
                 {formatTime(myToday?.checkIn || null)}
               </p>
               {myToday?.lateMinutes && myToday.lateMinutes > 0 ? (
@@ -467,7 +467,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 <LogOut size={14} className={myToday?.checkOut ? 'text-slate-600' : 'text-slate-300'} />
                 <span className="label-caps">Ketish</span>
               </div>
-              <p className={`text-2xl font-bold font-mono tabular-nums ${myToday?.checkOut ? 'text-slate-700' : 'text-slate-300'}`}>
+              <p className={`text-2xl font-semibold font-mono tabular-nums ${myToday?.checkOut ? 'text-slate-700' : 'text-slate-300'}`}>
                 {formatTime(myToday?.checkOut || null)}
               </p>
               {myToday?.overtimeMinutes && myToday.overtimeMinutes > 0 ? (
@@ -514,7 +514,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-100">
           <h3 className="t-h3 flex items-center gap-2">
-            <Calendar size={14} className="text-orange-400" /> Mening Tarixim
+            <Calendar size={14} className="text-[color:var(--primary)]" /> Mening Tarixim
           </h3>
           <p className="t-caption mt-0.5">So'nggi 30 kun</p>
         </div>
@@ -586,7 +586,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             <div className="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
               <div>
                 <h3 className="t-h3 flex items-center gap-2">
-                  <Users size={14} className="text-orange-400" />
+                  <Users size={14} className="text-[color:var(--primary)]" />
                   Barcha Xodimlar Davomati
                 </h3>
                 <p className="t-caption mt-0.5">{filterDate} • {records.length} yozuv</p>
@@ -618,13 +618,13 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-100">
-                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Xodim</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Keldi</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ketdi</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Kechikish</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ortiqcha</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Holat</th>
-                    {canManage && <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]"></th>}
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Xodim</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Keldi</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Ketdi</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kechikish</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Ortiqcha</th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Holat</th>
+                    {canManage && <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider"></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -636,7 +636,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                             <Calendar size={26} />
                           </div>
                           <div>
-                            <p className="text-base font-bold text-slate-800 mb-1">Bu sanada davomat yo'q</p>
+                            <p className="t-h2 mb-1">Bu sanada davomat yo'q</p>
                             <p className="text-sm text-slate-500">Xodimlar QR orqali kelganda yoki qo'lda yozsangiz, ro'yxat shu yerda ko'rinadi.</p>
                           </div>
                         </div>
@@ -647,46 +647,46 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                       <tr key={record.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center border border-orange-200">
+                            <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 font-semibold text-xs flex items-center justify-center">
                               {record.employee?.fullName?.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{record.employee?.fullName}</p>
-                              <p className="text-[11px] font-bold text-slate-400 uppercase">{record.employee?.role?.name || 'Xodim'}</p>
+                              <p className="t-body-md">{record.employee?.fullName}</p>
+                              <p className="label-caps">{record.employee?.role?.name || 'Xodim'}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <LogIn size={12} className={record.checkIn ? 'text-emerald-500' : 'text-slate-200'} />
-                            <span className={`font-bold tabular-nums ${record.checkIn ? 'text-emerald-600' : 'text-slate-300'}`}>{formatTime(record.checkIn)}</span>
+                            <span className={`font-semibold tabular-nums ${record.checkIn ? 'text-emerald-600' : 'text-slate-300'}`}>{formatTime(record.checkIn)}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <LogOut size={12} className={record.checkOut ? 'text-slate-500' : 'text-slate-200'} />
-                            <span className={`font-bold tabular-nums ${record.checkOut ? 'text-slate-600' : 'text-slate-300'}`}>{formatTime(record.checkOut)}</span>
+                            <span className={`font-semibold tabular-nums ${record.checkOut ? 'text-slate-600' : 'text-slate-300'}`}>{formatTime(record.checkOut)}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           {record.lateMinutes > 0 ? (
-                            <span className="inline-flex items-center bg-rose-50 text-rose-600 text-[11px] font-bold px-2 py-0.5 rounded-lg border border-rose-100">+{record.lateMinutes} m</span>
+                            <span className="badge-danger">+{record.lateMinutes} m</span>
                           ) : record.checkIn ? (
-                            <span className="inline-flex items-center bg-emerald-50 text-emerald-600 text-[11px] font-bold px-2 py-0.5 rounded-lg border border-emerald-100">OK</span>
+                            <span className="badge-success">OK</span>
                           ) : '—'}
                         </td>
                         <td className="px-4 py-3">
                           {record.overtimeMinutes && record.overtimeMinutes > 0 ? (
-                            <span className="inline-flex items-center bg-slate-50 text-slate-700 text-[11px] font-bold px-2 py-0.5 rounded-lg border border-slate-100">+{record.overtimeMinutes} m</span>
+                            <span className="badge-neutral">+{record.overtimeMinutes} m</span>
                           ) : '—'}
                         </td>
                         <td className="px-4 py-3">
                           {!record.checkIn ? (
-                            <span className="text-slate-300 text-[11px] font-bold uppercase">Kelmagan</span>
+                            <span className="label-caps text-slate-400">Kelmagan</span>
                           ) : !record.checkOut ? (
-                            <span className="text-orange-600 text-[11px] font-bold uppercase animate-pulse">Ishda</span>
+                            <span className="label-caps text-[color:var(--primary)]">Ishda</span>
                           ) : (
-                            <span className="text-emerald-600 text-[11px] font-bold uppercase">Tugallandi</span>
+                            <span className="label-caps text-emerald-700">Tugallandi</span>
                           )}
                         </td>
                         {canManage && (
@@ -701,7 +701,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                                 });
                                 setShowManualModal(true);
                               }}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
+                              className="icon-btn-sm"
                               title="Tahrirlash"
                             >
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -717,17 +717,17 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </div>
 
           {/* Overtime requests */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
               <div>
-                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                <h3 className="t-h3 flex items-center gap-2">
                   <AlarmClock size={14} className="text-slate-500" />
                   Ortiqcha Ish So'rovlari
                 </h3>
-                <p className="text-[11px] font-bold text-slate-400 uppercase mt-0.5">Telegram bot orqali xodim yuborgan izohlar</p>
+                <p className="t-caption mt-0.5">Telegram bot orqali xodim yuborgan izohlar</p>
               </div>
               {pendingOvertime.length > 0 && (
-                <span className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
+                <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
                   {pendingOvertime.length} kutilmoqda
                 </span>
               )}
@@ -735,7 +735,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             {overtimeRequests.length === 0 ? (
               <div className="py-12 text-center">
                 <AlarmClock size={32} className="mx-auto text-slate-200 mb-2" />
-                <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">Hozircha so'rov yo'q</p>
+                <p className="t-caption">Hozircha so'rov yo'q</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
@@ -743,24 +743,24 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   <div key={req.id} className="p-4 hover:bg-slate-50/40 transition-colors">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 flex-shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs flex items-center justify-center border border-slate-200 flex-shrink-0">
                           {req.employee.fullName.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{req.employee.fullName}</p>
-                            <span className="text-[11px] font-bold text-slate-400 uppercase">{req.date}</span>
-                            <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-[11px] font-bold px-2 py-0.5 rounded-md">+{req.minutes} daqiqa</span>
+                            <p className="t-body-md">{req.employee.fullName}</p>
+                            <span className="label-caps">{req.date}</span>
+                            <span className="badge-neutral">+{req.minutes} daqiqa</span>
                           </div>
                           <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">{req.message}</p>
                         </div>
                       </div>
                       {canManage && (
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <button onClick={() => handleApproveOvertime(req)} className="flex items-center gap-1 h-8 px-3 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold uppercase tracking-widest rounded-lg shadow-sm transition-all">
+                          <button onClick={() => handleApproveOvertime(req)} className="btn-success h-sm">
                             <ThumbsUp size={10} /> Tasdiqlash
                           </button>
-                          <button onClick={() => { setRejectingRequest(req); setRejectReason(''); }} className="flex items-center gap-1 h-8 px-3 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-[11px] font-bold uppercase tracking-widest rounded-lg transition-all">
+                          <button onClick={() => { setRejectingRequest(req); setRejectReason(''); }} className="btn-danger h-sm">
                             <ThumbsDown size={10} /> Rad etish
                           </button>
                         </div>
@@ -771,7 +771,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 {reviewedOvertime.map(req => (
                   <div key={req.id} className="p-4 opacity-60">
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 font-bold text-xs flex items-center justify-center border border-slate-200 flex-shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 font-semibold text-xs flex items-center justify-center border border-slate-200 flex-shrink-0">
                         {req.employee.fullName.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -792,20 +792,20 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           </div>
 
           {/* Monthly matrix */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-card border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div>
-                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                  <Calendar size={14} className="text-orange-400" /> Oylik Davomat Jadvali
+                <h3 className="t-h3 flex items-center gap-2">
+                  <Calendar size={14} className="text-[color:var(--primary)]" /> Oylik Davomat Jadvali
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                <select value={matrixDate.month} onChange={e => setMatrixDate(p => ({ ...p, month: parseInt(e.target.value) }))} className="select-minimal text-xs font-bold h-9 py-0">
+                <select value={matrixDate.month} onChange={e => setMatrixDate(p => ({ ...p, month: parseInt(e.target.value) }))} className="select-minimal text-xs font-semibold h-9 py-0">
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                     <option key={m} value={m}>{new Date(0, m - 1).toLocaleString('uz-UZ', { month: 'long' })}</option>
                   ))}
                 </select>
-                <select value={matrixDate.year} onChange={e => setMatrixDate(p => ({ ...p, year: parseInt(e.target.value) }))} className="select-minimal text-xs font-bold h-9 py-0">
+                <select value={matrixDate.year} onChange={e => setMatrixDate(p => ({ ...p, year: parseInt(e.target.value) }))} className="select-minimal text-xs font-semibold h-9 py-0">
                   {[...Array(5)].map((_, i) => {
                     const y = new Date().getFullYear() - 2 + i;
                     return <option key={y} value={y}>{y}</option>;
@@ -814,7 +814,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                 {(isAdmin || currentUser.permissions?.canExportAttendance) && (
                   <button
                     onClick={handleExportMonthly}
-                    className="flex items-center gap-2 h-9 px-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold uppercase tracking-widest rounded-xl shadow-sm transition-all"
+                    className="btn-outline h-sm"
                     title="Tanlangan oy davomatini Excel'ga eksport qilish"
                   >
                     <Download size={13} strokeWidth={2.5}/> EKSPORT
@@ -859,18 +859,18 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                   return (
                     <div className="py-16 text-center">
                       <Calendar size={28} className="mx-auto text-slate-200 mb-2" />
-                      <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">Bu oy uchun davomat yo'q</p>
+                      <p className="t-caption">Bu oy uchun davomat yo'q</p>
                     </div>
                   );
                 }
 
-                const thBase = 'px-1.5 py-2 text-[11px] font-bold text-slate-400 uppercase tabular-nums';
+                const thBase = 'px-1.5 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider tabular-nums';
 
                 return (
                   <table className="text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-50/80 border-b border-slate-100">
-                        <th className="sticky left-0 z-20 bg-slate-50 px-4 py-2 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] border-r border-slate-200 min-w-[150px]">
+                        <th className="sticky left-0 z-20 bg-slate-50 px-4 py-2 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-r border-slate-200 min-w-[150px]">
                           Xodim
                         </th>
                         {days.map(d => {
@@ -880,14 +880,14 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                           return (
                             <th
                               key={d}
-                              className={`${thBase} text-center border-r border-slate-100 min-w-[58px] ${isWeekend ? 'bg-rose-50/50' : ''} ${isToday ? 'bg-orange-100 text-orange-600' : ''}`}
+                              className={`${thBase} text-center border-r border-slate-100 min-w-[58px] ${isWeekend ? 'bg-rose-50/50' : ''} ${isToday ? 'bg-primary-100 text-primary-700' : ''}`}
                             >
                               <div className="leading-none">{d}</div>
-                              <div className="text-[11px] opacity-60 font-bold mt-0.5">{dowShort[dow]}</div>
+                              <div className="text-[11px] opacity-60 font-semibold mt-0.5">{dowShort[dow]}</div>
                             </th>
                           );
                         })}
-                        <th className="sticky right-0 z-20 bg-slate-100 px-3 py-2 text-right text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em] border-l border-slate-200 min-w-[92px]">
+                        <th className="sticky right-0 z-20 bg-slate-100 px-3 py-2 text-right text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-l border-slate-200 min-w-[92px]">
                           Jami
                         </th>
                       </tr>
@@ -909,12 +909,12 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                             {/* Xodim — sticky chap */}
                             <td className="sticky left-0 z-10 bg-white px-4 py-2 border-r border-slate-200">
                               <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center border border-orange-200 flex-shrink-0">
+                                <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 font-semibold text-xs flex items-center justify-center flex-shrink-0">
                                   {emp.fullName?.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="text-xs font-bold text-slate-800 uppercase tracking-tight truncate">{emp.fullName}</p>
-                                  <p className="text-[11px] font-bold text-slate-400 uppercase truncate">{emp.role?.name || 'Xodim'}</p>
+                                  <p className="t-body-md truncate">{emp.fullName}</p>
+                                  <p className="label-caps truncate">{emp.role?.name || 'Xodim'}</p>
                                 </div>
                               </div>
                             </td>
@@ -936,19 +936,19 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                               return (
                                 <td key={d} className={`px-1 py-1.5 text-center align-middle border-r border-slate-50 ${weekendBg}`}>
                                   <div className="flex flex-col items-center leading-tight">
-                                    <span className={`text-xs font-bold tabular-nums ${late > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                    <span className={`text-xs font-semibold tabular-nums ${late > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                                       {fmtClock(r.checkIn)}
                                     </span>
-                                    <span className={`text-xs font-bold tabular-nums ${ot > 0 ? 'text-slate-600' : 'text-slate-600'}`}>
+                                    <span className={`text-xs font-semibold tabular-nums ${ot > 0 ? 'text-slate-600' : 'text-slate-600'}`}>
                                       {r.checkOut ? fmtClock(r.checkOut) : '—'}
                                     </span>
-                                    <span className="text-[11px] font-bold text-slate-500 tabular-nums">
-                                      {wm ? fmtMinutes(wm) : <span className="text-orange-500 text-[11px] uppercase">ishda</span>}
+                                    <span className="text-[11px] font-semibold text-slate-600 tabular-nums">
+                                      {wm ? fmtMinutes(wm) : <span className="label-caps text-[color:var(--primary)]">ishda</span>}
                                     </span>
                                     {(late > 0 || ot > 0) && (
                                       <div className="flex gap-1 mt-0.5">
-                                        {late > 0 && <span className="text-[11px] font-bold text-rose-500" title="Kechikish">▲{late}</span>}
-                                        {ot > 0 && <span className="text-[11px] font-bold text-slate-500" title="Ortiqcha">+{ot}</span>}
+                                        {late > 0 && <span className="text-[11px] font-semibold text-rose-600" title="Kechikish">▲{late}</span>}
+                                        {ot > 0 && <span className="text-[11px] font-semibold text-slate-600" title="Ortiqcha">+{ot}</span>}
                                       </div>
                                     )}
                                   </div>
@@ -958,14 +958,14 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                             {/* Jami — sticky o'ng */}
                             <td className="sticky right-0 z-10 bg-white px-3 py-2 border-l border-slate-200">
                               <div className="flex flex-col items-end gap-0.5">
-                                <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-800 tabular-nums">
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 tabular-nums">
                                   <Clock size={10} className="text-slate-400" /> {fmtMinutes(totalWorked)}
                                 </span>
-                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">{present} kun</span>
+                                <span className="label-caps">{present} kun</span>
                                 {(totalLate > 0 || totalOt > 0) && (
                                   <div className="flex gap-1.5">
-                                    {totalLate > 0 && <span className="text-[11px] font-bold text-rose-500">kech {totalLate}m</span>}
-                                    {totalOt > 0 && <span className="text-[11px] font-bold text-slate-500">+{totalOt}m</span>}
+                                    {totalLate > 0 && <span className="text-[11px] font-semibold text-rose-600">kech {totalLate}m</span>}
+                                    {totalOt > 0 && <span className="text-[11px] font-semibold text-slate-600">+{totalOt}m</span>}
                                   </div>
                                 )}
                               </div>
@@ -980,7 +980,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
             </div>
 
             {/* Belgilar izohi */}
-            <div className="px-4 py-2.5 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-bold uppercase tracking-wider">
+            <div className="px-4 py-2.5 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-wider">
               <span className="flex items-center gap-1 text-emerald-600"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Kelgan</span>
               <span className="flex items-center gap-1 text-slate-600"><span className="w-2 h-2 rounded-full bg-slate-500" /> Ketgan</span>
               <span className="flex items-center gap-1 text-slate-500"><Clock size={10} /> Ishlagan</span>
@@ -997,32 +997,32 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
           <form onSubmit={handleSaveSettings} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2"><LogIn size={12} /> Ish Boshlanishi:</p>
+                <p className="label-caps text-emerald-700 mb-3 flex items-center gap-2"><LogIn size={12} /> Ish Boshlanishi:</p>
                 <div className="flex items-center gap-2">
                   <input type="number" min="0" max="23" value={workSettings.workStart.hour}
                     onChange={e => setWorkSettings({ ...workSettings, workStart: { ...workSettings.workStart, hour: parseInt(e.target.value) || 0 } })}
-                    className="input-minimal text-center font-bold h-10 border-emerald-200" />
-                  <span className="font-bold text-slate-300">:</span>
+                    className="input-minimal text-center font-semibold h-10 border-emerald-200" />
+                  <span className="font-semibold text-slate-300">:</span>
                   <input type="number" min="0" max="59" value={workSettings.workStart.minute}
                     onChange={e => setWorkSettings({ ...workSettings, workStart: { ...workSettings.workStart, minute: parseInt(e.target.value) || 0 } })}
-                    className="input-minimal text-center font-bold h-10 border-emerald-200" />
+                    className="input-minimal text-center font-semibold h-10 border-emerald-200" />
                 </div>
               </div>
               <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
-                <p className="text-xs font-bold text-rose-600 uppercase tracking-widest mb-3 flex items-center gap-2"><LogOut size={12} /> Ish Tugashi:</p>
+                <p className="label-caps text-rose-700 mb-3 flex items-center gap-2"><LogOut size={12} /> Ish Tugashi:</p>
                 <div className="flex items-center gap-2">
                   <input type="number" min="0" max="23" value={workSettings.workEnd.hour}
                     onChange={e => setWorkSettings({ ...workSettings, workEnd: { ...workSettings.workEnd, hour: parseInt(e.target.value) || 0 } })}
-                    className="input-minimal text-center font-bold h-10 border-rose-200" />
-                  <span className="font-bold text-slate-300">:</span>
+                    className="input-minimal text-center font-semibold h-10 border-rose-200" />
+                  <span className="font-semibold text-slate-300">:</span>
                   <input type="number" min="0" max="59" value={workSettings.workEnd.minute}
                     onChange={e => setWorkSettings({ ...workSettings, workEnd: { ...workSettings.workEnd, minute: parseInt(e.target.value) || 0 } })}
-                    className="input-minimal text-center font-bold h-10 border-rose-200" />
+                    className="input-minimal text-center font-semibold h-10 border-rose-200" />
                 </div>
               </div>
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Calendar size={12} /> Ish Kunlari (Grafik):</p>
+              <p className="label-caps mb-3 flex items-center gap-2"><Calendar size={12} /> Ish Kunlari (Grafik):</p>
               <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                 {['Yak', 'Du', 'Se', 'Chor', 'Pay', 'Ju', 'Sha'].map((day, idx) => {
                   const isActive = workSettings.workDays.includes(idx);
@@ -1032,7 +1032,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                         const newDays = isActive ? workSettings.workDays.filter(d => d !== idx) : [...workSettings.workDays, idx].sort();
                         setWorkSettings({ ...workSettings, workDays: newDays });
                       }}
-                      className={`h-10 rounded-xl text-[11px] font-bold uppercase transition-all border-2 ${isActive ? 'bg-orange-600 border-orange-600 text-white shadow-md shadow-orange-200' : 'bg-white border-slate-100 text-slate-400 hover:border-orange-200'}`}>
+                      className={`h-control rounded-control text-xs font-medium transition-colors duration-120 border ${isActive ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}>
                       {day}
                     </button>
                   );
