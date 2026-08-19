@@ -250,7 +250,7 @@ const Hamkorlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
               className="btn-outline"
               title="Joriy ro'yxatni Excel'ga eksport qilish"
             >
-              <Download size={16}/> EKSPORT
+              <Download size={16} /> Eksport
             </button>
           )}
           {canManageVendors && (

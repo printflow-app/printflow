@@ -432,12 +432,12 @@ export default function Billing() {
                         value={promoCode}
                         onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoStatus('idle'); }}
                         disabled={promoStatus === 'valid' || promoValidating}
-                        placeholder="KODNI KIRITING"
+                        placeholder="Kodni kiriting"
                         className="input-minimal flex-1 min-w-[160px] font-medium uppercase"
                       />
                       {promoStatus === 'valid' ? (
                         <div className="h-control px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-control flex items-center justify-center text-sm font-medium gap-2">
-                          <Check size={16} /> TASDIQLANDI
+                          <Check size={16} /> Tasdiqlandi
                         </div>
                       ) : (
                         <button
@@ -446,7 +446,7 @@ export default function Billing() {
                           disabled={!promoCode || promoValidating}
                           className="btn-outline"
                         >
-                          {promoValidating ? '...' : 'TEKSHIRISH'}
+                          {promoValidating ? '...' : 'Tekshirish'}
                         </button>
                       )}
                     </div>
@@ -519,7 +519,7 @@ export default function Billing() {
                         </>
                       ) : (
                         <>
-                           <span>TASDIQLASHGA YUBORISH</span>
+                           <span>Tasdiqlashga yuborish</span>
                            <ArrowRight size={20} />
                         </>
                       )}
@@ -635,7 +635,7 @@ export default function Billing() {
                         </>
                       ) : (
                         <>
-                           <span>TASDIQLASHGA YUBORISH</span>
+                           <span>Tasdiqlashga yuborish</span>
                            <ArrowRight size={20} />
                         </>
                       )}

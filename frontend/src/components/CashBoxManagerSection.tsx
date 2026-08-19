@@ -148,8 +148,8 @@ export const CashBoxManagerSection: React.FC<{
                       ))}
                     </select>
                     <div className="flex gap-2">
-                      <button onClick={() => saveEdit(b.id)} className="btn-primary h-sm flex-1">SAQLASH</button>
-                      <button onClick={() => setEditingId(null)} className="btn-outline h-sm flex-1">BEKOR</button>
+                      <button onClick={() => saveEdit(b.id)} className="btn-primary h-sm flex-1">Saqlash</button>
+                      <button onClick={() => setEditingId(null)} className="btn-outline h-sm flex-1">Bekor</button>
                     </div>
                   </div>
                 ) : (

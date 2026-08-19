@@ -433,7 +433,7 @@ const Vazifalar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cu
             />
           </div>
           <div className="flex gap-3 pt-4 border-t border-slate-100">
-            <button type="button" onClick={() => setModalOpen(false)} className="btn-outline flex-1">BEKOR</button>
+            <button type="button" onClick={() => setModalOpen(false)} className="btn-outline flex-1">Bekor</button>
             <button type="submit" disabled={saving} className="btn-primary flex-1">
               {saving ? 'Saqlanmoqda...' : 'YARATISH'}
             </button>

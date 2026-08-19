@@ -364,7 +364,7 @@ const Ombor: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                         <div className="flex justify-between items-end mb-1">
                           <span className="t-caption">Omborda jami:</span>
                           {isCrit ? (
-                            <Badge variant="danger">TUGAGAN</Badge>
+                            <Badge variant="danger">Tugagan</Badge>
                           ) : isLowStock ? (
                             <Badge variant="warning">MIN: {mat.minStock}</Badge>
                           ) : null}

@@ -287,7 +287,7 @@ const GUIDES: Guide[] = [
             "Yuqoridagi <strong>qidiruv maydoniga</strong> mahsulot nomini yozing — ro'yxat darhol filtrlanadi (xizmat nomi, o'lchov birligi va opsiya qiymatlari bo'yicha qidiradi)",
             "Kerakli opsiyalarni tanlang — dona narxi jonli o'zgaradi",
             "Sonini kiriting va <strong>Qo'shish</strong> bosing",
-            "O'ngdagi savatda qatorlar to'planadi, <strong>JAMI</strong> summa avtomatik hisoblanadi",
+            "O'ngdagi savatda qatorlar to'planadi, <strong>Jami</strong> summa avtomatik hisoblanadi",
             "Pastdagi tanlovdan PDF yoki PNG ni tanlab <strong>Yuklab olish</strong> bosing",
           ]},
           { type: 'callout', tone: 'tip', title: 'Qidiruv haqida',

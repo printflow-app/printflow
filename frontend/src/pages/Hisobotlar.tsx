@@ -1027,7 +1027,7 @@ const Hisobotlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ c
                 disabled={isSearchingCosting || !costingQuery.trim()}
                 className="btn-outline hidden sm:inline-flex"
               >
-                {isSearchingCosting ? '...' : 'QIDIRISH'}
+                {isSearchingCosting ? '...' : 'Qidirish'}
               </button>
             </div>
           </div>

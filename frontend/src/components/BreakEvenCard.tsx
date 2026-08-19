@@ -333,7 +333,7 @@ const BreakEvenCard: React.FC = () => {
             </div>
 
             <div className="flex gap-3 p-5 border-t border-slate-100">
-              <button onClick={() => setEditing(false)} className="btn-outline flex-1">BEKOR</button>
+              <button onClick={() => setEditing(false)} className="btn-outline flex-1">Bekor</button>
               <button onClick={save} disabled={saving} className="btn-primary flex-1">
                 {saving ? 'Saqlanmoqda...' : 'SAQLASH'}
               </button>

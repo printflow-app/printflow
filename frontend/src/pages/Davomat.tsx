@@ -817,7 +817,7 @@ const Davomat: React.FC<{ currentUser: any }> = ({ currentUser }) => {
                     className="btn-outline h-sm"
                     title="Tanlangan oy davomatini Excel'ga eksport qilish"
                   >
-                    <Download size={13} strokeWidth={2.5}/> EKSPORT
+                    <Download size={16} /> Eksport
                   </button>
                 )}
               </div>

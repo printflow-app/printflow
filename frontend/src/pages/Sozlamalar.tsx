@@ -335,7 +335,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canViewOwnCashOnly: { label: "Faqat o'zi kiritgan kirim/chiqimni ko'rish", detail: "Yoqilsa — xodim Kassada faqat O'ZI kiritgan kirim va chiqimlarni, hamda shulardan kelib chiqqan balansni ko'radi. Boshqalar kiritgan raqamlar va umumiy balans ko'rinmaydi. (Administrator uchun amal qilmaydi.)" },
           canAddIncome: { label: "Kirim (tushum) qo'shish", detail: "'+ Kirim' tugmasi faol bo'ladi. Mijozdan to'lov qabul qilish, buyurtma bilan bog'lash, to'lov turini tanlash — bularning barchasi kiritiladi." },
           canAddExpense: { label: "Chiqim (xarajat) qo'shish", detail: "'+ Chiqim' tugmasi faol bo'ladi. Xarajat turi, summa, izoh va to'lov usuli bilan chiqim kiritish. Xodim maoshi uchun esa alohida 'Maosh' turi mavjud." },
-          canExportFinance: { label: "Excel'ga eksport qilish", detail: "Kassa sahifasida 'EKSPORT' tugmasi ko'rinadi. Joriy filtr (sana oralig'i, qidiruv) bo'yicha barcha tranzaksiyalarni .xlsx faylga yuklab olish imkoni." },
+          canExportFinance: { label: "Excel'ga eksport qilish", detail: "Kassa sahifasida 'Eksport' tugmasi ko'rinadi. Joriy filtr (sana oralig'i, qidiruv) bo'yicha barcha tranzaksiyalarni .xlsx faylga yuklab olish imkoni." },
           canViewAllCashBoxes: { label: "Boshqa kassalarni ko'rish", detail: "Yoqilsa — barcha kassalar (kassir, moliyachi, asosiy) va ularning balanslari ko'rinadi. Yo'q bo'lsa — xodim faqat o'ziga biriktirilgan kassa(lar)ni ko'radi. (Administrator uchun har doim ochiq.)" },
           canManageCashBoxes: { label: "Kassa ochish va boshqarish", detail: "'Yangi kassa' tugmasi faol bo'ladi. Yangi kassa yaratish, nomini o'zgartirish, xodimga biriktirish va o'chirish. Bundan tashqari — kassaga topshirilgan pulni qabul qilish/rad etish huquqini ham beradi." },
           canTransferCash: { label: "Pulni boshqa kassaga topshirish", detail: "Kassada 'Topshirish' tugmasi faol bo'ladi. Kassir kunlik/haftalik pulni moliyachi kassasiga topshiradi — pul uning kassasidan chiqim bo'lib, qabul qilinishi kutiladi." },
@@ -358,7 +358,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canDeleteTask: { label: "Buyurtmani o'chirish yoki arxivlash", detail: "'O'chirish' va 'Arxivlash' tugmalari ko'rinadi. Ruxsat yo'q bo'lsa bu tugmalar umuman ko'rinmaydi." },
           canMoveTask: { label: "Buyurtmani bosqichdan bosqichga ko'chirish", detail: "'Bosqichni o'zgartirish' tugmasi faol bo'ladi. Buyurtmani keyingi yoki oldingi kanban ustuniga ko'chirish va izoh qoldirish mumkin." },
           canManageColumns: { label: "Kanban ustunlarini (bosqichlarni) boshqarish", detail: "Yangi bosqich (ustun) qo'shish, mavjudini nomini o'zgartirish va tartibini belgilash imkoni." },
-          canExportTasks: { label: "Excel'ga eksport qilish", detail: "Kanban sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha buyurtmalarni bosqich, mijoz, summa va deadline ma'lumotlari bilan .xlsx faylga yuklab olish." },
+          canExportTasks: { label: "Excel'ga eksport qilish", detail: "Kanban sahifasida 'Eksport' tugmasi ko'rinadi. Barcha buyurtmalarni bosqich, mijoz, summa va deadline ma'lumotlari bilan .xlsx faylga yuklab olish." },
         }
       },
       {
@@ -381,7 +381,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canEditCustomer: { label: "Mijoz ma'lumotlarini tahrirlash", detail: "Har bir mijoz qatorida 'Tahrirlash' tugmasi ko'rinadi. Ism, telefon, manzil, telegram va boshqa ma'lumotlarni o'zgartirish mumkin." },
           canDeleteCustomer: { label: "Mijozni tizimdan o'chirish", detail: "Mijoz qatorida 'O'chirish' tugmasi ko'rinadi. Mijozni tizimdan butunlay o'chirish — bu amalni ortga qaytarish mumkin emas." },
           canManageCustomers: { label: "Kontaktlar, buyurtmalar va to'lovlar tarixi", detail: "Mijoz detali modalida: barcha buyurtmalar ro'yxati, to'lov tarixi, qarz holati va kontakt raqamlarini ko'rish va boshqarish imkoni." },
-          canExportCustomers: { label: "Excel'ga eksport qilish", detail: "Mijozlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha mijozlarni ism, telefon, qarz, jami to'lov va buyurtmalar soni bilan .xlsx faylga yuklab olish." },
+          canExportCustomers: { label: "Excel'ga eksport qilish", detail: "Mijozlar sahifasida 'Eksport' tugmasi ko'rinadi. Barcha mijozlarni ism, telefon, qarz, jami to'lov va buyurtmalar soni bilan .xlsx faylga yuklab olish." },
         }
       },
       {
@@ -395,7 +395,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canUseInventory: { label: "Chiqim — sarflanish kiritish", detail: "Material kartasida 'Chiqim' tugmasi ko'rinadi. Ishlab chiqarishga sarflangan material miqdorini kiritish va xarajat sifatida qayd etish." },
           canWriteOffInventory: { label: "Brak — yaroqsiz materiallarni hisobdan chiqarish", detail: "Material kartasida 'Brak' tugmasi ko'rinadi. Yaroqsiz yoki yo'qolgan materiallarni hisobdan o'chirish. Sabab va miqdor ko'rsatiladi." },
           canManageInventory: { label: "Material ma'lumotlarini tahrirlash va o'chirish", detail: "Material nomini, o'lchov birligini va minimum zaxira miqdorini o'zgartirish. Keraksiz materialni ro'yxatdan o'chirish imkoni." },
-          canExportInventory: { label: "Excel'ga eksport qilish", detail: "Ombor sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha materiallarni nomi, birligi, joriy zaxira va minimum chegara bilan .xlsx faylga yuklab olish." },
+          canExportInventory: { label: "Excel'ga eksport qilish", detail: "Ombor sahifasida 'Eksport' tugmasi ko'rinadi. Barcha materiallarni nomi, birligi, joriy zaxira va minimum chegara bilan .xlsx faylga yuklab olish." },
         }
       },
       {
@@ -406,7 +406,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canViewAttendance: { label: "Sahifaga kirish — o'z davomatini ko'rish va belgilash", detail: "Menyu'da 'Davomat' ko'rinadi. Xodim o'z keldi/ketti vaqtini QR kod yoki 'Keldim' tugmasi bilan belgilaydi. Faqat o'z tarixi ko'rinadi." },
           canViewAllAttendance: { label: "Barcha xodimlar davomatini ko'rish", detail: "Barcha xodimlarning kunlik davomat jadvali, oylik matritsa ko'rinishi, kech qolish daqiqalari statistikasi va xodim bo'yicha filtrlash." },
           canManageAttendance: { label: "Qo'lda davomat kiritish va tizim sozlamalari", detail: "Qurilmasiz xodimlar uchun admin keldi/ketti vaqtini qo'lda kiritadi. Ofis Wi-Fi IP manzillar allowlist (ruxsat etilgan tarmoqlar) sozlamasi." },
-          canExportAttendance: { label: "Excel'ga eksport qilish", detail: "Davomat sahifasida 'EKSPORT' tugmasi ko'rinadi. Oylik davomat matritsasini xodimlar bo'yicha kun-kun .xlsx faylga yuklab olish." },
+          canExportAttendance: { label: "Excel'ga eksport qilish", detail: "Davomat sahifasida 'Eksport' tugmasi ko'rinadi. Oylik davomat matritsasini xodimlar bo'yicha kun-kun .xlsx faylga yuklab olish." },
         }
       },
 
@@ -432,7 +432,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canViewExpenseCharts: { label: "Chiqim Tahlili (kategoriyalar bo'yicha)", detail: "Har bir xarajat kategoriyasi bo'yicha aniq summa va umumiy chiqimdagi ulushi. Eng ko'p sarflangan yo'nalishlarni tezda aniqlash." },
           canViewServiceReports: { label: "Xizmat Hajmi & O'rtacha Chek", detail: "Xizmat tanlash orqali: buyurtmalar soni, jami daromad, o'rtacha chek va barcha daromaddagi ulushi ko'rsatiladi. Xizmatlar daromad bo'yicha reytingi ham ko'rinadi." },
           canViewCostCalculator: { label: "Tannarx Kalkulyatori", detail: "Buyurtma ID yoki nomi bo'yicha qidirish. Xarajat qatorlarini qo'shish, 1 donaga tannarx va sof foyda/marja foizini real vaqtda hisoblash." },
-          canExportReports: { label: "Excel'ga eksport qilish", detail: "Hisobotlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Joriy hisobot ma'lumotlari (xizmatlar, hamkorlar, dinamika va h.k.) .xlsx faylga yuklab olinadi." },
+          canExportReports: { label: "Excel'ga eksport qilish", detail: "Hisobotlar sahifasida 'Eksport' tugmasi ko'rinadi. Joriy hisobot ma'lumotlari (xizmatlar, hamkorlar, dinamika va h.k.) .xlsx faylga yuklab olinadi." },
         }
       },
 
@@ -450,7 +450,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
           canViewSalary: { label: "Xodim maosh summalarini ko'rish", detail: "Xodimlar jadvalida va profilida boshlang'ich maosh, berilgan avans va qarz summasi ko'rinadi. Ruxsat yo'q bo'lsa bu raqamlar yashiriladi." },
           canViewPayroll: { label: "Maosh bo'limini (oylik hisob-kitob) ko'rish", detail: "Xodimlar sahifasida 'Maosh' tabi ko'rinadi — oy bo'yicha har xodimning fiksa, bonus, jarima, avans va berish kerak summasi jadvali. Faqat ko'rish (o'zgartirmasdan)." },
           canManagePayroll: { label: "Maosh hisoblash, saqlash va to'lash", detail: "Maosh bo'limida bonus/jarima kiritish, maosh varaqasini saqlash va 'To'lash' (Kassadan chiqim) qilish imkoni. Ortiqcha avans keyingi oyga qarz bo'lib ko'chadi." },
-          canExportEmployees: { label: "Excel'ga eksport qilish", detail: "Xodimlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha xodimlarni ism, lavozim, telefon, login va filial ma'lumotlari bilan .xlsx faylga yuklab olish." },
+          canExportEmployees: { label: "Excel'ga eksport qilish", detail: "Xodimlar sahifasida 'Eksport' tugmasi ko'rinadi. Barcha xodimlarni ism, lavozim, telefon, login va filial ma'lumotlari bilan .xlsx faylga yuklab olish." },
         }
       },
       {
@@ -468,7 +468,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
         permissions: {
           canViewVendors: { label: "Hamkorlar ro'yxatini ko'rish", detail: "Menyu'da 'Hamkorlar' bo'limi ko'rinadi. Hamkorlar (subpudratchilar) kartochkalari: ism, mutaxassislik, telefon, joriy qarz holati va jami buyurtmalar soni. Hamkor detalini ochish mumkin." },
           canManageVendors: { label: "Hamkorlarni qo'shish, tahrirlash, o'chirish va to'lov", detail: "'+ Hamkor' tugmasi ko'rinadi. Yangi hamkor yaratish. Mavjud hamkor ma'lumotlarini o'zgartirish. Hamkorga to'lov kiritish (qarzni kamaytirish). Hamkorni o'chirish." },
-          canExportVendors: { label: "Excel'ga eksport qilish", detail: "Hamkorlar sahifasida 'EKSPORT' tugmasi ko'rinadi. Barcha hamkorlarni ism, mutaxassislik, telefon va qarz holati bilan .xlsx faylga yuklab olish." },
+          canExportVendors: { label: "Excel'ga eksport qilish", detail: "Hamkorlar sahifasida 'Eksport' tugmasi ko'rinadi. Barcha hamkorlarni ism, mutaxassislik, telefon va qarz holati bilan .xlsx faylga yuklab olish." },
         }
       },
       {
@@ -743,8 +743,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                               className="input-minimal"
                             />
                             <div className="flex gap-2">
-                              <button onClick={() => handleUpdatePT(pt.id)} className="btn-primary h-sm flex-1">SAQLASH</button>
-                              <button onClick={() => setEditingPTId(null)} className="btn-outline h-sm flex-1">BEKOR</button>
+                              <button onClick={() => handleUpdatePT(pt.id)} className="btn-primary h-sm flex-1">Saqlash</button>
+                              <button onClick={() => setEditingPTId(null)} className="btn-outline h-sm flex-1">Bekor</button>
                             </div>
                           </div>
                         ) : (
@@ -829,8 +829,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
                               className="input-minimal"
                             />
                             <div className="flex gap-2">
-                              <button onClick={() => handleUpdateET(et.id)} className="btn-primary h-sm flex-1">SAQLASH</button>
-                              <button onClick={() => setEditingETId(null)} className="btn-outline h-sm flex-1">BEKOR</button>
+                              <button onClick={() => handleUpdateET(et.id)} className="btn-primary h-sm flex-1">Saqlash</button>
+                              <button onClick={() => setEditingETId(null)} className="btn-outline h-sm flex-1">Bekor</button>
                             </div>
                           </div>
                         ) : (
@@ -1087,8 +1087,8 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
               </div>
 
               <div className="flex flex-wrap justify-end gap-3 pt-6 border-t border-slate-100">
-                <button type="button" className="btn-outline h-lg" onClick={() => setIsRoleModalOpen(false)}>BEKOR QILISH</button>
-                <button type="submit" className="btn-primary h-lg">YARATISH VA SAQLASH</button>
+                <button type="button" className="btn-outline h-lg" onClick={() => setIsRoleModalOpen(false)}>Bekor qilish</button>
+                <button type="submit" className="btn-primary h-lg">Yaratish va saqlash</button>
               </div>
             </form>
           </Modal>
@@ -1103,7 +1103,7 @@ const Sozlamalar: React.FC<{ currentUser: any; activeBranchId?: string; catalogO
               <div className="space-y-5">
                 <p className="t-body">{confirmModal.message}</p>
                 <div className="flex gap-3">
-                  <button onClick={() => setConfirmModal(null)} className="btn-outline h-lg flex-1">BEKOR QILISH</button>
+                  <button onClick={() => setConfirmModal(null)} className="btn-outline h-lg flex-1">Bekor qilish</button>
                   <button onClick={confirmModal.onConfirm} className="btn-danger-solid h-lg flex-1">
                     TASDIQLASH
                   </button>
@@ -1463,7 +1463,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
                   {isEditing ? (
                     <>
                       <button onClick={() => handleUpdateService(svc.id)} className="btn-primary h-sm"><Save size={16} /> SAQLASH</button>
-                      <button onClick={() => setEditSvcId(null)} className="btn-outline h-sm">BEKOR</button>
+                      <button onClick={() => setEditSvcId(null)} className="btn-outline h-sm">Bekor</button>
                     </>
                   ) : (
                     <>
@@ -1730,7 +1730,7 @@ const ServicesCatalogSection: React.FC<{ services: any[]; onRefresh: () => void;
           <div className="space-y-5">
             <p className="t-body">{confirmModal.message}</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmModal(null)} className="btn-outline h-lg flex-1">BEKOR</button>
+              <button onClick={() => setConfirmModal(null)} className="btn-outline h-lg flex-1">Bekor</button>
               <button onClick={confirmModal.onConfirm} className="btn-danger-solid h-lg flex-1">
                 TASDIQLASH
               </button>

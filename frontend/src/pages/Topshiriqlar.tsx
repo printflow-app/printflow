@@ -2728,7 +2728,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
           </button>
 
           <div className="flex flex-col sm:flex-row gap-2 pt-2 justify-end">
-            <button type="button" className="btn-outline flex-1" onClick={() => { setIsNewColumnModalOpen(false); setEditingColumnId(null); }}>BEKOR</button>
+            <button type="button" className="btn-outline flex-1" onClick={() => { setIsNewColumnModalOpen(false); setEditingColumnId(null); }}>Bekor</button>
             <button type="submit" disabled={isSavingColumn} className="btn-primary flex-1">{isSavingColumn ? '...' : (editingColumnId ? 'YANGILASH' : 'YARATISH')}</button>
           </div>
         </form>
@@ -2919,7 +2919,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-2 pt-2">
-            <button type="button" onClick={() => setIsNewOptionModalOpen(false)} className="btn-outline flex-1">BEKOR</button>
+            <button type="button" onClick={() => setIsNewOptionModalOpen(false)} className="btn-outline flex-1">Bekor</button>
             <button
               type="submit"
               disabled={isSavingOption}
@@ -2967,7 +2967,7 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                     }}
                     className="input-minimal h-control-lg pl-24 text-right tabular-nums"
                   />
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 label-caps pointer-events-none">MIQDOR</div>
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 label-caps pointer-events-none">Miqdor</div>
                 </div>
               </div>
             ))}

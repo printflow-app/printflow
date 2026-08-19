@@ -528,7 +528,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
         <div className="w-full max-w-xs text-center">
           <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-6 h-6 text-primary-400" strokeWidth={2} />
+            <Lock className="w-6 h-6 text-primary-400" />
           </div>
           <h1 className="text-lg font-semibold text-white tracking-tight mb-1">
             {pendingTab === 'settings_access' ? 'Sozlamalarga kirish' : pendingTab === 'profile_access' ? 'Profilga kirish' : pendingTab ? 'Sahifaga kirish' : 'Tizim qulflangan'}
@@ -779,7 +779,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
           <div className="bg-white rounded-overlay shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-slide-up">
             <div className="p-6 text-center">
               <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <LogOut size={24} className="text-rose-500" strokeWidth={2.5} />
+                <LogOut size={24} className="text-rose-500" />
               </div>
               <h3 className="text-base font-semibold text-slate-900 tracking-tight mb-1">Chiqishni tasdiqlang</h3>
               <p className="text-sm text-slate-500">Tizimdan chiqmoqchimisiz? Barcha ochiq ma'lumotlar yopiladi.</p>
@@ -939,7 +939,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onLogout, onUpdateUs
 
               <div className="relative z-10 w-full max-w-xs text-center">
                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg border border-slate-100">
-                  <Lock className="w-6 h-6 text-rose-500" strokeWidth={2} />
+                  <Lock className="w-6 h-6 text-rose-500" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-900 tracking-tight mb-1">Sahifa qulflangan</h3>
                 <p className="text-sm text-slate-500 mb-6">Ushbu bo'limga kirish uchun PIN kodni kiriting</p>

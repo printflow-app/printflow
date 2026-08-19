@@ -115,9 +115,9 @@ Chap menyudan <b>"Tizim Sozlamalari"</b> tugmasini bosing.`,
     rewindToId: 'nav-sozlamalar',
     title: "3️⃣ To'lov turlari",
     description: `Pastga aylantiring — <b>To'lov turlari</b> bo'limini toping.
-      Orange ring ichida katta input va <b>QO'SHISH</b> tugmasi bor.<br><br>
+      Orange ring ichida katta input va <b>Qo'shish</b> tugmasi bor.<br><br>
       Input'ga nom yozib (masalan: <b>Naqd</b>, <b>Karta</b>, <b>Click</b>),
-      <b>QO'SHISH</b> bosing — avtomatik qo'shiladi. Bir nechta usul qo'shing.<br><br>
+      <b>Qo'shish</b> bosing — avtomatik qo'shiladi. Bir nechta usul qo'shing.<br><br>
       Bu turlar Kassa'da buyurtma yaratganda dropdown'da chiqadi.<br><br>
       Tugatdingizmi? <b>"Davom →"</b> bosing.`,
   },
