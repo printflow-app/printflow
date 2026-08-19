@@ -18,12 +18,25 @@ CREATE INDEX IF NOT EXISTS "EmployeeDepartment_tenantId_idx"     ON "EmployeeDep
 CREATE INDEX IF NOT EXISTS "EmployeeDepartment_employeeId_idx"   ON "EmployeeDepartment" ("employeeId");
 CREATE INDEX IF NOT EXISTS "EmployeeDepartment_departmentId_idx" ON "EmployeeDepartment" ("departmentId");
 
-ALTER TABLE "EmployeeDepartment"
-    ADD CONSTRAINT "EmployeeDepartment_tenantId_fkey"
-    FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "EmployeeDepartment"
-    ADD CONSTRAINT "EmployeeDepartment_employeeId_fkey"
-    FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "EmployeeDepartment"
-    ADD CONSTRAINT "EmployeeDepartment_departmentId_fkey"
-    FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- FK'lar guard bilan: jadval va indekslar yuqorida IF NOT EXISTS bilan
+-- yaratiladi, ADD CONSTRAINT esa bunday shaklga ega emas. Guardsiz bu
+-- migratsiya ikkinchi marta ishga tushirilganda "constraint already
+-- exists" bilan yiqilardi.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'EmployeeDepartment_tenantId_fkey') THEN
+    ALTER TABLE "EmployeeDepartment"
+      ADD CONSTRAINT "EmployeeDepartment_tenantId_fkey"
+      FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'EmployeeDepartment_employeeId_fkey') THEN
+    ALTER TABLE "EmployeeDepartment"
+      ADD CONSTRAINT "EmployeeDepartment_employeeId_fkey"
+      FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'EmployeeDepartment_departmentId_fkey') THEN
+    ALTER TABLE "EmployeeDepartment"
+      ADD CONSTRAINT "EmployeeDepartment_departmentId_fkey"
+      FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;

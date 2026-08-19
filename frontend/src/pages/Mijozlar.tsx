@@ -3,7 +3,7 @@ import {
   Search, Phone, Trash2, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
   FileText, AlertCircle, ClipboardList, Plus, Edit3,
   Building2, UserPlus, Mail, Briefcase, CheckCircle2, Download,
-  MapPin, Users, Table, Map
+  MapPin, Users, Table, Map as MapIcon
 } from 'lucide-react';
 import { customersApi } from '../api';
 import { useCustomers, useInvalidate } from '../hooks/queries';
@@ -325,6 +325,20 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
     }
   };
 
+  // =============================================
+  // Contacts
+  // =============================================
+  // Vakillarga alohida kirish tugmasi yo'q — qalamcha mijoz oynasini
+  // ochadi, vakillar esa uning 2-bosqichida (`openVakillar`).
+
+  // MIJOZ ID'SI YAGONA MANBADAN — `custForm.id`.
+  //
+  // Ilgari bu yer `contactsCustomer` ga tayanardi. Oyna ikki bosqichga
+  // birlashtirilgandan keyin ikkita holat paydo bo'ldi va ular ajralib
+  // qolishi mumkin edi: 2-tabga o'tish `custForm.id` ni ishlatadi,
+  // qo'shish esa `contactsCustomer` ni — u null bo'lsa tugma jimgina
+  // hech narsa qilmasdi.
+  /** Vakil qatoridagi qalamcha — ma'lumotini yuqoridagi formaga oladi. */
   const startEditContact = (ct: any) => {
     setEditingContactId(ct.id);
     setContactForm({
@@ -430,7 +444,7 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       <Tabs<ViewType>
         tabs={[
           { id: 'all', label: 'Jadval', icon: Table, count: customers.length },
-          { id: 'map', label: 'Xarita', icon: Map },
+          { id: 'map', label: 'Xarita', icon: MapIcon },
         ]}
         activeTab={activeView}
         onChange={setActiveView}
@@ -633,15 +647,24 @@ const Mijozlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
                               <button onClick={() => openOrderHistory(c)} className="icon-btn-sm" title="Buyurtmalar tarixi">
                                 <ClipboardList size={16}/>
                               </button>
-                              {canEdit && (
-                                <button onClick={e => openEdit(c, e)} className="icon-btn-sm" title="Tahrirlash va vakillar">
-                                  <Edit3 size={16}/>
-                                </button>
-                              )}
-                              {canDelete && (
-                                <button onClick={() => setConfirmModal({ isOpen: true, id: c.id, name: c.name })} className="icon-btn-sm hover:text-rose-600" title="O'chirish">
-                                  <Trash2 size={16}/>
-                                </button>
+                              {(canEdit || canDelete) && (
+                                <>
+                                  {/* Alohida "Vakillar" ikonkasi olib tashlandi:
+                                      u qalamcha bilan bir xil oynani ochardi,
+                                      faqat 2-bosqichdan. Ikkita ikonka bir ishni
+                                      qilishi chalkashtirardi — endi qalamcha
+                                      bosiladi, ichida "2. Vakillar" bosqichi bor. */}
+                                  {canEdit && (
+                                    <button onClick={e => openEdit(c, e)} className="icon-btn-sm" title="Tahrirlash va vakillar">
+                                      <Edit3 size={16}/>
+                                    </button>
+                                  )}
+                                  {canDelete && (
+                                    <button onClick={() => setConfirmModal({ isOpen: true, id: c.id, name: c.name })} className="icon-btn-sm hover:text-rose-600">
+                                      <Trash2 size={16}/>
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </td>

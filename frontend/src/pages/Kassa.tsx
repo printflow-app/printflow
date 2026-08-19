@@ -638,10 +638,16 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
       {/* 3 ta standart StatCard (Design System v1 Page 10) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
         <StatCard
-          label={ownCashOnly ? "Mening balansim" : "Balans"}
+          label={ownCashOnly ? "Mening balansim" : "Davr balansi"}
           value={formatCurrency(summary?.balance || 0)}
           subtitle={
+            /* Davr balansi = tanlangan oraliqdagi kirim − chiqim, kassalararo
+               o'tkazmasiz (o'tkazma daromad ham, xarajat ham emas). Kassa
+               tugmasidagi "qoldiq" esa kassada hozir turgan haqiqiy pul —
+               ikkalasi turlicha bo'lishi normal, shuning uchun yonma-yon
+               ko'rsatiladi. */
             <span>
+              kirim − chiqim · o'tkazmasiz ·{' '}
               {startDate === endDate ? startDate : `${startDate} — ${endDate}`}
               {(() => {
                 const tanlangan = cashBoxes.find(b => b.id === selectedCashBoxId);
