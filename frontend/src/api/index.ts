@@ -168,6 +168,10 @@ export const employeesApi = {
   update: (id: string, data: any) => api.put(`/employees/${id}`, data),
   delete: (id: string) => api.delete(`/employees/${id}`),
 
+  /** Yangi vaqtinchalik parol — javobda `temporaryPassword` bir marta keladi. */
+  regeneratePassword: (id: string) =>
+    api.post(`/employees/${id}/regenerate-password`),
+
   // Telegram orqali auto-login (bot tomonidan)
   telegramLogin: (telegramId: string) =>
     api.post('/employees/telegram-login', { telegramId }),

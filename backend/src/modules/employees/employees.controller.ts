@@ -32,6 +32,15 @@ export class EmployeesController {
     return this.employeesService.update(id, data);
   }
 
+  /**
+   * Yangi vaqtinchalik parol. Javobda parol BIR MARTA ochiq keladi —
+   * rahbar uni xodimga uzatadi. Bazada faqat hash qoladi.
+   */
+  @Post(':id/regenerate-password')
+  regeneratePassword(@Param('id') id: string) {
+    return this.employeesService.regeneratePassword(id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.employeesService.remove(id);

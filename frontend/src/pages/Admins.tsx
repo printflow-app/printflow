@@ -98,11 +98,18 @@ const Admins: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curre
       message: "Ushbu foydalanuvchi uchun yangi parol generatsiya qilinsinmi?",
       onConfirm: async () => {
         try {
-          const res = await employeesApi.update(id, { password: Math.floor(100000 + Math.random() * 900000).toString() });
+          // Parolni server yaratadi (kriptografik) va javobda bir marta
+          // qaytaradi — brauzerdagi `Math.random()` ga tayanmaydi.
+          const res = await employeesApi.regeneratePassword(id);
           fetchData(true);
-          setSelectedEmp(res.data);
+          setSelectedEmp((prev: any) => ({
+            ...(prev || {}),
+            id,
+            login: res.data?.login ?? prev?.login,
+            password: res.data?.temporaryPassword,
+          }));
           setIsCredentialsModalOpen(true);
-          toast.success("Parol muvaffaqiyatli yangilandi.");
+          toast.success("Parol yangilandi — xodimga uzating.");
         } catch (err) {
           toast.error("Yangilashda xatolik yuz berdi.");
         }

@@ -1,4 +1,5 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TenantContext } from '../../common/tenant/tenant.context';
 import * as bcrypt from 'bcrypt';
@@ -124,6 +125,37 @@ export class EmployeesService {
 
     // Return plain-text password once so frontend can display it
     return { ...employee, password: rawPassword };
+  }
+
+  /**
+   * Xodimga yangi vaqtinchalik parol beradi va uni BIR MARTA qaytaradi.
+   *
+   * Nega alohida metod: `update` orqali parol yangilash uchun frontend
+   * parolni o'zi o'ylab topib yuborishi kerak edi — ya'ni parol kuchi
+   * brauzerdagi `Math.random()` ga bog'lanardi. Bu yerda u `crypto` bilan
+   * yaratiladi va javobda faqat shu safar ko'rinadi; bazada esa hech qachon
+   * ochiq matn saqlanmaydi (bcrypt hash).
+   *
+   * `passwordVersion` oshadi — xodim barcha qurilmalarda tizimdan chiqariladi.
+   */
+  async regeneratePassword(id: string) {
+    const employee = await this.prisma.employee.findUnique({ where: { id } });
+    if (!employee) throw new NotFoundException('Xodim topilmadi');
+
+    // 6 xonali raqam — xodimlar uni telefon klaviaturasida kiritadi.
+    // `randomInt` kriptografik: `Math.random()` dan farqli, oldindan
+    // taxmin qilib bo'lmaydi.
+    const temporaryPassword = String(randomInt(100000, 1000000));
+
+    await this.prisma.employee.update({
+      where: { id },
+      data: {
+        passwordHash: await bcrypt.hash(temporaryPassword, 12),
+        passwordVersion: (employee.passwordVersion || 1) + 1,
+      },
+    });
+
+    return { login: employee.login, temporaryPassword };
   }
 
   async update(id: string, data: any) {

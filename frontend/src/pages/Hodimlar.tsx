@@ -228,7 +228,7 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
       message: "Xodim uchun yangi parol generatsiya qilinsinmi? Eski parol o'z kuchini yo'qotadi.",
       onConfirm: async () => {
         try {
-          const res = await (employeesApi as any).regeneratePassword(id);
+          const res = await employeesApi.regeneratePassword(id);
           const newPass = res.data?.temporaryPassword;
           invalidate.employees();
           if (newPass) {
