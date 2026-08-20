@@ -673,7 +673,10 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                ikkalasi turlicha bo'lishi normal, shuning uchun yonma-yon
                ko'rsatiladi. */
             <span>
-              kirim − chiqim · o'tkazmasiz ·{' '}
+              {/* Kassa tanlanganda o'tkazma HISOBGA OLINADI — u shu kassa uchun
+                  haqiqiy pul harakati. Barcha kassalar bo'yicha esa ichki
+                  ko'chirish bo'lgani uchun chiqarib tashlanadi. */}
+              kirim − chiqim · {selectedCashBoxId ? "o'tkazmalar bilan" : "o'tkazmasiz"} ·{' '}
               {startDate === endDate ? startDate : `${startDate} — ${endDate}`}
               {(() => {
                 const tanlangan = cashBoxes.find(b => b.id === selectedCashBoxId);

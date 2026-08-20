@@ -12,6 +12,21 @@ import { TenantContext } from '../../common/tenant/tenant.context';
 // 1 251 000 so'm soxta kirim va shuncha soxta chiqim yig'ilgan edi.
 const NOT_TRANSFER = { isInternalTransfer: false } as const;
 
+/**
+ * Kassalararo o'tkazmani yig'indidan chiqarish KERAKMI?
+ *
+ * Butun kompaniya bo'yicha — ha: o'z pulini bir kassadan ikkinchisiga
+ * ko'chirish daromad ham, xarajat ham emas.
+ *
+ * Aniq KASSA tanlanganda — yo'q: o'sha kassa uchun bu haqiqiy pul harakati.
+ * Kassir pulni asosiy kassaga topshirsa, uning kassasidan pul CHIQIB ketadi;
+ * uni chiqim deb sanamasak, kassada qoldiq nol bo'lsa ham "davr balansi"
+ * o'sha summani ko'rsatib turadi va ikki raqam bir-biriga qarshi chiqadi.
+ */
+function transferFilter(cashBoxWhere: Record<string, any>) {
+  return cashBoxWhere && cashBoxWhere.cashBoxId ? {} : NOT_TRANSFER;
+}
+
 @Injectable()
 export class FinanceService implements OnApplicationBootstrap {
   constructor(
@@ -232,7 +247,7 @@ export class FinanceService implements OnApplicationBootstrap {
 
   async getDashboard(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...transferFilter(cashBoxWhere) };
 
     const [incomes, expenses] = await Promise.all([
       this.prisma.transaction.aggregate({
@@ -677,7 +692,7 @@ export class FinanceService implements OnApplicationBootstrap {
     }
 
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
+    const where: any = { date: { gte: startDate, lte: endDate }, ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...transferFilter(cashBoxWhere) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -720,7 +735,7 @@ export class FinanceService implements OnApplicationBootstrap {
 
   async getStatsByPaymentType(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...transferFilter(cashBoxWhere) };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -755,7 +770,7 @@ export class FinanceService implements OnApplicationBootstrap {
    */
   async getExpenseBreakdown(start?: string, end?: string, branchId?: string, departmentId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
+    const where = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...transferFilter(cashBoxWhere) };
 
     const expenses = await this.prisma.transaction.findMany({
       where: { ...where, type: 'chiqim' },
@@ -777,7 +792,7 @@ export class FinanceService implements OnApplicationBootstrap {
 
   async getDailySummary(start?: string, end?: string, branchId?: string, departmentId?: string, vendorId?: string, createdById?: string, cashBoxWhere: Record<string, any> = {}) {
     const deptScope = await this.resolveDeptScope(departmentId);
-    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...NOT_TRANSFER };
+    const where: any = { ...this.getDateRange(start, end), ...this.branchFilter(branchId), ...deptScope, ...this.ownerFilter(createdById), ...cashBoxWhere, ...transferFilter(cashBoxWhere) };
     if (vendorId) where.vendorId = vendorId;
 
     const [transactions, dashboard, allPaymentTypes] = await Promise.all([
