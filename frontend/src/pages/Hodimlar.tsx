@@ -231,12 +231,18 @@ const Hodimlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ cur
           const res = await employeesApi.regeneratePassword(id);
           const newPass = res.data?.temporaryPassword;
           invalidate.employees();
-          if (newPass) {
-            setSelectedEmp((prev: any) => prev ? { ...prev, password: newPass } : prev);
-            toast.success(`Yangi parol: ${newPass}`);
-          } else {
-            toast.success("Parol yangilandi");
-          }
+          // Modal ro'yxatdan ham ochilishi mumkin — u paytda `selectedEmp`
+          // hali bo'sh. Ilgari `prev ? ... : prev` yozilgani uchun parol
+          // shunday holatda yo'qolib ketardi va oyna umuman ochilmasdi.
+          setSelectedEmp((prev: any) => ({
+            ...(prev || {}),
+            id,
+            login: res.data?.login ?? prev?.login,
+            password: newPass,
+          }));
+          setShowSelectedPass(true);
+          setIsCredentialsModalOpen(true);
+          toast.success("Parol yangilandi — xodimga uzating.");
         } catch (err: any) {
           toast.error(err.response?.data?.error || "Parolni yangilashda xatolik");
         }

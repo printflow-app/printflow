@@ -1344,16 +1344,41 @@ const Topshiriqlar: React.FC<{ currentUser: any; activeBranchId?: string }> = ({
                         <TaskDeadlineBadges task={task as any} activeBranchId={activeBranchId} branches={branches} bajarilgan={!!col.isDone} />
 
                         <div className="flex flex-wrap gap-1 mb-2.5">
-                          {task.totalAmount > 0 && (
-                            <span className="badge-success tabular-nums">
-                              <Wallet size={12} /> {new Intl.NumberFormat('uz-UZ').format(task.totalAmount)}
-                            </span>
-                          )}
-                          {task.remainingAmount > 0 && (
-                            <span className="badge-danger tabular-nums">
-                              <AlertCircle size={12} /> {new Intl.NumberFormat('uz-UZ').format(task.remainingAmount)}
-                            </span>
-                          )}
+                          {/* Summa va qarz.
+                              Ilgari ikkala badge ham raqamdan iborat edi va hech
+                              narsa to'lanmagan buyurtmada bir xil son ikki marta
+                              chiqardi ("1 100 000" yashil, "1 100 000" qizil) —
+                              qaysi biri narx, qaysi biri qarz ekani bilinmasdi.
+                              Endi holat bittada ko'rinadi. */}
+                          {task.totalAmount > 0 && (() => {
+                            const jami = Number(task.totalAmount) || 0;
+                            const qoldiq = Number(task.remainingAmount) || 0;
+                            const fmt = (n: number) => new Intl.NumberFormat('uz-UZ').format(n);
+                            if (qoldiq <= 0) {
+                              return (
+                                <span className="badge-success tabular-nums" title={`Summa ${fmt(jami)} — to'liq to'langan`}>
+                                  <Wallet size={12} /> {fmt(jami)} · to'langan
+                                </span>
+                              );
+                            }
+                            if (qoldiq >= jami) {
+                              return (
+                                <span className="badge-danger tabular-nums" title={`Summa ${fmt(jami)} — to'lov yo'q`}>
+                                  <Wallet size={12} /> {fmt(jami)} · to'lanmagan
+                                </span>
+                              );
+                            }
+                            return (
+                              <>
+                                <span className="badge-success tabular-nums" title="Buyurtma summasi">
+                                  <Wallet size={12} /> {fmt(jami)}
+                                </span>
+                                <span className="badge-danger tabular-nums" title={`Qoldiq qarz (${fmt(jami - qoldiq)} to'langan)`}>
+                                  <AlertCircle size={12} /> qarz {fmt(qoldiq)}
+                                </span>
+                              </>
+                            );
+                          })()}
                           {(task as any).executorBranch && (
                             <span className="badge-neutral">
                               <ArrowRight size={12} /> {(task as any).executorBranch.name}

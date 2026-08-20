@@ -142,10 +142,15 @@ export class EmployeesService {
     const employee = await this.prisma.employee.findUnique({ where: { id } });
     if (!employee) throw new NotFoundException('Xodim topilmadi');
 
-    // 6 xonali raqam — xodimlar uni telefon klaviaturasida kiritadi.
-    // `randomInt` kriptografik: `Math.random()` dan farqli, oldindan
-    // taxmin qilib bo'lmaydi.
-    const temporaryPassword = String(randomInt(100000, 1000000));
+    // 8 belgi. Alifboda chalkashadigan belgilar yo'q (0/O, 1/I/L) — parol
+    // ko'pincha og'zaki yoki qo'lda uzatiladi, "nol edimi yoki O?" degan
+    // savol chiqmasligi kerak. `randomInt` kriptografik: `Math.random()`
+    // dan farqli, oldindan taxmin qilib bo'lmaydi.
+    const ALIFBO = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const temporaryPassword = Array.from(
+      { length: 8 },
+      () => ALIFBO[randomInt(0, ALIFBO.length)],
+    ).join('');
 
     await this.prisma.employee.update({
       where: { id },

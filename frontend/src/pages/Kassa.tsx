@@ -539,9 +539,14 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
           <div className="flex items-center gap-2 overflow-x-auto custom-scroll pb-1 flex-1">
             <button
               onClick={() => setSelectedCashBoxId('')}
-              className={`shrink-0 px-3 min-h-[52px] flex flex-col justify-center rounded-control text-xs font-medium transition-colors duration-120 border ${!selectedCashBoxId ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+              title="Barcha kassalardagi hozirgi qoldiq yig'indisi"
+              className={`shrink-0 px-3 min-h-[52px] flex flex-col justify-center rounded-control text-left transition-colors duration-120 border ${!selectedCashBoxId ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
             >
-              Barcha kassalar
+              <span className="text-xs font-medium whitespace-nowrap">Barcha kassalar</span>
+              <div className={`text-xs tabular-nums mt-0.5 ${!selectedCashBoxId ? 'text-primary-700 font-semibold' : 'text-slate-600 font-medium'}`}>
+                <span className={`text-[10px] font-semibold uppercase mr-1 ${!selectedCashBoxId ? 'text-primary-600' : 'text-slate-400'}`}>jami:</span>
+                {formatCurrency(cashBoxes.reduce((s: number, b: any) => s + (b.balance || 0), 0))}
+              </div>
             </button>
             {cashBoxes.map((b: any) => {
               const active = selectedCashBoxId === b.id;
@@ -549,7 +554,7 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
                 <button
                   key={b.id}
                   onClick={() => setSelectedCashBoxId(b.id)}
-                  title={b.assignedUserName ? `Mas'ul: ${b.assignedUserName}` : undefined}
+                  title={`Kassada hozir turgan pul (butun davr, kassalararo o'tkazmalar bilan)${b.assignedUserName ? ` · Mas'ul: ${b.assignedUserName}` : ''}`}
                   className={`shrink-0 px-3 min-h-[52px] flex flex-col justify-center rounded-control text-left transition-colors duration-120 border ${active ? 'bg-primary-50 border-primary-300 text-primary-700 font-semibold' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
                 >
                   <div className="flex items-center gap-1.5">
@@ -630,6 +635,27 @@ const Kassa: React.FC<{ currentUser: any; activeBranchId?: string }> = ({ curren
               <b>{formatCurrency(summary.biriktirilmagan.kirim)}</b> kirim va{' '}
               <b>{formatCurrency(summary.biriktirilmagan.chiqim)}</b> chiqim bor — ular yuqoridagi
               hisobga kirmagan. Yozuvni tahrirlab bo'limini belgilasangiz, hisobotga qo'shiladi.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Kassaga biriktirilmagan ogohlantirishi.
+          Nega kerak: kassa maydoni tizimga keyinroq qo'shilgani uchun eski
+          yozuvlarda u bo'sh. Natijada "kassalar qoldig'i yig'indisi" va
+          "Davr balansi" bir-biriga to'g'ri kelmaydi — ekran farq qayerdan
+          kelganini o'zi aytadi, aks holda pul yo'qolgandek tuyuladi. */}
+      {!selectedCashBoxId && (summary as any)?.kassasiz && (
+        <div className="flex items-start gap-3 p-4 rounded-card border border-amber-200 bg-amber-50/60">
+          <div className="p-2 bg-amber-100 text-amber-700 rounded-control flex-shrink-0"><AlertTriangle size={16} /></div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-900">Ba'zi yozuvlar hech qaysi kassaga biriktirilmagan</p>
+            <p className="text-xs font-normal text-amber-800 mt-0.5 leading-relaxed">
+              Bu davrda kassasiz{' '}
+              <b>{formatCurrency((summary as any).kassasiz.kirim)}</b> kirim va{' '}
+              <b>{formatCurrency((summary as any).kassasiz.chiqim)}</b> chiqim bor. Ular yuqoridagi
+              «Davr balansi»ga kiradi, lekin kassalar qoldig'iga kirmaydi — shuning uchun ikki
+              raqam farq qiladi. Yozuvni tahrirlab kassasini belgilasangiz, farq yo'qoladi.
             </p>
           </div>
         </div>

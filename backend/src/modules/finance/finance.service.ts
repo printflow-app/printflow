@@ -308,12 +308,35 @@ export class FinanceService implements OnApplicationBootstrap {
       unassigned = { kirim: uk._sum.amount || 0, chiqim: uc._sum.amount || 0 };
     }
 
+    // KASSAGA BIRIKTIRILMAGAN yozuvlar.
+    //
+    // Nega kerak: kassa maydoni tizimga keyinroq qo'shilgan, shuning uchun eski
+    // kirim/chiqimlarda `cashBoxId` bo'sh. Natijada "kassalar qoldig'i
+    // yig'indisi" va "davr balansi" bir-biriga to'g'ri kelmaydi va rahbar
+    // "pul qayerda yo'qoldi?" degan savolga javob topolmaydi. Shu summani
+    // alohida qaytaramiz — ekran o'zi tushuntiradi.
+    const kassaBase: any = {
+      ...this.getDateRange(start, end),
+      ...this.branchFilter(branchId),
+      ...deptScope,
+      ...this.ownerFilter(createdById),
+      ...NOT_TRANSFER,
+      cashBoxId: null,
+    };
+    const [kbk, kbc] = await Promise.all([
+      this.prisma.transaction.aggregate({ where: { ...kassaBase, type: 'kirim' }, _sum: { amount: true } }),
+      this.prisma.transaction.aggregate({ where: { ...kassaBase, type: 'chiqim' }, _sum: { amount: true } }),
+    ]);
+    const kassasiz = { kirim: kbk._sum.amount || 0, chiqim: kbc._sum.amount || 0 };
+
     return {
       totalKirim: incomes._sum.amount || 0,
       totalChiqim: expenses._sum.amount || 0,
       balance: (incomes._sum.amount || 0) - (expenses._sum.amount || 0),
       completedTasks: completedTasksCount,
       biriktirilmagan: unassigned,
+      // Kassaga biriktirilmagan (cashBoxId bo'sh) yozuvlar — davr ichida.
+      kassasiz: kassasiz.kirim || kassasiz.chiqim ? kassasiz : null,
     };
   }
 
